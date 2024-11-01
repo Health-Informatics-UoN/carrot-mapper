@@ -163,7 +163,10 @@ export const columns: ColumnDef<ScanReport>[] = [
                   <EyeNoneIcon className="ml-auto" />
                 )}
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setOpen(true)}>
+              <DropdownMenuItem
+                onClick={() => setOpen(true)}
+                className="text-red-400"
+              >
                 Delete <TrashIcon className="ml-auto" />
               </DropdownMenuItem>
             </DropdownMenuContent>

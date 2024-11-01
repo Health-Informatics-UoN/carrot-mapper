@@ -156,17 +156,7 @@ export default async function ScanReportLayout({
                   Export Scan Report
                 </a>
               </DropdownMenuItem>
-              <DropdownMenuItem>
-                <DeleteDialog id={Number(params.id)} redirect>
-                  <Button
-                    variant={"ghost"}
-                    className="text-red-400 px-0 py-0 h-auto"
-                  >
-                    <TrashIcon className="mr-2 size-4" />
-                    Delete Scan Report
-                  </Button>
-                </DeleteDialog>
-              </DropdownMenuItem>
+              <DeleteDialog id={Number(params.id)} redirect needTrigger />
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

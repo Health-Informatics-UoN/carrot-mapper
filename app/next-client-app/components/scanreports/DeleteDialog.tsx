@@ -12,15 +12,15 @@ import { toast } from "sonner";
 import { Button } from "../ui/button";
 import { deleteScanReport } from "@/api/scanreports";
 import { DialogTrigger } from "@radix-ui/react-dialog";
-import { ReactNode } from "react";
 import { useRouter } from "next/navigation";
+import { TrashIcon } from "lucide-react";
 
 interface DeleteDialogProps {
   id: number;
   redirect?: boolean;
   isOpen?: boolean;
   setOpen?: (isOpen: boolean) => void;
-  children?: ReactNode | ReactNode[];
+  needTrigger?: boolean;
 }
 
 const DeleteDialog = ({
@@ -28,7 +28,7 @@ const DeleteDialog = ({
   redirect = false,
   isOpen,
   setOpen = () => {},
-  children,
+  needTrigger = false,
 }: DeleteDialogProps) => {
   const router = useRouter();
 
@@ -45,7 +45,15 @@ const DeleteDialog = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={() => setOpen(false)}>
-      <DialogTrigger asChild>{children}</DialogTrigger>
+      {/* TODO: Make the dropdown close when the trigger is clicked */}
+      {needTrigger && (
+        <DialogTrigger asChild>
+          <div className="hover:bg-carrot-200 text-red-400 relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-carrot-100 focus:text-carrot-900 data-[disabled]:pointer-events-none data-[disabled]:opacity-50 dark:focus:bg-carrot-800 dark:focus:text-carrot-50">
+            <TrashIcon className="mr-2 size-4" />
+            Delete Scan Report
+          </div>
+        </DialogTrigger>
+      )}
       <DialogContent>
         <DialogHeader className="text-start">
           <DialogTitle>Delete Scan Report</DialogTitle>
