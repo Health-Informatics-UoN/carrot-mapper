@@ -40,21 +40,21 @@ export default async function ScanReportsField({
       ? await getAllScanReportConcepts(
           `object_id__in=${scanReportsFields.results
             .map((item) => item.id)
-            .join(",")}`,
+            .join(",")}`
         )
       : [];
 
   const conceptsFilter =
     scanReportsConcepts.length > 0
       ? await getAllConceptsFiltered(
-          scanReportsConcepts?.map((item) => item.concept).join(","),
+          scanReportsConcepts?.map((item) => item.concept).join(",")
         )
       : [];
 
   return (
     <div>
       <Button variant={"secondary"} className="mb-3">
-        Table: {tableName.name}
+        Table: {tableName.name} {tableName.death_table && "(Death table)"}
       </Button>
       <div>
         <ConceptDataTable

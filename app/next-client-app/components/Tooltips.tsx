@@ -15,7 +15,7 @@ export function Tooltips({
   link?: string;
 }) {
   return (
-    <TooltipProvider>
+    <TooltipProvider delayDuration={100}>
       <Tooltip>
         <TooltipTrigger asChild>
           <InfoIcon className="ml-1 size-4 text-carrot" />

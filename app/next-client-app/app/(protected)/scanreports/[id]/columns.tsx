@@ -3,6 +3,7 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { DataTableColumnHeader } from "@/components/data-table/DataTableColumnHeader";
 import { EditButton } from "@/components/scanreports/EditButton";
+import { Tooltips } from "@/components/Tooltips";
 
 export const columns: ColumnDef<ScanReportTable>[] = [
   {
@@ -47,6 +48,26 @@ export const columns: ColumnDef<ScanReportTable>[] = [
     },
     enableHiding: true,
     enableSorting: false,
+  },
+  {
+    id: "note",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Note" />
+    ),
+    cell: ({ row }) => {
+      const { death_table } = row.original;
+      return (
+        <div>
+          {death_table && (
+            <h3 className="flex">
+              {" "}
+              Death table
+              <Tooltips content="Concepts added here with domains RACE, ETHNICITY and GENDER will be mapped to PERSON table. ALL of other concepts added here will be mapped to DEATH table" />
+            </h3>
+          )}
+        </div>
+      );
+    },
   },
   {
     id: "edit",

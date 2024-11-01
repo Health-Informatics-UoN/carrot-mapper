@@ -113,6 +113,19 @@ export function CreateScanReportForm({
             <div className="flex flex-col gap-3 text-lg">
               <div className="flex flex-col gap-2">
                 <h3 className="flex">
+                  {" "}
+                  Scan Report Name
+                  <Tooltips content="Name of the new Scan Report." />
+                </h3>
+                <Input
+                  onChange={handleChange}
+                  name="name"
+                  className="text-lg text-carrot"
+                  required
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <h3 className="flex">
                   Data Partner{" "}
                   <Tooltips
                     content="The Data Partner that owns the Dataset of the new Scan Report."
@@ -129,25 +142,34 @@ export function CreateScanReportForm({
                 />
               </div>
               <div className="flex flex-col gap-2">
-                <h3 className="flex items-center">
-                  {" "}
-                  Dataset
-                  <Tooltips
-                    content="The Dataset to add the new Scan Report to."
-                    link="https://carrot4omop.ac.uk/Carrot-Mapper/projects-datasets-and-scanreports/#access-controls"
-                  />
-                  {values.dataPartner !== 0 && (
-                    <CreateDatasetDialog
-                      projects={projects}
-                      dataPartnerID={values.dataPartner}
-                      description={true}
-                      setReloadDataset={setReloadDataset}
+                <div className="flex items-center">
+                  <h3 className="flex">
+                    {" "}
+                    Dataset
+                    <Tooltips
+                      content="The Dataset to add the new Scan Report to."
+                      link="https://carrot4omop.ac.uk/Carrot-Mapper/projects-datasets-and-scanreports/#access-controls"
                     />
+                  </h3>
+                  {values.dataPartner !== 0 && (
+                    <div className="flex">
+                      <CreateDatasetDialog
+                        projects={projects}
+                        dataPartnerID={values.dataPartner}
+                        description={true}
+                        setReloadDataset={setReloadDataset}
+                      />
+                      <Tooltips content="If you couldn't find a dataset you wanted, you can create a new dataset here" />
+                    </div>
                   )}
-                </h3>
+                </div>
                 <FormikSelectDataset
                   name="dataset"
-                  placeholder="Choose a Dataset"
+                  placeholder={
+                    values.dataPartner
+                      ? "Choose a Dataset"
+                      : "To choose a dataset, please select a Data partner"
+                  }
                   isMulti={false}
                   isDisabled={values.dataPartner === 0}
                   required={true}
@@ -188,7 +210,11 @@ export function CreateScanReportForm({
                   {/* Viewers field uses the same logic and data as Editors field */}
                   <FormikSelectEditors
                     name="viewers"
-                    placeholder="Choose viewers"
+                    placeholder={
+                      values.dataset
+                        ? "Choose viewers"
+                        : "To choose viewers, please select a Dataset"
+                    }
                     isMulti={true}
                     isDisabled={values.dataset === 0 || values.dataset === -1}
                   />
@@ -205,28 +231,21 @@ export function CreateScanReportForm({
                 </h3>
                 <FormikSelectEditors
                   name="editors"
-                  placeholder="Choose Editors"
+                  placeholder={
+                    values.dataset
+                      ? "Choose editors"
+                      : "To choose editors, please select a Dataset"
+                  }
                   isMulti={true}
                   isDisabled={values.dataset === 0 || values.dataset === -1}
                 />
               </div>
               <div className="flex flex-col gap-2">
                 <h3 className="flex">
-                  {" "}
-                  Scan Report Name
-                  <Tooltips content="Name of the new Scan Report." />
-                </h3>
-                <Input
-                  onChange={handleChange}
-                  name="name"
-                  className="text-lg text-carrot"
-                  required
-                />
-              </div>
-              <div className="flex flex-col gap-2">
-                <h3 className="flex">
-                  {" "}
-                  WhiteRabbit Scan Report
+                  <div className="flex items-center gap-2">
+                    WhiteRabbit Scan Report{" "}
+                    <span className="text-gray-500 text-sm">(.xlsx file)</span>
+                  </div>
                   <Tooltips
                     content="Scan Report file generated from White Rabbit application."
                     link="https://carrot4omop.ac.uk/Carrot-Mapper/uploading-scan-report/#the-scan-report-file-format"
@@ -252,10 +271,14 @@ export function CreateScanReportForm({
 
               <div className="flex flex-col gap-2">
                 <h3 className="flex">
-                  {" "}
-                  Data Dictionary
+                  <div className="flex items-center gap-2">
+                    Data Dictionary{" "}
+                    <span className="text-gray-500 text-sm">
+                      (.csv file, optional)
+                    </span>
+                  </div>
                   <Tooltips
-                    content="Optional data dictionary to enable automatic OMOP mapping."
+                    content="Optional data dictionary to enable automatic OMOP vocalubary building."
                     link="https://carrot4omop.ac.uk/Carrot-Mapper/uploading-scan-report/#the-data-dictionary-file-format"
                   />
                 </h3>

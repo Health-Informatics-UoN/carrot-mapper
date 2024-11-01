@@ -566,6 +566,15 @@ class ScanReportConceptListV2(
                 pk=body["object_id"]
             ).scan_report_field.type_column
 
+        # Checking death_table and meas value domain relationship
+        if domain == "meas value" and table.death_table:
+            return Response(
+                {
+                    "detail": "Because concepts with 'Meas Value' domain will be mapped to Measurement table as 'value_as_concept_id', they should not be added to DEATH table."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         # Checking field's datatype for concept with domain Observation
         if domain == "observation" and field_datatype.lower() not in [
             "real",
@@ -581,7 +590,7 @@ class ScanReportConceptListV2(
                 status=status.HTTP_400_BAD_REQUEST,
             )
         # validate the destination_table
-        destination_table = _find_destination_table(concept)
+        destination_table = _find_destination_table(concept, table)
         if destination_table is None:
             return Response(
                 {

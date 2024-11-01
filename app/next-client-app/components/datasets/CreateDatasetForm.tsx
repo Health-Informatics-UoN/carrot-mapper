@@ -195,13 +195,17 @@ export function CreateDatasetForm({
                     {" "}
                     Viewers
                     <Tooltips
-                      content="All Dataset admins and editors also have Dataset viewer permissions."
+                      content="Members of the chosen projects above. All Dataset admins and editors also have Dataset viewer permissions."
                       link="https://carrot4omop.ac.uk/Carrot-Mapper/projects-datasets-and-scanreports/#access-controls"
                     />
                   </h3>
                   <FormikSelectUsers
                     name="viewers"
-                    placeholder="Choose Viewers"
+                    placeholder={
+                      values.projects
+                        ? "Choose viewers"
+                        : "To choose viewers, please select at least one Project"
+                    }
                     isMulti={true}
                     isDisabled={values.projects === 0}
                   />
@@ -212,13 +216,17 @@ export function CreateDatasetForm({
                   {" "}
                   Editors
                   <Tooltips
-                    content="Dataset admins and editors also have Scan Report editor permissions."
+                    content="Members of the chosen projects above. Dataset admins and editors also have Scan Report editor permissions."
                     link="https://carrot4omop.ac.uk/Carrot-Mapper/projects-datasets-and-scanreports/#access-controls"
                   />
                 </h3>
                 <FormikSelectUsers
                   name="editors"
-                  placeholder="Choose Editors"
+                  placeholder={
+                    values.projects
+                      ? "Choose editors"
+                      : "To choose editors, please select at least one Project"
+                  }
                   isMulti={true}
                   isDisabled={values.projects === 0}
                 />
@@ -228,13 +236,17 @@ export function CreateDatasetForm({
                   {" "}
                   Admins
                   <Tooltips
-                    content="Dataset admins and editors also have Scan Report editor permissions."
+                    content="Members of the chosen projects above. Dataset admins and editors also have Scan Report editor permissions."
                     link="https://carrot4omop.ac.uk/Carrot-Mapper/projects-datasets-and-scanreports/#access-controls"
                   />
                 </h3>
                 <FormikSelectUsers
                   name="admins"
-                  placeholder="Choose Admins"
+                  placeholder={
+                    values.projects
+                      ? "Choose admins"
+                      : "To choose admins, please select at least one Project"
+                  }
                   isMulti={true}
                   isDisabled={values.projects === 0}
                 />

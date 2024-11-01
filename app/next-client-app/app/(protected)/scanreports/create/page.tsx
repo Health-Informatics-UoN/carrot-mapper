@@ -17,7 +17,7 @@ export default async function ScanReports() {
         </Link>
       </div>
       <div className="flex justify-between mt-3">
-        <h1 className="text-4xl font-semibold">New Scan Report</h1>
+        <h1 className="text-4xl font-semibold">Upload Scan Report</h1>
       </div>
       <div className="mt-4">
         <CreateScanReportForm dataPartners={partners} projects={projects} />

@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Image from "next/image";
 import { ReceiptText, ShieldQuestion } from "lucide-react";
 
 const Footer = () => {

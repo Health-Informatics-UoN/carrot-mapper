@@ -5,7 +5,7 @@
 @tailwind components {
   @layer components {
     .my-react-select-container .my-react-select__control {
-      @apply bg-white dark:bg-carrot-950 rounded-md border border-carrot-200 dark:border-carrot-800 hover:border-carrot-400 dark:hover:border-carrot-500;
+      @apply bg-white dark:bg-carrot-950 rounded-md border border-carrot-200 dark:border-carrot-800 hover:border-carrot-600 dark:hover:border-carrot-400;
     }
 
     .my-react-select-container .my-react-select__control--is-disabled {
@@ -13,7 +13,7 @@
     }
 
     .my-react-select-container .my-react-select__control--is-focused {
-      @apply border-carrot-500 hover:border-carrot-500 dark:border-carrot-400 dark:hover:border-carrot-400 shadow-none;
+      @apply ring-2 ring-carrot-950 ring-offset-2 hover:border-carrot-500 dark:border-carrot-400 dark:hover:border-carrot-400 shadow-none;
     }
 
     .my-react-select-container .my-react-select__menu {
