@@ -6,16 +6,17 @@ import {
 } from "@/components/ui/tooltip";
 
 import { InfoIcon } from "lucide-react";
+import { ReactElement } from "react";
 
 export function Tooltips({
   content,
   link,
 }: {
-  content: string;
+  content: string | ReactElement;
   link?: string;
 }) {
   return (
-    <TooltipProvider>
+    <TooltipProvider delayDuration={100}>
       <Tooltip>
         <TooltipTrigger asChild>
           <InfoIcon className="ml-1 size-4 text-carrot" />

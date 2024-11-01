@@ -35,7 +35,7 @@ export default async function ScanReportsEditField({
         {" "}
         <Link href={`/scanreports/${id}/tables/${tableId}`}>
           <Button variant={"secondary"} className="mb-3">
-            Table: {table.name}
+            Table: {table.name} {table.death_table && "(Death table)"}
           </Button>
         </Link>
         <Button variant={"secondary"} className="mb-3">

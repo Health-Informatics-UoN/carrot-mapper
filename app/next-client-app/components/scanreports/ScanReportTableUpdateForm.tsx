@@ -1,17 +1,28 @@
 "use client";
-
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { updateScanReportTable } from "@/api/scanreports";
-import { Save } from "lucide-react";
+import { Check, Save, TriangleAlert, X } from "lucide-react";
 import { toast } from "sonner";
 import { FormDataFilter } from "../form-components/FormikUtils";
 import { Form, Formik } from "formik";
 import { Tooltips } from "../Tooltips";
 import { FormikSelect } from "../form-components/FormikSelect";
+import { Switch } from "../ui/switch";
+import { Label } from "../ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "../ui/dialog";
 
 interface FormData {
   personId: number | null;
   dateEvent: number | null;
+  death_table: boolean;
 }
 
 export function ScanReportTableUpdateForm({
@@ -27,6 +38,8 @@ export function ScanReportTableUpdateForm({
   personId: ScanReportField;
   dateEvent: ScanReportField;
 }) {
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+
   const canUpdate =
     permissions.includes("CanEdit") || permissions.includes("CanAdmin");
 
@@ -39,16 +52,17 @@ export function ScanReportTableUpdateForm({
     const submittingData = {
       person_id: data.personId !== 0 ? data.personId : null,
       date_event: data.dateEvent !== 0 ? data.dateEvent : null,
+      death_table: data.death_table,
     };
 
     const response = await updateScanReportTable(
       scanreportTable.scan_report,
       scanreportTable.id,
-      submittingData,
+      submittingData
     );
     if (response) {
       toast.error(
-        `Update Scan Report Table failed. Error: ${response.errorMessage}`,
+        `Update Scan Report Table failed. Error: ${response.errorMessage}`
       );
     } else {
       toast.success("Update Scan Report Table successful!");
@@ -60,12 +74,13 @@ export function ScanReportTableUpdateForm({
       initialValues={{
         dateEvent: initialDateEvent[0].value,
         personId: initialPersonId[0].value,
+        death_table: scanreportTable.death_table,
       }}
       onSubmit={(data) => {
         handleSubmit(data);
       }}
     >
-      {({ handleSubmit }) => (
+      {({ handleSubmit, values, setFieldValue }) => (
         <Form className="w-full" onSubmit={handleSubmit}>
           <div className="flex flex-col gap-3 text-lg">
             <div className="flex flex-col gap-2">
@@ -101,6 +116,102 @@ export function ScanReportTableUpdateForm({
                 isMulti={false}
                 isDisabled={!canUpdate}
               />
+            </div>
+
+            <div className="flex gap-2 mt-2">
+              <h3 className="flex">
+                Does this table only contain data that needs mapping to the
+                Death table in the OMOP CDM?
+                <Tooltips
+                  content={
+                    <h2>
+                      If <span className="font-bold">Yes</span>, concepts added
+                      to this table with domains{" "}
+                      <span className="font-bold">
+                        Race, Ethnicity and Gender
+                      </span>{" "}
+                      will be mapped to the{" "}
+                      <span className="font-bold">Person</span> table. Concepts
+                      added here with{" "}
+                      <span className="font-bold">other domains</span> will be
+                      mapped to the <span className="font-bold">Death</span>{" "}
+                      table.
+                    </h2>
+                  }
+                />
+              </h3>
+              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Please Confirm Your Choice</DialogTitle>
+                    <DialogDescription>
+                      Are you sure you want to set this table as a Death table?
+                      Doing so will result in the following:
+                      <ul className="text-gray-500 list-disc pl-4 pt-2">
+                        <li>
+                          Concepts added to this table with domains{" "}
+                          <span className="font-bold">
+                            Race, Ethnicity and Gender
+                          </span>{" "}
+                          will be mapped to the{" "}
+                          <span className="font-bold">Person</span> table.
+                        </li>
+                        <li>
+                          Concepts added here with{" "}
+                          <span className="font-bold">other domains</span> will
+                          be mapped to the{" "}
+                          <span className="font-bold">Death</span> table.
+                        </li>
+                      </ul>
+                      <h2 className="text-red-500 flex items-center">
+                        <TriangleAlert className="size-4 mr-1 animate-pulse" />{" "}
+                        <span className="underline underline-offset-2 mr-1">
+                          Warning:
+                        </span>{" "}
+                        Once saved, this setting is permanent and cannot be
+                        undone.{" "}
+                      </h2>
+                    </DialogDescription>
+                  </DialogHeader>
+                  <DialogFooter className="flex gap-3">
+                    <Button
+                      onClick={() => {
+                        setIsDialogOpen(false);
+                      }}
+                      variant={"outline"}
+                    >
+                      Cancel <X className="size-4 ml-2" />
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        setFieldValue("death_table", true);
+                        setIsDialogOpen(false);
+                      }}
+                    >
+                      Confirm <Check className="size-4 ml-2" />
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+              <Switch
+                checked={values.death_table}
+                onCheckedChange={(checked) => {
+                  if (checked) {
+                    // When switching from NO to YES, show confirmation dialog
+                    setIsDialogOpen(true);
+                  } else {
+                    // When switching from YES to NO, change immediately
+                    setFieldValue("death_table", false);
+                  }
+                }}
+                disabled={!canUpdate || scanreportTable.death_table}
+              />
+              <Label className="text-lg">
+                {values.death_table === true ? "YES" : "NO"}
+              </Label>
+              {scanreportTable.death_table && (
+                <Tooltips content="This setting is permanent, once set" />
+              )}
             </div>
 
             <div className="flex mt-3">

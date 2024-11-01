@@ -235,6 +235,7 @@ class ScanReportTable(BaseModel):
 
     scan_report = models.ForeignKey(ScanReport, on_delete=models.CASCADE)
     name = models.CharField(max_length=256)
+    death_table = models.BooleanField(default=False, null=True)
 
     # Quick notes:
     # - "ScanReportField", instead of ScanReportField,
