@@ -1,16 +1,4 @@
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
-
-export async function middleware(request: NextRequest) {
-  // Redirect logged out users.
-  let session = request.cookies.get("sessionid");
-  let csrfToken = request.cookies.get("csrftoken");
-  if (!session || !csrfToken) {
-    return NextResponse.redirect(new URL("/accounts/login/", request.url));
-  }
-
-  return NextResponse.next();
-}
+export { default } from "next-auth/middleware";
 
 export const config = {
   matcher: [
@@ -18,11 +6,12 @@ export const config = {
      * Match all paths except for:
      * 1. / index page
      * 2. /api routes
-     * 3. /_next (Next.js internals)
-     * 4. /_static (inside /public)
-     * 5. all root files inside /public (e.g. /favicon.ico)
-     * 6. folder containing logos inside "public"
+     * 3. /accounts/login
+     * 4. /_next (Next.js internals)
+     * 5. /_static (inside /public)
+     * 6. all root files inside /public (e.g. /favicon.ico)
+     * 7. folder containing logos inside "public"
      */
-    "/((?!$|api/|_next/|_static/|logos|[\\w-]+\\.\\w+).*)",
+    "/((?!$|api/|accounts/login|_next/|_static/|logos|[\\w-]+\\.\\w+).*)",
   ],
 };

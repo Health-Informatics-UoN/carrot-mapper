@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/3.1/ref/settings/
 """
 
 import os
+from datetime import timedelta
 
 from dotenv import load_dotenv
 
@@ -50,6 +51,7 @@ if not DEBUG:
 # Application definition
 
 INSTALLED_APPS = [
+    "django.contrib.sites",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -68,7 +70,12 @@ INSTALLED_APPS = [
     "rest_framework.authtoken",
     "corsheaders",
     "test",
-    "revproxy",
+    "authn.apps.AuthnConfig",
+    "rest_framework_simplejwt",
+    "allauth",
+    "allauth.account",
+    "dj_rest_auth",
+    "dj_rest_auth.registration",
     "shared",
     "shared.files",
     "shared.jobs",
@@ -81,10 +88,14 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "allauth.account.middleware.AccountMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
 ]
+
+CSRF_TRUSTED_ORIGINS = [os.environ.get("NEXTJS_URL", "http://localhost:3000")]
+SITE_ID = 1
 
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
@@ -178,6 +189,7 @@ REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework.authentication.TokenAuthentication",
         "rest_framework.authentication.SessionAuthentication",
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
 }
@@ -202,3 +214,24 @@ AZ_URL = os.environ.get("AZ_URL", "http://localhost:7071")
 AZ_RULES_NAME = os.environ.get("AZ_RULES_NAME", "RulesOrchestrator")
 AZ_RULES_KEY = os.environ.get("AZ_RULES_KEY", "")
 AZ_RULES_EXPORT_QUEUE = os.environ.get("AZ_RULES_EXPORT_QUEUE", "rules-exports-local")
+
+# Auth
+
+ACCOUNT_EMAIL_REQUIRED = False
+ACCOUNT_EMAIL_VERIFICATION = "none"
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+    "ROTATE_REFRESH_TOKENS": False,
+    "BLACKLIST_AFTER_ROTATION": False,
+    "UPDATE_LAST_LOGIN": True,
+    "SIGNING_KEY": os.getenv("SIGNING_KEY"),
+    "ALGORITHM": "HS512",
+    "AUTH_HEADER_TYPES": ("JWT",),
+}
+
+REST_AUTH = {
+    "USE_JWT": True,
+    "JWT_AUTH_HTTPONLY": False,
+}

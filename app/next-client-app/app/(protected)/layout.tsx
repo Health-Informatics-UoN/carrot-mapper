@@ -1,6 +1,7 @@
 import "react-tooltip/dist/react-tooltip.css";
 import React from "react";
-import { getCurrentUser } from "@/api/users";
+import { getServerSession } from "next-auth";
+import { options } from "@/auth/options";
 import { MenuBar } from "@/components/core/menubar";
 
 export default async function ProtectedLayout({
@@ -8,7 +9,8 @@ export default async function ProtectedLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const user = await getCurrentUser();
+  const session = await getServerSession(options);
+  const user = session?.token?.user;
 
   return (
     <>

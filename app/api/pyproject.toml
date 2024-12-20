@@ -24,9 +24,11 @@ graphviz = "^0.20.3"
 drf-dynamic-fields = "^0.4.0"
 django-cors-headers = "^4.4.0"
 python-dotenv = "^1.0.1"
-django-revproxy = "^0.12.0"
 shared = {path = "../shared", develop = true}
 azure-monitor-opentelemetry = "^1.6.0"
+djangorestframework-simplejwt = "^5.3.1"
+django-allauth = "0.61.1"
+dj-rest-auth = {extras = ["with-social"], version = "^6.0.0"}
 
 [tool.poetry.group.test.dependencies]
 pytest-django = "^4.8.0"

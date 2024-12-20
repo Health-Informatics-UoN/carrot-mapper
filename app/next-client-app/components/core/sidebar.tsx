@@ -63,7 +63,7 @@ export function Sidebar({ userName }: { userName?: string }) {
                           {link.label}
                         </SidebarButton>
                       </Link>
-                    )
+                    ),
                   )}
                 </div>
                 {userName && (

@@ -1,6 +1,7 @@
 import { apiUrl as apiUrl } from "@/constants";
 import { ApiError } from "./error";
-import { cookies } from "next/headers";
+import { getServerSession } from "next-auth";
+import { options as authOptions } from "@/auth/options";
 
 interface RequestOptions {
   method?: string;
@@ -12,15 +13,12 @@ interface RequestOptions {
 }
 
 const request = async <T>(url: string, options: RequestOptions = {}) => {
-  // Auth with Django session
-  const cookieStore = cookies();
-  const session = cookieStore.get("sessionid")?.value;
-  const csrftoken = cookieStore.get("csrftoken")?.value;
+  // Auth with Django
+  const session = await getServerSession(authOptions);
+  const token = session?.access_token;
 
   const headers: HeadersInit = {
-    Cookie: `sessionid=${session}; csrftoken=${csrftoken}`,
-    "X-CSRFToken": csrftoken ?? "",
-    Referer: process.env.BACKEND_URL ?? "",
+    Authorization: `JWT ${token}`,
     ...(options.headers || {}),
   };
 

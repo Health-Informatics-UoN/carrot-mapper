@@ -17,7 +17,7 @@ export default function Default() {
         repeatDelay={1}
         className={cn(
           "[mask-image:radial-gradient(800px_circle_at_center,white,transparent)]",
-          "inset-x-0 inset-y-[-30%] h-full skew-y-12 mt-[200px] overflow-hidden"
+          "inset-x-0 inset-y-[-30%] h-full skew-y-12 mt-[200px] overflow-hidden",
         )}
       />{" "}
       {/* Content */}
