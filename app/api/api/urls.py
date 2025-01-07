@@ -102,7 +102,7 @@ urlpatterns = [
     path(r"v2/usersfilter/", views.UserFilterViewSet.as_view(), name="usersfilter"),
     path(r"v2/datapartners/", views.DataPartnerViewSet.as_view(), name="datapartners"),
     path(
-        r"v2/omop/conceptsfilter",
+        r"v2/omop/conceptsfilter/",
         views.ConceptFilterViewSetV2.as_view(),
         name="v2conceptsfilter",
     ),
