@@ -27,7 +27,7 @@ jobs:
       - name: "Install Poetry and Export Plugin"
         run: |
           pip install poetry
-          poetry self add poetry-plugin-export
+          pip install poetry-plugin-export
         shell: bash
 
       - name: "Resolve Project Dependencies Using Poetry"
