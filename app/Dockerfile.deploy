@@ -42,6 +42,7 @@ COPY app/shared /shared
 
 # Install Poetry
 RUN pip install poetry
+RUN pip install poetry-plugin-export
 
 # Export requirements from pyproject.toml and install them
 RUN poetry config virtualenvs.create false \
