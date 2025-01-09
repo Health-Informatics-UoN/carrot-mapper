@@ -63,7 +63,7 @@ urlpatterns = [
         name="scan-report-rules-list",
     ),
     path(
-        "v2/scanreports/<int:pk>/rules/summary",
+        "v2/scanreports/<int:pk>/rules/summary/",
         views.SummaryRulesListV2.as_view(),
         name="scan-report-rules-list-summary",
     ),
