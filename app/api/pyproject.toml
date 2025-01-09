@@ -30,9 +30,6 @@ djangorestframework-simplejwt = "^5.3.1"
 django-allauth = "0.61.1"
 dj-rest-auth = {extras = ["with-social"], version = "^6.0.0"}
 
-[tool.poetry.requires-plugins]
-poetry-plugin-export = ">1.8"
-
 [tool.poetry.group.test.dependencies]
 pytest-django = "^4.8.0"
 
