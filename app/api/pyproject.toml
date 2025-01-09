@@ -29,6 +29,7 @@ azure-monitor-opentelemetry = "^1.6.0"
 djangorestframework-simplejwt = "^5.3.1"
 django-allauth = "0.61.1"
 dj-rest-auth = {extras = ["with-social"], version = "^6.0.0"}
+poetry-plugin-export = ">1.8"
 
 [tool.poetry.group.test.dependencies]
 pytest-django = "^4.8.0"
