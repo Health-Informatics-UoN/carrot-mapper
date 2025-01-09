@@ -8,6 +8,8 @@ const fetchKeys = {
     `v2/scanreports/${scan_report_id}/rules/downloads/?${filter}`,
   requestFile: (scan_report_id: number) =>
     `v2/scanreports/${scan_report_id}/rules/downloads/`,
+  downloadFile: (scan_report_id: number, file_id: number) =>
+    `v2/scanreports/${scan_report_id}/rules/downloads/${file_id}/`,
 };
 
 export async function list(
@@ -40,6 +42,27 @@ export async function requestFile(
     });
     revalidatePath(`/scanreports/${scan_report_id}/downloads`);
     return { success: true };
+  } catch (error: any) {
+    return { success: false, errorMessage: error.message };
+  }
+}
+
+export async function downloadFile(
+  scan_report_id: number,
+  file_id: number,
+  file_type: string
+): Promise<{ success: boolean; errorMessage?: string; data?: any }> {
+  try {
+    const response = await request(
+      fetchKeys.downloadFile(scan_report_id, file_id)
+    );
+    if (file_type == "mapping_json") {
+      return { success: true, data: JSON.parse(response) };
+    }
+    if (file_type == "mapping_csv") {
+      return { success: true, data: response };
+    }
+    return { success: false, errorMessage: "Unsupported file type" };
   } catch (error: any) {
     return { success: false, errorMessage: error.message };
   }
