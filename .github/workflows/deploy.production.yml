@@ -22,10 +22,11 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: "Install Poetry and Export Plugin"
-        run: |
-          pip install poetry
-          pip install poetry-plugin-export
+      - name: "Install Poetry"
+        uses: snok/install-poetry@v1
+
+      - name: "Install Export Poetry Plugin"
+        run: pip install poetry-plugin-export
         shell: bash
 
       - name: "Resolve Project Dependencies Using Poetry"
