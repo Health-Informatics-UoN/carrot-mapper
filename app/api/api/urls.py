@@ -73,7 +73,7 @@ urlpatterns = [
         name="scan-reports-downloads",
     ),
     path(
-        "v2/scanreports/<int:scanreport_pk>/rules/downloads/<int:pk>",
+        "v2/scanreports/<int:scanreport_pk>/rules/downloads/<int:pk>/",
         FileDownloadView.as_view(),
         name="scan-report-downloads-get",
     ),
