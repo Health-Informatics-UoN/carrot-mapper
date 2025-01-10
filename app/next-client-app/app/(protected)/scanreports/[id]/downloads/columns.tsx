@@ -12,8 +12,10 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import Link from "next/link";
+import { saveAs } from "file-saver";
 import { Badge } from "@/components/ui/badge";
+import { downloadFile } from "@/api/files";
+import { toast } from "sonner";
 
 export const columns: ColumnDef<FileDownload>[] = [
   {
@@ -82,15 +84,32 @@ export const columns: ColumnDef<FileDownload>[] = [
     id: "Download",
     header: ({ column }) => <DataTableColumnHeader column={column} title="" />,
     cell: ({ row }) => {
-      const { id, scan_report } = row.original;
+      const { id, scan_report, file_type, name } = row.original;
+      const handleDownload = async () => {
+        const response = await downloadFile(scan_report, file_type.value, id);
+        if (response.success) {
+          // Based on the file type to process the data from the response accordingly
+          if (file_type.value == "mapping_json") {
+            const blob = new Blob([JSON.stringify(response.data)], {
+              type: "application/json",
+            });
+            saveAs(blob, name);
+          } else if (file_type.value == "mapping_csv") {
+            const blob = new Blob([response.data], {
+              type: "text/csv",
+            });
+            saveAs(blob, name);
+          }
+        } else {
+          toast.error(
+            `Error downloading file: ${(response.errorMessage as any).message}`
+          );
+        }
+      };
       return (
-        <Link
-          href={`/api/v2/scanreports/${scan_report}/rules/downloads/${id}/`}
-        >
-          <Button variant={"outline"}>
-            Download <Download className="ml-2 size-4" />
-          </Button>
-        </Link>
+        <Button variant={"outline"} onClick={handleDownload}>
+          Download <Download className="ml-2 size-4" />
+        </Button>
       );
     },
     enableHiding: true,
