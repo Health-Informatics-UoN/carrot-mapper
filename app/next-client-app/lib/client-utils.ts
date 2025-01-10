@@ -42,9 +42,7 @@ export function objToQuery(obj: { [key: string]: any }): string {
   return query;
 }
 
-export function convertBase64toBlob(
-  base64String: string
-): Uint8Array<ArrayBuffer> {
+export function convertBase64toBlob(base64String: string): Uint8Array {
   const binaryString = window.atob(base64String);
   const bytes = new Uint8Array(binaryString.length);
   for (let i = 0; i < binaryString.length; i++) {
