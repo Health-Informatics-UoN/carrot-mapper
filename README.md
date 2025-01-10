@@ -12,8 +12,7 @@
   <img src="https://github.com/Health-Informatics-UoN/Carrot-Mapper/actions/workflows/test.yml/badge.svg" alt="Test">
 </a>
 <a href="https://github.com/Health-Informatics-UoN/carrot-mapper/releases">
-  <img src="https://img.shields.io/github/v/release/Health-Informatics-UoN/carrot-mapper
-  " alt="Release">
+  <img src="https://img.shields.io/github/v/release/Health-Informatics-UoN/carrot-mapper" alt="Release">
 </a>
 <a href="https://opensource.org/license/mit">
   <img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License">
@@ -54,6 +53,6 @@ To have the project up and running, please follow the [Quick Start Guide](https:
 
 # License
 
-This repository's source code is available under the [MIT](LICENSE).
+This repository's source code is available under the [MIT](LICENSE) license.
 
 <br /><br /><br />
