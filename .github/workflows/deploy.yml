@@ -3,7 +3,7 @@ name: Build and Deploy to Dev and Test
 on:
   push:
     branches:
-      - feat/927/update-logo
+      - master
   workflow_dispatch:
 
 env:
