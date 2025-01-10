@@ -3,14 +3,7 @@ import { Forbidden } from "@/components/core/Forbidden";
 import { NavGroup } from "@/components/core/nav-group";
 import DeleteDialog from "@/components/scanreports/DeleteDialog";
 import { Button } from "@/components/ui/button";
-import {
-  Download,
-  Edit,
-  FileScan,
-  Folders,
-  GripVertical,
-  TrashIcon,
-} from "lucide-react";
+import { Edit, FileScan, Folders, GripVertical } from "lucide-react";
 import { Boundary } from "@/components/core/boundary";
 import {
   DropdownMenu,
@@ -27,6 +20,7 @@ import Link from "next/link";
 import { MappingStatus } from "@/components/scanreports/MappingStatus";
 import { StatusIcon } from "@/components/core/StatusIcon";
 import { UploadStatusOptions } from "@/constants/scanReportStatus";
+import ExportScanReport from "@/components/scanreports/ExportScanReport";
 
 export default async function ScanReportLayout({
   params,
@@ -148,16 +142,10 @@ export default async function ScanReportLayout({
                   Edit Scan Report Details
                 </a>
               </DropdownMenuItem>
-              <DropdownMenuItem>
-                <a
-                  href={`/api/v2/scanreports/${params.id}/download/`}
-                  download
-                  className="flex"
-                >
-                  <Download className="mr-2 size-4" />
-                  Export Scan Report
-                </a>
-              </DropdownMenuItem>
+              <ExportScanReport
+                scanReportId={params.id}
+                scanReportName={scanreport.dataset}
+              />
               <DeleteDialog id={Number(params.id)} redirect needTrigger />
             </DropdownMenuContent>
           </DropdownMenu>

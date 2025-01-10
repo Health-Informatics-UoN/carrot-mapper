@@ -86,7 +86,7 @@ export const columns: ColumnDef<FileDownload>[] = [
     cell: ({ row }) => {
       const { id, scan_report, file_type, name } = row.original;
       const handleDownload = async () => {
-        const response = await downloadFile(scan_report, id, file_type.value);
+        const response = await downloadFile(scan_report, file_type.value, id);
         if (response.success) {
           // Based on the file type to process the data from the response accordingly
           if (file_type.value == "mapping_json") {

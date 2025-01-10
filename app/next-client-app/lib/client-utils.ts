@@ -5,7 +5,7 @@ export function navigateWithSearchParam(
   paramName: string,
   param: string | number | string[],
   router: AppRouterInstance,
-  searchParams: ReadonlyURLSearchParams,
+  searchParams: ReadonlyURLSearchParams
 ) {
   const currentParams = new URLSearchParams(Array.from(searchParams.entries()));
   if (param) {
@@ -40,4 +40,15 @@ export function objToQuery(obj: { [key: string]: any }): string {
     }
   }
   return query;
+}
+
+export function convertBase64toBlob(
+  base64String: string
+): Uint8Array<ArrayBuffer> {
+  const binaryString = window.atob(base64String);
+  const bytes = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  return bytes;
 }
