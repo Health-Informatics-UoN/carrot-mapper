@@ -15,8 +15,9 @@ COPY ./workers/poetry.lock /workers/poetry.lock
 # Copy the shared directory
 COPY ./shared /shared
 
-# Install Poetry
+# Install Poetry and Export Poetry Plugin
 RUN pip install poetry
+RUN pip install poetry-plugin-export
 
 # Export requirements from pyproject.toml and install them
 RUN poetry config virtualenvs.create false \

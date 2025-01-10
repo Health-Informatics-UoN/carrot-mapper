@@ -52,7 +52,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from shared.data.models import Concept
-from shared.files.service import delete_blob, modify_filename, upload_blob
+from shared.files.service import delete_blob, modify_filename, upload_blob, get_blob
 from shared.mapping.models import (
     DataDictionary,
     DataPartner,
@@ -832,28 +832,12 @@ class DownloadScanReportViewSet(viewsets.ViewSet):
     def list(self, request, pk):
         # TODO: This should not be a list view...
         scan_report = ScanReport.objects.get(id=pk)
-        # scan_report = ScanReportSerializer(scan_reports, many=False).data
-        # Set Storage Account connection string
-        print(scan_report)
-        # TODO: `name` is not always defined, it seems
         blob_name = scan_report.name
-        print(blob_name)
-        container = "scan-reports"
-        blob_service_client = BlobServiceClient.from_connection_string(
-            os.environ.get("STORAGE_CONN_STRING")
-        )
-
-        # Grab scan report data from blob
-        streamdownloader = (
-            blob_service_client.get_container_client(container)
-            .get_blob_client(blob_name)
-            .download_blob()
-        )
-        scan_report = streamdownloader.readall()
+        scan_report_blob = get_blob(blob_name, "scan-reports")
 
         response = HttpResponse(
-            scan_report,
-            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            scan_report_blob,
+            content_type="application/octet-stream",
         )
         response["Content-Disposition"] = f'attachment; filename="{blob_name}"'
 

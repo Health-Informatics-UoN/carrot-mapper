@@ -63,7 +63,7 @@ urlpatterns = [
         name="scan-report-rules-list",
     ),
     path(
-        "v2/scanreports/<int:pk>/rules/summary",
+        "v2/scanreports/<int:pk>/rules/summary/",
         views.SummaryRulesListV2.as_view(),
         name="scan-report-rules-list-summary",
     ),
@@ -73,7 +73,7 @@ urlpatterns = [
         name="scan-reports-downloads",
     ),
     path(
-        "v2/scanreports/<int:scanreport_pk>/rules/downloads/<int:pk>",
+        "v2/scanreports/<int:scanreport_pk>/rules/downloads/<int:pk>/",
         FileDownloadView.as_view(),
         name="scan-report-downloads-get",
     ),
@@ -102,7 +102,7 @@ urlpatterns = [
     path(r"v2/usersfilter/", views.UserFilterViewSet.as_view(), name="usersfilter"),
     path(r"v2/datapartners/", views.DataPartnerViewSet.as_view(), name="datapartners"),
     path(
-        r"v2/omop/conceptsfilter",
+        r"v2/omop/conceptsfilter/",
         views.ConceptFilterViewSetV2.as_view(),
         name="v2conceptsfilter",
     ),
