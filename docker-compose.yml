@@ -10,7 +10,7 @@ services:
       - POSTGRES_PASSWORD=postgres
 
   next-client:
-    image: carrot-next-client
+    image: carrot-frontend
     build:
       context: app/next-client-app
       dockerfile: Dockerfile
@@ -42,10 +42,10 @@ services:
       - DB_NAME=postgres
 
   web:
-    image: carrot
+    image: carrot-backend
     build:
       context: app
-      dockerfile: Dockerfile
+      dockerfile: api/Dockerfile
     ports:
       - 8000:8000
     environment:
