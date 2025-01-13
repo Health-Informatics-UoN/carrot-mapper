@@ -70,7 +70,7 @@ jobs:
 
       - name: Build and push container image to registry
         uses: docker/build-push-action@v5
-        working-directory: ./app
+        context: ./app
         with:
           push: true
           tags: ccomreg.azurecr.io/${{ secrets.REGISTRY_USERNAME_DEV }}/latest:${{ github.sha }}
