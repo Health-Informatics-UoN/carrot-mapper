@@ -22,7 +22,7 @@
 <div align="center">
   <strong>
   <h2>Streamlined Data Mapping to OMOP</h2><br />
-  <a href="https://carrot.ac.uk/">Carrot Mapper</a> automates vocabulary mapping and enables the reuse of mapping rules across datasets, offering advanced features to simplify OMOP data standardization tasks.<br /><br />
+  <a href="https://carrot.ac.uk/">Carrot Mapper</a> automates vocabulary mapping and enables the reuse of mapping rules across datasets, offering advanced features to simplify OMOP data standardization tasks.<br />
   </strong>
 </div>
 
