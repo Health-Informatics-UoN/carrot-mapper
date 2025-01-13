@@ -51,10 +51,9 @@ RUN poetry config virtualenvs.create false \
 
 # Copy entrypoint as root, elevate it to executable, then give it over to django user
 USER root
-COPY ./api/entrypoint.sh /api/entrypoint.sh
-RUN chmod u+x /entrypoint.sh
-RUN chown -R django:django /entrypoint.sh
-ENTRYPOINT ["/api/entrypoint.sh"]
+RUN chmod u+x ./entrypoint.sh
+RUN chown -R django:django ./entrypoint.sh
+ENTRYPOINT ["./entrypoint.sh"]
 
 # Return to django user to run the container as this user by default
 USER django
