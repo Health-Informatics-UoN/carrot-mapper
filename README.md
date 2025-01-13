@@ -33,23 +33,14 @@
 
 <br />
 
-# Introduction
-
 <a href="https://carrot.ac.uk/">Carrot Mapper</a> is a webapp which allows the user to use the metadata (as output by WhiteRabbit) from a dataset to produce mapping rules to the OMOP standard, in the JSON format. These can be ingested by Carrot Transform to perform the mapping of the contents of the dataset to OMOP.
 
 Carrot Mapper provides automated mapping from a selection of vocabularies, reuse of mapping rules across datasets, and manual mapping rule generation. It also provides a number of helpful features to support and encourage standardised mappings across datasets.
 
-## Tech Stack
-
-- NextJS (Frontend)
-- Django (Backend)
-- Azure functions (Workers)
-- PostgresSQL (Database)
-
 ## Quick Start for Developers
 
-To have the project up and running, please follow the [Quick Start Guide](https://health-informatics-uon.github.io/carrot/mapper/dev_guide/quickstart)
+To have the project up and running, please follow the [Quick Start Guide](https://health-informatics-uon.github.io/carrot/mapper/dev_guide/quickstart).
 
-# License
+## License
 
 This repository's source code is available under the [MIT license](LICENSE).
