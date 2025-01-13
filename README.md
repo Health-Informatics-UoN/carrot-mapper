@@ -22,9 +22,8 @@
 <div align="center">
   <strong>
   <h2>Streamlined Data Mapping to OMOP</h2><br />
-  <a href="https://carrot.ac.uk/">Carrot Mapper</a> automates vocabulary mapping, and enables reuse across datasets.<br /><br />
+  <a href="https://carrot.ac.uk/">Carrot Mapper</a> automates vocabulary mapping and enables the reuse of mapping rules across datasets, offering advanced features to simplify OMOP data standardization tasks<br /><br />
   </strong>
-  Working with OMOP Data Standardization? Carrot provides advanced features which can ease your tasks:<br />Reusing mapping rules across datasets, anonymous metadata, intuitive automated and manual tools and more.
 </div>
 
 <p align="center">
@@ -53,6 +52,4 @@ To have the project up and running, please follow the [Quick Start Guide](https:
 
 # License
 
-This repository's source code is available under the [MIT](LICENSE) license.
-
-<br /><br /><br />
+This repository's source code is available under the [MIT license](LICENSE).
