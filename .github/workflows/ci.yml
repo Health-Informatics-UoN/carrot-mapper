@@ -62,8 +62,7 @@ jobs:
           echo ALLOWED_HOSTS=['localhost'] >> .env
 
       - name: Build the docker image
-        working-directory: ./app
-        run: docker build -f api/Dockerfile -t ccom-build:latest .
+        run: docker build -f app/api/Dockerfile -t ccom-build:latest .
       - name: Run the docker image
         run: |
           #startup the stack
