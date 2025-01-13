@@ -1,21 +1,46 @@
-# Introduction
+<p align="center">
+  <a href="https://carrot.ac.uk/" target="_blank">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="/images/logo-dark.png">
+    <img alt="Carrot Logo" src="/images/logo-primary.png" width="280"/>
+  </picture>
+  </a>
+</p>
 
-This repository contains information and code for the Carrot Mapper system. This is a containerised Django/React webapp and associated Azure Functions, which facilitates the generation of rules mapping datasets to the OMOP standard through manual and automated means.
+<p align="center">
+<a href="https://github.com/Health-Informatics-UoN/Carrot-Mapper/actions/workflows/test.yml">
+  <img src="https://github.com/Health-Informatics-UoN/Carrot-Mapper/actions/workflows/test.yml/badge.svg" alt="Test">
+</a>
+<a href="https://github.com/Health-Informatics-UoN/carrot-mapper/releases">
+  <img src="https://img.shields.io/github/v/release/Health-Informatics-UoN/carrot-mapper" alt="Release">
+</a>
+<a href="https://opensource.org/license/mit">
+  <img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License">
+</a>
+</p>
 
-## Documentation
+<div align="center">
+  <strong>
+  <h2>Streamlined Data Mapping to OMOP</h2><br />
+  <a href="https://carrot.ac.uk/">Carrot Mapper</a> automates vocabulary mapping and enables the reuse of mapping rules across datasets, offering advanced features to simplify OMOP data standardization tasks.<br />
+  </strong>
+</div>
 
-Visit our [documentation site](https://carrot4omop.ac.uk/).
+<p align="center">
+  <br />
+  <a href="https://health-informatics-uon.github.io/carrot/mapper" rel="dofollow"><strong>Explore the docs »</strong></a>
+  <br />
 
-Visit our public roadmap for [Carrot Mapper](https://github.com/orgs/Health-Informatics-UoN/projects/18).
+<br />
 
-## Bugs/Requests
+<a href="https://carrot.ac.uk/">Carrot Mapper</a> is a webapp which allows the user to use the metadata (as output by [WhiteRabbit](https://github.com/OHDSI/WhiteRabbit)) from a dataset to produce mapping rules to the OMOP standard, in the JSON format. These can be ingested by [Carrot Transform](https://github.com/Health-Informatics-UoN/carrot-transform) to perform the mapping of the contents of the dataset to OMOP.
 
-Please use the [GitHub issue tracker](https://github.com/Health-Informatics-UoN/Carrot-Mapper/issues) to submit bugs or request features.
+Carrot Mapper provides automated mapping from a selection of vocabularies, reuse of mapping rules across datasets, and manual mapping rule generation. It also provides a number of helpful features to support and encourage standardised mappings across datasets.
 
-## Development
+## Quick Start for Developers
 
-Visit our Developer Quickstart at the [Carrot documentation](https://carrot4omop.ac.uk/Carrot-Mapper/quickstart-webapp).
+To have the project up and running, please follow the [Quick Start Guide](https://health-informatics-uon.github.io/carrot/mapper/dev_guide/quickstart).
 
-## Contributing
+## License
 
-Contributions to Carrot Mapper are welcome and highly appreciated. However, before you jump right into it, please engage with the [Github issue tracker](https://github.com/Health-Informatics-UoN/Carrot-Mapper/issues), and follow our [contribution guidelines](https://github.com/Health-Informatics-UoN/Carrot-Mapper/blob/master/CONTRIBUTING.md) for a smooth experience.
+This repository's source code is available under the [MIT license](LICENSE).
