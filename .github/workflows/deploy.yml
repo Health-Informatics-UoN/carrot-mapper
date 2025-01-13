@@ -74,7 +74,7 @@ jobs:
           context: ./app
           push: true
           tags: ccomreg.azurecr.io/${{ secrets.REGISTRY_USERNAME_DEV }}/latest:${{ github.sha }}
-          file: ./api/Dockerfile
+          file: ./app/api/Dockerfile
 
   build-and-publish-next-app:
     runs-on: ubuntu-latest
