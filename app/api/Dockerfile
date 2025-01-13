@@ -25,7 +25,7 @@ RUN addgroup -q django && \
     adduser --quiet --ingroup django --disabled-password django
 
 # Create /api directory for mounting
-COPY app/api /api
+COPY ./api /api
 WORKDIR /api
 RUN chown -R django:django /api
 
@@ -34,11 +34,11 @@ USER django
 ENV PATH=/home/django/.local/bin:$PATH
 
 # Copy pyproject.toml
-COPY app/api/pyproject.toml app/api/pyproject.toml
-COPY app/api/poetry.lock app/api/poetry.lock
+COPY ./api/pyproject.toml ./api/pyproject.toml
+COPY ./api/poetry.lock ./api/poetry.lock
 
 # Copy shared package
-COPY app/shared /shared
+COPY ./shared /shared
 
 # Install Poetry and Export Poetry Plugin
 RUN pip install poetry
@@ -49,21 +49,9 @@ RUN poetry config virtualenvs.create false \
     && poetry export --format requirements.txt --output /api/requirements.txt --without-hashes \
     && pip install --no-cache-dir -r /api/requirements.txt
 
-# Copy react-client-app directory
-USER root
-COPY app/react-client-app /react-client-app
-RUN chown -R django:django /react-client-app
-
-# Install nvm as django user
-USER django
-WORKDIR /react-client-app
-RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.38.0/install.sh | bash
-ENV NVM_DIR "/home/django/.nvm"
-RUN [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion" && nvm install 12.18.3 && npm install
-
 # Copy entrypoint as root, elevate it to executable, then give it over to django user
 USER root
-COPY app/entrypoint.sh /entrypoint.sh
+COPY ./entrypoint.sh /entrypoint.sh
 RUN chmod u+x /entrypoint.sh
 RUN chown -R django:django /entrypoint.sh
 ENTRYPOINT ["/entrypoint.sh"]
