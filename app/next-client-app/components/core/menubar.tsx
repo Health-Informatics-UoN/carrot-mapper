@@ -13,11 +13,15 @@ export const MenuBar = ({ user }: { user?: User | null }) => {
         <Link href={"/"}>
           <div className="text-2xl flex items-center font-semibold">
             <img
-              className="mx-3 w-[25px]"
-              src="/carrot-logo.png"
+              className="w-[120px] dark:hidden"
+              src="/carrot-logo.svg"
               alt="carrot-logo"
             />
-            Carrot
+            <img
+              className="w-[120px] dark:block hidden"
+              src="/carrot-logo-dark.svg"
+              alt="carrot-logo"
+            />
           </div>
         </Link>
 
@@ -30,7 +34,7 @@ export const MenuBar = ({ user }: { user?: User | null }) => {
                     {link.label}
                   </SidebarButton>
                 </Link>
-              ),
+              )
             )}
             <UserMenu username={user?.username} />
           </div>
