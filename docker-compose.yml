@@ -30,6 +30,8 @@ services:
       - ./app/next-client-app:/app
       - /app/node_modules
       - /app/.next
+    depends_on:
+      - web
 
   omop-lite:
     image: ghcr.io/andyrae/omop-lite
@@ -72,8 +74,8 @@ services:
     volumes:
       - ./app/api:/api
     depends_on:
-      - db
-      - azurite
+      omop-lite:
+        condition: service_completed_successfully
 
   workers:
     image: carrot-workers
