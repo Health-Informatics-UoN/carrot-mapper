@@ -1,13 +1,9 @@
 from api import views
-from api.deprecated_router import router as deprecated_router
 from django.urls import include, path
 from shared.files.views import FileDownloadView
 from shared.jobs.views import JobView
 
-from .deprecated_urls import urlpatterns as deprecated_urlpatterns
-
 urlpatterns = [
-    path("", include(deprecated_router.urls)),
     path("v2/datasets/", include("datasets.urls")),
     path("projects/", include("projects.urls")),
     path(
@@ -107,5 +103,3 @@ urlpatterns = [
         name="v2conceptsfilter",
     ),
 ]
-
-urlpatterns += deprecated_urlpatterns
