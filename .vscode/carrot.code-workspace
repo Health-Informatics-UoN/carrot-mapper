@@ -17,13 +17,9 @@
       "path": "../app/shared"
     },
     {
-      "name": "app/react-client-app",
-      "path": "../app/react-client-app"
-    },
-    {
       "name": "app/next-client-app",
       "path": "../app/next-client-app"
-    },
+    }
   ],
   "extensions": {
     "recommendations": [
