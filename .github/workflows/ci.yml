@@ -20,6 +20,20 @@ jobs:
     if: "!contains(github.event.head_commit.message, '[ci skip]')"
     env:
       RUNNER_ALLOW_RUNASROOT: true
+    services:
+      db:
+        image: postgres:13
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_DB: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v2
         with:
@@ -38,9 +52,6 @@ jobs:
           echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" >> .env
           echo DEBUG=True >> .env
           echo ALLOWED_HOSTS=['localhost'] >> .env
-
-      - name: Show .env content
-        run: cat .env
 
       - name: Build the docker image
         working-directory: ./app
