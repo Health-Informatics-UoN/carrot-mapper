@@ -30,7 +30,7 @@ jobs:
           touch .env
 
           echo DB_ENGINE=django.db.backends.postgresql >> .env
-          echo DB_HOST=db >> .env
+          echo DB_HOST=localhost >> .env
           echo DB_NAME=postgres >> .env
           echo DB_PORT=5432 >> .env
           echo DB_PASSWORD=postgres >> .env
