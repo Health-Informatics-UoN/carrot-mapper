@@ -41,8 +41,8 @@ jobs:
     if: "!contains(github.event.head_commit.message, '[ci skip]')"
     env:
       RUNNER_ALLOW_RUNASROOT: true
-      COCONNECT_DB_HOST: ${{ secrets.COCONNECT_DB_HOST }}
-      COCONNECT_DB_PORT: ${{ secrets.COCONNECT_DB_PORT }}
+      DB_HOST: ${{ secrets.DB_HOST }}
+      DB_PORT: ${{ secrets.DB_PORT }}
     steps:
       - uses: actions/checkout@v2
         with:
@@ -51,12 +51,12 @@ jobs:
         run: |
           touch .env
 
-          echo COCONNECT_DB_ENGINE=django.db.backends.postgresql >> .env
-          echo COCONNECT_DB_HOST=${{ secrets.COCONNECT_DB_HOST }} >> .env
-          echo COCONNECT_DB_NAME=${{ secrets.COCONNECT_DB_DB }} >> .env
-          echo COCONNECT_DB_PORT=${{ secrets.COCONNECT_DB_PORT }} >> .env
-          echo COCONNECT_DB_PASSWORD=${{ secrets.COCONNECT_DB_PASSWORD }} >> .env
-          echo COCONNECT_DB_USER=${{ secrets.COCONNECT_DB_USER }} >> .env
+          echo DB_ENGINE=django.db.backends.postgresql >> .env
+          echo DB_HOST=${{ secrets.DB_HOST }} >> .env
+          echo DB_NAME=${{ secrets.COCONNECT_DB_DB }} >> .env
+          echo DB_PORT=${{ secrets.DB_PORT }} >> .env
+          echo DB_PASSWORD=${{ secrets.DB_PASSWORD }} >> .env
+          echo DB_USER=${{ secrets.DB_USER }} >> .env
           echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" >> .env
           echo DEBUG=True >> .env
           echo ALLOWED_HOSTS=['localhost'] >> .env

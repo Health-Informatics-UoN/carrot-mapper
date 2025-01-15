@@ -19,12 +19,12 @@ INSTALLED_APPS = [
 
 DATABASES = {
     "default": {
-        "ENGINE": os.environ.get("COCONNECT_DB_ENGINE"),
-        "HOST": os.environ.get("COCONNECT_DB_HOST"),
-        "PORT": os.environ.get("COCONNECT_DB_PORT"),
-        "NAME": os.environ.get("COCONNECT_DB_NAME"),
-        "USER": os.environ.get("COCONNECT_DB_USER"),
-        "PASSWORD": os.environ.get("COCONNECT_DB_PASSWORD"),
+        "ENGINE": os.environ.get("DB_ENGINE"),
+        "HOST": os.environ.get("DB_HOST"),
+        "PORT": os.environ.get("DB_PORT"),
+        "NAME": os.environ.get("DB_NAME"),
+        "USER": os.environ.get("DB_USER"),
+        "PASSWORD": os.environ.get("DB_PASSWORD"),
         "TEST": {
             "NAME": "throwawaydb",
         },
