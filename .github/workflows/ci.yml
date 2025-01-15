@@ -32,7 +32,13 @@ jobs:
           submodules: "recursive"
 
       - name: Show DB_NAME value
-        run: echo "DB_NAME is $DB_NAME"
+        run: |
+          echo "DB_NAME is $DB_NAME"
+          echo "DB_NAME is $DB_HOST"
+          echo "DB_NAME is $DB_PORT"
+          echo "DB_NAME is $DB_USER"
+          echo "DB_NAME is $SECRET_KEY"
+          echo "DB_NAME is $DB_PASSWORD"
 
       - name: Make envfile
         run: |
