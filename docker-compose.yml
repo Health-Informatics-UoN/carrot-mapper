@@ -9,7 +9,7 @@ services:
     environment:
       - POSTGRES_PASSWORD=postgres
 
-  next-client:
+  frontend:
     image: carrot-frontend
     build:
       context: app/next-client-app
@@ -19,17 +19,19 @@ services:
     ports:
       - 3000:3000
     environment:
-      - BACKEND_URL=http://web:8000
+      - BACKEND_URL=http://api:8000
       - BACKEND_ORIGIN=localhost:8000
-      - NEXTAUTH_URL=http://next-client:3000/
+      - NEXTAUTH_URL=http://frontend:3000/
       - NEXTAUTH_SECRET=verycomplexsecretkey
-      - NEXTAUTH_BACKEND_URL=http://web:8000/api/
+      - NEXTAUTH_BACKEND_URL=http://api:8000/api/
       - NODE_ENV=development
       - WATCHPACK_POLLING=true
     volumes:
       - ./app/next-client-app:/app
       - /app/node_modules
       - /app/.next
+    depends_on:
+      - api
 
   omop-lite:
     image: ghcr.io/andyrae/omop-lite
@@ -41,7 +43,7 @@ services:
       - DB_PASSWORD=postgres
       - DB_NAME=postgres
 
-  web:
+  api:
     image: carrot-backend
     build:
       context: app
@@ -49,31 +51,28 @@ services:
     ports:
       - 8000:8000
     environment:
-      - NEXTJS_URL=http://next-client:3000
-      - ALLOWED_HOSTS=['localhost', '127.0.0.1','web', 'workers']
-      - COCONNECT_DB_ENGINE=django.db.backends.postgresql
-      - COCONNECT_DB_HOST=db
-      - COCONNECT_DB_PORT=5432
-      - COCONNECT_DB_NAME=postgres
-      - COCONNECT_DB_USER=postgres
-      - COCONNECT_DB_PASSWORD=postgres
-      - ENABLE_PROXY=true
-      - AZ_FUNCTION_USER=admin
+      - FRONTEND_URL=http://frontend:3000
+      - ALLOWED_HOSTS=['localhost', '127.0.0.1','api', 'workers']
+      - DB_ENGINE=django.db.backends.postgresql
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=postgres
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
       - DEBUG=True
-      - UPLOAD_QUEUE_NAME=uploadreports-local
+      - WORKERS_UPLOAD_NAME=uploadreports-local
       - SECRET_KEY=secret
-      - AZURE_ACCOUNT_NAME=devstoreaccount1
-      - AZ_URL=http://workers:80
-      - AZ_RULES_NAME=RulesOrchestrator
-      - AZ_RULES_KEY=rules_key
-      - AZ_RULES_EXPORT_QUEUE=rules-exports-local
+      - WORKERS_URL=http://workers:80
+      - WORKERS_RULES_NAME=RulesOrchestrator
+      - WORKERS_RULES_KEY=rules_key
+      - WORKERS_RULES_EXPORT_NAME=rules-exports-local
       - STORAGE_CONN_STRING=DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;TableEndpoint=http://azurite:10002/devstoreaccount1;
       - SIGNING_KEY=secret
     volumes:
       - ./app/api:/api
     depends_on:
-      - db
-      - azurite
+      omop-lite:
+        condition: service_completed_successfully
 
   workers:
     image: carrot-workers
@@ -90,34 +89,30 @@ services:
       - AzureWebJobsStorage=DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;TableEndpoint=http://azurite:10002/devstoreaccount1;
       - FUNCTIONS_WORKER_RUNTIME=python
       - STORAGE_CONN_STRING=DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;TableEndpoint=http://azurite:10002/devstoreaccount1;
-      - APP_URL=http://web:8000/
-      # Four queues below need adding to Azure local storage
-      - SCAN_REPORT_QUEUE_NAME=scanreports-local
-      - UPLOAD_QUEUE_NAME=uploadreports-local
+      - APP_URL=http://api:8000/
+      # Three queues below need adding to Azure local storage
+      - WORKERS_UPLOAD_NAME=uploadreports-local
       - RULES_QUEUE_NAME=rules-local
       - RULES_FILE_QUEUE_NAME=rules-exports-local
-      - PAGE_MAX_CHARS=30000
-      - CHUNK_SIZE=6
       # The address that can be used to reach the function app from outside
       - WEBSITE_HOSTNAME=localhost:7071
       # Database setup
-      - COCONNECT_DB_ENGINE=django.db.backends.postgresql
-      - COCONNECT_DB_HOST=db
-      - COCONNECT_DB_PORT=5432
-      - COCONNECT_DB_NAME=postgres
-      - COCONNECT_DB_USER=postgres
-      - COCONNECT_DB_PASSWORD=postgres
+      - DB_ENGINE=django.db.backends.postgresql
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=postgres
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
     volumes:
       - ./app/workers:/home/site/wwwroot
       - ./app/shared:/shared
       # Mount the local secret to Docker container
       - ./app/workers/Secrets:/azure-functions-host/Secrets/
     depends_on:
-      - web
+      - api
       - azurite
 
   azurite:
-    container_name: azurite
     image: mcr.microsoft.com/azure-storage/azurite
     restart: always
     volumes:

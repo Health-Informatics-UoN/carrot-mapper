@@ -289,7 +289,7 @@ class ScanReportFormView(FormView):
             )
 
         # send to the upload queue
-        add_message(os.environ.get("UPLOAD_QUEUE_NAME"), azure_dict)
+        add_message(os.environ.get("WORKERS_UPLOAD_NAME"), azure_dict)
 
         return super().form_valid(form)
 

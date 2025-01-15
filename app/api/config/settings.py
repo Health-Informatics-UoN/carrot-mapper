@@ -94,7 +94,7 @@ MIDDLEWARE = [
     "whitenoise.middleware.WhiteNoiseMiddleware",
 ]
 
-CSRF_TRUSTED_ORIGINS = [os.environ.get("NEXTJS_URL", "http://localhost:3000")]
+CSRF_TRUSTED_ORIGINS = [os.environ.get("FRONTEND_URL", "http://localhost:3000")]
 SITE_ID = 1
 
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
@@ -127,12 +127,12 @@ WSGI_APPLICATION = "config.wsgi.application"
 
 DATABASES = {
     "default": {
-        "ENGINE": os.getenv("COCONNECT_DB_ENGINE"),
-        "HOST": os.getenv("COCONNECT_DB_HOST"),
-        "PORT": os.getenv("COCONNECT_DB_PORT"),
-        "NAME": os.getenv("COCONNECT_DB_NAME"),
-        "USER": os.getenv("COCONNECT_DB_USER"),
-        "PASSWORD": os.getenv("COCONNECT_DB_PASSWORD"),
+        "ENGINE": os.getenv("DB_ENGINE"),
+        "HOST": os.getenv("DB_HOST"),
+        "PORT": os.getenv("DB_PORT"),
+        "NAME": os.getenv("DB_NAME"),
+        "USER": os.getenv("DB_USER"),
+        "PASSWORD": os.getenv("DB_PASSWORD"),
         "TEST": {
             "NAME": "throwawaydb",
         },
@@ -207,13 +207,15 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = int(
 SESSION_COOKIE_AGE = 86400  # session length is 24 hours
 
 # Frontend
-NEXTJS_URL = os.environ.get("NEXTJS_URL", "http://localhost:3000")
+FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:3000")
 
 # Azure Functions
-AZ_URL = os.environ.get("AZ_URL", "http://localhost:7071")
-AZ_RULES_NAME = os.environ.get("AZ_RULES_NAME", "RulesOrchestrator")
-AZ_RULES_KEY = os.environ.get("AZ_RULES_KEY", "")
-AZ_RULES_EXPORT_QUEUE = os.environ.get("AZ_RULES_EXPORT_QUEUE", "rules-exports-local")
+WORKERS_URL = os.environ.get("WORKERS_URL", "http://localhost:7071")
+WORKERS_RULES_NAME = os.environ.get("WORKERS_RULES_NAME", "RulesOrchestrator")
+WORKERS_RULES_KEY = os.environ.get("WORKERS_RULES_KEY", "")
+WORKERS_RULES_EXPORT_NAME = os.environ.get(
+    "WORKERS_RULES_EXPORT_NAME", "rules-exports-local"
+)
 
 # Auth
 

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Wait until DB is available
-wait-for-it ${COCONNECT_DB_HOST}:${COCONNECT_DB_PORT} -- echo "Database is ready! Listening on ${COCONNECT_DB_HOST}:${COCONNECT_DB_PORT}"
+wait-for-it ${DB_HOST}:${DB_PORT} -- echo "Database is ready! Listening on ${DB_HOST}:${DB_PORT}"
 
 
 # Collect static files for serving

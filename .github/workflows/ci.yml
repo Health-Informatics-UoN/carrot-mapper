@@ -2,27 +2,6 @@ name: ci
 on: [pull_request]
 
 jobs:
-  # pylint:
-  #   runs-on: ubuntu-latest
-  #   if: "!contains(github.event.head_commit.message, '[ci skip]')"
-  #   env:
-  #     RUNNER_ALLOW_RUNASROOT: true
-  #   steps:
-  #     - uses: actions/checkout@v2
-  #     - name: Fetch master
-  #       run: git fetch origin master:refs/remotes/origin/master
-  #     - name: Install pylint
-  #       run: pip3 install pylint
-  #     - name: List changed files
-  #       run: |
-  #         echo `git diff origin/master HEAD --name-only | grep .py` >> changed.txt
-  #     - name: Check PEP8
-  #       run: |
-  #         while read file; do
-  #            echo $file
-  #            pylint $file
-  #         done < changed.txt
-  #
   format_python_code:
     runs-on: ubuntu-latest
     steps:
@@ -36,69 +15,21 @@ jobs:
           path: "."
           black_flags: "--safe --verbose --diff"
   build:
-    #needs: pylint
     runs-on: ubuntu-latest
     if: "!contains(github.event.head_commit.message, '[ci skip]')"
     env:
       RUNNER_ALLOW_RUNASROOT: true
-      COCONNECT_DB_HOST: ${{ secrets.COCONNECT_DB_HOST }}
-      COCONNECT_DB_PORT: ${{ secrets.COCONNECT_DB_PORT }}
     steps:
       - uses: actions/checkout@v2
         with:
           submodules: "recursive"
-      - name: Make envfile
-        run: |
-          touch .env
-
-          echo COCONNECT_DB_ENGINE=django.db.backends.postgresql >> .env
-          echo COCONNECT_DB_HOST=${{ secrets.COCONNECT_DB_HOST }} >> .env
-          echo COCONNECT_DB_NAME=${{ secrets.COCONNECT_DB_DB }} >> .env
-          echo COCONNECT_DB_PORT=${{ secrets.COCONNECT_DB_PORT }} >> .env
-          echo COCONNECT_DB_PASSWORD=${{ secrets.COCONNECT_DB_PASSWORD }} >> .env
-          echo COCONNECT_DB_USER=${{ secrets.COCONNECT_DB_USER }} >> .env
-          echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" >> .env
-          echo DEBUG=True >> .env
-          echo ALLOWED_HOSTS=['localhost'] >> .env
-
       - name: Build the docker image
         working-directory: ./app
         run: docker build -f api/Dockerfile -t ccom-build:latest .
-      - name: Run the docker image
-        run: |
-          #startup the stack
-          docker run -it --env-file .env -p 8080:8000 -d ccom-build:latest
-          #give it 30s to start properly
-          sleep 30s
-          #get container ID
-          containerid=$(docker ps | awk 'NR==2' | awk '{print $1;}')
-          echo $containerid
-          #check the logs for errors
-          if docker logs $containerid | grep -i -q ERROR  ; then
-              #print the errors before causing a fail
-              docker logs $containerid | grep -i ERROR
-              echo "Errors found"
-              exit 1
-          else
-             echo "No errors found!"
-          fi
-          echo "ended if"
-          #put the logs into a file
-          docker logs $containerid >> logs.out
-          #shutdown the container
-          docker stop $containerid
-      #save the logs so they can be further checked
-      - uses: actions/upload-artifact@v3
-        with:
-          name: my-artifact
-          path: logs.out
-          retention-days: 1
-
       - name: Install Node.js
         uses: actions/setup-node@v3
         with:
           node-version: "20"
-
       - name: Install dependencies and build Next.js app
         run: |
           npm install

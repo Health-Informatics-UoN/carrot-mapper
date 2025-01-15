@@ -1,18 +1,14 @@
-ALLOWED_HOSTS=['localhost']
-AZURE_ACCOUNT_NAME=devstoreaccount1
-COCONNECT_DB_ENGINE=django.db.backends.postgresql
-COCONNECT_DB_HOST=db
-COCONNECT_DB_NAME=postgres
-COCONNECT_DB_PASSWORD=postgres
-COCONNECT_DB_PORT=5432
-COCONNECT_DB_USER=postgres
-COCONNECT_DB_AUTH_TOKEN=
+ALLOWED_HOSTS=['localhost', '127.0.0.1']
+DB_ENGINE=django.db.backends.postgresql
+DB_HOST=localhost
+DB_NAME=postgres
+DB_PASSWORD=postgres
+DB_PORT=5432
+DB_USER=postgres
 DEBUG=True
-NLP_QUEUE_NAME=nlpqueue-local
-SCAN_REPORT_QUEUE_NAME=scanreports-local
-UPLOAD_QUEUE_NAME=uploadreports-local
-CREATE_CONCEPTS_QUEUE_NAME=conceptqueue-local
+WORKERS_UPLOAD_NAME=uploadreports-local
 SECRET_KEY=secret
-STORAGE_CONN_STRING="DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;"
+STORAGE_CONN_STRING="DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://localhost:10000/devstoreaccount1;QueueEndpoint=http://localhost:10001/devstoreaccount1;"
 CCOM_APP_URL= http://localhost:8000
-AZ_FUNCTION_USER=admin
+SIGNING_KEY=secret
+WORKERS_RULES_KEY=rules-key

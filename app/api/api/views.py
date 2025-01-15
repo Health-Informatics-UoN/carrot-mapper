@@ -275,7 +275,7 @@ class ScanReportIndexV2(GenericAPIView, ListModelMixin, CreateModelMixin):
             )
 
         # send to the upload queue
-        add_message(os.environ.get("UPLOAD_QUEUE_NAME"), azure_dict)
+        add_message(os.environ.get("WORKERS_UPLOAD_NAME"), azure_dict)
 
 
 class ScanReportDetailV2(
@@ -399,10 +399,8 @@ class ScanReportTableDetailV2(
             "table_id": instance.id,
             "data_dictionary_blob": data_dictionary_name,
         }
-        base_url = f"{settings.AZ_URL}"
-        trigger = (
-            f"/api/orchestrators/{settings.AZ_RULES_NAME}?code={settings.AZ_RULES_KEY}"
-        )
+        base_url = f"{settings.WORKERS_URL}"
+        trigger = f"/api/orchestrators/{settings.WORKERS_RULES_NAME}?code={settings.WORKERS_RULES_KEY}"
         # Prevent double-updating from backend
         if Job.objects.filter(
             scan_report_table=instance,

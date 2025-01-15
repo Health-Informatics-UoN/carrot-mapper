@@ -62,7 +62,7 @@ class FileDownloadView(GenericAPIView, ListModelMixin, RetrieveModelMixin):
                 "file_type": file_type,
             }
 
-            add_message(settings.AZ_RULES_EXPORT_QUEUE, msg)
+            add_message(settings.WORKERS_RULES_EXPORT_NAME, msg)
             # Create job record for downloading file
             Job.objects.create(
                 scan_report=ScanReport.objects.get(id=scan_report_id),
