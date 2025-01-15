@@ -4,10 +4,10 @@
     "AzureWebJobsStorage": "UseDevelopmentStorage=true",
     "FUNCTIONS_WORKER_RUNTIME": "python",
     "STORAGE_CONN_STRING": "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;QueueEndpoint=http://localhost:10001/devstoreaccount1;BlobEndpoint=http://localhost:10000/devstoreaccount1;",
-    "NLP_API_KEY": "",
     "APP_URL": "http://localhost:8000/",
     "AZ_FUNCTION_KEY": "",
     "WORKERS_UPLOAD_NAME": "uploadreports-local",
-    "RULES_QUEUE_NAME": "rules-local"
+    "RULES_QUEUE_NAME": "rules-local",
+    "RULES_FILE_QUEUE_NAME": "rules-exports-local"
   }
 }
