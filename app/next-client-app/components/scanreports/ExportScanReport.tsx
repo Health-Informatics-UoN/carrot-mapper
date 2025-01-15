@@ -20,7 +20,7 @@ const ExportScanReport = ({ scanReportId, scanReportName }: ExportProps) => {
       const blob = new Blob([blobArray], {
         type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       });
-      saveAs(blob, scanReportName);
+      saveAs(blob, `${scanReportName.replace(/[^a-zA-Z0-9]/g, "_")}.xlsx`);
     } else {
       toast.error(
         `Error exporting Scan report: ${(response.errorMessage as any).message}`
