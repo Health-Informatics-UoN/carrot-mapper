@@ -2,27 +2,6 @@ name: ci
 on: [pull_request]
 
 jobs:
-  # pylint:
-  #   runs-on: ubuntu-latest
-  #   if: "!contains(github.event.head_commit.message, '[ci skip]')"
-  #   env:
-  #     RUNNER_ALLOW_RUNASROOT: true
-  #   steps:
-  #     - uses: actions/checkout@v2
-  #     - name: Fetch master
-  #       run: git fetch origin master:refs/remotes/origin/master
-  #     - name: Install pylint
-  #       run: pip3 install pylint
-  #     - name: List changed files
-  #       run: |
-  #         echo `git diff origin/master HEAD --name-only | grep .py` >> changed.txt
-  #     - name: Check PEP8
-  #       run: |
-  #         while read file; do
-  #            echo $file
-  #            pylint $file
-  #         done < changed.txt
-  #
   format_python_code:
     runs-on: ubuntu-latest
     steps:
@@ -35,18 +14,26 @@ jobs:
         with:
           path: "."
           black_flags: "--safe --verbose --diff"
+
   build:
-    #needs: pylint
     runs-on: ubuntu-latest
     if: "!contains(github.event.head_commit.message, '[ci skip]')"
     env:
       RUNNER_ALLOW_RUNASROOT: true
       DB_HOST: ${{ secrets.DB_HOST }}
       DB_PORT: ${{ secrets.DB_PORT }}
+      DB_NAME: ${{ secrets.DB_NAME }}
+      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+      DB_USER: ${{ secrets.DB_USER }}
+      SECRET_KEY: ${{ secrets.SECRET_KEY }}
     steps:
       - uses: actions/checkout@v2
         with:
           submodules: "recursive"
+
+      - name: Show DB_NAME value
+        run: echo "DB_NAME is $DB_NAME"
+
       - name: Make envfile
         run: |
           touch .env
@@ -64,6 +51,7 @@ jobs:
       - name: Build the docker image
         working-directory: ./app
         run: docker build -f api/Dockerfile -t ccom-build:latest .
+
       - name: Run the docker image
         run: |
           #startup the stack
