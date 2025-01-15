@@ -1,4 +1,5 @@
 name: ci
+
 on: [pull_request]
 
 jobs:
@@ -18,22 +19,25 @@ jobs:
   build:
     runs-on: ubuntu-latest
     if: "!contains(github.event.head_commit.message, '[ci skip]')"
-    env:
-      RUNNER_ALLOW_RUNASROOT: true
     services:
-      db:
-        image: postgres:13
+      postgres:
+        image: postgres:latest
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_DB: postgres
         ports:
           - 5432:5432
-        env:
-          POSTGRES_DB: postgres
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
+        # Add health check to ensure postgres is ready before running tests
         options: >-
-          --health-cmd "pg_isready -U postgres"
+          --health-cmd pg_isready
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+
+    env:
+      RUNNER_ALLOW_RUNASROOT: true
+
     steps:
       - uses: actions/checkout@v2
         with:
@@ -42,7 +46,6 @@ jobs:
       - name: Make envfile
         run: |
           touch .env
-
           echo DB_ENGINE=django.db.backends.postgresql >> .env
           echo DB_HOST=localhost >> .env
           echo DB_NAME=postgres >> .env
@@ -51,7 +54,7 @@ jobs:
           echo DB_USER=postgres >> .env
           echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" >> .env
           echo DEBUG=True >> .env
-          echo ALLOWED_HOSTS=['localhost'] >> .env
+          echo "ALLOWED_HOSTS=['localhost']" >> .env
 
       - name: Build the docker image
         working-directory: ./app
@@ -59,28 +62,47 @@ jobs:
 
       - name: Run the docker image
         run: |
-          #startup the stack
-          docker run -it --env-file .env -p 8080:8000 -d ccom-build:latest
-          #give it 30s to start properly
+          # Create docker network for communication
+          docker network create app-network
+
+          # Connect postgres to the network
+          docker run --name postgres-db \
+            --network app-network \
+            -e POSTGRES_PASSWORD=postgres \
+            -e POSTGRES_USER=postgres \
+            -e POSTGRES_DB=postgres \
+            -d postgres:latest
+
+          # Run the application container
+          docker run -it --env-file .env \
+            --network app-network \
+            -e DB_HOST=postgres-db \
+            -p 8080:8000 -d ccom-build:latest
+
+          # Give it time to start
           sleep 30s
-          #get container ID
-          containerid=$(docker ps | awk 'NR==2' | awk '{print $1;}')
+
+          # Get container ID
+          containerid=$(docker ps | grep ccom-build | awk '{print $1;}')
           echo $containerid
-          #check the logs for errors
-          if docker logs $containerid | grep -i -q ERROR  ; then
-              #print the errors before causing a fail
-              docker logs $containerid | grep -i ERROR
-              echo "Errors found"
-              exit 1
+
+          # Check the logs for errors
+          if docker logs $containerid | grep -i -q ERROR; then
+            docker logs $containerid | grep -i ERROR
+            echo "Errors found"
+            exit 1
           else
-             echo "No errors found!"
+            echo "No errors found!"
           fi
-          echo "ended if"
-          #put the logs into a file
+
+          # Save the logs
           docker logs $containerid >> logs.out
-          #shutdown the container
+
+          # Shutdown the containers
           docker stop $containerid
-      #save the logs so they can be further checked
+          docker stop postgres-db
+          docker network rm app-network
+
       - uses: actions/upload-artifact@v3
         with:
           name: my-artifact
