@@ -8,7 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Form, Formik } from "formik";
 import { toast } from "sonner";
 import { FindAndFormat, FormDataFilter } from "../form-components/FormikUtils";
-import { Tooltips } from "../Tooltips";
+import { Tooltips } from "../core/Tooltips";
 import { FormikSelect } from "../form-components/FormikSelect";
 import { useState } from "react";
 import { updateScanReport } from "@/api/scanreports";

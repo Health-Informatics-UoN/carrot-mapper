@@ -6,7 +6,7 @@ import { Save } from "lucide-react";
 import { toast } from "sonner";
 import { FormDataFilter } from "../form-components/FormikUtils";
 import { Form, Formik } from "formik";
-import { Tooltips } from "../Tooltips";
+import { Tooltips } from "../core/Tooltips";
 import { FormikSelect } from "../form-components/FormikSelect";
 import { useRouter } from "next/navigation";
 
