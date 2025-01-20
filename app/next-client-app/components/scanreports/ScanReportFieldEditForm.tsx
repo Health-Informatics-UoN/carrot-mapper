@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Save } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Form, Formik } from "formik";
-import { Tooltips } from "../Tooltips";
+import { Tooltips } from "../core/Tooltips";
 import { Checkbox } from "../ui/checkbox";
 import { Textarea } from "../ui/textarea";
 import { updateScanReportField } from "@/api/scanreports";
@@ -41,7 +41,7 @@ export function ScanReportFieldEditForm({
         scanreportId,
         scanReportField.scan_report_table,
         scanReportField?.id.toString(),
-        submittingData,
+        submittingData
       );
       if (response) {
         toast.error(`Update Dataset failed. Error: ${response.errorMessage}`);

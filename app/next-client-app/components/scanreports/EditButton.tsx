@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Button } from "../ui/button";
 import { Pencil } from "lucide-react";
-import { Tooltips } from "../Tooltips";
+import { Tooltips } from "../core/Tooltips";
 import { cn } from "@/lib/utils";
 
 export function EditButton({

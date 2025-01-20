@@ -18,7 +18,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { DataTableColumnHeader } from "@/components/data-table/DataTableColumnHeader";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns/format";
-import { HandleArchive } from "@/components/HandleArchive";
+import { HandleArchive } from "@/components/core/HandleArchive";
 import { useState } from "react";
 import DeleteDialog from "@/components/scanreports/DeleteDialog";
 import { MappingStatus } from "@/components/scanreports/MappingStatus";

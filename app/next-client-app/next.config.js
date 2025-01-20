@@ -11,6 +11,15 @@ const nextConfig = {
       allowedOrigins: allowedOrigins,
     },
   },
+  async redirects() {
+    return [
+      {
+        source: "/",
+        destination: "/projects",
+        permanent: true,
+      },
+    ];
+  },
 };
 
 module.exports = nextConfig;
