@@ -1,17 +1,20 @@
 
+"""command to create a default superuser iff no users exist"""
+
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
 import django
 import os
 
+
 class Command(BaseCommand):
+    """create a default superuser iff no users exist"""
+
     help = "create a default superuser iff no users exist"
 
     def handle(self, *args, **options):
-        self.stdout.write(
-            self.style.SUCCESS("... hello there ...")
-        )
+        """primary functionality"""
         User = get_user_model()
         user_count = User.objects.count()
         if 0 != user_count:
