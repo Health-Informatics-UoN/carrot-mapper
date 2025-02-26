@@ -33,7 +33,7 @@ export const sidebarItems: SidebarItems = {
       icon: Upload,
     },
     {
-      href: "https://carrot4omop.ac.uk",
+      href: "https://carrot.ac.uk/documentation",
       icon: BookMarked,
       label: "Documentation",
     },
@@ -41,7 +41,7 @@ export const sidebarItems: SidebarItems = {
   routes: [
     {
       label: "Documentation",
-      href: "https://carrot4omop.ac.uk",
+      href: "https://carrot.ac.uk/documentation",
       icon: BookMarked,
     },
     {

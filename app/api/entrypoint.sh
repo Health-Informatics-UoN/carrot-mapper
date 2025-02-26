@@ -9,6 +9,7 @@ rm -rf staticfiles
 mkdir staticfiles
 python manage.py collectstatic
 python manage.py migrate
+python manage.py automatic_seeding_data
 python initial_user.py
 
 # Set tmp dir to be in-memory for speed. Pass logs to stdout/err as Docker will expect them there

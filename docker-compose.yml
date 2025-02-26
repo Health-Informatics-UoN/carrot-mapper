@@ -8,6 +8,8 @@ services:
       - 5432:5432
     environment:
       - POSTGRES_PASSWORD=postgres
+    volumes:
+      - db_data:/var/lib/postgresql/data
 
   frontend:
     image: carrot-frontend
@@ -125,3 +127,6 @@ services:
     hostname: azurite
     environment:
       - AZURITE_ACCOUNTS=devstoreaccount1:Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==
+
+volumes:
+  db_data:
