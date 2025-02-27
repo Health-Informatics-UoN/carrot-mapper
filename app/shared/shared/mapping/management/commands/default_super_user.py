@@ -19,12 +19,12 @@ class Command(BaseCommand):
         user_count = User.objects.count()
         if 0 != user_count:
             if 1 == user_count:
-                user_count = 'There is already a user - default superuser will not be added'
+                user_count = (
+                    "There is already a user - default superuser will not be added"
+                )
             else:
-                user_count = f'There are {user_count} users  - default superuser will not be added'
-            self.stdout.write(
-                self.style.SUCCESS(user_count)
-            )
+                user_count = f"There are {user_count} users  - default superuser will not be added"
+            self.stdout.write(self.style.SUCCESS(user_count))
         else:
             self.stdout.write(
                 self.style.SUCCESS(
@@ -34,5 +34,5 @@ class Command(BaseCommand):
             User.objects.create_superuser(
                 settings.SUPERUSER_DEFAULT_NAME,
                 settings.SUPERUSER_DEFAULT_EMAIL,
-                settings.SUPERUSER_DEFAULT_PASSWORD
+                settings.SUPERUSER_DEFAULT_PASSWORD,
             )
