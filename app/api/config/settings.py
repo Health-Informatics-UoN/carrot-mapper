@@ -237,3 +237,10 @@ REST_AUTH = {
     "USE_JWT": True,
     "JWT_AUTH_HTTPONLY": False,
 }
+
+
+##
+# https://github.com/Health-Informatics-UoN/carrot-mapper/issues/946
+SUPERUSER_DEFAULT_PASSWORD = os.getenv("SUPERUSER_DEFAULT_PASSWORD", "carrot!stick")
+SUPERUSER_DEFAULT_EMAIL = os.getenv("SUPERUSER_DEFAULT_EMAIL", "carrot@local")
+SUPERUSER_DEFAULT_NAME = os.getenv("SUPERUSER_DEFAULT_NAME", "carrot")
