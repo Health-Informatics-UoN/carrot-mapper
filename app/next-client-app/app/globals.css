@@ -75,3 +75,12 @@
     }
   }
 }
+
+.row-link {
+  position: absolute;
+  top: 0;
+  left: 0;
+  content: "";
+  width: 65%;
+  height: 3rem;
+}

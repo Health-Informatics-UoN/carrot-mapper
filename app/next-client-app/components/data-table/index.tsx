@@ -141,6 +141,10 @@ export function DataTable<TData, TValue>({
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
+                <TableHead
+                  key="extra-column"
+                  aria-label="Search Engine Links"
+                ></TableHead>
                 {headerGroup.headers.map((header) => {
                   return (
                     <TableHead key={header.id}>
@@ -165,12 +169,19 @@ export function DataTable<TData, TValue>({
                   className={clickableRow ? "hover:cursor-pointer" : ""}
                   // TODO: Once we are only routing to Nextjs urls, we can do this better.
                   // Do not change this unless every table is only ever redirecting to Next urls.
-                  onClick={
-                    clickableRow
-                      ? () => handleRowClick((row.original as any).id)
-                      : undefined
-                  }
+                  // onClick={
+                  //   clickableRow
+                  //     ? () => handleRowClick((row.original as any).id)
+                  //     : undefined
+                  // }
                 >
+                  <TableCell>
+                    <a
+                      href={"row.original.url"}
+                      aria-label={"ow.original.url"}
+                      className="row-link"
+                    ></a>
+                  </TableCell>
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
                       <div
