@@ -6,35 +6,39 @@ import shared.mapping.management.commands.default_super_user as dsu
 def mocks(command):
     """rewires the mock command to point at mock objects, and, returns the lists used for mock messages and mock accounts"""
     
-    class m_objects():
+    class m_objects:
         users = []
+
         def count(self):
             return len(self.users)
+
         def create_superuser(self, name, email, password):
-            self.users.append({
-                'super': True,
-                'name': name,
-                'email': email,
-                'password': password,
-            })
-    
-    class m_users():
+            self.users.append(
+                {
+                    "super": True,
+                    "name": name,
+                    "email": email,
+                    "password": password,
+                }
+            )
+
+    class m_users:
         objects = m_objects()
-    
-    class m_stdout():
+
+    class m_stdout:
         messages = []
+
         def write(self, message):
             self.messages.append(message)
     
-    class m_style():
+    class m_style:
         def SUCCESS(self, message):
             return message
-        
-        
-    class m_settings():
-        SUPERUSER_DEFAULT_NAME = '#name'
-        SUPERUSER_DEFAULT_EMAIL = '#email'
-        SUPERUSER_DEFAULT_PASSWORD = '#password'
+
+    class m_settings:
+        SUPERUSER_DEFAULT_NAME = "#name"
+        SUPERUSER_DEFAULT_EMAIL = "#email"
+        SUPERUSER_DEFAULT_PASSWORD = "#password"
 
     command.users = m_users()
     command.style = m_style()
@@ -42,6 +46,7 @@ def mocks(command):
     command.settings = m_settings()
 
     return [command.users.objects.users, command.stdout.messages]
+
 
 class TestSetup(TestCase):
     """test details of setup"""
@@ -56,12 +61,21 @@ class TestSetup(TestCase):
         command.handle()
 
         self.assertEqual(
-            [{'super': True, 'name': '#name', 'email': '#email', 'password': '#password'}],
-            users
-        )
+            [
+                {
+                    "super": True,
+                    "name": "#name",
+                    "email": "#email",
+                    "password": "#password",
+                }
+            ],
+            users,
+         )
         self.assertEqual(
-            ['No users in the database - #name / #email will be created as a super user.'],
-            messages
+            [
+                "No users in the database - #name / #email will be created as a super user."
+            ],
+            messages,
         )
 
     def test_uselss_account(self):
@@ -71,20 +85,19 @@ class TestSetup(TestCase):
 
         [users, messages] = mocks(command)
 
-        geo = {'super': False, 'name': 'fred', 'email': 'jake@foo', 'password': 'ieatbugs'}
-        users.append(
-            geo
-        )
+        geo = {
+            "super": False,
+            "name": "fred",
+            "email": "jake@foo",
+            "password": "ieatbugs",
+        }
+        users.append(geo)
 
         command.handle()
 
+        self.assertEqual([geo], users)
         self.assertEqual(
-            [geo],
-            users
-        )
-        self.assertEqual(
-            ['There is already a user - default superuser will not be added'],
-            messages
+            ["There is already a user - default superuser will not be added"], messages
         )
 
 
@@ -97,13 +110,13 @@ class TestSetup(TestCase):
         entry = __file__
         entry = os.path.dirname(entry)
         entry = os.path.dirname(entry)
-        entry = os.path.join(entry, 'entrypoint.sh')
+        entry = os.path.join(entry, "entrypoint.sh")
 
         with open(entry, "r") as file:
             for line in file.read().splitlines():
                 line = line.strip()
                 print(line)
-                if 'python manage.py default_super_user' == line:
+                if "python manage.py default_super_user" == line:
                     self.assertFalse(found)
                     found = True
         self.assertTrue(found)
