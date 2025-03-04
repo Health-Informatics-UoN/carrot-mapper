@@ -27,7 +27,9 @@ export default async function SummaryViewDialog({
 
   const summaryRules = await getSummaryRules(id, query);
   const scanReport = await getScanReport(id);
-  const fileName = `${scanReport?.dataset} Rules - ${new Date().toLocaleString()}`;
+  const fileName = `${
+    scanReport?.dataset
+  } Rules - ${new Date().toLocaleString()}`;
   const rulesButton = (
     <RulesButton scanreportId={id} query={query} filename={fileName} />
   );
@@ -37,7 +39,6 @@ export default async function SummaryViewDialog({
       columns={columns}
       data={summaryRules.results}
       count={summaryRules.count}
-      clickableRow={false}
       defaultPageSize={defaultPageSize}
       Filter={rulesButton}
     />

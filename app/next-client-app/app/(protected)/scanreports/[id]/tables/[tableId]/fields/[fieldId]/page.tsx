@@ -41,7 +41,7 @@ export default async function ScanReportsValue({
     id,
     tableId,
     fieldId,
-    query,
+    query
   );
 
   const scanReportsConcepts =
@@ -49,13 +49,13 @@ export default async function ScanReportsValue({
       ? await getAllScanReportConcepts(
           `object_id__in=${scanReportsValues.results
             .map((item) => item.id)
-            .join(",")}`,
+            .join(",")}`
         )
       : [];
   const conceptsFilter =
     scanReportsConcepts.length > 0
       ? await getAllConceptsFiltered(
-          scanReportsConcepts?.map((item) => item.concept).join(","),
+          scanReportsConcepts?.map((item) => item.concept).join(",")
         )
       : [];
   return (
@@ -80,7 +80,6 @@ export default async function ScanReportsValue({
           scanReportsData={scanReportsValues.results}
           defaultPageSize={defaultPageSize}
           columns={columns}
-          clickable={false}
           filterCol="value"
           filterText="value "
           tableId={tableId}

@@ -8,19 +8,35 @@ import { EditButton } from "@/components/scanreports/EditButton";
 import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePathname } from "next/navigation";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 
 export const columns = (
   addSR: (concept: ScanReportConcept, c: Concept) => void,
-  deleteSR: (id: number) => void,
+  deleteSR: (id: number) => void
 ): ColumnDef<ScanReportField>[] => [
   {
     id: "Name",
-    accessorKey: "name",
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Field" sortName="name" />
     ),
     enableHiding: true,
     enableSorting: true,
+    cell: ({ row }) => {
+      const { id, name } = row.original;
+      const prePath = usePathname();
+      return (
+        <Link
+          href={`${
+            prePath.endsWith("/") ? prePath : prePath + "/"
+          }fields/${id}`}
+        >
+          <Button variant={"link"} className="font-bold">
+            {name}
+          </Button>
+        </Link>
+      );
+    },
   },
   {
     id: "description",

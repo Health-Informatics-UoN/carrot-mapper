@@ -41,7 +41,6 @@ export default function JobDialog({
                 columns={columns}
                 data={jobs}
                 count={jobs.length}
-                clickableRow={false}
                 paginated={false}
                 viewColumns={false}
                 overflow={false}
