@@ -91,9 +91,15 @@ class TestSetup(TestCase):
     def test_entrypoint(self):
         """tests to see if there's a line in the entrypoint.sh to trigger the command"""
         import os
-        
+
         found = False
-        with open(os.path.join(os.path.join(__file__, "../../"), 'entrypoint.sh'), "r") as file:
+
+        entry = __file__
+        entry = os.path.dirname(entry)
+        entry = os.path.dirname(entry)
+        entry = os.path.join(entry, 'entrypoint.sh')
+
+        with open(entry, "r") as file:
             for line in file.read().splitlines():
                 line = line.strip()
                 print(line)

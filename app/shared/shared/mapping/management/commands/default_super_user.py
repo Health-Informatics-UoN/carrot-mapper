@@ -12,6 +12,7 @@ class Command(BaseCommand):
     help = "create a default superuser iff no users exist"
 
     from django.contrib.auth import get_user_model
+
     """wraps getUserModel so i can replace it for unit tests"""
     users = get_user_model()
 
@@ -20,7 +21,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         """primary functionality"""
-        
+
         user_count = self.users.objects.count()
         if 0 != user_count:
             if 1 == user_count:
