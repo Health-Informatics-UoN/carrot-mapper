@@ -1,11 +1,10 @@
-
 from django.test import TestCase
 import shared.mapping.management.commands.default_super_user as dsu
 
 
 def mocks(command):
     """rewires the mock command to point at mock objects, and, returns the lists used for mock messages and mock accounts"""
-    
+
     class m_objects:
         users = []
 
@@ -30,7 +29,7 @@ def mocks(command):
 
         def write(self, message):
             self.messages.append(message)
-    
+
     class m_style:
         def SUCCESS(self, message):
             return message
@@ -70,7 +69,7 @@ class TestSetup(TestCase):
                 }
             ],
             users,
-         )
+        )
         self.assertEqual(
             [
                 "No users in the database - #name / #email will be created as a super user."
@@ -99,7 +98,6 @@ class TestSetup(TestCase):
         self.assertEqual(
             ["There is already a user - default superuser will not be added"], messages
         )
-
 
     def test_entrypoint(self):
         """tests to see if there's a line in the entrypoint.sh to trigger the command"""
