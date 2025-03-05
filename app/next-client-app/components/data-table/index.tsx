@@ -36,7 +36,6 @@ interface DataTableProps<TData, TValue> {
   count: number;
   linkPrefix?: string;
   Filter?: JSX.Element;
-  clickableRow?: boolean;
   viewColumns?: boolean;
   paginated?: boolean;
   overflow?: boolean;
@@ -54,7 +53,6 @@ export function DataTable<TData, TValue>({
   count,
   linkPrefix = "",
   Filter,
-  clickableRow = true,
   viewColumns = true,
   paginated = true,
   overflow = true,
@@ -162,30 +160,10 @@ export function DataTable<TData, TValue>({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
-                  className={clickableRow ? "hover:cursor-pointer" : ""}
-                  // TODO: Once we are only routing to Nextjs urls, we can do this better.
-                  // Do not change this unless every table is only ever redirecting to Next urls.
-                  onClick={
-                    clickableRow
-                      ? () => handleRowClick((row.original as any).id)
-                      : undefined
-                  }
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
-                      <div
-                        onClick={(e) => {
-                          if (clickableRow) {
-                            e.stopPropagation();
-                            if (
-                              typeof cell.getValue() === "string" ||
-                              typeof cell.getValue() === "number"
-                            ) {
-                              handleRowClick((row.original as any).id);
-                            }
-                          }
-                        }}
-                      >
+                      <div>
                         {flexRender(
                           cell.column.columnDef.cell,
                           cell.getContext()

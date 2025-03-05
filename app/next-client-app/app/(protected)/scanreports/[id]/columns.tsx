@@ -5,16 +5,27 @@ import { DataTableColumnHeader } from "@/components/data-table/DataTableColumnHe
 import { EditButton } from "@/components/scanreports/EditButton";
 import JobDialog from "@/components/jobs/JobDialog";
 import { FindGeneralStatus, DivideJobs } from "@/components/jobs/JobUtils";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 
 export const columns: ColumnDef<ScanReportTable>[] = [
   {
     id: "Name",
-    accessorKey: "name",
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Name" sortName="name" />
     ),
     enableHiding: true,
     enableSorting: true,
+    cell: ({ row }) => {
+      const { scan_report, id, name } = row.original;
+      return (
+        <Link href={`/scanreports/${scan_report}/tables/${id}`}>
+          <Button variant={"link"} className="font-bold">
+            {name}
+          </Button>
+        </Link>
+      );
+    },
   },
   {
     id: "Person ID",

@@ -40,7 +40,6 @@ export default async function Downloads({
           columns={columns}
           data={filesList.results}
           count={filesList.count}
-          clickableRow={false}
           Filter={
             lastestJob?.status.value == "IN_PROGRESS" ||
             lastestJob?.status.value == "FAILED" ? (

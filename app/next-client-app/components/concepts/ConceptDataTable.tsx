@@ -15,9 +15,8 @@ interface CustomDataTableProps<T> {
   columns: (
     addConcept: (newConcept: ScanReportConcept, newConFilter: Concept) => void,
     deleteConcept: (id: number) => void,
-    tableId: string,
+    tableId: string
   ) => any;
-  clickable?: boolean;
   filterCol: string;
   filterText: string;
   linkPrefix?: string;
@@ -25,7 +24,7 @@ interface CustomDataTableProps<T> {
 }
 
 export function ConceptDataTable<
-  T extends { id: number; concepts?: Concept[]; permissions: Permission[] },
+  T extends { id: number; concepts?: Concept[]; permissions: Permission[] }
 >({
   scanReportsData,
   scanReportsConcepts,
@@ -34,7 +33,6 @@ export function ConceptDataTable<
   count,
   defaultPageSize,
   columns,
-  clickable,
   filterCol,
   filterText,
   linkPrefix,
@@ -59,7 +57,7 @@ export function ConceptDataTable<
   const deleteConcept = (id: number) => {
     // filter it out.
     const updatedConcepts = neededConcepts.filter(
-      (concept) => concept.id !== id,
+      (concept) => concept.id !== id
     );
     setNeededConcepts(updatedConcepts);
   };
@@ -78,7 +76,7 @@ export function ConceptDataTable<
     scanReportsData,
     neededConcepts,
     neededConceptFilter,
-    permissions,
+    permissions
   );
 
   return (
@@ -88,7 +86,6 @@ export function ConceptDataTable<
         data={scanReportsResult}
         count={count}
         Filter={filter}
-        clickableRow={clickable}
         defaultPageSize={defaultPageSize}
         linkPrefix={linkPrefix}
       />

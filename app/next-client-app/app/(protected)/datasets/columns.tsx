@@ -3,7 +3,6 @@
 import { DataTableColumnHeader } from "@/components/data-table/DataTableColumnHeader";
 import { ColumnDef } from "@tanstack/react-table";
 import { MoreHorizontal } from "lucide-react";
-
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -26,12 +25,22 @@ export const columns: ColumnDef<DataSet>[] = [
     enableSorting: true,
   },
   {
-    accessorKey: "name",
+    id: "Name",
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Name" sortName="name" />
     ),
     enableHiding: true,
     enableSorting: true,
+    cell: ({ row }) => {
+      const { id, name } = row.original;
+      return (
+        <Link href={`/datasets/${id}/`}>
+          <Button variant={"link"} className="font-bold">
+            {name}
+          </Button>
+        </Link>
+      );
+    },
   },
   {
     id: "Data Partner",
