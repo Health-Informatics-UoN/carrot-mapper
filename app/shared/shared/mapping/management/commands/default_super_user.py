@@ -7,7 +7,7 @@ import os
 
 
 class Command(BaseCommand):
-    """create a default superuser iff no users exist"""
+    """Create a default superuser if no users exist"""
 
     help = "create a default superuser iff no users exist"
 
