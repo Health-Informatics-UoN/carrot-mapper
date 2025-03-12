@@ -9,7 +9,7 @@ import os
 class Command(BaseCommand):
     """Create a default superuser if no users exist"""
 
-    help = "create a default superuser iff no users exist"
+    help = "Create a default superuser if no users exist"
 
     from django.contrib.auth import get_user_model
 
