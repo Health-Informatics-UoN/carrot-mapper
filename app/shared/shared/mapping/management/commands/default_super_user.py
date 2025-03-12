@@ -1,4 +1,4 @@
-"""command to create a default superuser iff no users exist"""
+"""Command to create a default superuser if no users exist"""
 
 import django.conf as dc
 from django.core.management.base import BaseCommand
