@@ -72,7 +72,7 @@ class TestSetup(TestCase):
         )
         self.assertEqual(
             [
-                "No users in the database - #name / #email will be created as a super user."
+                "Superuser successfully created with Username='#name', Password='#password'"
             ],
             messages,
         )
