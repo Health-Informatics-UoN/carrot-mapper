@@ -39,8 +39,10 @@ class Command(BaseCommand):
                 self.settings.SUPERUSER_DEFAULT_PASSWORD,
             )
             # log the user's details
+            logged_password = self.settings.SUPERUSER_DEFAULT_PASSWORD
+            logged_password = logged_password[0] + ('*' * len(logged_password[1:-1])) + logged_password[-1]
             self.stdout.write(
                 self.style.SUCCESS(
-                    f"Superuser successfully created with Username='{self.settings.SUPERUSER_DEFAULT_USERNAME}', Password='{self.settings.SUPERUSER_DEFAULT_PASSWORD}'"
+                    f"Superuser successfully created with Username='{self.settings.SUPERUSER_DEFAULT_USERNAME}', Password='{logged_password}'"
                 )
             )

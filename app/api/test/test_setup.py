@@ -72,7 +72,7 @@ class TestSetup(TestCase):
         )
         self.assertEqual(
             [
-                "Superuser successfully created with Username='#name', Password='#password'"
+                "Superuser successfully created with Username='#name', Password='#*******d'"
             ],
             messages,
         )
