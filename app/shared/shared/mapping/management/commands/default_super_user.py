@@ -34,13 +34,13 @@ class Command(BaseCommand):
         else:
             # execute the creation command
             self.users.objects.create_superuser(
-                self.settings.SUPERUSER_DEFAULT_NAME,
+                self.settings.SUPERUSER_DEFAULT_USERNAME,
                 self.settings.SUPERUSER_DEFAULT_EMAIL,
                 self.settings.SUPERUSER_DEFAULT_PASSWORD,
             )
             # log the user's details
             self.stdout.write(
                 self.style.SUCCESS(
-                    f"Superuser successfully created with Username='{self.settings.SUPERUSER_DEFAULT_NAME}', Password='{self.settings.SUPERUSER_DEFAULT_PASSWORD}'"
+                    f"Superuser successfully created with Username='{self.settings.SUPERUSER_DEFAULT_USERNAME}', Password='{self.settings.SUPERUSER_DEFAULT_PASSWORD}'"
                 )
             )

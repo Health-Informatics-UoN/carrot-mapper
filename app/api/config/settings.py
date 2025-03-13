@@ -243,4 +243,4 @@ REST_AUTH = {
 # https://github.com/Health-Informatics-UoN/carrot-mapper/issues/946
 SUPERUSER_DEFAULT_PASSWORD = os.getenv("SUPERUSER_DEFAULT_PASSWORD", "Password123!")
 SUPERUSER_DEFAULT_EMAIL = os.getenv("SUPERUSER_DEFAULT_EMAIL", "user@carrot")
-SUPERUSER_DEFAULT_NAME = os.getenv("SUPERUSER_DEFAULT_NAME", "admin")
+SUPERUSER_DEFAULT_USERNAME = os.getenv("SUPERUSER_DEFAULT_USERNAME", "admin")

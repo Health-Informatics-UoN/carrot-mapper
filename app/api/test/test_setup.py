@@ -35,7 +35,7 @@ def mocks(command):
             return message
 
     class m_settings:
-        SUPERUSER_DEFAULT_NAME = "#name"
+        SUPERUSER_DEFAULT_USERNAME = "#name"
         SUPERUSER_DEFAULT_EMAIL = "#email"
         SUPERUSER_DEFAULT_PASSWORD = "#password"
 
