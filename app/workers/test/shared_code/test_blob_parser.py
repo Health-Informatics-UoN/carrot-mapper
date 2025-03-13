@@ -1,9 +1,10 @@
 import pytest
-from shared_code.blob_parser import (
+from app.shared.shared.files.utils import (
     process_four_item_dict,
     process_three_item_dict,
     remove_BOM,
 )
+
 
 
 def test_remove_BOM():

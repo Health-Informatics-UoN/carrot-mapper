@@ -13,7 +13,7 @@ https://docs.djangoproject.com/en/3.1/ref/settings/
 import os
 from datetime import timedelta
 
-from dotenv import load_dotenv
+from dotenv import load_dotenv  # type: ignore
 
 load_dotenv()
 
@@ -237,3 +237,18 @@ REST_AUTH = {
     "USE_JWT": True,
     "JWT_AUTH_HTTPONLY": False,
 }
+
+
+
+# Storage Configuration (Azure or MinIO)
+STORAGE_TYPE = os.getenv("STORAGE_TYPE", "azure")
+if not STORAGE_TYPE:
+    raise ValueError(
+        "STORAGE_TYPE environment variable must be set (e.g., 'azure' or 'minio')."
+    )
+
+# MinIO Configuration
+MINIO_ENDPOINT = os.environ.get("MINIO_ENDPOINT", "http://minio:9000")
+MINIO_ACCESS_KEY = os.environ.get("MINIO_ACCESS_KEY", "minioadmin")
+MINIO_SECRET_KEY = os.environ.get("MINIO_SECRET_KEY", "minioadmin")
+MINIO_BUCKET_NAME = os.environ.get("MINIO_BUCKET_NAME", "rules-exports-minio")

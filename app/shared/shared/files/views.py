@@ -14,8 +14,11 @@ from shared.services.azurequeue import add_message
 
 from .models import FileDownload
 from .serializers import FileDownloadSerializer
-from .service import get_blob
 from shared.jobs.models import Job, JobStage, StageStatus
+
+from app.shared.shared.files.storage_service import StorageService
+
+storage_service = StorageService()
 
 
 class FileDownloadView(GenericAPIView, ListModelMixin, RetrieveModelMixin):
@@ -34,7 +37,9 @@ class FileDownloadView(GenericAPIView, ListModelMixin, RetrieveModelMixin):
     def get(self, request, *args, **kwargs):
         if "pk" in kwargs:
             entity = get_object_or_404(FileDownload, pk=kwargs["pk"])
-            file = get_blob(entity.file_url, "rules-exports")
+            file = storage_service.get_blob(
+                blob_name=entity.file_url, container="rules-exports"
+            )
 
             response = HttpResponse(file, content_type="application/octet-stream")
             response["Content-Disposition"] = f'attachment; filename="{entity.name}"'

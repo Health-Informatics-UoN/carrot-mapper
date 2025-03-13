@@ -4,7 +4,6 @@ import os
 import random
 import string
 
-from azure.storage.blob import BlobServiceClient, ContentSettings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import PasswordChangeForm, PasswordResetForm
@@ -44,6 +43,11 @@ from shared.services.rules_export import (
 
 from .forms import ScanReportAssertionForm, ScanReportForm
 from .permissions import has_editorship, has_viewership, is_admin
+
+from app.shared.shared.files.storage_service import StorageService
+
+# Initialize StorageService
+storage_service = StorageService()
 
 
 @login_required
@@ -161,11 +165,6 @@ class StructuralMappingTableListView(ListView):
         return qs
 
 
-def modify_filename(filename, dt, rand):
-    split_filename = os.path.splitext(str(filename))
-    return f"{split_filename[0]}_{dt}_{rand}{split_filename[1]}"
-
-
 @method_decorator(login_required, name="dispatch")
 class ScanReportFormView(FormView):
     form_class = ScanReportForm
@@ -205,8 +204,7 @@ class ScanReportFormView(FormView):
         ):
             messages.warning(
                 self.request,
-                "You do not have editor or administrator "
-                "permissions on this Dataset.",
+                "You do not have editor or administrator permissions on this Dataset.",
             )
             return self.form_invalid(form)
 
@@ -219,7 +217,9 @@ class ScanReportFormView(FormView):
         scan_report = ScanReport.objects.create(
             dataset=form.cleaned_data["dataset"],
             parent_dataset=parent_dataset,
-            name=modify_filename(form.cleaned_data.get("scan_report_file"), dt, rand),
+            name=StorageService.modify_filename(
+                form.cleaned_data.get("scan_report_file"), dt, rand
+            ),
             visibility=form.cleaned_data["visibility"],
         )
 
@@ -234,13 +234,13 @@ class ScanReportFormView(FormView):
         if sr_editors := form.cleaned_data.get("editors"):
             scan_report.editors.add(*sr_editors)
 
-        # Grab Azure storage credentials
-        blob_service_client = BlobServiceClient.from_connection_string(
-            os.getenv("STORAGE_CONN_STRING")
-        )
-
         print("FILE >>> ", str(form.cleaned_data.get("scan_report_file")))
         print("STRING TEST >>>> ", scan_report.name)
+
+        # Path to the spreadsheet content type
+        spreadsheet_content_type = (
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
 
         # If there's no data dictionary supplied, only upload the scan report
         # Set data_dictionary_blob in Azure message to None
@@ -251,16 +251,15 @@ class ScanReportFormView(FormView):
                 "data_dictionary_blob": "None",
             }
 
-            blob_client = blob_service_client.get_blob_client(
-                container="scan-reports", blob=scan_report.name
-            )
-            blob_client.upload_blob(
-                form.cleaned_data.get("scan_report_file").open(),
-                content_settings=ContentSettings(
-                    content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                ),
+            storage_service.upload_file(
+                container="scan-reports",
+                blob_name=scan_report.name,
+                file=form.cleaned_data.get("scan_report_file"),
+                content_type=spreadsheet_content_type,
+                use_read_method=False,
             )
             # setting content settings for downloading later
+
         # Else upload the scan report and the data dictionary
         else:
             data_dictionary = DataDictionary.objects.create(
@@ -277,15 +276,20 @@ class ScanReportFormView(FormView):
                 "data_dictionary_blob": data_dictionary.name,
             }
 
-            blob_client = blob_service_client.get_blob_client(
-                container="scan-reports", blob=scan_report.name
+            storage_service.upload_file(
+                container="scan-reports",
+                blob_name=scan_report.name,
+                file=form.cleaned_data.get("scan_report_file"),
+                content_type=spreadsheet_content_type,
+                use_read_method=False,
             )
-            blob_client.upload_blob(form.cleaned_data.get("scan_report_file").open())
-            blob_client = blob_service_client.get_blob_client(
-                container="data-dictionaries", blob=data_dictionary.name
-            )
-            blob_client.upload_blob(
-                form.cleaned_data.get("data_dictionary_file").open()
+
+            storage_service.upload_file(
+                container="data-dictionaries",
+                blob_name=data_dictionary.name,
+                file=form.cleaned_data.get("data_dictionary_file"),
+                content_type="text/csv",
+                use_read_method=False,
             )
 
         # send to the upload queue

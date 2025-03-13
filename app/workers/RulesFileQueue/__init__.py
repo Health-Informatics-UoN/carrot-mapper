@@ -5,6 +5,8 @@ from datetime import datetime
 from io import BytesIO
 from typing import Dict
 
+from app.shared.shared.files.storage_service import StorageService
+
 import azure.functions as func
 from shared_code.models import FileHandlerConfig, RulesFileMessage
 
@@ -15,7 +17,6 @@ django.setup()
 
 from django.db.models.query import QuerySet
 from shared.files.models import FileDownload, FileType
-from shared.files.service import upload_blob_read
 from shared.mapping.models import MappingRule, ScanReport
 from shared.services.rules_export import (
     get_mapping_rules_as_csv,
@@ -27,6 +28,8 @@ from shared_code.db import (
     JobStageType,
     StageStatusType,
 )
+
+storage_service = StorageService()
 
 
 def create_json_rules(rules: QuerySet[MappingRule]) -> BytesIO:
@@ -126,7 +129,13 @@ def main(msg: func.QueueMessage) -> None:
 
     # Save to blob
     filename = f"Rules - {scan_report.dataset} - {scan_report_id} - {datetime.now()}.{file_extension}"
-    upload_blob_read(filename, "rules-exports", file, file_type)
+    storage_service.upload_file(
+        container="rules-exports",
+        blob_name=filename,
+        file=file,
+        content_type=file_type,
+        use_read_method=True,  
+    )
 
     # create entity
     file_type_entity = FileType.objects.get(value=file_type_value)
