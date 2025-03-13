@@ -1,17 +1,29 @@
 "use client";
 
 import { DataTableColumnHeader } from "@/components/data-table/DataTableColumnHeader";
+import { Button } from "@/components/ui/button";
 import { ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns/format";
+import Link from "next/link";
 
 export const columns: ColumnDef<Project>[] = [
   {
-    accessorKey: "name",
+    id: "Name",
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Name" sortName="name" />
     ),
     enableHiding: true,
     enableSorting: true,
+    cell: ({ row }) => {
+      const { id, name } = row.original;
+      return (
+        <Link href={`/projects/${id}/`}>
+          <Button variant={"link"} className="font-bold">
+            {name}
+          </Button>
+        </Link>
+      );
+    },
   },
   {
     id: "Creation Date",

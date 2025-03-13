@@ -36,11 +36,20 @@ export const columns: ColumnDef<ScanReport>[] = [
   },
   {
     id: "Name",
-    accessorKey: "dataset",
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Name" sortName="dataset" />
     ),
     enableHiding: true,
+    cell: ({ row }) => {
+      const { id, dataset } = row.original;
+      return (
+        <Link href={`/scanreports/${id}`}>
+          <Button variant={"link"} className="font-bold">
+            {dataset}
+          </Button>
+        </Link>
+      );
+    },
   },
   {
     id: "Dataset",
