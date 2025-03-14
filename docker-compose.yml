@@ -10,6 +10,15 @@ services:
       - POSTGRES_PASSWORD=postgres
     volumes:
       - db_data:/var/lib/postgresql/data
+  rabbitmq:
+    image: rabbitmq:3-management
+    restart: always
+    ports:
+      - 5672:5672  # RabbitMQ service
+      - 15672:15672  # Management UI
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
 
   frontend:
     image: carrot-frontend
@@ -113,6 +122,7 @@ services:
     depends_on:
       - api
       - azurite
+      - rabbitmq
 
   azurite:
     image: mcr.microsoft.com/azure-storage/azurite
