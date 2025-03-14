@@ -7,19 +7,11 @@ import azure.functions as func
 from openpyxl import Workbook
 from openpyxl.cell.cell import Cell
 from openpyxl.worksheet.worksheet import Worksheet
-from shared.mapping.models import (
-    ScanReportField,
-    ScanReportTable,
-    ScanReportValue,
-)
 from shared.files.storage_service import StorageService
+from shared.mapping.models import (ScanReport, ScanReportField,
+                                   ScanReportTable, ScanReportValue)
 from shared_code import helpers
-from shared_code.db import (
-    update_job,
-    JobStageType,
-    StageStatusType,
-)
-from shared.mapping.models import ScanReport
+from shared_code.db import JobStageType, StageStatusType, update_job
 from shared_code.logger import logger
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "shared_code.django_settings")

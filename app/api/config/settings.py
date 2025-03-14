@@ -239,7 +239,6 @@ REST_AUTH = {
 }
 
 
-
 # Storage Configuration (Azure or MinIO)
 STORAGE_TYPE = os.getenv("STORAGE_TYPE", "azure")
 if not STORAGE_TYPE:

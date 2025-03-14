@@ -5,7 +5,8 @@ from typing import Any, Dict, List, Union
 from shared.files.storage_service import StorageService
 from shared_code import helpers
 from shared_code.logger import logger
-from shared_code.models import ScanReportConceptContentType, ScanReportValueDict
+from shared_code.models import (ScanReportConceptContentType,
+                                ScanReportValueDict)
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "shared_code.django_settings")
 import django
@@ -15,11 +16,8 @@ django.setup()
 from shared.data.models import Concept
 from shared.mapping.models import ScanReportConcept, ScanReportTable
 from shared_code import db
-from shared_code.db import (
-    update_job,
-    JobStageType,
-    StageStatusType,
-)
+from shared_code.db import JobStageType, StageStatusType, update_job
+
 from .reuse import reuse_existing_field_concepts, reuse_existing_value_concepts
 
 

@@ -1,21 +1,16 @@
-import os
-from io import StringIO, BytesIO
-from typing import IO, AnyStr, Iterable, Union
-from azure.storage.blob import BlobServiceClient, ContentSettings  # type: ignore
 import csv
-from django.http.response import HttpResponse  # type: ignore
-
-from django.conf import settings  # type: ignore
-from typing import Any, Dict, Optional, Tuple
-
-from shared.files.utils import (
-    remove_BOM,
-    process_three_item_dict,
-    process_four_item_dict,
-)
+import logging
+import os
+from io import BytesIO, StringIO
+from typing import IO, Any, AnyStr, Dict, Iterable, Optional, Tuple, Union
 
 import openpyxl  # type: ignore
-import logging
+from azure.storage.blob import (BlobServiceClient,  # type: ignore
+                                ContentSettings)
+from django.conf import settings  # type: ignore
+from django.http.response import HttpResponse  # type: ignore
+from shared.files.utils import (process_four_item_dict,
+                                process_three_item_dict, remove_BOM)
 
 # Set up logger
 logger = logging.getLogger("storage_service_logger")
@@ -49,7 +44,7 @@ class StorageService:
             )
         elif self.storage_type == "minio":
             pass
-            # self.client = Minio( 
+            # self.client = Minio(
             #     os.getenv("MINIO_ENDPOINT")
             #     .replace("http://", "")
             #     .replace("https://", ""),

@@ -5,9 +5,8 @@ from datetime import datetime
 from io import BytesIO
 from typing import Dict
 
-from shared.files.storage_service import StorageService
-
 import azure.functions as func
+from shared.files.storage_service import StorageService
 from shared_code.models import FileHandlerConfig, RulesFileMessage
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "shared_code.django_settings")
@@ -18,16 +17,9 @@ django.setup()
 from django.db.models.query import QuerySet
 from shared.files.models import FileDownload, FileType
 from shared.mapping.models import MappingRule, ScanReport
-from shared.services.rules_export import (
-    get_mapping_rules_as_csv,
-    get_mapping_rules_json,
-    make_dag,
-)
-from shared_code.db import (
-    update_job,
-    JobStageType,
-    StageStatusType,
-)
+from shared.services.rules_export import (get_mapping_rules_as_csv,
+                                          get_mapping_rules_json, make_dag)
+from shared_code.db import JobStageType, StageStatusType, update_job
 
 storage_service = StorageService()
 
