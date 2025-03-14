@@ -5,7 +5,6 @@ from azure.storage.blob import BlobServiceClient, ContentSettings  # type: ignor
 import csv
 from django.http.response import HttpResponse  # type: ignore
 
-# NOTE: I think you should use `from django.conf import settings`, I don't know which one is better, didn't really try it yet
 from django.conf import settings  # type: ignore
 from typing import Any, Dict, Optional, Tuple
 
@@ -49,14 +48,15 @@ class StorageService:
                 os.getenv("STORAGE_CONN_STRING")
             )
         elif self.storage_type == "minio":
-            self.client = Minio(
-                os.getenv("MINIO_ENDPOINT")
-                .replace("http://", "")
-                .replace("https://", ""),
-                access_key=os.getenv("MINIO_ACCESS_KEY"),
-                secret_key=os.getenv("MINIO_SECRET_KEY"),
-                secure=os.getenv("MINIO_SECURE", "false").lower() == "true",
-            )
+            pass
+            # self.client = Minio( 
+            #     os.getenv("MINIO_ENDPOINT")
+            #     .replace("http://", "")
+            #     .replace("https://", ""),
+            #     access_key=os.getenv("MINIO_ACCESS_KEY"),
+            #     secret_key=os.getenv("MINIO_SECRET_KEY"),
+            #     secure=os.getenv("MINIO_SECURE", "false").lower() == "true",
+            # )
 
         # ----- Add new storage service clients above this line -----
 
@@ -205,7 +205,6 @@ class StorageService:
                 container_client = self.client.get_container_client(container)
                 blob_client = container_client.get_blob_client(blob_name)
 
-                # Moved get_blob from service but added BytesIO and returned readall()
                 download_stream = blob_client.download_blob()
                 file_content = BytesIO(download_stream.readall())
                 return file_content
