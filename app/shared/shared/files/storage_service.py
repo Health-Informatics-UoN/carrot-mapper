@@ -5,12 +5,17 @@ from io import BytesIO, StringIO
 from typing import IO, Any, AnyStr, Dict, Iterable, Optional, Tuple, Union
 
 import openpyxl  # type: ignore
-from azure.storage.blob import (BlobServiceClient,  # type: ignore
-                                ContentSettings)
+from azure.storage.blob import (
+    BlobServiceClient,  # type: ignore
+    ContentSettings,
+)
 from django.conf import settings  # type: ignore
 from django.http.response import HttpResponse  # type: ignore
-from shared.files.utils import (process_four_item_dict,
-                                process_three_item_dict, remove_BOM)
+from shared.files.utils import (
+    process_four_item_dict,
+    process_three_item_dict,
+    remove_BOM,
+)
 
 # Set up logger
 logger = logging.getLogger("storage_service_logger")
@@ -39,9 +44,18 @@ class StorageService:
         type (Azure Blob Storage or MinIO).
         """
         if self.storage_type == "azure":
-            self.client = BlobServiceClient.from_connection_string(
-                os.getenv("STORAGE_CONN_STRING")
-            )
+            try:
+                self.client = BlobServiceClient.from_connection_string(
+                    settings.STORAGE_CONN_STRING
+                )
+            except Exception as e:
+                print(f"Error Initialising Azure Blob Storage client: {e}.")
+                print(
+                    "Make sure the environment variable STORAGE_CONN_STRING is \
+                        set to the correct connection string."
+                )
+                raise ValueError(f"Error initialising Azure Blob Storage client: {e}")
+
         elif self.storage_type == "minio":
             pass
             # self.client = Minio(
