@@ -72,6 +72,7 @@ services:
       - SIGNING_KEY=secret
     volumes:
       - ./app/api:/api
+      - ./app/shared:/shared
     depends_on:
       omop-lite:
         condition: service_completed_successfully
