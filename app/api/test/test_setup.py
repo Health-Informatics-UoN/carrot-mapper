@@ -31,6 +31,9 @@ def mocks(command):
             self.messages.append(message)
 
     class m_style:
+        def WARNING(self, message):
+            return message
+
         def SUCCESS(self, message):
             return message
 
