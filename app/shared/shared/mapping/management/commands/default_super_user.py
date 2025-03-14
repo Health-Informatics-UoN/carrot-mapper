@@ -12,7 +12,6 @@ class Command(BaseCommand):
 
     help = "Create a default superuser if and only if no users exist"
 
-
     """wraps getUserModel so i can replace it for unit tests"""
     users = get_user_model()
 
