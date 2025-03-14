@@ -1,7 +1,7 @@
 import os
 from io import StringIO, BytesIO
 from typing import IO, AnyStr, Iterable, Union
-import boto3  # MinIO (S3-Compatible) # type: ignore
+from minio import Minio
 from azure.storage.blob import BlobServiceClient, ContentSettings  # type: ignore
 import csv
 from django.http.response import HttpResponse  # type: ignore
@@ -48,11 +48,13 @@ class StorageService:
                 os.getenv("STORAGE_CONN_STRING")
             )
         elif self.storage_type == "minio":
-            self.client = boto3.client(
-                "s3",
-                endpoint_url=os.getenv("MINIO_ENDPOINT"),
-                aws_access_key_id=os.getenv("MINIO_ACCESS_KEY"),
-                aws_secret_access_key=os.getenv("MINIO_SECRET_KEY"),
+            self.client = Minio(
+                os.getenv("MINIO_ENDPOINT")
+                .replace("http://", "")
+                .replace("https://", ""),
+                access_key=os.getenv("MINIO_ACCESS_KEY"),
+                secret_key=os.getenv("MINIO_SECRET_KEY"),
+                secure=os.getenv("MINIO_SECURE", "false").lower() == "true",
             )
 
         # ----- Add new storage service clients above this line -----
