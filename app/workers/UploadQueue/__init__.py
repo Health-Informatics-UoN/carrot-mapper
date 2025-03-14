@@ -8,8 +8,12 @@ from openpyxl import Workbook
 from openpyxl.cell.cell import Cell
 from openpyxl.worksheet.worksheet import Worksheet
 from shared.files.storage_service import StorageService
-from shared.mapping.models import (ScanReport, ScanReportField,
-                                   ScanReportTable, ScanReportValue)
+from shared.mapping.models import (
+    ScanReport,
+    ScanReportField,
+    ScanReportTable,
+    ScanReportValue,
+)
 from shared_code import helpers
 from shared_code.db import JobStageType, StageStatusType, update_job
 from shared_code.logger import logger

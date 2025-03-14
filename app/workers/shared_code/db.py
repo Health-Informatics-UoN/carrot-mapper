@@ -6,12 +6,20 @@ from django.contrib.contenttypes.models import ContentType
 from django.db.models.query import QuerySet
 from shared.data.models import Concept, ConceptRelationship
 from shared.jobs.models import Job, JobStage, StageStatus
-from shared.mapping.models import (ScanReport, ScanReportConcept,
-                                   ScanReportField, ScanReportTable,
-                                   ScanReportValue, UploadStatus)
+from shared.mapping.models import (
+    ScanReport,
+    ScanReportConcept,
+    ScanReportField,
+    ScanReportTable,
+    ScanReportValue,
+    UploadStatus,
+)
 from shared_code.logger import logger
-from shared_code.models import (ScanReportConceptContentType,
-                                ScanReportFieldDict, ScanReportValueDict)
+from shared_code.models import (
+    ScanReportConceptContentType,
+    ScanReportFieldDict,
+    ScanReportValueDict,
+)
 
 
 class StageStatusType(Enum):

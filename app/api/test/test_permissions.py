@@ -7,11 +7,22 @@ from projects.views import ProjectDetail
 from rest_framework.authtoken.models import Token
 from rest_framework.generics import GenericAPIView
 from rest_framework.test import APIRequestFactory, force_authenticate
-from shared.mapping.models import (DataPartner, Dataset, Project, ScanReport,
-                                   VisibilityChoices)
-from shared.mapping.permissions import (CanAdmin, CanEdit, CanView,
-                                        CanViewProject, has_editorship,
-                                        has_viewership, is_admin)
+from shared.mapping.models import (
+    DataPartner,
+    Dataset,
+    Project,
+    ScanReport,
+    VisibilityChoices,
+)
+from shared.mapping.permissions import (
+    CanAdmin,
+    CanEdit,
+    CanView,
+    CanViewProject,
+    has_editorship,
+    has_viewership,
+    is_admin,
+)
 
 
 class TestHasViewership(TestCase):

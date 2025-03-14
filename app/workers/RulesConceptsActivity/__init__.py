@@ -5,8 +5,7 @@ from typing import Any, Dict, List, Union
 from shared.files.storage_service import StorageService
 from shared_code import helpers
 from shared_code.logger import logger
-from shared_code.models import (ScanReportConceptContentType,
-                                ScanReportValueDict)
+from shared_code.models import ScanReportConceptContentType, ScanReportValueDict
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "shared_code.django_settings")
 import django
