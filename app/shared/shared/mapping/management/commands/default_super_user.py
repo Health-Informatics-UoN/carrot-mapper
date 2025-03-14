@@ -1,8 +1,9 @@
 """Command to create a default superuser if no users exist"""
 
-import django.conf as dc
+from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
 import django
+import django.conf as dc
 import os
 
 
@@ -11,7 +12,6 @@ class Command(BaseCommand):
 
     help = "Create a default superuser if and only if no users exist"
 
-    from django.contrib.auth import get_user_model
 
     """wraps getUserModel so i can replace it for unit tests"""
     users = get_user_model()
