@@ -29,7 +29,7 @@ class Command(BaseCommand):
                 if user_count == 1
                 else f"There are {user_count} users - default superuser will not be added"
             )
-            self.stdout.write(self.style.SUCCESS(message))
+            self.stdout.write(self.style.WARNING(message))
             return
         else:
             # execute the creation command
