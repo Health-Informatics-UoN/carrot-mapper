@@ -1,10 +1,9 @@
 import pytest
-from app.shared.shared.files.utils import (
+from shared.files.utils import (
     process_four_item_dict,
     process_three_item_dict,
     remove_BOM,
 )
-
 
 
 def test_remove_BOM():

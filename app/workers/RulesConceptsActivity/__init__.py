@@ -2,7 +2,7 @@ import os
 from collections import defaultdict
 from typing import Any, Dict, List, Union
 
-from app.shared.shared.files.storage_service import StorageService
+from shared.files.storage_service import StorageService
 from shared_code import helpers
 from shared_code.logger import logger
 from shared_code.models import ScanReportConceptContentType, ScanReportValueDict
@@ -21,7 +21,6 @@ from shared_code.db import (
     StageStatusType,
 )
 from .reuse import reuse_existing_field_concepts, reuse_existing_value_concepts
-
 
 
 def _create_concepts(

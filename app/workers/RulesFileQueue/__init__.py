@@ -5,7 +5,7 @@ from datetime import datetime
 from io import BytesIO
 from typing import Dict
 
-from app.shared.shared.files.storage_service import StorageService
+from shared.files.storage_service import StorageService
 
 import azure.functions as func
 from shared_code.models import FileHandlerConfig, RulesFileMessage
@@ -134,7 +134,7 @@ def main(msg: func.QueueMessage) -> None:
         blob_name=filename,
         file=file,
         content_type=file_type,
-        use_read_method=True,  
+        use_read_method=True,
     )
 
     # create entity

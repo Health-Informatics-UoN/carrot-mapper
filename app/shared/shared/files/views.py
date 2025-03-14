@@ -16,7 +16,7 @@ from .models import FileDownload
 from .serializers import FileDownloadSerializer
 from shared.jobs.models import Job, JobStage, StageStatus
 
-from app.shared.shared.files.storage_service import StorageService
+from shared.files.storage_service import StorageService
 
 storage_service = StorageService()
 

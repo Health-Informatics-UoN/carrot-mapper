@@ -77,7 +77,7 @@ from shared.services.rules_export import (
 from shared.jobs.models import Job, JobStage, StageStatus
 from django.db.models import Q
 
-from app.shared.shared.files.storage_service import StorageService
+from shared.files.storage_service import StorageService
 
 
 # Initialize StorageService for Azure & MinIO compatibility

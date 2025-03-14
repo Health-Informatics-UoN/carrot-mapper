@@ -1,14 +1,15 @@
 import os
 from io import StringIO, BytesIO
 from typing import IO, AnyStr, Iterable, Union
-from minio import Minio
 from azure.storage.blob import BlobServiceClient, ContentSettings  # type: ignore
 import csv
 from django.http.response import HttpResponse  # type: ignore
-from app.api.config import settings  # type: ignore
+
+# NOTE: I think you should use `from django.conf import settings`, I don't know which one is better, didn't really try it yet
+from django.conf import settings  # type: ignore
 from typing import Any, Dict, Optional, Tuple
 
-from app.shared.shared.files.utils import (
+from shared.files.utils import (
     remove_BOM,
     process_three_item_dict,
     process_four_item_dict,

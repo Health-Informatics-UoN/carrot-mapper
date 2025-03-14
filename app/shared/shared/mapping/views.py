@@ -44,7 +44,7 @@ from shared.services.rules_export import (
 from .forms import ScanReportAssertionForm, ScanReportForm
 from .permissions import has_editorship, has_viewership, is_admin
 
-from app.shared.shared.files.storage_service import StorageService
+from shared.files.storage_service import StorageService
 
 # Initialize StorageService
 storage_service = StorageService()

@@ -12,7 +12,7 @@ from shared.mapping.models import (
     ScanReportTable,
     ScanReportValue,
 )
-from app.shared.shared.files.storage_service import StorageService
+from shared.files.storage_service import StorageService
 from shared_code import helpers
 from shared_code.db import (
     update_job,
@@ -26,6 +26,7 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "shared_code.django_settings")
 import django
 
 django.setup()
+
 
 def _get_unique_table_names(worksheet: Worksheet) -> List[str]:
     """
