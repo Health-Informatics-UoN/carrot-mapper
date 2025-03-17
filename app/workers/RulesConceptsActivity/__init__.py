@@ -19,6 +19,7 @@ from shared_code.db import JobStageType, StageStatusType, update_job
 
 from .reuse import reuse_existing_field_concepts, reuse_existing_value_concepts
 
+storage_service = StorageService()
 
 def _create_concepts(
     table_values: List[ScanReportValueDict],
@@ -336,6 +337,6 @@ def main(msg: Dict[str, str]):
     table = ScanReportTable.objects.get(pk=table_id)
 
     # get the vocab dictionary
-    _, vocab_dictionary = StorageService.get_data_dictionary(data_dictionary_blob)
+    _, vocab_dictionary = storage_service.get_data_dictionary(data_dictionary_blob)
 
     _handle_table(table, vocab_dictionary)

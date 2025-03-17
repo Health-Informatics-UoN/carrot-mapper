@@ -257,7 +257,7 @@ class StorageService:
         split_filename = os.path.splitext(str(filename))
         return f"{split_filename[0]}_{dt}_{rand}{split_filename[1]}"
 
-    @staticmethod
+
     def get_scan_report(self, blob_name: str) -> openpyxl.Workbook:
         """
         Retrieves a scan report from a blob storage (Azure or MinIO)
@@ -287,7 +287,7 @@ class StorageService:
                 f"Error retrieving scan report from {self.storage_type}: {e}"
             )
 
-    @staticmethod
+
     def get_data_dictionary(
         self, blob_name: str
     ) -> Tuple[
@@ -348,7 +348,7 @@ class StorageService:
                 f"Error retrieving data dictionary from {self.storage_type}: {e}"
             )
 
-    @staticmethod
+
     def download_data_dictionary(
         self, blob_name: str, container: str = "data-dictionaries"
     ) -> HttpResponse:
