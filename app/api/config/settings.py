@@ -238,6 +238,11 @@ REST_AUTH = {
     "JWT_AUTH_HTTPONLY": False,
 }
 
+# Azure Storage Connection String
+STORAGE_CONN_STRING = os.getenv("STORAGE_CONN_STRING")
+if not STORAGE_CONN_STRING:
+    raise ValueError("STORAGE_CONN_STRING environment variable must be set.")
+
 # Storage Configuration (Azure or MinIO)
 STORAGE_TYPE = os.getenv("STORAGE_TYPE", "azure")
 if not STORAGE_TYPE:
