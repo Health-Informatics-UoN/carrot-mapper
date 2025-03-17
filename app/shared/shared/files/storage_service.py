@@ -9,7 +9,6 @@ from azure.storage.blob import (
     BlobServiceClient,  # type: ignore
     ContentSettings,
 )
-from django.conf import settings  # type: ignore
 from django.http.response import HttpResponse  # type: ignore
 from shared.files.utils import (
     process_four_item_dict,
@@ -35,7 +34,7 @@ class StorageService:
         Initialises the StorageService class by setting the storage
         type and initialising the storage service client.
         """
-        self.storage_type = settings.STORAGE_TYPE
+        self.storage_type = os.environ.get("STORAGE_TYPE")
         self._initialise_storage()
 
     def _initialise_storage(self):
@@ -46,7 +45,7 @@ class StorageService:
         if self.storage_type == "azure":
             try:
                 self.client = BlobServiceClient.from_connection_string(
-                    settings.STORAGE_CONN_STRING
+                    os.environ.get("STORAGE_CONN_STRING")
                 )
             except Exception as e:
                 print(f"Error Initialising Azure Blob Storage client: {e}.")
@@ -257,7 +256,6 @@ class StorageService:
         split_filename = os.path.splitext(str(filename))
         return f"{split_filename[0]}_{dt}_{rand}{split_filename[1]}"
 
-
     def get_scan_report(self, blob_name: str) -> openpyxl.Workbook:
         """
         Retrieves a scan report from a blob storage (Azure or MinIO)
@@ -286,7 +284,6 @@ class StorageService:
             raise ValueError(
                 f"Error retrieving scan report from {self.storage_type}: {e}"
             )
-
 
     def get_data_dictionary(
         self, blob_name: str
@@ -347,7 +344,6 @@ class StorageService:
             raise ValueError(
                 f"Error retrieving data dictionary from {self.storage_type}: {e}"
             )
-
 
     def download_data_dictionary(
         self, blob_name: str, container: str = "data-dictionaries"
