@@ -239,7 +239,7 @@ REST_AUTH = {
 }
 
 # Azure Storage Connection String
-STORAGE_CONN_STRING = os.getenv("STORAGE_CONN_STRING")
+STORAGE_CONN_STRING = os.getenv("STORAGE_CONN_STRING", "connect")
 if not STORAGE_CONN_STRING:
     raise ValueError("STORAGE_CONN_STRING environment variable must be set.")
 
