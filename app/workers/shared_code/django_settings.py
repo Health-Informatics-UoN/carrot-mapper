@@ -30,3 +30,14 @@ DATABASES = {
         },
     }
 }
+
+# Storage Configuration (Azure or MinIO)
+STORAGE_TYPE = os.getenv("STORAGE_TYPE", "azure")
+if not STORAGE_TYPE:
+    raise ValueError(
+        "STORAGE_TYPE environment variable must be set (e.g., 'azure' or 'minio')."
+    )
+
+
+# Azure Storage Connection String
+STORAGE_CONN_STRING = os.getenv("STORAGE_CONN_STRING")
