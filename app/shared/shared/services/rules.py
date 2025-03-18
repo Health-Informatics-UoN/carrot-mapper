@@ -1,4 +1,5 @@
-from typing import List, Optional
+from typing import List, Optional, Dict, Tuple
+from django.db import transaction
 
 from shared.data.models import Concept
 from shared.mapping.models import (
@@ -51,15 +52,14 @@ def delete_mapping_rules(table_id: int) -> None:
         - None
     """
     rules = MappingRule.objects.all().filter(source_field__scan_report_table=table_id)
-
     rules.delete()
 
 
-def _find_existing_concepts(
+def find_existing_concepts(
     table_id: int, page: int | None, page_size: int | None
 ) -> List[ScanReportConcept]:
     """
-    Get ScanReportConcepts associated to a table.
+    Get ScanReportConcepts associated to a table with prefetched related data.
 
     Args:
         - table_id (int): Id of the ScanReportTable to filter by.
@@ -67,7 +67,7 @@ def _find_existing_concepts(
         - page_size (int | None): Page size to get
 
     Returns:
-        - A list of ScanReportConcept attached to the Table Id.
+        - A list of ScanReportConcept objects with prefetched related data
     """
     if page is not None and page_size is not None:
         offset = page * page_size
@@ -76,18 +76,28 @@ def _find_existing_concepts(
         offset = None
         limit = None
 
+    # Find values with concepts and prefetch related data
     values = (
-        ScanReportValue.objects.all()
-        .filter(scan_report_field__scan_report_table=table_id, concepts__isnull=False)
+        ScanReportValue.objects.filter(
+            scan_report_field__scan_report_table=table_id, concepts__isnull=False
+        )
+        .select_related(
+            "scan_report_field",
+            "scan_report_field__scan_report_table",
+            "scan_report_field__scan_report_table__scan_report",
+        )
+        .prefetch_related("concepts", "concepts__concept")
         .distinct()
         .order_by("id")
     )
 
-    # find ScanReportField associated to this table_id
-    # that have at least one concept added to them
+    # Find fields with concepts and prefetch related data
     fields = (
-        ScanReportField.objects.all()
-        .filter(scan_report_table=table_id, concepts__isnull=False)
+        ScanReportField.objects.filter(
+            scan_report_table=table_id, concepts__isnull=False
+        )
+        .select_related("scan_report_table", "scan_report_table__scan_report")
+        .prefetch_related("concepts", "concepts__concept")
         .distinct()
         .order_by("id")
     )
@@ -297,7 +307,9 @@ def _find_destination_table(concept: Concept) -> Optional[OmopTable]:
     return destination_table
 
 
-def _save_mapping_rules(scan_report_concept: ScanReportConcept) -> bool:
+def save_mapping_rules(
+    scan_report_concept: ScanReportConcept,
+) -> Tuple[bool, List[MappingRule]]:
     """
     Save mapping rules from a given ScanReportConcept.
 
@@ -305,7 +317,7 @@ def _save_mapping_rules(scan_report_concept: ScanReportConcept) -> bool:
         - concept (ScanReportConcept) : object containing the Concept and Link to source_value
 
     Returns:
-        - bool: If the rule has been saved.
+        - Tuple[bool, List[MappingRule]]: A tuple containing a boolean indicating if the rule has been saved and the list of rules to be created.
     """
     content_object = scan_report_concept.content_object
     if isinstance(content_object, ScanReportValue):
@@ -315,32 +327,28 @@ def _save_mapping_rules(scan_report_concept: ScanReportConcept) -> bool:
         source_field = content_object
 
     scan_report = source_field.scan_report_table.scan_report
-
     concept = scan_report_concept.concept
-
     type_column = source_field.type_column.lower()
-    # get the omop field for the source_concept_id for this domain
     domain = concept.domain_id.lower()
 
     # start looking up what table we're looking at
     destination_table = _find_destination_table(concept)
     if destination_table is None:
-        return False
+        return False, []
 
-    # obtain the source table
     source_table = source_field.scan_report_table
 
     # check whether the person_id and date events for this table are valid
     # if not, we dont want to create any rules for this concept
     if not _validate_person_id_and_date(source_table):
-        return False
+        return False, []
 
-    # create a person_id rule
+    rules = []
     person_id_rule = _get_person_id_rule(
         scan_report, scan_report_concept, source_table, destination_table
     )
-    rules = [person_id_rule]
-    # create(potentially multiple) date_rules
+    rules.append(person_id_rule)
+
     date_rules = _get_date_rules(
         scan_report, scan_report_concept, source_table, destination_table
     )
@@ -350,8 +358,6 @@ def _save_mapping_rules(scan_report_concept: ScanReportConcept) -> bool:
     # And because of the conversion of domain in the line after "rules.append(rule_domain_value_as_concept_id)", this block needs to be upfront
     if domain == "measurement":
         # create/update a model for the domain value_as_number
-        #  - for this destination_field and source_field
-        #  - do_term_mapping is set to false
         rule_domain_value_as_number, created = MappingRule.objects.update_or_create(
             scan_report=scan_report,
             omop_field=_get_omop_field("value_as_number", "measurement"),
@@ -437,8 +443,6 @@ def _save_mapping_rules(scan_report_concept: ScanReportConcept) -> bool:
         type_column == "varchar" or type_column == "nvarchar"
     ):
         # create/update a model for the domain value_as_string
-        #  - for this destination_field and source_field
-        #  - do_term_mapping is set to false
         rule_domain_value_as_string, created = MappingRule.objects.update_or_create(
             scan_report=scan_report,
             omop_field=_get_omop_field("value_as_string", "observation"),
@@ -448,33 +452,33 @@ def _save_mapping_rules(scan_report_concept: ScanReportConcept) -> bool:
         )
         rules.append(rule_domain_value_as_string)
 
-    # now we are sure all rules have been created, we can save them safely
-    for rule in rules:
-        rule.save()
-
-    return True
+    return True, rules
 
 
+@transaction.atomic
 def refresh_mapping_rules(table_id: int, page: int, page_size: int) -> None:
     """
     Refreshes the Mapping Rules for a given Scan Report Table.
-
-    Deletes all the existing rules, gets the concepts, and saves the mapping rules again.
+    Optimized version using prefetching and database transactions.
 
     Args:
         - table_id (int): The Id of the table to refresh the rules for.
+        - page (int): The page number to process.
+        - page_size (int): The page size.
 
     Returns:
         - None
     """
+    # Get concepts with prefetched related data
+    concepts = find_existing_concepts(table_id, page, page_size)
 
-    concepts = _find_existing_concepts(table_id, page, page_size)
+    rules_to_create = []
 
-    nconcepts = 0
-    nbadconcepts = 0
-
+    # Process each concept - but now within a transaction
     for concept in concepts:
-        if _save_mapping_rules(concept):
-            nconcepts += 1
-        else:
-            nbadconcepts += 1
+        saved, rules = save_mapping_rules(concept)
+        if saved:
+            rules_to_create.extend(rules)
+    # Bulk create rules
+    if rules_to_create:
+        MappingRule.objects.bulk_create(rules_to_create, ignore_conflicts=True)

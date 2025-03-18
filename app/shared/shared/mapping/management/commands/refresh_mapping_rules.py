@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 
 from django.core.management.base import BaseCommand
 from shared.mapping.models import MappingRule
-from shared.services.rules import _find_existing_concepts, _save_mapping_rules
+from shared.services.rules import find_existing_concepts, save_mapping_rules
 
 
 class Command(BaseCommand):
@@ -31,7 +31,7 @@ class Command(BaseCommand):
         # get all associated ScanReportConcepts for this given ScanReport
         # this method can take a couple of minutes to execute
         print("find_existing_scan_report_concepts")
-        all_associated_concepts = _find_existing_concepts(_id)
+        all_associated_concepts = find_existing_concepts(_id)
         print("total SRConcepts:", len(all_associated_concepts))
 
         # save all of them
@@ -45,7 +45,7 @@ class Command(BaseCommand):
         for concept_index, concept in enumerate(all_associated_concepts[skip_first:]):
             print(f"new concept {str(concept_index)} of {n_concepts_total}")
             this_start_time = datetime.now(timezone.utc)
-            if _save_mapping_rules(concept):
+            if save_mapping_rules(concept):
                 nconcepts += 1
             else:
                 nbadconcepts += 1
