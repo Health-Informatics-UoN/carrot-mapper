@@ -11,10 +11,11 @@ from rest_framework.permissions import IsAuthenticated
 from shared.files.paginations import CustomPagination
 from shared.mapping.models import ScanReport
 from shared.services.azurequeue import add_message
-
+from shared.services.storage_service import get_blob
 from .models import FileDownload
 from .serializers import FileDownloadSerializer
-from .service import get_blob
+
+# from .service import get_blob
 from shared.jobs.models import Job, JobStage, StageStatus
 
 
