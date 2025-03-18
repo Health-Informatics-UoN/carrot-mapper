@@ -9,14 +9,10 @@ from shared_code.logger import logger
 
 django.setup()
 
-from shared.services.rules import find_existing_concepts_count
-from shared_code.db import (
-    update_job,
-    JobStageType,
-    StageStatusType,
-)
-from shared.mapping.models import ScanReportTable
 from shared.jobs.models import Job, JobStage, StageStatus
+from shared.mapping.models import ScanReportTable
+from shared.services.rules import find_existing_concepts_count
+from shared_code.db import JobStageType, StageStatusType, update_job
 
 
 def orchestrator_function(context: df.DurableOrchestrationContext):

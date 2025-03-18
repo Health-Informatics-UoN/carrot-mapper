@@ -9,17 +9,13 @@ from rest_framework.generics import GenericAPIView
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
 from rest_framework.permissions import IsAuthenticated
 from shared.files.paginations import CustomPagination
+from shared.jobs.models import Job, JobStage, StageStatus
 from shared.mapping.models import ScanReport
 from shared.services.azurequeue import add_message
+from shared_code import storage_router
 
 from .models import FileDownload
 from .serializers import FileDownloadSerializer
-
-from shared.jobs.models import Job, JobStage, StageStatus
-
-
-from shared_code import storage_router
-
 
 storage_parser = storage_router.StorageService()
 

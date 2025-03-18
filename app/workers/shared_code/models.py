@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Callable, Dict, Literal, NotRequired, Optional, TypedDict, Union
+from typing import (Any, Callable, Dict, Literal, NotRequired, Optional,
+                    TypedDict, Union)
 
 
 class ScanReportConceptContentType(Enum):

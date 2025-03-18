@@ -10,26 +10,23 @@ import requests
 from api.filters import ScanReportAccessFilter
 from api.mixins import ScanReportPermissionMixin
 from api.paginations import CustomPagination
-from api.serializers import (
-    ConceptSerializerV2,
-    GetRulesAnalysis,
-    ScanReportConceptSerializer,
-    ScanReportCreateSerializer,
-    ScanReportEditSerializer,
-    ScanReportFieldEditSerializer,
-    ScanReportFieldListSerializerV2,
-    ScanReportFilesSerializer,
-    ScanReportTableEditSerializer,
-    ScanReportTableListSerializerV2,
-    ScanReportValueViewSerializerV2,
-    ScanReportViewSerializerV2,
-    UserSerializer,
-)
+from api.serializers import (ConceptSerializerV2, GetRulesAnalysis,
+                             ScanReportConceptSerializer,
+                             ScanReportCreateSerializer,
+                             ScanReportEditSerializer,
+                             ScanReportFieldEditSerializer,
+                             ScanReportFieldListSerializerV2,
+                             ScanReportFilesSerializer,
+                             ScanReportTableEditSerializer,
+                             ScanReportTableListSerializerV2,
+                             ScanReportValueViewSerializerV2,
+                             ScanReportViewSerializerV2, UserSerializer)
 from config import settings
 from datasets.serializers import DataPartnerSerializer
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist
+from django.db.models import Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
@@ -39,47 +36,26 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status, viewsets
 from rest_framework.filters import OrderingFilter
 from rest_framework.generics import GenericAPIView
-from rest_framework.mixins import (
-    CreateModelMixin,
-    DestroyModelMixin,
-    ListModelMixin,
-    RetrieveModelMixin,
-    UpdateModelMixin,
-)
+from rest_framework.mixins import (CreateModelMixin, DestroyModelMixin,
+                                   ListModelMixin, RetrieveModelMixin,
+                                   UpdateModelMixin)
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from shared.data.models import Concept
-from shared.mapping.models import (
-    DataDictionary,
-    DataPartner,
-    MappingRule,
-    OmopField,
-    ScanReport,
-    ScanReportConcept,
-    ScanReportField,
-    ScanReportTable,
-    ScanReportValue,
-)
+from shared.jobs.models import Job, JobStage, StageStatus
+from shared.mapping.models import (DataDictionary, DataPartner, MappingRule,
+                                   OmopField, ScanReport, ScanReportConcept,
+                                   ScanReportField, ScanReportTable,
+                                   ScanReportValue)
 from shared.mapping.permissions import get_user_permissions_on_scan_report
 from shared.services.azurequeue import add_message
-from shared.services.rules import (
-    _find_destination_table,
-    _save_mapping_rules,
-    delete_mapping_rules,
-)
-from shared.services.rules_export import (
-    get_mapping_rules_json,
-    get_mapping_rules_list,
-    make_dag,
-)
-from shared.jobs.models import Job, JobStage, StageStatus
-from django.db.models import Q
-
-
+from shared.services.rules import (_find_destination_table,
+                                   _save_mapping_rules, delete_mapping_rules)
+from shared.services.rules_export import (get_mapping_rules_json,
+                                          get_mapping_rules_list, make_dag)
 from shared_code import storage_router
-
 
 storage_parser = storage_router.StorageService()
 

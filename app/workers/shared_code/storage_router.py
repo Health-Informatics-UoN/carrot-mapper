@@ -2,16 +2,13 @@ import csv
 import logging
 import os
 from io import BytesIO
-from typing import Any, Dict, Optional, Tuple, IO, AnyStr, Iterable, Union
+from typing import IO, Any, AnyStr, Dict, Iterable, Optional, Tuple, Union
+
 import openpyxl  # type: ignore
-from azure.storage.blob import BlobServiceClient, ContentSettings  # type: ignore
-
-
-from shared_code.utils import (
-    remove_BOM,
-    process_three_item_dict,
-    process_four_item_dict,
-)
+from azure.storage.blob import (BlobServiceClient,  # type: ignore
+                                ContentSettings)
+from shared_code.utils import (process_four_item_dict, process_three_item_dict,
+                               remove_BOM)
 
 logger = logging.getLogger("test_logger")
 
