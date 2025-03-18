@@ -37,8 +37,8 @@ def mocks(command):
         def SUCCESS(self, message):
             return "; " + message
 
-        def ERROF(self, message):
-            return "; " + message
+        def ERROR(self, message):
+            return "! " + message
 
     class m_settings:
         SUPERUSER_DEFAULT_USERNAME = "#name"
@@ -77,9 +77,7 @@ class TestSetup(TestCase):
             users,
         )
         self.assertEqual(
-            [
-                "; Superuser successfully created with Username='#name', Password='#*******d'"
-            ],
+            ["; Superuser created with Username='#name', Password='#*******d'"],
             messages,
         )
 
@@ -102,7 +100,8 @@ class TestSetup(TestCase):
 
         self.assertEqual([geo], users)
         self.assertEqual(
-            ["; There is already a user - default superuser will not be added"], messages
+            ["; There is already a user - a default superuser will not be added"],
+            messages,
         )
 
     def test_entrypoint(self):
@@ -158,7 +157,7 @@ class TestSetup(TestCase):
 
         self.assertEqual(3, len(users))
         self.assertEqual(
-            ["; There are 3 users - default superuser will not be added"], messages
+            ["; There are 3 users - a default superuser will not be added"], messages
         )
 
     def test_no_env_username(self):
@@ -181,8 +180,6 @@ class TestSetup(TestCase):
             messages,
         )
 
-
-
     def test_no_env_password(self):
         """test that a user won't be created when password isn't set in env"""
 
@@ -202,6 +199,7 @@ class TestSetup(TestCase):
             ],
             messages,
         )
+
     def test_no_env_username_or_password(self):
         """test that a user won't be created when neither password or username are set in env"""
 

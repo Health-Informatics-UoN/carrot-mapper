@@ -18,13 +18,6 @@ class Command(BaseCommand):
     """wraps settings for unit tests"""
     settings = dc.settings
 
-    def envar(self, key, default = None):
-        """env var access
-        
-        wraps environment variable access so that can be intercepted during unit tests
-        """
-        return os.getenv(key, default)
-
     def handle(self, *args, **options):
         """primary functionality"""
 
@@ -38,7 +31,6 @@ class Command(BaseCommand):
             self.stdout.write(self.style.SUCCESS(message))
             return
 
-        
         # https://github.com/Health-Informatics-UoN/carrot-mapper/issues/946
         su_username = self.settings.SUPERUSER_DEFAULT_USERNAME
         su_password = self.settings.SUPERUSER_DEFAULT_PASSWORD
@@ -51,7 +43,10 @@ class Command(BaseCommand):
             elif None != su_username:
                 message = "no SUPERUSER_DEFAULT_PASSWORD value was defined in the environment variables"
             else:
-                message = "neither SUPERUSER_DEFAULT_USERNAME or SUPERUSER_DEFAULT_PASSWORD values were defined in the environment variables",
+                message = (
+                    "neither SUPERUSER_DEFAULT_USERNAME or SUPERUSER_DEFAULT_PASSWORD values were defined in the environment variables"
+                )
+
 
             self.stdout.write(self.style.ERROR(message))
             self.stdout.write(self.style.ERROR("no user account exists in the system"))
