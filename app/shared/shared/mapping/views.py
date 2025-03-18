@@ -24,12 +24,21 @@ from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.debug import sensitive_post_parameters
 from django.views.generic import ListView
 from django.views.generic.edit import FormView, UpdateView
-from shared.mapping.models import (DataDictionary, Dataset, MappingRule,
-                                   ScanReport, ScanReportAssertion,
-                                   ScanReportField, ScanReportTable)
+from shared.mapping.models import (
+    DataDictionary,
+    Dataset,
+    MappingRule,
+    ScanReport,
+    ScanReportAssertion,
+    ScanReportField,
+    ScanReportTable,
+)
 from shared.services.azurequeue import add_message
-from shared.services.rules_export import (get_mapping_rules_as_csv,
-                                          get_mapping_rules_json, make_dag)
+from shared.services.rules_export import (
+    get_mapping_rules_as_csv,
+    get_mapping_rules_json,
+    make_dag,
+)
 from shared_code import storage_router
 
 from .forms import ScanReportAssertionForm, ScanReportForm

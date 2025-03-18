@@ -7,8 +7,11 @@ from typing import IO, Any, AnyStr, Dict, Iterable, Optional, Tuple, Union
 import openpyxl  # type: ignore
 from azure.storage.blob import BlobServiceClient  # type: ignore
 from azure.storage.blob import ContentSettings
-from shared_code.utils import (process_four_item_dict, process_three_item_dict,
-                               remove_BOM)
+from shared_code.utils import (
+    process_four_item_dict,
+    process_three_item_dict,
+    remove_BOM,
+)
 
 logger = logging.getLogger("test_logger")
 

@@ -1,6 +1,9 @@
 import pytest
-from shared_code.utils import (process_four_item_dict, process_three_item_dict,
-                               remove_BOM)
+from shared_code.utils import (
+    process_four_item_dict,
+    process_three_item_dict,
+    remove_BOM,
+)
 
 
 def test_remove_BOM():

@@ -1,10 +1,16 @@
 from typing import List, Optional
 
 from shared.data.models import Concept
-from shared.mapping.models import (MappingRule, OmopField, OmopTable,
-                                   ScanReport, ScanReportConcept,
-                                   ScanReportField, ScanReportTable,
-                                   ScanReportValue)
+from shared.mapping.models import (
+    MappingRule,
+    OmopField,
+    OmopTable,
+    ScanReport,
+    ScanReportConcept,
+    ScanReportField,
+    ScanReportTable,
+    ScanReportValue,
+)
 
 # allowed tables
 m_allowed_tables = [

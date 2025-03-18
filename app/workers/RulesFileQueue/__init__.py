@@ -16,8 +16,11 @@ django.setup()
 from django.db.models.query import QuerySet
 from shared.files.models import FileDownload, FileType
 from shared.mapping.models import MappingRule, ScanReport
-from shared.services.rules_export import (get_mapping_rules_as_csv,
-                                          get_mapping_rules_json, make_dag)
+from shared.services.rules_export import (
+    get_mapping_rules_as_csv,
+    get_mapping_rules_json,
+    make_dag,
+)
 from shared_code import storage_router
 from shared_code.db import JobStageType, StageStatusType, update_job
 

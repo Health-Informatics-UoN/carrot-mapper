@@ -5,9 +5,14 @@ from django.contrib.auth.models import User
 from django.db.models.query_utils import Q
 from rest_framework import permissions
 from rest_framework.request import Request
-from shared.mapping.models import (Dataset, ScanReport, ScanReportField,
-                                   ScanReportTable, ScanReportValue,
-                                   VisibilityChoices)
+from shared.mapping.models import (
+    Dataset,
+    ScanReport,
+    ScanReportField,
+    ScanReportTable,
+    ScanReportValue,
+    VisibilityChoices,
+)
 
 # Get scan report for the table|field|value
 SCAN_REPORT_QUERIES = {

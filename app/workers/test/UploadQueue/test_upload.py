@@ -2,10 +2,15 @@ from datetime import datetime, timezone
 from unittest.mock import MagicMock, patch
 
 from openpyxl.cell.cell import Cell
-from UploadQueue import (_apply_data_dictionary, _assign_order,
-                         _create_field_entry, _create_table_entry,
-                         _create_value_entries, _create_values_details,
-                         _get_unique_table_names)
+from UploadQueue import (
+    _apply_data_dictionary,
+    _assign_order,
+    _create_field_entry,
+    _create_table_entry,
+    _create_value_entries,
+    _create_values_details,
+    _get_unique_table_names,
+)
 
 
 def test__get_unique_table_names():
