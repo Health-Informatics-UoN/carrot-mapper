@@ -15,7 +15,6 @@ django.setup()
 
 from django.db.models.query import QuerySet
 from shared.files.models import FileDownload, FileType
-from shared.files.service import upload_blob_read
 from shared.mapping.models import MappingRule, ScanReport
 from shared.services.rules_export import (
     get_mapping_rules_as_csv,
@@ -27,6 +26,9 @@ from shared_code.db import (
     JobStageType,
     StageStatusType,
 )
+from shared_code import storage_router
+
+storage_parser = storage_router.StorageService()
 
 
 def create_json_rules(rules: QuerySet[MappingRule]) -> BytesIO:
@@ -126,7 +128,9 @@ def main(msg: func.QueueMessage) -> None:
 
     # Save to blob
     filename = f"Rules - {scan_report.dataset} - {scan_report_id} - {datetime.now()}.{file_extension}"
-    upload_blob_read(filename, "rules-exports", file, file_type)
+    storage_parser.upload_blob(
+        filename, "rules-exports", file, file_type, use_read_method=True
+    )
 
     # create entity
     file_type_entity = FileType.objects.get(value=file_type_value)

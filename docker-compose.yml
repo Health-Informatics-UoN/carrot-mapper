@@ -70,9 +70,11 @@ services:
       - WORKERS_RULES_EXPORT_NAME=rules-exports-local
       - STORAGE_CONN_STRING=DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;TableEndpoint=http://azurite:10002/devstoreaccount1;
       - SIGNING_KEY=secret
+      - STORAGE_TYPE=azure
     volumes:
       - ./app/api:/api
       - ./app/shared:/shared
+      - ./app/workers/shared_code:/api/shared_code
     depends_on:
       omop-lite:
         condition: service_completed_successfully
@@ -106,9 +108,11 @@ services:
       - DB_NAME=postgres
       - DB_USER=postgres
       - DB_PASSWORD=postgres
+      - STORAGE_TYPE=azure
     volumes:
       - ./app/workers:/home/site/wwwroot
       - ./app/shared:/shared
+      - ./app/workers/shared_code:/home/site/wwwroot/shared_code
       # Mount the local secret to Docker container
       - ./app/workers/Secrets:/azure-functions-host/Secrets/
     depends_on:

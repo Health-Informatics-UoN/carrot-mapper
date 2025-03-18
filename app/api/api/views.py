@@ -25,7 +25,6 @@ from api.serializers import (
     ScanReportViewSerializerV2,
     UserSerializer,
 )
-from azure.storage.blob import BlobServiceClient
 from config import settings
 from datasets.serializers import DataPartnerSerializer
 from django.contrib.auth.models import User
@@ -52,7 +51,6 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from shared.data.models import Concept
-from shared.files.service import delete_blob, modify_filename, upload_blob, get_blob
 from shared.mapping.models import (
     DataDictionary,
     DataPartner,
@@ -78,6 +76,12 @@ from shared.services.rules_export import (
 )
 from shared.jobs.models import Job, JobStage, StageStatus
 from django.db.models import Q
+
+
+from shared_code import storage_router
+
+
+storage_parser = storage_router.StorageService()
 
 
 class DataPartnerViewSet(GenericAPIView, ListModelMixin):
@@ -215,7 +219,7 @@ class ScanReportIndexV2(GenericAPIView, ListModelMixin, CreateModelMixin):
         scan_report = ScanReport.objects.create(
             dataset=valid_dataset,
             parent_dataset=valid_parent_dataset,
-            name=modify_filename(valid_scan_report_file, dt, rand),
+            name=storage_parser.modify_filename(valid_scan_report_file, dt, rand),
             visibility=valid_visibility,
         )
 
@@ -230,6 +234,11 @@ class ScanReportIndexV2(GenericAPIView, ListModelMixin, CreateModelMixin):
         if sr_editors := valid_editors:
             scan_report.editors.add(*sr_editors)
 
+        # Spreadsheet Content Type
+        spreadsheet_content_type = (
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+
         # If there's no data dictionary supplied, only upload the scan report
         # Set data_dictionary_blob in Azure message to None
         if str(valid_data_dictionary_file) == "None":
@@ -239,11 +248,12 @@ class ScanReportIndexV2(GenericAPIView, ListModelMixin, CreateModelMixin):
                 "data_dictionary_blob": "None",
             }
 
-            upload_blob(
+            storage_parser.upload_blob(
                 scan_report.name,
                 "scan-reports",
                 valid_scan_report_file,
-                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                spreadsheet_content_type,
+                use_read_method=False,
             )
 
         else:
@@ -261,17 +271,19 @@ class ScanReportIndexV2(GenericAPIView, ListModelMixin, CreateModelMixin):
                 "data_dictionary_blob": data_dictionary.name,
             }
 
-            upload_blob(
+            storage_parser.upload_blob(
                 scan_report.name,
                 "scan-reports",
                 valid_scan_report_file,
-                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                spreadsheet_content_type,
+                use_read_method=False,
             )
-            upload_blob(
+            storage_parser.upload_blob(
                 data_dictionary.name,
                 "data-dictionaries",
                 valid_data_dictionary_file,
                 "text/csv",
+                use_read_method=False,
             )
 
         # send to the upload queue
@@ -308,12 +320,14 @@ class ScanReportDetailV2(
 
     def perform_destroy(self, instance):
         try:
-            delete_blob(instance.name, "scan-reports")
+            storage_parser.delete_blob(instance.name, "scan-reports")
         except Exception as e:
             raise Exception(f"Error deleting scan report: {e}")
         if instance.data_dictionary:
             try:
-                delete_blob(instance.data_dictionary.name, "data-dictionaries")
+                storage_parser.delete_blob(
+                    instance.data_dictionary.name, "data-dictionaries"
+                )
             except Exception as e:
                 raise Exception(f"Error deleting data dictionary: {e}")
         instance.delete()
@@ -831,7 +845,7 @@ class DownloadScanReportViewSet(viewsets.ViewSet):
         # TODO: This should not be a list view...
         scan_report = ScanReport.objects.get(id=pk)
         blob_name = scan_report.name
-        scan_report_blob = get_blob(blob_name, "scan-reports")
+        scan_report_blob = storage_parser.get_blob(blob_name, "scan-reports")
 
         response = HttpResponse(
             scan_report_blob,

@@ -4,7 +4,6 @@ import os
 import random
 import string
 
-from azure.storage.blob import BlobServiceClient, ContentSettings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import PasswordChangeForm, PasswordResetForm
@@ -29,7 +28,6 @@ from shared.mapping.models import (
     DataDictionary,
     Dataset,
     MappingRule,
-    OmopField,
     ScanReport,
     ScanReportAssertion,
     ScanReportField,
@@ -44,6 +42,11 @@ from shared.services.rules_export import (
 
 from .forms import ScanReportAssertionForm, ScanReportForm
 from .permissions import has_editorship, has_viewership, is_admin
+
+
+from shared_code import storage_router
+
+storage_parser = storage_router.StorageService()
 
 
 @login_required
@@ -205,8 +208,7 @@ class ScanReportFormView(FormView):
         ):
             messages.warning(
                 self.request,
-                "You do not have editor or administrator "
-                "permissions on this Dataset.",
+                "You do not have editor or administrator permissions on this Dataset.",
             )
             return self.form_invalid(form)
 
@@ -234,13 +236,13 @@ class ScanReportFormView(FormView):
         if sr_editors := form.cleaned_data.get("editors"):
             scan_report.editors.add(*sr_editors)
 
-        # Grab Azure storage credentials
-        blob_service_client = BlobServiceClient.from_connection_string(
-            os.getenv("STORAGE_CONN_STRING")
-        )
-
         print("FILE >>> ", str(form.cleaned_data.get("scan_report_file")))
         print("STRING TEST >>>> ", scan_report.name)
+
+        # Spreadsheet_content_type
+        spreadsheet_content_type = (
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
 
         # If there's no data dictionary supplied, only upload the scan report
         # Set data_dictionary_blob in Azure message to None
@@ -251,14 +253,12 @@ class ScanReportFormView(FormView):
                 "data_dictionary_blob": "None",
             }
 
-            blob_client = blob_service_client.get_blob_client(
-                container="scan-reports", blob=scan_report.name
-            )
-            blob_client.upload_blob(
-                form.cleaned_data.get("scan_report_file").open(),
-                content_settings=ContentSettings(
-                    content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                ),
+            storage_parser.upload_blob(
+                blob_name=scan_report.name,
+                container="scan-reports",
+                file=form.cleaned_data.get("scan_report_file"),
+                content_type=spreadsheet_content_type,
+                use_read_method=False,
             )
             # setting content settings for downloading later
         # Else upload the scan report and the data dictionary
@@ -277,15 +277,13 @@ class ScanReportFormView(FormView):
                 "data_dictionary_blob": data_dictionary.name,
             }
 
-            blob_client = blob_service_client.get_blob_client(
-                container="scan-reports", blob=scan_report.name
-            )
-            blob_client.upload_blob(form.cleaned_data.get("scan_report_file").open())
-            blob_client = blob_service_client.get_blob_client(
-                container="data-dictionaries", blob=data_dictionary.name
-            )
-            blob_client.upload_blob(
-                form.cleaned_data.get("data_dictionary_file").open()
+            storage_parser.upload_form_from_data_dictionary_to_containers(
+                form_1=form.cleaned_data.get("scan_report_file").open(),
+                form_2=form.cleaned_data.get("data_dictionary_file").open(),
+                container_1="scan-reports",
+                container_2="data-dictionaries",
+                blob_1=scan_report.name,
+                blob_2=data_dictionary.name,
             )
 
         # send to the upload queue

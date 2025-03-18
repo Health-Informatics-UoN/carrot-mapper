@@ -14,8 +14,14 @@ from shared.services.azurequeue import add_message
 
 from .models import FileDownload
 from .serializers import FileDownloadSerializer
-from .service import get_blob
+
 from shared.jobs.models import Job, JobStage, StageStatus
+
+
+from shared_code import storage_router
+
+
+storage_parser = storage_router.StorageService()
 
 
 class FileDownloadView(GenericAPIView, ListModelMixin, RetrieveModelMixin):
@@ -34,7 +40,7 @@ class FileDownloadView(GenericAPIView, ListModelMixin, RetrieveModelMixin):
     def get(self, request, *args, **kwargs):
         if "pk" in kwargs:
             entity = get_object_or_404(FileDownload, pk=kwargs["pk"])
-            file = get_blob(entity.file_url, "rules-exports")
+            file = storage_parser.get_blob(entity.file_url, "rules-exports")
 
             response = HttpResponse(file, content_type="application/octet-stream")
             response["Content-Disposition"] = f'attachment; filename="{entity.name}"'
@@ -68,7 +74,7 @@ class FileDownloadView(GenericAPIView, ListModelMixin, RetrieveModelMixin):
                 scan_report=ScanReport.objects.get(id=scan_report_id),
                 stage=JobStage.objects.get(value="DOWNLOAD_RULES"),
                 status=StageStatus.objects.get(value="IN_PROGRESS"),
-                details=f'A Mapping Rules {"JSON" if file_type=="application/json" else "CSV"} is being generated.',
+                details=f"A Mapping Rules {'JSON' if file_type == 'application/json' else 'CSV'} is being generated.",
             )
         except json.JSONDecodeError:
             return JsonResponse({"error": "Invalid JSON data."}, status=400)

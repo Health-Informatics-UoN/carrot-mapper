@@ -1,5 +1,5 @@
 import pytest
-from shared_code.blob_parser import (
+from shared_code.utils import (
     process_four_item_dict,
     process_three_item_dict,
     remove_BOM,

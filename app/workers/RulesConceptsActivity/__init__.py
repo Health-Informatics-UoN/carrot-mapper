@@ -2,7 +2,8 @@ import os
 from collections import defaultdict
 from typing import Any, Dict, List, Union
 
-from shared_code import blob_parser, helpers
+from shared_code import storage_router
+from shared_code import helpers
 from shared_code.logger import logger
 from shared_code.models import ScanReportConceptContentType, ScanReportValueDict
 
@@ -20,6 +21,9 @@ from shared_code.db import (
     StageStatusType,
 )
 from .reuse import reuse_existing_field_concepts, reuse_existing_value_concepts
+
+
+storage_parser = storage_router.StorageService()
 
 
 def _create_concepts(
@@ -212,8 +216,7 @@ def _batch_process_non_standard_concepts(entries: List[ScanReportValueDict]) -> 
         if entry["concept_id"] != -1 and entry["standard_concept"] != "S"
     ]
     logger.debug(
-        f"finished selecting nonstandard concepts - selected "
-        f"{len(nonstandard_entries)}"
+        f"finished selecting nonstandard concepts - selected {len(nonstandard_entries)}"
     )
     batched_standard_concepts_map = db.find_standard_concept_batch(nonstandard_entries)
     _update_entries_with_standard_concepts(entries, batched_standard_concepts_map)
@@ -287,7 +290,7 @@ def _handle_table(
             JobStageType.BUILD_CONCEPTS_FROM_DICT,
             StageStatusType.COMPLETE,
             scan_report_table=table,
-            details=f"Finished",
+            details="Finished",
         )
     else:
         update_job(
@@ -338,6 +341,6 @@ def main(msg: Dict[str, str]):
     table = ScanReportTable.objects.get(pk=table_id)
 
     # get the vocab dictionary
-    _, vocab_dictionary = blob_parser.get_data_dictionary(data_dictionary_blob)
+    _, vocab_dictionary = storage_parser.get_data_dictionary(data_dictionary_blob)
 
     _handle_table(table, vocab_dictionary)
