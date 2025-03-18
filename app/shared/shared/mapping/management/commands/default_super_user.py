@@ -43,9 +43,7 @@ class Command(BaseCommand):
             elif None != su_username:
                 message = "no SUPERUSER_DEFAULT_PASSWORD value was defined in the environment variables"
             else:
-                message = (
-                    "neither SUPERUSER_DEFAULT_USERNAME or SUPERUSER_DEFAULT_PASSWORD values were defined in the environment variables"
-                )
+                message = "neither SUPERUSER_DEFAULT_USERNAME or SUPERUSER_DEFAULT_PASSWORD values were defined in the environment variables"
 
 
             self.stdout.write(self.style.ERROR(message))
