@@ -32,10 +32,13 @@ def mocks(command):
 
     class m_style:
         def WARNING(self, message):
-            return message
+            return "> " + message
 
         def SUCCESS(self, message):
-            return message
+            return "; " + message
+
+        def ERROF(self, message):
+            return "; " + message
 
     class m_settings:
         SUPERUSER_DEFAULT_USERNAME = "#name"
@@ -75,12 +78,12 @@ class TestSetup(TestCase):
         )
         self.assertEqual(
             [
-                "Superuser successfully created with Username='#name', Password='#*******d'"
+                "; Superuser successfully created with Username='#name', Password='#*******d'"
             ],
             messages,
         )
 
-    def test_uselss_account(self):
+    def test_no_create_when_single_user_present(self):
         """creates a mock setup with a single user to be sure accounts won't be added in this case"""
 
         command = dsu.Command()
@@ -99,7 +102,7 @@ class TestSetup(TestCase):
 
         self.assertEqual([geo], users)
         self.assertEqual(
-            ["There is already a user - default superuser will not be added"], messages
+            ["; There is already a user - default superuser will not be added"], messages
         )
 
     def test_entrypoint(self):
@@ -121,3 +124,101 @@ class TestSetup(TestCase):
                     self.assertFalse(found)
                     found = True
         self.assertTrue(found)
+
+    def test_multiple_accounts_already(self):
+        """creates a mock setup with three users to be sure accounts won't be added in this case"""
+
+        command = dsu.Command()
+
+        [users, messages] = mocks(command)
+
+        account = {
+            "super": False,
+            "name": "fred",
+            "email": "jake@foo",
+            "password": "ieatbugs",
+        }
+        users.append(account)
+        account = {
+            "super": True,
+            "name": "kim",
+            "email": "kim@foo",
+            "password": "dayweekyear",
+        }
+        users.append(account)
+        account = {
+            "super": False,
+            "name": "sam",
+            "email": "sammy@foo",
+            "password": "drivecar",
+        }
+        users.append(account)
+
+        command.handle()
+
+        self.assertEqual(3, len(users))
+        self.assertEqual(
+            ["; There are 3 users - default superuser will not be added"], messages
+        )
+
+    def test_no_env_username(self):
+        """test that a user won't be created when username isn't set in env"""
+
+        command = dsu.Command()
+
+        [users, messages] = mocks(command)
+
+        command.settings.SUPERUSER_DEFAULT_USERNAME = None
+
+        command.handle()
+
+        self.assertEqual([], users)
+        self.assertEqual(
+            [
+                "! no SUPERUSER_DEFAULT_USERNAME value was defined in the environment variables",
+                "! no user account exists in the system",
+            ],
+            messages,
+        )
+
+
+
+    def test_no_env_password(self):
+        """test that a user won't be created when password isn't set in env"""
+
+        command = dsu.Command()
+
+        [users, messages] = mocks(command)
+
+        command.settings.SUPERUSER_DEFAULT_PASSWORD = None
+
+        command.handle()
+
+        self.assertEqual([], users)
+        self.assertEqual(
+            [
+                "! no SUPERUSER_DEFAULT_PASSWORD value was defined in the environment variables",
+                "! no user account exists in the system",
+            ],
+            messages,
+        )
+    def test_no_env_username_or_password(self):
+        """test that a user won't be created when neither password or username are set in env"""
+
+        command = dsu.Command()
+
+        [users, messages] = mocks(command)
+
+        command.settings.SUPERUSER_DEFAULT_USERNAME = None
+        command.settings.SUPERUSER_DEFAULT_PASSWORD = None
+
+        command.handle()
+
+        self.assertEqual([], users)
+        self.assertEqual(
+            [
+                "! neither SUPERUSER_DEFAULT_USERNAME or SUPERUSER_DEFAULT_PASSWORD values were defined in the environment variables",
+                "! no user account exists in the system",
+            ],
+            messages,
+        )
