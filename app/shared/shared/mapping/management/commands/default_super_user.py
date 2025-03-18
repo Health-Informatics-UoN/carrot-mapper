@@ -45,7 +45,6 @@ class Command(BaseCommand):
             else:
                 message = "neither SUPERUSER_DEFAULT_USERNAME or SUPERUSER_DEFAULT_PASSWORD values were defined in the environment variables"
 
-
             self.stdout.write(self.style.ERROR(message))
             self.stdout.write(self.style.ERROR("no user account exists in the system"))
             return
