@@ -309,7 +309,7 @@ def _find_destination_table(concept: Concept) -> Optional[OmopTable]:
 
 def save_mapping_rules(
     scan_report_concept: ScanReportConcept,
-) -> Tuple[bool, List[MappingRule]]:
+) -> List[MappingRule]:
     """
     Save mapping rules from a given ScanReportConcept.
 
@@ -334,14 +334,14 @@ def save_mapping_rules(
     # start looking up what table we're looking at
     destination_table = _find_destination_table(concept)
     if destination_table is None:
-        return False, []
+        return []
 
     source_table = source_field.scan_report_table
 
     # check whether the person_id and date events for this table are valid
     # if not, we dont want to create any rules for this concept
     if not _validate_person_id_and_date(source_table):
-        return False, []
+        return []
 
     rules = []
     person_id_rule = _get_person_id_rule(
@@ -452,7 +452,7 @@ def save_mapping_rules(
         )
         rules.append(rule_domain_value_as_string)
 
-    return True, rules
+    return rules
 
 
 @transaction.atomic
@@ -476,8 +476,8 @@ def refresh_mapping_rules(table_id: int, page: int, page_size: int) -> None:
 
     # Process each concept - but now within a transaction
     for concept in concepts:
-        saved, rules = save_mapping_rules(concept)
-        if saved:
+        rules = save_mapping_rules(concept)
+        if rules:
             rules_to_create.extend(rules)
     # Bulk create rules
     if rules_to_create:
