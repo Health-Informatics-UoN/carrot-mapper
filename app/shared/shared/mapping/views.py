@@ -39,12 +39,12 @@ from shared.services.rules_export import (
     get_mapping_rules_json,
     make_dag,
 )
-from shared.services.storage_router import StorageService
+from shared.services.storage_service import StorageService
 
 from .forms import ScanReportAssertionForm, ScanReportForm
 from .permissions import has_editorship, has_viewership, is_admin
 
-storage_parser = StorageService()
+storage_service = StorageService()
 
 
 @login_required
@@ -251,7 +251,7 @@ class ScanReportFormView(FormView):
                 "data_dictionary_blob": "None",
             }
 
-            storage_parser.upload_blob(
+            storage_service.upload_blob(
                 blob_name=scan_report.name,
                 container="scan-reports",
                 file=form.cleaned_data.get("scan_report_file"),
@@ -275,7 +275,7 @@ class ScanReportFormView(FormView):
                 "data_dictionary_blob": data_dictionary.name,
             }
 
-            storage_parser.upload_form_from_data_dictionary_to_containers(
+            storage_service.upload_form_from_data_dictionary_to_containers(
                 form_1=form.cleaned_data.get("scan_report_file").open(),
                 form_2=form.cleaned_data.get("data_dictionary_file").open(),
                 container_1="scan-reports",

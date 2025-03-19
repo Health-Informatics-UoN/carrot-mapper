@@ -3,7 +3,7 @@ import os
 from collections import defaultdict
 from typing import Any, Dict, List, Tuple
 
-from shared.services.storage_router import StorageService
+from shared.services.storage_service import StorageService
 import azure.functions as func
 from openpyxl import Workbook
 from openpyxl.cell.cell import Cell
@@ -23,7 +23,7 @@ import django
 
 django.setup()
 
-storage_parser = StorageService()
+storage_service = StorageService()
 
 
 def _get_unique_table_names(worksheet: Worksheet) -> List[str]:
@@ -455,8 +455,8 @@ def main(msg: func.QueueMessage) -> None:
         scan_report=ScanReport.objects.get(id=scan_report_id),
     )
 
-    wb = storage_parser.get_scan_report(scan_report_blob)
-    data_dictionary, _ = storage_parser.get_data_dictionary(data_dictionary_blob)
+    wb = storage_service.get_scan_report(scan_report_blob)
+    data_dictionary, _ = storage_service.get_data_dictionary(data_dictionary_blob)
 
     # Get the first sheet 'Field Overview',
     # to populate ScanReportTable & ScanReportField models

@@ -209,12 +209,12 @@ class StorageService:
         use_read_method: bool = False,
     ):
         """
-        This function takes a file and uploads it to a specified container in Azure Blob Storage.
+        This function takes a file and uploads it to a specified container in Data Storage.
         The file is stored with the provided blob name and content type.
 
         Args:
-            blob_name (str): The name that will be assigned to the uploaded file in Azure Blob Storage.
-            container (str): The name of the Azure Blob Storage container where the file will be uploaded.
+            blob_name (str): The name that will be assigned to the uploaded file in Data Storage.
+            container (str): The name of the Data Storage container where the file will be uploaded.
             file (File): The file to be uploaded.
             content_type (str): The MIME type of the file to be uploaded.
 
@@ -248,7 +248,7 @@ class StorageService:
         self, form_value_1, form_value_2, container_1, container_2, blob_1, blob_2
     ):
         """
-        Uploads two files from the form to their respective containers in Azure Blob Storage.
+        Uploads two files from the form to their respective containers in data Storage.
 
         Args:
             form_value_1: The file object for the first file (e.g., scan report).

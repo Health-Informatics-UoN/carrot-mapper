@@ -12,12 +12,12 @@ from shared.files.paginations import CustomPagination
 from shared.jobs.models import Job, JobStage, StageStatus
 from shared.mapping.models import ScanReport
 from shared.services.azurequeue import add_message
-from shared.services.storage_router import StorageService
+from shared.services.storage_service import StorageService
 
 from .models import FileDownload
 from .serializers import FileDownloadSerializer
 
-storage_parser = StorageService()
+storage_service = StorageService()
 
 
 class FileDownloadView(GenericAPIView, ListModelMixin, RetrieveModelMixin):
@@ -36,7 +36,7 @@ class FileDownloadView(GenericAPIView, ListModelMixin, RetrieveModelMixin):
     def get(self, request, *args, **kwargs):
         if "pk" in kwargs:
             entity = get_object_or_404(FileDownload, pk=kwargs["pk"])
-            file = storage_parser.get_blob(entity.file_url, "rules-exports")
+            file = storage_service.get_blob(entity.file_url, "rules-exports")
 
             response = HttpResponse(file, content_type="application/octet-stream")
             response["Content-Disposition"] = f'attachment; filename="{entity.name}"'

@@ -76,9 +76,9 @@ from shared.services.rules_export import (
     get_mapping_rules_list,
     make_dag,
 )
-from shared.services.storage_router import StorageService
+from shared.services.storage_service import StorageService
 
-storage_parser = StorageService()
+storage_service = StorageService()
 
 
 class DataPartnerViewSet(GenericAPIView, ListModelMixin):
@@ -216,7 +216,7 @@ class ScanReportIndexV2(GenericAPIView, ListModelMixin, CreateModelMixin):
         scan_report = ScanReport.objects.create(
             dataset=valid_dataset,
             parent_dataset=valid_parent_dataset,
-            name=storage_parser.modify_filename(valid_scan_report_file, dt, rand),
+            name=storage_service.modify_filename(valid_scan_report_file, dt, rand),
             visibility=valid_visibility,
         )
 
@@ -245,7 +245,7 @@ class ScanReportIndexV2(GenericAPIView, ListModelMixin, CreateModelMixin):
                 "data_dictionary_blob": "None",
             }
 
-            storage_parser.upload_blob(
+            storage_service.upload_blob(
                 scan_report.name,
                 "scan-reports",
                 valid_scan_report_file,
@@ -268,14 +268,14 @@ class ScanReportIndexV2(GenericAPIView, ListModelMixin, CreateModelMixin):
                 "data_dictionary_blob": data_dictionary.name,
             }
 
-            storage_parser.upload_blob(
+            storage_service.upload_blob(
                 scan_report.name,
                 "scan-reports",
                 valid_scan_report_file,
                 spreadsheet_content_type,
                 use_read_method=False,
             )
-            storage_parser.upload_blob(
+            storage_service.upload_blob(
                 data_dictionary.name,
                 "data-dictionaries",
                 valid_data_dictionary_file,
@@ -317,12 +317,12 @@ class ScanReportDetailV2(
 
     def perform_destroy(self, instance):
         try:
-            storage_parser.delete_blob(instance.name, "scan-reports")
+            storage_service.delete_blob(instance.name, "scan-reports")
         except Exception as e:
             raise Exception(f"Error deleting scan report: {e}")
         if instance.data_dictionary:
             try:
-                storage_parser.delete_blob(
+                storage_service.delete_blob(
                     instance.data_dictionary.name, "data-dictionaries"
                 )
             except Exception as e:
@@ -842,7 +842,7 @@ class DownloadScanReportViewSet(viewsets.ViewSet):
         # TODO: This should not be a list view...
         scan_report = ScanReport.objects.get(id=pk)
         blob_name = scan_report.name
-        scan_report_blob = storage_parser.get_blob(blob_name, "scan-reports")
+        scan_report_blob = storage_service.get_blob(blob_name, "scan-reports")
 
         response = HttpResponse(
             scan_report_blob,

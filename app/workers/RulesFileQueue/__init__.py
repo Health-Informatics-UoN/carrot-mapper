@@ -21,10 +21,10 @@ from shared.services.rules_export import (
     get_mapping_rules_json,
     make_dag,
 )
-from shared.services.storage_router import StorageService
+from shared.services.storage_service import StorageService
 from shared_code.db import JobStageType, StageStatusType, update_job
 
-storage_parser = StorageService()
+storage_service = StorageService()
 
 
 def create_json_rules(rules: QuerySet[MappingRule]) -> BytesIO:
@@ -124,7 +124,7 @@ def main(msg: func.QueueMessage) -> None:
 
     # Save to blob
     filename = f"Rules - {scan_report.dataset} - {scan_report_id} - {datetime.now()}.{file_extension}"
-    storage_parser.upload_blob(
+    storage_service.upload_blob(
         filename, "rules-exports", file, file_type, use_read_method=True
     )
 

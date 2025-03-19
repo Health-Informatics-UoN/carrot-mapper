@@ -2,7 +2,7 @@ import os
 from collections import defaultdict
 from typing import Any, Dict, List, Union
 
-from shared.services.storage_router import StorageService
+from shared.services.storage_service import StorageService
 from shared_code import helpers
 from shared_code.logger import logger
 from shared_code.models import ScanReportConceptContentType, ScanReportValueDict
@@ -19,7 +19,7 @@ from shared_code.db import JobStageType, StageStatusType, update_job
 
 from .reuse import reuse_existing_field_concepts, reuse_existing_value_concepts
 
-storage_parser = StorageService()
+storage_service = StorageService()
 
 
 def _create_concepts(
@@ -337,6 +337,6 @@ def main(msg: Dict[str, str]):
     table = ScanReportTable.objects.get(pk=table_id)
 
     # get the vocab dictionary
-    _, vocab_dictionary = storage_parser.get_data_dictionary(data_dictionary_blob)
+    _, vocab_dictionary = storage_service.get_data_dictionary(data_dictionary_blob)
 
     _handle_table(table, vocab_dictionary)

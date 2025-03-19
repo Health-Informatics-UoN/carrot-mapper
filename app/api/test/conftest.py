@@ -54,7 +54,7 @@ def django_db_setup(
     # Manually create the test DB + omop Schema if it doesn't exist, drop if it does.
     run_sql("postgres", f"DROP DATABASE IF EXISTS {db_name}")
     run_sql("postgres", f"CREATE DATABASE {db_name} TEMPLATE template0")
-    run_sql(db_name, "CREATE SCHEMA omop;")
+    run_sql(db_name, "CREATE SCHEMA IF NOT EXISTS omop")
 
     # Set the default to test for ease
     settings.DATABASES["default"]["NAME"] = db_name
