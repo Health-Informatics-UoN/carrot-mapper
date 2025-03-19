@@ -1,21 +1,10 @@
 from django.contrib import admin
-from shared.mapping.models import (
-    ClassificationSystem,
-    DataDictionary,
-    DataPartner,
-    Dataset,
-    MappingRule,
-    NLPModel,
-    OmopField,
-    OmopTable,
-    Project,
-    ScanReport,
-    ScanReportAssertion,
-    ScanReportConcept,
-    ScanReportField,
-    ScanReportTable,
-    ScanReportValue,
-)
+from shared.mapping.models import (ClassificationSystem, DataDictionary,
+                                   DataPartner, Dataset, MappingRule, NLPModel,
+                                   OmopField, OmopTable, Project, ScanReport,
+                                   ScanReportAssertion, ScanReportConcept,
+                                   ScanReportField, ScanReportTable,
+                                   ScanReportValue)
 
 
 class DataPartnerAdmin(admin.ModelAdmin):

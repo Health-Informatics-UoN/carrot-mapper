@@ -1,10 +1,8 @@
 import pytest
-from RulesConceptsActivity import (
-    _create_concepts,
-    _match_concepts_to_entries,
-    _set_defaults_for_none_vocab,
-    _update_entries_with_standard_concepts,
-)
+from RulesConceptsActivity import (_create_concepts,
+                                   _match_concepts_to_entries,
+                                   _set_defaults_for_none_vocab,
+                                   _update_entries_with_standard_concepts)
 from shared.data.models import Concept
 
 
