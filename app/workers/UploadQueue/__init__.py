@@ -1,7 +1,9 @@
 import asyncio
 import os
+import sys
 from collections import defaultdict
 from typing import Any, Dict, List, Tuple
+
 
 import azure.functions as func
 from openpyxl import Workbook
@@ -20,6 +22,7 @@ from shared_code.db import (
 )
 from shared.mapping.models import ScanReport
 from shared_code.logger import logger
+from shared_code.rabbitmq_handler import RabbitMQClient
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "shared_code.django_settings")
 import django
@@ -433,22 +436,18 @@ def _handle_failure(msg: func.QueueMessage, scan_report_id: str) -> None:
         raise ValueError("dequeue_count > 1")
 
 
-def main(msg: func.QueueMessage) -> None:
+# Function to handle processing logic
+def process_scan_report_message(body: bytes) -> None:
     """
-    Processes a queue message
-    Unwraps the message content
-    Gets the workbook and data dictionary.
-    Creates the scan report tables.
-    Creates the scan report fields.
-    Updates the scan report status accordingly.
+    Processes the incoming RabbitMQ message.
+    Unwraps the message content, gets the workbook and data dictionary,
+    creates the scan report tables and fields, and updates the scan report status.
 
     Args:
-        msg (func.QueueMessage): The message received from the queue.
+        body (bytes): The raw message body from RabbitMQ.
     """
-    scan_report_blob, data_dictionary_blob, scan_report_id, _ = helpers.unwrap_message(
-        msg
-    )
-    _handle_failure(msg, scan_report_id)
+    scan_report_blob, data_dictionary_blob, scan_report_id, _ = helpers.unwrap_message(body)
+    _handle_failure(scan_report_blob, scan_report_id)
 
     update_job(
         JobStageType.UPLOAD_SCAN_REPORT,
@@ -473,3 +472,12 @@ def main(msg: func.QueueMessage) -> None:
         StageStatusType.COMPLETE,
         scan_report=ScanReport.objects.get(id=scan_report_id),
     )
+
+
+# Main function
+def main():
+    # Set up RabbitMQ client
+    rabbitmq_client = RabbitMQClient()
+
+    # Start consuming messages from RabbitMQ
+    rabbitmq_client.consume(process_scan_report_message)
