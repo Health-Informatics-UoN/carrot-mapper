@@ -21,10 +21,10 @@ from shared.services.rules_export import (
     get_mapping_rules_json,
     make_dag,
 )
-from shared_code import storage_router
+from shared.services.storage_router import StorageService
 from shared_code.db import JobStageType, StageStatusType, update_job
 
-storage_parser = storage_router.StorageService()
+storage_parser = StorageService()
 
 
 def create_json_rules(rules: QuerySet[MappingRule]) -> BytesIO:

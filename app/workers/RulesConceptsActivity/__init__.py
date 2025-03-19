@@ -2,7 +2,8 @@ import os
 from collections import defaultdict
 from typing import Any, Dict, List, Union
 
-from shared_code import helpers, storage_router
+from shared.services.storage_router import StorageService
+from shared_code import helpers
 from shared_code.logger import logger
 from shared_code.models import ScanReportConceptContentType, ScanReportValueDict
 
@@ -18,7 +19,7 @@ from shared_code.db import JobStageType, StageStatusType, update_job
 
 from .reuse import reuse_existing_field_concepts, reuse_existing_value_concepts
 
-storage_parser = storage_router.StorageService()
+storage_parser = StorageService()
 
 
 def _create_concepts(

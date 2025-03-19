@@ -12,12 +12,12 @@ from shared.files.paginations import CustomPagination
 from shared.jobs.models import Job, JobStage, StageStatus
 from shared.mapping.models import ScanReport
 from shared.services.azurequeue import add_message
-from shared_code import storage_router
+from shared.services.storage_router import StorageService
 
 from .models import FileDownload
 from .serializers import FileDownloadSerializer
 
-storage_parser = storage_router.StorageService()
+storage_parser = StorageService()
 
 
 class FileDownloadView(GenericAPIView, ListModelMixin, RetrieveModelMixin):

@@ -3,6 +3,7 @@ import os
 from collections import defaultdict
 from typing import Any, Dict, List, Tuple
 
+from shared.services.storage_router import StorageService
 import azure.functions as func
 from openpyxl import Workbook
 from openpyxl.cell.cell import Cell
@@ -13,7 +14,7 @@ from shared.mapping.models import (
     ScanReportTable,
     ScanReportValue,
 )
-from shared_code import helpers, storage_router
+from shared_code import helpers
 from shared_code.db import JobStageType, StageStatusType, update_job
 from shared_code.logger import logger
 
@@ -22,7 +23,7 @@ import django
 
 django.setup()
 
-storage_parser = storage_router.StorageService()
+storage_parser = StorageService()
 
 
 def _get_unique_table_names(worksheet: Worksheet) -> List[str]:

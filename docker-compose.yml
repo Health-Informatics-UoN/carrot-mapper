@@ -74,7 +74,6 @@ services:
     volumes:
       - ./app/api:/api
       - ./app/shared:/shared
-      - ./app/workers/shared_code:/api/shared_code
     depends_on:
       omop-lite:
         condition: service_completed_successfully
@@ -112,7 +111,6 @@ services:
     volumes:
       - ./app/workers:/home/site/wwwroot
       - ./app/shared:/shared
-      - ./app/workers/shared_code:/home/site/wwwroot/shared_code
       # Mount the local secret to Docker container
       - ./app/workers/Secrets:/azure-functions-host/Secrets/
     depends_on:
