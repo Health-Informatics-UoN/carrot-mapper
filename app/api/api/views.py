@@ -640,7 +640,7 @@ class ScanReportConceptListV2(
 
         model = serializer.instance
         rules = save_mapping_rules(model)
-        if rules == []:
+        if not rules:
             return Response(
                 {"detail": "Rule could not be saved."},
                 status=status.HTTP_400_BAD_REQUEST,
