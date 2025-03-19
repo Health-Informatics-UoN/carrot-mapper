@@ -1,8 +1,8 @@
 from drf_dynamic_fields import DynamicFieldsMixin  # type: ignore
-from projects.serializers import ProjectNameSerializer
 from rest_framework import serializers
 from shared.mapping.models import DataPartner, Dataset
 from shared.mapping.permissions import is_admin, is_az_function_user
+from projects.serializers import ProjectNameSerializer
 
 
 class DataPartnerSerializer(DynamicFieldsMixin, serializers.ModelSerializer):

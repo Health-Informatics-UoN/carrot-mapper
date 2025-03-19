@@ -3,7 +3,6 @@ from collections import Counter
 from io import BytesIO, StringIO
 
 import openpyxl  # type: ignore
-from config.settings import DATA_UPLOAD_MAX_MEMORY_SIZE
 from datasets.serializers import DatasetSerializer
 from django.contrib.auth.models import User
 from drf_dynamic_fields import DynamicFieldsMixin  # type: ignore
@@ -11,13 +10,20 @@ from openpyxl.workbook.workbook import Workbook  # type: ignore
 from rest_framework import serializers
 from rest_framework.exceptions import NotFound, ParseError, PermissionDenied
 from shared.data.models import Concept
-from shared.mapping.models import (Dataset, MappingStatus, ScanReport,
-                                   ScanReportConcept, ScanReportField,
-                                   ScanReportTable, ScanReportValue,
-                                   UploadStatus, VisibilityChoices)
-from shared.mapping.permissions import (has_editorship, is_admin,
-                                        is_az_function_user)
+from shared.mapping.models import (
+    Dataset,
+    ScanReport,
+    ScanReportConcept,
+    ScanReportField,
+    ScanReportTable,
+    ScanReportValue,
+    VisibilityChoices,
+    UploadStatus,
+    MappingStatus,
+)
+from shared.mapping.permissions import has_editorship, is_admin, is_az_function_user
 from shared.services.rules_export import analyse_concepts
+from config.settings import DATA_UPLOAD_MAX_MEMORY_SIZE
 
 
 class ConceptSerializerV2(serializers.ModelSerializer):

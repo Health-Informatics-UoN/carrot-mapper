@@ -8,12 +8,19 @@ from django.contrib.auth import get_user_model
 from django.contrib.contenttypes.models import ContentType
 from django.test import TestCase, TransactionTestCase
 from rest_framework.authtoken.models import Token
-from rest_framework.test import (APIClient, APIRequestFactory,
-                                 force_authenticate)
-from shared.mapping.models import (Concept, DataPartner, Dataset, Project,
-                                   ScanReport, ScanReportConcept,
-                                   ScanReportField, ScanReportTable,
-                                   ScanReportValue, VisibilityChoices)
+from rest_framework.test import APIClient, APIRequestFactory, force_authenticate
+from shared.mapping.models import (
+    Concept,
+    DataPartner,
+    Dataset,
+    Project,
+    ScanReport,
+    ScanReportConcept,
+    ScanReportField,
+    ScanReportTable,
+    ScanReportValue,
+    VisibilityChoices,
+)
 
 
 class TestDatasetListView(TestCase):

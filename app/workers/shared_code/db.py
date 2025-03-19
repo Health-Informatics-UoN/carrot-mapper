@@ -1,17 +1,25 @@
 from collections import OrderedDict, defaultdict
-from enum import Enum
 from typing import Any, Dict, List, Literal, Optional, Union
+from enum import Enum
 
 from django.contrib.contenttypes.models import ContentType
 from django.db.models.query import QuerySet
 from shared.data.models import Concept, ConceptRelationship
-from shared.jobs.models import Job, JobStage, StageStatus
-from shared.mapping.models import (ScanReport, ScanReportConcept,
-                                   ScanReportField, ScanReportTable,
-                                   ScanReportValue, UploadStatus)
+from shared.mapping.models import (
+    ScanReport,
+    ScanReportConcept,
+    ScanReportField,
+    ScanReportValue,
+    ScanReportTable,
+    UploadStatus,
+)
 from shared_code.logger import logger
-from shared_code.models import (ScanReportConceptContentType,
-                                ScanReportFieldDict, ScanReportValueDict)
+from shared_code.models import (
+    ScanReportConceptContentType,
+    ScanReportFieldDict,
+    ScanReportValueDict,
+)
+from shared.jobs.models import Job, JobStage, StageStatus
 
 
 class StageStatusType(Enum):

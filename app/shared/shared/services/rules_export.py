@@ -8,9 +8,15 @@ from django.db.models import Q
 from django.db.models.query import QuerySet
 from graphviz import Digraph
 from shared.data.models import Concept, ConceptAncestor
-from shared.mapping.models import (MappingRule, OmopField, OmopTable,
-                                   ScanReportConcept, ScanReportField,
-                                   ScanReportTable, ScanReportValue)
+from shared.mapping.models import (
+    MappingRule,
+    OmopField,
+    OmopTable,
+    ScanReportConcept,
+    ScanReportField,
+    ScanReportTable,
+    ScanReportValue,
+)
 
 
 class NonStandardConceptMapsToSelf(Exception):

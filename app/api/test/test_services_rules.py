@@ -6,10 +6,19 @@ from django.contrib.contenttypes.models import ContentType
 from django.test import TestCase
 from rest_framework.authtoken.models import Token
 from shared.data.models import Concept
-from shared.mapping.models import (DataPartner, Dataset, MappingRule,
-                                   OmopField, OmopTable, Project, ScanReport,
-                                   ScanReportConcept, ScanReportField,
-                                   ScanReportTable, ScanReportValue)
+from shared.mapping.models import (
+    DataPartner,
+    Dataset,
+    MappingRule,
+    OmopField,
+    OmopTable,
+    Project,
+    ScanReport,
+    ScanReportConcept,
+    ScanReportField,
+    ScanReportTable,
+    ScanReportValue,
+)
 
 
 class TestMisalignedMappings(TestCase):

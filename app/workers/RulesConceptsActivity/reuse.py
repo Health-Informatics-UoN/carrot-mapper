@@ -1,13 +1,23 @@
-from collections import defaultdict
 from typing import Dict, List, Tuple, Union
-
-from shared.mapping.models import (ScanReportConcept, ScanReportField,
-                                   ScanReportTable, ScanReportValue)
+from collections import defaultdict
+from shared.mapping.models import (
+    ScanReportConcept,
+    ScanReportField,
+    ScanReportValue,
+    ScanReportTable,
+)
 from shared_code import db
-from shared_code.db import JobStageType, StageStatusType, update_job
 from shared_code.logger import logger
-from shared_code.models import (ScanReportConceptContentType,
-                                ScanReportFieldDict, ScanReportValueDict)
+from shared_code.models import (
+    ScanReportConceptContentType,
+    ScanReportFieldDict,
+    ScanReportValueDict,
+)
+from shared_code.db import (
+    update_job,
+    JobStageType,
+    StageStatusType,
+)
 
 """
 Functions for finding, mapping, and creation of reusable Scan Report Concepts.

@@ -1,7 +1,7 @@
-from django.core.management import call_command
 from django.core.management.base import BaseCommand
-from shared.files.models import FileType
+from django.core.management import call_command
 from shared.mapping.models import OmopTable
+from shared.files.models import FileType
 
 
 class Command(BaseCommand):

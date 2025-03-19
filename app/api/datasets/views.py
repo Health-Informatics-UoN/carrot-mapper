@@ -1,23 +1,33 @@
 import os
 
 from api.paginations import CustomPagination
-from datasets.serializers import (DatasetAndDataPartnerViewSerializer,
-                                  DatasetCreateSerializerV2,
-                                  DatasetEditSerializer,
-                                  DatasetViewSerializerV2)
+from datasets.serializers import (
+    DatasetAndDataPartnerViewSerializer,
+    DatasetEditSerializer,
+    DatasetViewSerializerV2,
+    DatasetCreateSerializerV2,
+)
 from django.db.models.query_utils import Q
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics, status
 from rest_framework.filters import OrderingFilter
 from rest_framework.generics import GenericAPIView
-from rest_framework.mixins import (CreateModelMixin, DestroyModelMixin,
-                                   ListModelMixin, RetrieveModelMixin,
-                                   UpdateModelMixin)
+from rest_framework.mixins import (
+    CreateModelMixin,
+    DestroyModelMixin,
+    ListModelMixin,
+    RetrieveModelMixin,
+    UpdateModelMixin,
+)
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from shared.mapping.models import Dataset, VisibilityChoices
-from shared.mapping.permissions import (CanAdmin, CanEdit, CanView,
-                                        get_user_permissions_on_dataset)
+from shared.mapping.permissions import (
+    CanAdmin,
+    CanEdit,
+    CanView,
+    get_user_permissions_on_dataset,
+)
 
 
 class DatasetIndex(GenericAPIView, ListModelMixin, CreateModelMixin):
