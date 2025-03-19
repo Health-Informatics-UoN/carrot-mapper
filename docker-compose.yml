@@ -114,6 +114,10 @@ services:
       - DB_NAME=postgres
       - DB_USER=postgres
       - DB_PASSWORD=postgres
+      # RabbitMQ setup
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_USER=guest
+      - RABBITMQ_PASSWORD=guest
     volumes:
       - ./app/workers:/home/site/wwwroot
       - ./app/shared:/shared
