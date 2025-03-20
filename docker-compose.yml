@@ -106,7 +106,7 @@ services:
       - DB_NAME=postgres
       - DB_USER=postgres
       - DB_PASSWORD=postgres
-      - PYTHONPATH=/home/site/wwwroot:/shared
+      - PYTHONPATH=/home/site/wwwroot:/home/site/wwwroot/shared
     volumes:
       - ./app/workers:/home/site/wwwroot
       - ./app/shared:/home/site/wwwroot/shared
