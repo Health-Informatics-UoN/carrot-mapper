@@ -3,7 +3,7 @@ import os
 import sys
 from collections import defaultdict
 from typing import Any, Dict, List, Tuple
-
+import logging
 
 import azure.functions as func
 from openpyxl import Workbook
@@ -446,38 +446,59 @@ def process_scan_report_message(body: bytes) -> None:
     Args:
         body (bytes): The raw message body from RabbitMQ.
     """
-    scan_report_blob, data_dictionary_blob, scan_report_id, _ = helpers.unwrap_message(body)
-    _handle_failure(scan_report_blob, scan_report_id)
+    logger.info("Received message from RabbitMQ.")
+    
+    try:
+        scan_report_blob, data_dictionary_blob, scan_report_id, _ = helpers.unwrap_message(body)
+        logger.info(f"Unwrapped message for scan report ID: {scan_report_id}")
 
-    update_job(
-        JobStageType.UPLOAD_SCAN_REPORT,
-        StageStatusType.IN_PROGRESS,
-        scan_report=ScanReport.objects.get(id=scan_report_id),
-    )
+        _handle_failure(scan_report_blob, scan_report_id)
+        
+        logger.info(f"Updating job status to IN_PROGRESS for scan report ID: {scan_report_id}")
+        update_job(
+            JobStageType.UPLOAD_SCAN_REPORT,
+            StageStatusType.IN_PROGRESS,
+            scan_report=ScanReport.objects.get(id=scan_report_id),
+        )
 
-    wb = blob_parser.get_scan_report(scan_report_blob)
-    data_dictionary, _ = blob_parser.get_data_dictionary(data_dictionary_blob)
+        logger.info("Retrieving scan report and data dictionary.")
+        wb = blob_parser.get_scan_report(scan_report_blob)
+        data_dictionary, _ = blob_parser.get_data_dictionary(data_dictionary_blob)
 
-    # Get the first sheet 'Field Overview',
-    # to populate ScanReportTable & ScanReportField models
-    fo_ws = wb.worksheets[0]
+        # Get the first sheet 'Field Overview',
+        # to populate ScanReportTable & ScanReportField models
+        fo_ws = wb.worksheets[0]
 
-    table_name_to_id_map = _create_tables(fo_ws, scan_report_id)
-    asyncio.run(
-        _create_fields(fo_ws, wb, scan_report_id, table_name_to_id_map, data_dictionary)
-    )
+        logger.info(f"Creating tables for scan report ID: {scan_report_id}")
+        table_name_to_id_map = _create_tables(fo_ws, scan_report_id)
+        
+        logger.info(f"Creating fields for scan report ID: {scan_report_id}")
+        asyncio.run(
+            _create_fields(fo_ws, wb, scan_report_id, table_name_to_id_map, data_dictionary)
+        )
 
-    update_job(
-        JobStageType.UPLOAD_SCAN_REPORT,
-        StageStatusType.COMPLETE,
-        scan_report=ScanReport.objects.get(id=scan_report_id),
-    )
+        logger.info(f"Updating job status to COMPLETE for scan report ID: {scan_report_id}")
+        update_job(
+            JobStageType.UPLOAD_SCAN_REPORT,
+            StageStatusType.COMPLETE,
+            scan_report=ScanReport.objects.get(id=scan_report_id),
+        )
+
+        logger.info(f"Successfully processed scan report ID: {scan_report_id}")
+
+    except Exception as e:
+        logger.error(f"Error processing scan report: {e}", exc_info=True)
+        raise
+
 
 
 # Main function
-def main():
+def main() -> None:
     # Set up RabbitMQ client
+    logger.info("Initializing RabbitMQ client.")
     rabbitmq_client = RabbitMQClient()
 
     # Start consuming messages from RabbitMQ
+    logger.info("Starting to consume messages from RabbitMQ.")
     rabbitmq_client.consume(process_scan_report_message)
+
