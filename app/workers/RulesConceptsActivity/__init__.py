@@ -145,7 +145,7 @@ def _process_concepts_for_vocab(
 
 def _get_concepts_for_vocab(
     vocab: str, entries: List[ScanReportValueDict]
-) -> List[Concept]:
+) -> List[tuple]:
     """
     Get Concepts for a specific vocabulary.
 
@@ -161,13 +161,13 @@ def _get_concepts_for_vocab(
 
     concepts = Concept.objects.filter(
         concept_code__in=concept_codes, vocabulary_id=vocab
-    ).all()
+    ).values_list("concept_code", "concept_id", "standard_concept")
 
     return list(concepts)
 
 
 def _match_concepts_to_entries(
-    entries: List[ScanReportValueDict], concept_vocab_content: List[Concept]
+    entries: List[ScanReportValueDict], concept_vocab_content: List[tuple]
 ) -> None:
     """
     Match concepts to entries.
@@ -179,21 +179,23 @@ def _match_concepts_to_entries(
 
     Args:
         - entries (List[ScanReportValueDict]): A list of Scan Report Value dictionaries representing the entries.
-        - concept_vocab_content (List[Concept]): A list of Concepts of the vocabulary content.
+        - concept_vocab_content (List[tuple]): A list of tuples containing (concept_code, concept_id, standard_concept).
 
     Returns:
         - None
-
     """
+    # Create a mapping from concept_code to (concept_id, standard_concept)
+    concept_map = {
+        str(code): (concept_id, std_concept)
+        for code, concept_id, std_concept in concept_vocab_content
+    }
+
+    # Set default values for all entries
     for entry in entries:
-        entry["concept_id"] = -1
-        entry["standard_concept"] = None
-        for returned_concept in concept_vocab_content:
-            if str(entry["value"]) == str(returned_concept.concept_code):
-                entry["concept_id"] = str(returned_concept.concept_id)
-                entry["standard_concept"] = str(returned_concept.standard_concept)
-                # exit inner loop early if we find a concept for this entry
-                break
+        # Look up the concept in the map, default to (-1, None) if not found
+        entry["concept_id"], entry["standard_concept"] = concept_map.get(
+            str(entry["value"]), (-1, None)
+        )
 
 
 def _batch_process_non_standard_concepts(entries: List[ScanReportValueDict]) -> None:
@@ -219,7 +221,7 @@ def _batch_process_non_standard_concepts(entries: List[ScanReportValueDict]) -> 
 
 
 def _update_entries_with_standard_concepts(
-    entries: List[ScanReportValueDict], standard_concepts_map: Dict[str, Any]
+    entries: List[ScanReportValueDict], standard_concepts_map: Dict[int, Any]
 ) -> None:
     """
     Update entries with standard concepts.

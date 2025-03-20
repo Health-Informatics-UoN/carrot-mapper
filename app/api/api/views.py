@@ -68,7 +68,7 @@ from shared.mapping.permissions import get_user_permissions_on_scan_report
 from shared.services.azurequeue import add_message
 from shared.services.rules import (
     _find_destination_table,
-    _save_mapping_rules,
+    save_mapping_rules,
     delete_mapping_rules,
 )
 from shared.services.rules_export import (
@@ -650,8 +650,8 @@ class ScanReportConceptListV2(
         self.perform_create(serializer)
 
         model = serializer.instance
-        saved = _save_mapping_rules(model)
-        if not saved:
+        rules = save_mapping_rules(model)
+        if not rules:
             return Response(
                 {"detail": "Rule could not be saved."},
                 status=status.HTTP_400_BAD_REQUEST,
