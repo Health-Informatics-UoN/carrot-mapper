@@ -1,0 +1,21 @@
+[project]
+name = "extractor"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "apache-airflow>=2.10.4",
+    "apache-airflow-providers-common-sql>=1.21.0",
+    "apache-airflow-providers-microsoft-mssql>=4.0.0",
+    "asyncpg>=0.30.0",
+    "pandas>=2.2.3",
+    "psycopg2-binary>=2.9.10",
+    "sqlalchemy>=1.4.54",
+]
+
+[dependency-groups]
+dev = [
+    "pre-commit>=4.1.0",
+    "ruff>=0.9.3",
+]

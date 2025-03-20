@@ -19,7 +19,11 @@
     {
       "name": "app/next-client-app",
       "path": "../app/next-client-app"
-    }
+    },
+    {
+      "name": "app/airflow",
+      "path": "../app/airflow"
+    },
   ],
   "extensions": {
     "recommendations": [
