@@ -243,4 +243,3 @@ class StorageService:
         else:
             open_file = file.open()
             return open_file
-
