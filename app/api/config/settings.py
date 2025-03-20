@@ -241,10 +241,6 @@ REST_AUTH = {
 
 # Storage Type Variable
 STORAGE_TYPE = os.getenv("STORAGE_TYPE", "azure")
-if not STORAGE_TYPE:
-    raise ValueError(
-        "STORAGE_TYPE environment variable must be set (e.g., 'azure' or 'minio')."
-    )
 
 
 # Azure Storage Connection String
