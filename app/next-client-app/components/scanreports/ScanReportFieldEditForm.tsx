@@ -44,9 +44,9 @@ export function ScanReportFieldEditForm({
         submittingData
       );
       if (response) {
-        toast.error(`Update Dataset failed. Error: ${response.errorMessage}`);
+        toast.error(`Update Field failed. Error: ${response.errorMessage}`);
       } else {
-        toast.success("Update Dataset successful!");
+        toast.success("Update Field successful!");
         // If the redirect is used in API endpoint, the link to edit field page will be broken after succesful update
         // This can be fixed by adding the SR id to the data of the table, but it's taking more code than the below solution
         setTimeout(() => {
