@@ -3,6 +3,7 @@ from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
 from libs.core import save_data, generate_sql
+from shared.services.storage_service import StorageService
 
 # TODO: Check and make more configurable settings from env.
 default_args = {

@@ -6,4 +6,8 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "apache-airflow>=2.10.5",
+    "shared",
 ]
+
+[tool.uv.sources]
+shared = { path = "../shared" }

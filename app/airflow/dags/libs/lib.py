@@ -8,6 +8,9 @@ from sqlalchemy import (
 )
 from sqlalchemy.sql.schema import Column, Table
 from typing import Any, Dict, List
+from shared.services.storage_service import StorageService
+
+storage_service = StorageService()
 
 
 def cast_value(column: Column, value: Any):
@@ -97,3 +100,7 @@ def save_sql(file_name: str, query):
     with open(path, "w") as f:
         f.write(str(query))
     logging.info(f"SQL query saved to {path}")
+
+
+def get_scan_report():
+    storage_service.get_scan_report()
