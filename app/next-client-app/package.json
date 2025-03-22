@@ -33,7 +33,7 @@
     "framer-motion": "^11.11.8",
     "lucide": "^0.414.0",
     "lucide-react": "^0.367.0",
-    "next": "14.1.4",
+    "next": "14.2.25",
     "next-auth": "^4.24.7",
     "next-themes": "^0.3.0",
     "react": "^18",
