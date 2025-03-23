@@ -166,7 +166,7 @@ services:
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       # Update this connection string to point to your remote PostgreSQL
-      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://postgres:postgres@db/postgres
+      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://postgres:postgres@db:5432/postgres
       AIRFLOW__WEBSERVER__SECRET_KEY: "test"
     volumes:
       - ./app/airflow/dags:/opt/airflow/dags
