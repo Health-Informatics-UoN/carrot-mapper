@@ -10,6 +10,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+import { Copy } from "lucide-react";
+
 
 export const columns = (
   addSR: (concept: ScanReportConcept, c: Concept) => void,
@@ -25,16 +28,25 @@ export const columns = (
     cell: ({ row }) => {
       const { id, name } = row.original;
       const prePath = usePathname();
+
+      const handleCopy = () => {
+        navigator.clipboard.writeText(name);
+        toast.success("Copied to clipboard");
+      };
+
       return (
-        <Link
-          href={`${
-            prePath.endsWith("/") ? prePath : prePath + "/"
-          }fields/${id}`}
-        >
-          <Button variant={"link"} className="font-bold">
-            {name}
+        <div className="flex items-center gap-2">
+          <Link
+            href={`${prePath.endsWith("/") ? prePath : prePath + "/"}fields/${id}`}
+          >
+            <Button variant="link" className="font-bold">
+              {name}
+            </Button>
+          </Link>
+          <Button variant="ghost" size="icon" onClick={handleCopy}>
+            <Copy className="w-4 h-4" />
           </Button>
-        </Link>
+        </div>
       );
     },
   },
