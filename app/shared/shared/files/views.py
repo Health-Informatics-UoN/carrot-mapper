@@ -9,13 +9,15 @@ from rest_framework.generics import GenericAPIView
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
 from rest_framework.permissions import IsAuthenticated
 from shared.files.paginations import CustomPagination
+from shared.jobs.models import Job, JobStage, StageStatus
 from shared.mapping.models import ScanReport
 from shared.services.azurequeue import add_message
+from shared.services.storage_service import StorageService
 
 from .models import FileDownload
 from .serializers import FileDownloadSerializer
-from .service import get_blob
-from shared.jobs.models import Job, JobStage, StageStatus
+
+storage_service = StorageService()
 
 
 class FileDownloadView(GenericAPIView, ListModelMixin, RetrieveModelMixin):
@@ -34,7 +36,7 @@ class FileDownloadView(GenericAPIView, ListModelMixin, RetrieveModelMixin):
     def get(self, request, *args, **kwargs):
         if "pk" in kwargs:
             entity = get_object_or_404(FileDownload, pk=kwargs["pk"])
-            file = get_blob(entity.file_url, "rules-exports")
+            file = storage_service.get_blob(entity.file_url, "rules-exports")
 
             response = HttpResponse(file, content_type="application/octet-stream")
             response["Content-Disposition"] = f'attachment; filename="{entity.name}"'
@@ -68,7 +70,7 @@ class FileDownloadView(GenericAPIView, ListModelMixin, RetrieveModelMixin):
                 scan_report=ScanReport.objects.get(id=scan_report_id),
                 stage=JobStage.objects.get(value="DOWNLOAD_RULES"),
                 status=StageStatus.objects.get(value="IN_PROGRESS"),
-                details=f'A Mapping Rules {"JSON" if file_type=="application/json" else "CSV"} is being generated.',
+                details=f"A Mapping Rules {'JSON' if file_type == 'application/json' else 'CSV'} is being generated.",
             )
         except json.JSONDecodeError:
             return JsonResponse({"error": "Invalid JSON data."}, status=400)

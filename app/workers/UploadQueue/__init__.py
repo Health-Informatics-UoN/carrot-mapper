@@ -3,28 +3,27 @@ import os
 from collections import defaultdict
 from typing import Any, Dict, List, Tuple
 
+from shared.services.storage_service import StorageService
 import azure.functions as func
 from openpyxl import Workbook
 from openpyxl.cell.cell import Cell
 from openpyxl.worksheet.worksheet import Worksheet
 from shared.mapping.models import (
+    ScanReport,
     ScanReportField,
     ScanReportTable,
     ScanReportValue,
 )
-from shared_code import blob_parser, helpers
-from shared_code.db import (
-    update_job,
-    JobStageType,
-    StageStatusType,
-)
-from shared.mapping.models import ScanReport
+from shared_code import helpers
+from shared_code.db import JobStageType, StageStatusType, update_job
 from shared_code.logger import logger
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "shared_code.django_settings")
 import django
 
 django.setup()
+
+storage_service = StorageService()
 
 
 def _get_unique_table_names(worksheet: Worksheet) -> List[str]:
@@ -456,8 +455,8 @@ def main(msg: func.QueueMessage) -> None:
         scan_report=ScanReport.objects.get(id=scan_report_id),
     )
 
-    wb = blob_parser.get_scan_report(scan_report_blob)
-    data_dictionary, _ = blob_parser.get_data_dictionary(data_dictionary_blob)
+    wb = storage_service.get_scan_report(scan_report_blob)
+    data_dictionary, _ = storage_service.get_data_dictionary(data_dictionary_blob)
 
     # Get the first sheet 'Field Overview',
     # to populate ScanReportTable & ScanReportField models
