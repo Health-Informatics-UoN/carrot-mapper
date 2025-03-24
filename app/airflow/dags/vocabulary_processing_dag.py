@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
 from airflow.operators.python import PythonOperator
-from airflow.models import Variable
+from libs.core import test_add_scan_report_values
 
 default_args = {
     "owner": "airflow",
@@ -23,36 +23,31 @@ dag = DAG(
 )
 
 # Task to retrieve vocabulary mappings from data dictionary
-get_vocab_dictionary = SQLExecuteQueryOperator(
-    task_id="get_vocab_dictionary",
-    sql="""
-    SELECT
-        dd.csv_file_name,
-        dd.field_name,
-        dd.code
-    FROM data_dictionary dd
-    WHERE blob_name = '{{ dag_run.conf["data_dictionary_blob"] }}'
-    """,
-    conn_id="postgres_default",
+get_vocab_dictionary = PythonOperator(
+    task_id="test_add_scan_report_values",
+    python_callable=test_add_scan_report_values,
+    op_kwargs={"concept_id": "{{ dag_run.conf['concept_id'] }}"},
+    provide_context=True,
+    retries=0,
     dag=dag,
 )
 
-# Task to add vocabulary IDs to scan report values
-add_vocabulary_ids = SQLExecuteQueryOperator(
-    task_id="add_vocabulary_ids",
-    sql="""
-    UPDATE scan_report_values srv
-    SET vocabulary_id = dd.code
-    FROM data_dictionary dd
-    JOIN scan_report_fields srf ON srv.scan_report_field_id = srf.id
-    JOIN scan_report_tables srt ON srf.scan_report_table_id = srt.id
-    WHERE srt.id = {{ dag_run.conf["table_id"] }}
-      AND srt.name = dd.csv_file_name
-      AND srf.name = dd.field_name
-    """,
-    conn_id="postgres_default",
-    dag=dag,
-)
+# # Task to add vocabulary IDs to scan report values
+# add_vocabulary_ids = SQLExecuteQueryOperator(
+#     task_id="add_vocabulary_ids",
+#     sql="""
+#     UPDATE scan_report_values srv
+#     SET vocabulary_id = dd.code
+#     FROM data_dictionary dd
+#     JOIN scan_report_fields srf ON srv.scan_report_field_id = srf.id
+#     JOIN scan_report_tables srt ON srf.scan_report_table_id = srt.id
+#     WHERE srt.id = {{ dag_run.conf["table_id"] }}
+#       AND srt.name = dd.csv_file_name
+#       AND srf.name = dd.field_name
+#     """,
+#     conn_id="postgres_default",
+#     dag=dag,
+# )
 
 # # Task to update job status
 # update_job_status = SQLExecuteQueryOperator(

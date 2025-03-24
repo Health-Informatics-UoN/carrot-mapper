@@ -30,10 +30,7 @@ start = EmptyOperator(task_id="start", dag=dag)
 trigger_vocab_processing = TriggerDagRunOperator(
     task_id="trigger_vocab_processing",
     trigger_dag_id="vocabulary_processing",
-    conf={
-        "table_id": "{{ dag_run.conf['table_id'] }}",
-        "data_dictionary_blob": "{{ dag_run.conf['data_dictionary_blob'] }}",
-    },
+    conf={"concept_id": "{{ dag_run.conf['concept_id'] }}"},
     wait_for_completion=True,
     dag=dag,
 )

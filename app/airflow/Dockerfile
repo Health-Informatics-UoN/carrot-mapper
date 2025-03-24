@@ -1,7 +1,7 @@
 FROM apache/airflow:2.6.1
 
 USER root
-
+# TODO: revert to the Postgres install
 # Install dependencies including FreeTDS and OpenSSL
 RUN apt-get update && \
     apt-get install -y build-essential unixodbc-dev curl apt-transport-https gnupg \

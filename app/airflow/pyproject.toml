@@ -6,7 +6,9 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "apache-airflow>=2.10.5",
+    "apache-airflow-providers-postgres>=6.1.1",
     "shared",
+    "types-psycopg2>=2.9.21.20250318",
 ]
 
 [tool.uv.sources]
