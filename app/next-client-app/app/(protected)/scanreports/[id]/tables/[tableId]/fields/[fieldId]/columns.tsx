@@ -5,11 +5,15 @@ import { ConceptTags } from "@/components/concepts/concept-tags";
 import AddConcept from "@/components/concepts/add-concept";
 import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
+import { Copy } from "lucide-react";
+import { Button } from "@/components/ui/button";
+
 
 export const columns = (
   addSR: (concept: ScanReportConcept, c: Concept) => void,
   deleteSR: (id: number) => void,
-  tableId: string,
+  tableId: string
 ): ColumnDef<ScanReportValue>[] => [
   {
     id: "Value",
@@ -19,6 +23,23 @@ export const columns = (
     ),
     enableHiding: true,
     enableSorting: false,
+    cell: ({ row }) => {
+      const { value } = row.original;
+
+      const handleCopy = () => {
+        navigator.clipboard.writeText(value);
+        toast.success("Copied to clipboard");
+      };
+
+      return (
+        <div className="flex items-center gap-2">
+          <span className="font-bold">{value}</span>
+          <Button variant="ghost" size="icon" onClick={handleCopy}>
+            <Copy className="w-4 h-4" />
+          </Button>
+        </div>
+      );
+    },
   },
   {
     id: "Value Description",
@@ -56,8 +77,6 @@ export const columns = (
     cell: ({ row }) => {
       const { concepts } = row.original;
       return (
-        // Just in case the concepts tags need more time to load some data
-        // --> showing skeleton having same width with the concept tag area
         <Suspense fallback={<Skeleton className="h-5 w-[250px]" />}>
           <ConceptTags concepts={concepts ?? []} deleteSR={deleteSR} />
         </Suspense>
@@ -76,7 +95,7 @@ export const columns = (
           rowId={id}
           tableId={tableId}
           contentType="scanreportvalue"
-          disabled={canEdit ? false : true}
+          disabled={!canEdit}
           addSR={addSR}
         />
       );
