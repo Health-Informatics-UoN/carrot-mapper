@@ -244,3 +244,11 @@ REST_AUTH = {
 SUPERUSER_DEFAULT_PASSWORD = os.getenv("SUPERUSER_DEFAULT_PASSWORD", None)
 SUPERUSER_DEFAULT_EMAIL = os.getenv("SUPERUSER_DEFAULT_EMAIL", "user@carrot")
 SUPERUSER_DEFAULT_USERNAME = os.getenv("SUPERUSER_DEFAULT_USERNAME", None)
+
+# Storage Type Variable
+STORAGE_TYPE = os.getenv("STORAGE_TYPE", "azure")
+
+# Azure Storage Connection String
+azure_storage_conn_string = "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;TableEndpoint=http://azurite:10002/devstoreaccount1;"
+
+STORAGE_CONN_STRING = os.getenv("STORAGE_CONN_STRING", azure_storage_conn_string)
