@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import CopyButton from "@/components/core/CopyButton";
 
 export const columns = (
   addSR: (concept: ScanReportConcept, c: Concept) => void,
@@ -26,17 +27,20 @@ export const columns = (
       const { id, name } = row.original;
       const prePath = usePathname();
       return (
-        <Link
-          href={`${
-            prePath.endsWith("/") ? prePath : prePath + "/"
-          }fields/${id}`}
-        >
-          <Button variant={"link"} className="font-bold">
-            {name}
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            href={`${
+              prePath.endsWith("/") ? prePath : prePath + "/"
+            }fields/${id}`}
+          >
+            <Button variant="link" className="font-bold">
+              {name}
+            </Button>
+          </Link>
+          <CopyButton textToCopy={name} />
+        </div>
       );
-    },
+    }
   },
   {
     id: "description",
@@ -49,7 +53,7 @@ export const columns = (
       />
     ),
     enableHiding: true,
-    enableSorting: true,
+    enableSorting: true
   },
   {
     id: "Data Type",
@@ -62,7 +66,7 @@ export const columns = (
       />
     ),
     enableHiding: true,
-    enableSorting: true,
+    enableSorting: true
   },
   {
     id: "Concepts",
@@ -80,7 +84,7 @@ export const columns = (
           <ConceptTags concepts={concepts ?? []} deleteSR={deleteSR} />
         </Suspense>
       );
-    },
+    }
   },
   {
     id: "Add Concept",
@@ -98,7 +102,7 @@ export const columns = (
           addSR={addSR}
         />
       );
-    },
+    }
   },
   {
     id: "edit",
@@ -115,6 +119,6 @@ export const columns = (
           permissions={permissions}
         />
       );
-    },
-  },
+    }
+  }
 ];
