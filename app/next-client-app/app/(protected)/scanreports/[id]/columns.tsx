@@ -7,8 +7,8 @@ import JobDialog from "@/components/jobs/JobDialog";
 import { FindGeneralStatus, DivideJobs } from "@/components/jobs/JobUtils";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
 import { Copy } from "lucide-react";
+import { handleCopy } from "@/components/core/handleCopy";
 
 export const columns: ColumnDef<ScanReportTable>[] = [
   {
@@ -20,10 +20,6 @@ export const columns: ColumnDef<ScanReportTable>[] = [
     enableSorting: true,
     cell: ({ row }) => {
       const { scan_report, id, name } = row.original;
-      const handleCopy = () => {
-        navigator.clipboard.writeText(name);
-        toast.success("Copied to clipboard");
-      };
       return (
         <div>
           <Link href={`/scanreports/${scan_report}/tables/${id}`}>
@@ -31,7 +27,7 @@ export const columns: ColumnDef<ScanReportTable>[] = [
               {name}
             </Button>
           </Link>
-          <Button variant="ghost" size="icon" onClick={handleCopy}>
+          <Button variant="ghost" size="icon" onClick={() => handleCopy(name)}>
             <Copy className="w-4 h-4" />
           </Button>
         </div>

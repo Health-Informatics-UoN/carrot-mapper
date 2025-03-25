@@ -10,8 +10,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
 import { Copy } from "lucide-react";
+import { handleCopy } from "@/components/core/handleCopy";
+
 
 
 export const columns = (
@@ -28,12 +29,6 @@ export const columns = (
     cell: ({ row }) => {
       const { id, name } = row.original;
       const prePath = usePathname();
-
-      const handleCopy = () => {
-        navigator.clipboard.writeText(name);
-        toast.success("Copied to clipboard");
-      };
-
       return (
         <div className="flex items-center gap-2">
           <Link
@@ -43,7 +38,7 @@ export const columns = (
               {name}
             </Button>
           </Link>
-          <Button variant="ghost" size="icon" onClick={handleCopy}>
+          <Button variant="ghost" size="icon" onClick={() => handleCopy(name)}>
             <Copy className="w-4 h-4" />
           </Button>
         </div>
