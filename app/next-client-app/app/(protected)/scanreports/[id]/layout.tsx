@@ -45,6 +45,15 @@ export default async function ScanReportLayout({
     { name: "Downloads", slug: "downloads", iconName: "Download" },
   ];
 
+   {/* Pushed the Edit button to the Items above so it appears on same level */}
+  if (canEdit) {
+    items.push({
+      name: "Edit Scan Report Details",
+      slug: "details",
+      iconName: "Edit",
+    });
+  }
+
   const scanreport = await getScanReport(params.id);
 
   if (!scanreport) {
@@ -137,10 +146,6 @@ export default async function ScanReportLayout({
             </DropdownMenuTrigger>
             <DropdownMenuContent>
               <DropdownMenuItem>
-                <a href={`/scanreports/${params.id}/details`} className="flex">
-                  <Edit className="mr-2 size-4" />
-                  Edit Scan Report Details
-                </a>
               </DropdownMenuItem>
               <ExportScanReport
                 scanReportId={params.id}
