@@ -26,7 +26,6 @@ export const columns = (
     cell: ({ row }) => {
       const { id, name } = row.original;
       const prePath = usePathname();
-
       return (
         <div className="flex items-center gap-2">
           <Link
