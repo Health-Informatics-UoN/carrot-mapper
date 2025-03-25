@@ -35,7 +35,7 @@ def test_add_scan_report_values(
             logger.info(f"Got concept_id {concept_id} from dag_run.conf")
 
     # Use default if still None
-    #  TODO: remove or improve this
+    #  TODO: If this one still none then raise AirflowException
     if concept_id is None:
         concept_id = 8507  # Default value
         logger.info(f"Using default concept_id: {concept_id}")
