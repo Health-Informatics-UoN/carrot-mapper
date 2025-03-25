@@ -7,6 +7,7 @@ import JobDialog from "@/components/jobs/JobDialog";
 import { FindGeneralStatus, DivideJobs } from "@/components/jobs/JobUtils";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import CopyButton from "@/components/core/CopyButton";
 
 export const columns: ColumnDef<ScanReportTable>[] = [
   {
@@ -19,13 +20,16 @@ export const columns: ColumnDef<ScanReportTable>[] = [
     cell: ({ row }) => {
       const { scan_report, id, name } = row.original;
       return (
-        <Link href={`/scanreports/${scan_report}/tables/${id}`}>
-          <Button variant={"link"} className="font-bold">
-            {name}
-          </Button>
-        </Link>
+        <div>
+          <Link href={`/scanreports/${scan_report}/tables/${id}`}>
+            <Button variant={"link"} className="font-bold">
+              {name}
+            </Button>
+          </Link>
+          <CopyButton textToCopy={name} />
+        </div>
       );
-    },
+    }
   },
   {
     id: "Person ID",
@@ -42,7 +46,7 @@ export const columns: ColumnDef<ScanReportTable>[] = [
       return <>{person_id?.name}</>;
     },
     enableHiding: true,
-    enableSorting: false,
+    enableSorting: false
   },
   {
     id: "Event Date",
@@ -59,7 +63,7 @@ export const columns: ColumnDef<ScanReportTable>[] = [
       return <>{date_event?.name}</>;
     },
     enableHiding: true,
-    enableSorting: false,
+    enableSorting: false
   },
   {
     id: "jobs",
@@ -83,7 +87,7 @@ export const columns: ColumnDef<ScanReportTable>[] = [
           />
         </div>
       );
-    },
+    }
   },
   {
     id: "edit",
@@ -106,6 +110,6 @@ export const columns: ColumnDef<ScanReportTable>[] = [
           generalStatus={generalStatus}
         />
       );
-    },
-  },
+    }
+  }
 ];
