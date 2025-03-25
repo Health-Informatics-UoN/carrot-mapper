@@ -27,11 +27,6 @@ export const columns = (
       const { id, name } = row.original;
       const prePath = usePathname();
 
-      const handleCopy = () => {
-        navigator.clipboard.writeText(name);
-        toast.success("Copied to clipboard");
-      };
-
       return (
         <div className="flex items-center gap-2">
           <Link
