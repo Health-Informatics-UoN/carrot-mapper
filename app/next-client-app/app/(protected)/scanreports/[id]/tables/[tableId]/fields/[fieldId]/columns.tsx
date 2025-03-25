@@ -5,9 +5,8 @@ import { ConceptTags } from "@/components/concepts/concept-tags";
 import AddConcept from "@/components/concepts/add-concept";
 import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Copy } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { handleCopy } from "@/components/core/handleCopy";
+import CopyButton from "@/components/core/handleCopy";
+
 
 
 
@@ -30,9 +29,7 @@ export const columns = (
       return (
         <div className="flex items-center gap-2">
           <span className="font-bold">{value}</span>
-          <Button variant="ghost" size="icon" onClick={() => handleCopy(value)}>
-            <Copy className="w-4 h-4" />
-          </Button>
+          <CopyButton textToCopy={value} /> 
         </div>
       );
     },

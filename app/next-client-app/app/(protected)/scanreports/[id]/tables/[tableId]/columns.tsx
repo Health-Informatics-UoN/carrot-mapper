@@ -11,7 +11,8 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Copy } from "lucide-react";
-import { handleCopy } from "@/components/core/handleCopy";
+import CopyButton from "@/components/core/handleCopy";
+
 
 
 
@@ -38,9 +39,7 @@ export const columns = (
               {name}
             </Button>
           </Link>
-          <Button variant="ghost" size="icon" onClick={() => handleCopy(name)}>
-            <Copy className="w-4 h-4" />
-          </Button>
+          <CopyButton textToCopy={name} /> 
         </div>
       );
     },
