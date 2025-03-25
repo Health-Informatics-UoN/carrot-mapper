@@ -5,10 +5,7 @@ import { ConceptTags } from "@/components/concepts/concept-tags";
 import AddConcept from "@/components/concepts/add-concept";
 import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
-import CopyButton from "@/components/core/handleCopy";
-
-
-
+import CopyButton from "@/components/core/CopyButton";
 
 export const columns = (
   addSR: (concept: ScanReportConcept, c: Concept) => void,
@@ -29,10 +26,10 @@ export const columns = (
       return (
         <div className="flex items-center gap-2">
           <span className="font-bold">{value}</span>
-          <CopyButton textToCopy={value} /> 
+          <CopyButton textToCopy={value} />
         </div>
       );
-    },
+    }
   },
   {
     id: "Value Description",
@@ -45,7 +42,7 @@ export const columns = (
       />
     ),
     enableHiding: true,
-    enableSorting: false,
+    enableSorting: false
   },
   {
     id: "Frequency",
@@ -58,7 +55,7 @@ export const columns = (
       />
     ),
     enableHiding: true,
-    enableSorting: false,
+    enableSorting: false
   },
   {
     id: "Concepts",
@@ -74,7 +71,7 @@ export const columns = (
           <ConceptTags concepts={concepts ?? []} deleteSR={deleteSR} />
         </Suspense>
       );
-    },
+    }
   },
   {
     id: "Add Concept",
@@ -92,6 +89,6 @@ export const columns = (
           addSR={addSR}
         />
       );
-    },
-  },
+    }
+  }
 ];
