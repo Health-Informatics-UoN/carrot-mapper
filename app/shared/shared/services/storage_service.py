@@ -28,7 +28,7 @@ class StorageService:
 
     def _get_service_client(self) -> Optional[Union[BlobServiceClient, Minio]]:
         """
-        Initialize the storage service with 
+        Initialize the storage service with
         configuration from environment variables.
         """
         # Lazy initialisation
@@ -163,7 +163,7 @@ class StorageService:
 
         Returns:
             Tuple containing:
-            - Data dictionary (nested dict structure: {tables: 
+            - Data dictionary (nested dict structure: {tables:
             {fields: {values: description}}})
             - Vocabulary dictionary (nested dict structure: {tables:
             {fields: vocab}})
@@ -322,7 +322,7 @@ class StorageService:
 
     def modify_filename(self, filename: str, dt: str, rand: str) -> str:
         """
-        Modifies a filename by appending a date-time string 
+        Modifies a filename by appending a date-time string
         and a random string to it.
 
         Args:
@@ -412,12 +412,12 @@ class StorageService:
     def _read_file(self, file, use_read_method: bool):
         """
         Helper method to read file content based on input type.
-        
+
         Args:
             - file: File content in various forms
-            - use_read_method: Whether to call .read() on 
+            - use_read_method: Whether to call .read() on
             the file object.
-            
+
         Returns:
             bytes: The file content as bytes
         """
@@ -464,7 +464,7 @@ class StorageService:
 
     def upload_to_rules_export(self, file_name, file, content_type):
         """
-        Uploads a file to the rules-exports container in the 
+        Uploads a file to the rules-exports container in the
         configured storage.
 
         Args:
