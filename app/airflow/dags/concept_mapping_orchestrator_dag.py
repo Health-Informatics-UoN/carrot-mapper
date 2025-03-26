@@ -31,7 +31,7 @@ start = EmptyOperator(task_id="start", dag=dag)
 # Trigger concept mapping
 trigger_concept_mapping = TriggerDagRunOperator(
     task_id="trigger_concept_mapping",
-    trigger_dag_id="concept_mapping",
+    trigger_dag_id="{{ dag_run.conf['concept_dag'] }}",
     conf={
         "table_id": "{{ dag_run.conf['table_id'] }}",
         "field_vocab_pairs": "{{ dag_run.conf['field_vocab_pairs'] }}",

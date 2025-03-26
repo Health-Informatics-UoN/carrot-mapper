@@ -19,7 +19,7 @@ logger = logging.getLogger("test_logger")
 class StorageService:
     def __init__(self):
         self._client = None
-        self._storage_type = os.getenv("STORAGE_TYPE")
+        self._storage_type = os.getenv("STORAGE_TYPE", "azure")
 
     def _get_service_client(self):
         if self._client is None:
