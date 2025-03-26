@@ -124,8 +124,10 @@ def main(msg: func.QueueMessage) -> None:
 
     # Save to blob
     filename = f"Rules - {scan_report.dataset} - {scan_report_id} - {datetime.now()}.{file_extension}"
-    storage_service.upload_blob(
-        filename, "rules-exports", file, file_type, use_read_method=True
+
+    # Upload the file to rules-exports container
+    storage_service.upload_to_rules_export(
+        file_name=filename, file=file, content_type=file_type
     )
 
     # create entity
