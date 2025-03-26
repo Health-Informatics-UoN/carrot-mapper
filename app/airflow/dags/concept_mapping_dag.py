@@ -33,6 +33,8 @@ start = EmptyOperator(task_id="start", dag=dag)
 # TODO: what happens if users re-run these?
 # TODO: naming
 # TODO: seperate Airflow schema
+# TODO: tidy up
+# TODO: create workflow - deploy MVP - testing
 
 
 # Extract parameters
