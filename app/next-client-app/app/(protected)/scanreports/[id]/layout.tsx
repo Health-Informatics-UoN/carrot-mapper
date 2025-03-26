@@ -48,7 +48,7 @@ export default async function ScanReportLayout({
    {/* Pushed the Edit button to the Items above so it appears on same level */}
   if (canEdit) {
     items.push({
-      name: "Edit Scan Report",
+      name: "Edit Details",
       slug: "details",
       iconName: "Edit",
     });
