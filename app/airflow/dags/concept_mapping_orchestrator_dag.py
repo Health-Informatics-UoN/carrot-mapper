@@ -40,6 +40,20 @@ trigger_concept_mapping = TriggerDagRunOperator(
     dag=dag,
 )
 
+
+# TODO: add this task in the end of Everything
+# cleanup_tables = SQLExecuteQueryOperator(
+#     task_id="cleanup_tables",
+#     sql="""
+#     DROP TABLE IF EXISTS temp_sr_values;
+#     DROP TABLE IF EXISTS temp_nonstandard_concepts;
+#     DROP TABLE IF EXISTS temp_standard_concepts;
+#     """,
+#     conn_id="1-conn-db",
+#     dag=dag,
+# )
+
+
 # End the workflow
 end = EmptyOperator(task_id="end", dag=dag)
 
