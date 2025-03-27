@@ -21,7 +21,7 @@ from shared.services.rules_export import (
     get_mapping_rules_json,
     make_dag,
 )
-from shared.services.storage_service import StorageService
+from shared.services.storage_service import StorageService, STORAGE_TYPE
 from shared_code.db import JobStageType, StageStatusType, update_job
 
 storage_service = StorageService()
@@ -126,8 +126,13 @@ def main(msg: func.QueueMessage) -> None:
     filename = f"Rules - {scan_report.dataset} - {scan_report_id} - {datetime.now()}.{file_extension}"
 
     # Upload the file to rules-exports container
-    storage_service.upload_to_rules_export(
-        file_name=filename, file=file, content_type=file_type
+    storage_service.upload_file(
+        file_name=filename,
+        container="rules-exports",
+        file=file,
+        content_type=file_type,
+        minio_rules_export=(storage_service._storage_type == STORAGE_TYPE.MINIO),
+        use_read_method=(storage_service._storage_type == STORAGE_TYPE.AZURE),
     )
 
     # create entity

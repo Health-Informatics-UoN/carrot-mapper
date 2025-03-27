@@ -3,6 +3,7 @@ import logging
 import os
 from io import BytesIO
 from typing import IO, Any, AnyStr, Dict, Iterable, Optional, Tuple, Union
+from enum import StrEnum
 
 import openpyxl  # type: ignore
 from azure.storage.blob import BlobServiceClient  # type: ignore
@@ -13,6 +14,12 @@ from shared.services.utils import (
     process_three_item_dict,
     remove_BOM,
 )
+
+
+class STORAGE_TYPE(StrEnum):
+    AZURE = "azure"
+    MINIO = "minio"
+
 
 logger = logging.getLogger("test_logger")
 
@@ -26,74 +33,50 @@ class StorageService:
         self._client = None
         self._storage_type = os.getenv("STORAGE_TYPE")
 
-    def _get_service_client(self) -> Optional[Union[BlobServiceClient, Minio]]:
-        """
-        Initialize the storage service with
-        configuration from environment variables.
-        """
-        # Lazy initialisation
-        if self._client is None:
-            # ----- Initialising Azure Blob as a Storage -----
-            if self._storage_type == "azure":
-                try:
-                    storage_conn_string = os.getenv("STORAGE_CONN_STRING")
-                    if not storage_conn_string:
-                        raise ValueError(
-                            "STORAGE_CONN_STRING environment variable is not set."
-                        )
+    def _initialise_client(self):
+        if self._storage_type == STORAGE_TYPE.AZURE:
+            self._initialise_azure_client()
+        elif self._storage_type == STORAGE_TYPE.MINIO:
+            self._initialise_minio_client()
+        else:
+            raise Exception(
+                "Storage type not supported. Only Azure Blob Storage & MinIO is supported."
+            )
 
-                    self._client = BlobServiceClient.from_connection_string(
-                        storage_conn_string
-                    )
-                    if self._client is None:
-                        raise Exception(
-                            "Error connecting to Azure Blob Storage. Azure Blob client is None."
-                        )
+    def _initialise_azure_client(self):
+        try:
+            storage_conn_string = os.getenv("STORAGE_CONN_STRING")
+            if not storage_conn_string:
+                raise ValueError("STORAGE_CONN_STRING environment variable is not set.")
+            self._client = BlobServiceClient.from_connection_string(storage_conn_string)
+            logger.info("Successfully initialised BlobServiceClient.")
+        except Exception as e:
+            logger.error(f"Error connecting to Azure Blob Storage: {e}")
+            raise ValueError("Failed to initialise Azure Blob Storage client.")
 
-                    logger.info("Successfully initialized BlobServiceClient.")
-                    return self._client
-
-                except Exception as e:
-                    logger.error(f"Error connecting to Azure Blob Storage: {e}")
-                    raise ValueError("Failed to initialize Azure Blob Storage client.")
-
-            # ----- Initialising MinIO as a Storage -----
-
-            elif self._storage_type == "minio":
-                try:
-                    minio_endpoint = os.getenv("MINIO_ENDPOINT")
-                    minio_access_key = os.getenv("MINIO_ACCESS_KEY")
-                    minio_secret_key = os.getenv("MINIO_SECRET_KEY")
-
-                    if (
-                        not minio_endpoint
-                        or not minio_access_key
-                        or not minio_secret_key
-                    ):
-                        raise ValueError(
-                            "MINIO_ENDPOINT, MINIO_ACCESS_KEY, or \
-                                MINIO_SECRET_KEY environment variables are not set."
-                        )
-
-                    logger.info(f"Connecting to MinIO at: {minio_endpoint}")
-
-                    self._client = Minio(
-                        endpoint=minio_endpoint,
-                        access_key=minio_access_key,
-                        secret_key=minio_secret_key,
-                        secure=False,
-                    )
-                    logger.info("Successfully initialized MinIO client.")
-                    return self._client
-
-                except Exception as e:
-                    logger.error(f"Error connecting to MinIO: {e}")
-                    raise ValueError(f"Failed to initialize MinIO client: {e}")
-
-            else:
-                raise Exception(
-                    "Storage type not supported. Only Azure Blob Storage & MinIO is supported."
+    def _initialise_minio_client(self):
+        try:
+            minio_endpoint = os.getenv("MINIO_ENDPOINT")
+            minio_access_key = os.getenv("MINIO_ACCESS_KEY")
+            minio_secret_key = os.getenv("MINIO_SECRET_KEY")
+            if not minio_endpoint or not minio_access_key or not minio_secret_key:
+                raise ValueError(
+                    "MINIO_ENDPOINT, MINIO_ACCESS_KEY, or MINIO_SECRET_KEY environment variables are not set."
                 )
+            self._client = Minio(
+                endpoint=minio_endpoint,
+                access_key=minio_access_key,
+                secret_key=minio_secret_key,
+                secure=False,
+            )
+            logger.info("Successfully initialised MinIO client.")
+        except Exception as e:
+            logger.error(f"Error connecting to MinIO: {e}")
+            raise ValueError(f"Failed to initialise MinIO client: {e}")
+
+    def _get_service_client(self) -> Optional[Union[BlobServiceClient, Minio]]:
+        if self._client is None:
+            self._initialise_client()
         return self._client
 
     def get_scan_report(self, file_name: str) -> openpyxl.Workbook:
@@ -111,7 +94,7 @@ class StorageService:
         # Set Storage Account connection string
         client = self._get_service_client()
 
-        if self._storage_type == "azure":
+        if self._storage_type == STORAGE_TYPE.AZURE:
             try:
                 # Grab scan report data from Blob Storage
                 streamdownloader = (
@@ -126,7 +109,7 @@ class StorageService:
             except Exception as e:
                 raise ValueError(f"Error getting the scan report from Azure Blob: {e}")
 
-        elif self._storage_type == "minio":
+        elif self._storage_type == STORAGE_TYPE.MINIO:
             try:
                 # Grab scan report data from MinIO Storage
                 with client.get_object("scan-reports", file_name) as response:
@@ -223,12 +206,12 @@ class StorageService:
         """
         client = self._get_service_client()
 
-        if self._storage_type == "azure":
+        if self._storage_type == STORAGE_TYPE.AZURE:
             dict_client = client.get_container_client("data-dictionaries")
             blob_dict_client = dict_client.get_blob_client(file)
             return blob_dict_client.download_blob().readall().decode("utf-8")
 
-        elif self._storage_type == "minio":
+        elif self._storage_type == STORAGE_TYPE.MINIO:
             response = client.get_object("data-dictionaries", file)
             content = response.read().decode("utf-8")
             response.close()
@@ -253,7 +236,7 @@ class StorageService:
         """
         client = self._get_service_client()
 
-        if self._storage_type == "azure":
+        if self._storage_type == STORAGE_TYPE.AZURE:
             try:
                 container_client = client.get_container_client(container)
                 blob_client = container_client.get_blob_client(file_name)
@@ -264,7 +247,7 @@ class StorageService:
             except Exception as e:
                 raise ValueError(f"Error getting the file from Azure Blob : {e}")
 
-        elif self._storage_type == "minio":
+        elif self._storage_type == STORAGE_TYPE.MINIO:
             try:
                 response = client.get_object(container, file_name)
                 file_content = response.read()
@@ -295,7 +278,7 @@ class StorageService:
         """
         client = self._get_service_client()
 
-        if self._storage_type == "azure":
+        if self._storage_type == STORAGE_TYPE.AZURE:
             try:
                 container_client = client.get_container_client(container)
                 blob_dict_client = container_client.get_blob_client(file_name)
@@ -307,7 +290,7 @@ class StorageService:
                     f"Error deleting the file from Azure Blob Storage : {e}"
                 )
 
-        elif self._storage_type == "minio":
+        elif self._storage_type == STORAGE_TYPE.MINIO:
             try:
                 client.remove_object(container, file_name)
                 return True
@@ -346,6 +329,7 @@ class StorageService:
         file: Union[bytes, str, Iterable[AnyStr], IO[AnyStr]],
         content_type: str,
         use_read_method: bool = False,
+        minio_rules_export: bool = False,
     ):
         """
         This function takes a file and uploads it to a specified
@@ -354,8 +338,11 @@ class StorageService:
         The file is stored with the provided blob name and
         content type.
 
+        Uploads a file to storage with special handling for
+        MinIO rules exports.
+
         Args:
-            - blob_name (str): The name that will be assigned to the
+            - file_name (str): The name that will be assigned to the
             uploaded file in Data Storage.
             - container (str): The name of the Data Storage
             container where the file will be uploaded.
@@ -363,51 +350,68 @@ class StorageService:
             - content_type (str): The MIME type of the file
             to be uploaded.
             - use_read_method: Whether to call .read() on the file object
+            - minio_rules_export: Whether to use specific upload which does
+            not use use_read_method.
 
-        Returns:
-            None
+        Rules:
+            - Azure: Must use `use_read_method=True` (for BytesIO files).
+
+            - Azure: Must use `use_read_method=False` (for other files).
+
+            - MinIO Rules Export: Must use `minio_rules_export=True` for
+            direct file handling and for BytesIO files.
+
+            - MinIO Rules Export: Must use `minio_rules_export=False` for
+            other file type handling.
+
         """
 
         client = self._get_service_client()
 
-        file_content = self._read_file(file, use_read_method)
+        if self._storage_type == STORAGE_TYPE.AZURE and minio_rules_export:
+            raise ValueError("minio_rules_export cannot be used with Azure storage")
 
-        try:
-            if self._storage_type == "azure":
-                try:
-                    blob_client = client.get_blob_client(
-                        container=container, blob=file_name
-                    )
-                    blob_client.upload_blob(
-                        file_content,
-                        content_settings=ContentSettings(content_type=content_type),
-                    )
-                except Exception as e:
-                    raise ValueError(
-                        f"Error uploading the file in Azure Blob Storage: {e}"
-                    )
+        # Handle MinIO rules export special case (BytesIO like Files)
+        if self._storage_type == STORAGE_TYPE.MINIO and minio_rules_export:
+            file.seek(0)
+            file_size = file.getbuffer().nbytes
+            file_content = file
 
-            elif self._storage_type == "minio":
-                try:
-                    client.put_object(
-                        container,
-                        file_name,
-                        data=file_content,
-                        length=len(file_content),
-                        content_type=content_type,
-                    )
-                except Exception as e:
-                    logger.error(f"Error uploading the file to MinIO: {e}")
-                    raise ValueError(f"Error uploading the file to MinIO: {e}")
+        else:
+            file_content = self._read_file(file, use_read_method)
+            file_size = len(file_content)
 
-            else:
-                raise ValueError(
-                    "Storage type not supported. Only Azure Blob Storage & MinIO is supported."
+        if self._storage_type == STORAGE_TYPE.MINIO:
+
+            try:
+                client.put_object(
+                    container,
+                    file_name,
+                    data=file_content,
+                    length=file_size,
+                    content_type=content_type,
                 )
+                return
+            except Exception as e:
+                logger.error(f"Error uploading the file to MinIO: {e}")
+                raise ValueError(f"Error uploading the file to MinIO: {e}")
 
-        except Exception as e:
-            logger.error(f"Error uploading the file '{file_name}': {e}")
-            raise ValueError(f"Error uploading the file: {e}")
+        elif self._storage_type == STORAGE_TYPE.AZURE:
+            try:
+                blob_client = client.get_blob_client(
+                    container=container, blob=file_name
+                )
+                blob_client.upload_blob(
+                    file_content,
+                    content_settings=ContentSettings(content_type=content_type),
+                )
+            except Exception as e:
+                raise ValueError(f"Error uploading the file in Azure Blob Storage: {e}")
+
+        else:
+            raise ValueError(
+                "Storage type not supported. Only Azure Blob Storage & MinIO is supported."
+            )
 
     def _read_file(self, file, use_read_method: bool):
         """
@@ -428,69 +432,3 @@ class StorageService:
         else:
             open_file = file.open()
             return open_file
-
-    def _upload_minio_to_rules_export(
-        self, file_name: str, container: str, file: BytesIO, content_type: str
-    ):
-        """
-        Uploads a file to MinIO storage.
-
-        Args:
-            - file_name (str): The name of the file to upload.
-            - container (str): The name of the container where
-            the file will be stored.
-            - file (BytesIO): The file content to upload.
-            - content_type (str): The content type of the file.
-        """
-        client = self._get_service_client()
-
-        if self._storage_type != "minio":
-            raise ValueError("This method is only for MinIO storage.")
-
-        try:
-            file.seek(0)
-            file_size = file.getbuffer().nbytes
-
-            client.put_object(
-                container,
-                file_name,
-                data=file,
-                length=file_size,
-                content_type=content_type,
-            )
-        except Exception as e:
-            logger.error(f"Error uploading the file to MinIO: {e}")
-            raise ValueError(f"Error uploading the file to MinIO: {e}")
-
-    def upload_to_rules_export(self, file_name, file, content_type):
-        """
-        Uploads a file to the rules-exports container in the
-        configured storage.
-
-        Args:
-            file_name (str): Name of the file to upload
-            file: File content to upload
-            content_type (str): MIME type of the file
-        """
-        container = "rules-exports"
-
-        if self._storage_type == "azure":
-            self.upload_file(
-                file_name=file_name,
-                container=container,
-                file=file,
-                content_type=content_type,
-                use_read_method=True,
-            )
-        elif self._storage_type == "minio":
-            self._upload_minio_to_rules_export(
-                file_name=file_name,
-                container=container,
-                file=file,
-                content_type=content_type,
-            )
-        else:
-            raise ValueError(
-                f"Unsupported storage type: {self._storage_type}. "
-                "Only 'azure' and 'minio' are supported for rules exports."
-            )
