@@ -12,6 +12,7 @@ services:
       POSTGRES_DB: postgres
     volumes:
       - db_data:/var/lib/postgresql/data
+      # TODO: add the notice for dev to create airflow manually or drop the db-data and start again
       - ./app/db/init.sql:/docker-entrypoint-initdb.d/init.sql
 
   # frontend:
@@ -38,15 +39,15 @@ services:
   #   depends_on:
   #     - api
 
-  omop-lite:
-    image: ghcr.io/andyrae/omop-lite
-    volumes:
-      - ./vocabs:/vocabs
-    depends_on:
-      - db
-    environment:
-      - DB_PASSWORD=postgres
-      - DB_NAME=postgres
+  # omop-lite:
+  #   image: ghcr.io/andyrae/omop-lite
+  #   volumes:
+  #     - ./vocabs:/vocabs
+  #   depends_on:
+  #     - db
+  #   environment:
+  #     - DB_PASSWORD=postgres
+  #     - DB_NAME=postgres
 
   # api:
   #   image: carrot-backend
@@ -74,6 +75,8 @@ services:
   #     - STORAGE_CONN_STRING=DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;TableEndpoint=http://azurite:10002/devstoreaccount1;
   #     - SIGNING_KEY=secret
   #     - STORAGE_TYPE=azure
+  #     - SUPERUSER_DEFAULT_PASSWORD=Password123!
+  #     - SUPERUSER_DEFAULT_USERNAME=admin
   #   volumes:
   #     - ./app/api:/api
   #     - ./app/shared:/shared
@@ -143,13 +146,13 @@ services:
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       # Update this connection string to point to your remote PostgreSQL
-      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://postgres:postgres@db:5432/postgres?options=-csearch_path%3Dairflow
-      AIRFLOW__CORE__SQL_ALCHEMY_SCHEMA: airflow
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://postgres:postgres@db:5432/postgres?options=-csearch_path%3Dairflow
+      AIRFLOW__DATABASE__SQL_ALCHEMY_SCHEMA: airflow
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
       AIRFLOW__WEBSERVER__WEB_SERVER_PORT: 8080
       AIRFLOW__WEBSERVER__SECRET_KEY: "test"
       AIRFLOW__API__AUTH_BACKENDS: airflow.api.auth.backend.basic_auth
-      AIRFLOW_CONN_POSTGRES_DB_CONN: postgresql+psycopg2://postgres:postgres@db:5432/postgres?options=-csearch_path%3Dairflow
+      AIRFLOW_CONN_POSTGRES_DB_CONN: postgresql+psycopg2://postgres:postgres@db:5432/postgres
       AIRFLOW_CONN_MINIO_CONN: aws://minioadmin:minioadmin@/?endpoint_url=http://minio:9000
       AIRFLOW_CONN_WASB__CONN:
         wasb://DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;TableEndpoint=http://azurite:10002/devstoreaccount1;
@@ -175,11 +178,11 @@ services:
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       # Update this connection string to point to your remote PostgreSQL
-      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://postgres:postgres@db:5432/postgres?options=-csearch_path%3Dairflow
-      AIRFLOW__CORE__SQL_ALCHEMY_SCHEMA: airflow
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://postgres:postgres@db:5432/postgres?options=-csearch_path%3Dairflow
+      AIRFLOW__DATABASE__SQL_ALCHEMY_SCHEMA: airflow
       AIRFLOW__WEBSERVER__SECRET_KEY: "test"
       AIRFLOW__API__AUTH_BACKENDS: airflow.api.auth.backend.basic_auth
-      AIRFLOW_CONN_POSTGRES_DB_CONN: postgresql+psycopg2://postgres:postgres@db:5432/postgres?options=-csearch_path%3Dairflow
+      AIRFLOW_CONN_POSTGRES_DB_CONN: postgresql+psycopg2://postgres:postgres@db:5432/postgres
       AIRFLOW_CONN_MINIO_CONN: aws://minioadmin:minioadmin@/?endpoint_url=http://minio:9000
       AIRFLOW_CONN_WASB__CONN: wasb://DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;TableEndpoint=http://azurite:10002/devstoreaccount1;
       # TODO: enable CORS ion production
