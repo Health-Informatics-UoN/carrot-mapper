@@ -2,8 +2,7 @@ from libs.utils import extract_params
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 
 # PostgreSQL connection hook
-
-pg_hook = PostgresHook(postgres_conn_id="1-conn-db")
+pg_hook = PostgresHook(postgres_conn_id="postgres-db-conn")
 
 
 # TODO: more error handling and docstring

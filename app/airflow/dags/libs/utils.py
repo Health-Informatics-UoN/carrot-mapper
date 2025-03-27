@@ -1,13 +1,9 @@
 import logging
-from airflow.providers.postgres.hooks.postgres import PostgresHook
 import ast
 import json
 
 # Set up logger
 logger = logging.getLogger(__name__)
-
-# PostgreSQL connection hook
-pg_hook = PostgresHook(postgres_conn_id="1-conn-db")
 
 
 # TODO: more error handling and comments for this function
