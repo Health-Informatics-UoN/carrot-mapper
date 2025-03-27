@@ -5,11 +5,12 @@ import { ConceptTags } from "@/components/concepts/concept-tags";
 import AddConcept from "@/components/concepts/add-concept";
 import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
+import CopyButton from "@/components/core/CopyButton";
 
 export const columns = (
   addSR: (concept: ScanReportConcept, c: Concept) => void,
   deleteSR: (id: number) => void,
-  tableId: string,
+  tableId: string
 ): ColumnDef<ScanReportValue>[] => [
   {
     id: "Value",
@@ -19,6 +20,16 @@ export const columns = (
     ),
     enableHiding: true,
     enableSorting: false,
+    cell: ({ row }) => {
+      const { value } = row.original;
+
+      return (
+        <div className="flex items-center gap-2">
+          <span className="font-bold">{value}</span>
+          <CopyButton textToCopy={value} />
+        </div>
+      );
+    }
   },
   {
     id: "Value Description",
@@ -31,7 +42,7 @@ export const columns = (
       />
     ),
     enableHiding: true,
-    enableSorting: false,
+    enableSorting: false
   },
   {
     id: "Frequency",
@@ -44,7 +55,7 @@ export const columns = (
       />
     ),
     enableHiding: true,
-    enableSorting: false,
+    enableSorting: false
   },
   {
     id: "Concepts",
@@ -56,13 +67,11 @@ export const columns = (
     cell: ({ row }) => {
       const { concepts } = row.original;
       return (
-        // Just in case the concepts tags need more time to load some data
-        // --> showing skeleton having same width with the concept tag area
         <Suspense fallback={<Skeleton className="h-5 w-[250px]" />}>
           <ConceptTags concepts={concepts ?? []} deleteSR={deleteSR} />
         </Suspense>
       );
-    },
+    }
   },
   {
     id: "Add Concept",
@@ -76,10 +85,10 @@ export const columns = (
           rowId={id}
           tableId={tableId}
           contentType="scanreportvalue"
-          disabled={canEdit ? false : true}
+          disabled={!canEdit}
           addSR={addSR}
         />
       );
-    },
-  },
+    }
+  }
 ];
