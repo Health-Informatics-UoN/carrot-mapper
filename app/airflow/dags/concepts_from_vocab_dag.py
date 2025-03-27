@@ -35,8 +35,6 @@ core_task = PythonOperator(
     dag=dag,
 )
 # TODO: add tasks to do error handling and update status
-# TODO: what happens if users re-run these?
-# TODO: seperate Airflow schema
 # TODO: create workflow - deploy MVP - testing
 
 # End the workflow

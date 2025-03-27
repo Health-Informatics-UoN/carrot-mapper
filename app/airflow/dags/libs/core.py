@@ -42,7 +42,7 @@ def find_and_create_standard_concepts(**kwargs):
         pg_hook.run(find_std_concept_query)
 
         create_concept_query = """
-        -- Insert standard concepts for field values
+        -- Insert standard concepts for field values (only if they don't already exist)
         INSERT INTO mapping_scanreportconcept (
             created_at,
             updated_at,
@@ -55,10 +55,17 @@ def find_and_create_standard_concepts(**kwargs):
             NOW(),
             NOW(),
             tsc.sr_value_id,
-            'V', -- TODO: more details on this V
+            'V', -- Creation type: Built from Vocab dict
             tsc.standard_concept_id,
-            23 -- TODO: more details on this number
+            23 -- content_type_id for scanreportvalue
         FROM temp_standard_concepts tsc
+        WHERE NOT EXISTS (
+            -- Check if the concept already exists
+            SELECT 1 FROM mapping_scanreportconcept
+            WHERE object_id = tsc.sr_value_id
+            AND concept_id = tsc.standard_concept_id
+            AND content_type_id = 23
+        );
         """
 
         pg_hook.run(create_concept_query)
