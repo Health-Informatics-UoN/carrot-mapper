@@ -1,83 +1,65 @@
-import logging
-from typing import Dict, Any, Optional
+from libs.utils import extract_params
 from airflow.providers.postgres.hooks.postgres import PostgresHook
-from airflow.exceptions import AirflowException
-import psycopg2
-
-# Set up logger
-logger = logging.getLogger(__name__)
 
 # PostgreSQL connection hook
+
 pg_hook = PostgresHook(postgres_conn_id="1-conn-db")
 
 
-def test_add_scan_report_values(
-    concept_id: Optional[int] = None, **kwargs
-) -> Dict[str, Any]:
-    """
-    Test function that inserts a scan report concept.
+# TODO: more error handling and docstring
+def find_and_create_standard_concepts(**kwargs):
 
-    Args:
-        concept_id: The concept ID to use, passed from the DAG run configuration
-        **kwargs: Additional arguments from Airflow
+    table_id, field_vocab_pairs = extract_params(**kwargs)
 
-    Returns:
-        Dict with status information about the operation
-    """
-    logger.info(f"Starting test_add_scan_report_values with concept_id: {concept_id}")
+    for pair in field_vocab_pairs:
 
-    # If concept_id wasn't provided directly, try to get it from dag_run.conf
-    if concept_id is None:
-        # Check if we have it in dag_run.conf (passed by template)
-        dag_run = kwargs.get("dag_run")
-        if dag_run and hasattr(dag_run, "conf"):
-            concept_id = dag_run.conf.get("concept_id")
-            logger.info(f"Got concept_id {concept_id} from dag_run.conf")
+        sr_field_id = pair.get("sr_field_id")
+        vocabulary_id = pair.get("vocabulary_id")
 
-    # Use default if still None
-    #  TODO: If this one still none then raise AirflowException
-    if concept_id is None:
-        concept_id = 8507  # Default value
-        logger.info(f"Using default concept_id: {concept_id}")
+        if not sr_field_id or not vocabulary_id:
+            raise ValueError(
+                "Invalid field_vocab_pair: requires sr_field_id and vocabulary_id"
+            )
 
-    try:
-        # Use proper SQL syntax with quotes around string values
-        # Use the passed concept_id in the query
-        update_query = f"""
-        INSERT INTO mapping_scanreportconcept (created_at, updated_at, object_id, creation_type, concept_id, content_type_id)
-        VALUES (
-            NOW(),
-            NOW(),
-            72766,
-            'V',
-            {concept_id},
-            23
-        )
+        find_std_concept_query = f"""
+        DROP TABLE IF EXISTS temp_standard_concepts;
+        CREATE TABLE temp_standard_concepts AS
+        SELECT
+            srv.id AS sr_value_id,
+            c2.concept_id AS standard_concept_id
+        FROM mapping_scanreportvalue srv
+        JOIN omop.concept c1 ON
+            c1.concept_code = srv.value AND
+            c1.vocabulary_id = '{vocabulary_id}'
+        JOIN omop.concept_relationship cr ON
+            cr.concept_id_1 = c1.concept_id AND
+            cr.relationship_id = 'Maps to'
+        JOIN omop.concept c2 ON
+            c2.concept_id = cr.concept_id_2 AND
+            c2.standard_concept = 'S'
+        WHERE srv.scan_report_field_id = {sr_field_id};
         """
 
-        # Execute the query
-        pg_hook.run(update_query)
+        pg_hook.run(find_std_concept_query)
 
-        logger.info(
-            f"Successfully inserted scan report concept with concept_id: {concept_id}"
+        create_concept_query = """
+        -- Insert standard concepts for field values
+        INSERT INTO mapping_scanreportconcept (
+            created_at,
+            updated_at,
+            object_id,
+            creation_type,
+            concept_id,
+            content_type_id
         )
-        return {
-            "status": "success",
-            "message": f"Successfully inserted scan report concept with concept_id: {concept_id}",
-            "concept_id": concept_id,
-        }
+        SELECT
+            NOW(),
+            NOW(),
+            tsc.sr_value_id,
+            'V', -- TODO: more details on this V
+            tsc.standard_concept_id,
+            23 -- TODO: more details on this number
+        FROM temp_standard_concepts tsc
+        """
 
-    except psycopg2.errors.UndefinedColumn as e:
-        error_msg = f"SQL syntax error: {str(e)}"
-        logger.error(error_msg)
-        raise AirflowException(error_msg) from e
-
-    except psycopg2.Error as e:
-        error_msg = f"Database error: {str(e)}"
-        logger.error(error_msg)
-        raise AirflowException(error_msg) from e
-
-    except Exception as e:
-        error_msg = f"Unexpected error: {str(e)}"
-        logger.error(error_msg)
-        raise AirflowException(error_msg) from e
+        pg_hook.run(create_concept_query)

@@ -13,12 +13,12 @@ default_args = {
 }
 
 dag = DAG(
-    "concept_mapping_orchestrator",
+    "auto_mapping_orchestrator",
     default_args=default_args,
-    description="Orchestrates the Concept Mapping workflow",
+    description="Orchestrates the automatic Mapping rules generation workflow",
     schedule_interval=None,
     catchup=False,
-    tags=["concept", "mapping"],
+    tags=["orchestrator"],
     # Add these settings:
     concurrency=20,  # Allow more concurrent tasks in this DAG
     max_active_runs=5,  # Allow multiple concurrent DAG runs
@@ -29,9 +29,9 @@ dag = DAG(
 start = EmptyOperator(task_id="start", dag=dag)
 
 # Trigger concept mapping
-trigger_concept_mapping = TriggerDagRunOperator(
-    task_id="trigger_concept_mapping",
-    trigger_dag_id="{{ dag_run.conf['concept_dag'] }}",
+trigger_create_concepts_vocabs = TriggerDagRunOperator(
+    task_id="trigger_create_concepts_from_vocab_dict",
+    trigger_dag_id="create_concepts_from_vocab_dict",
     conf={
         "table_id": "{{ dag_run.conf['table_id'] }}",
         "field_vocab_pairs": "{{ dag_run.conf['field_vocab_pairs'] }}",
@@ -58,4 +58,4 @@ trigger_concept_mapping = TriggerDagRunOperator(
 end = EmptyOperator(task_id="end", dag=dag)
 
 # Define task dependencies
-start >> trigger_concept_mapping >> end
+start >> trigger_create_concepts_vocabs >> end
