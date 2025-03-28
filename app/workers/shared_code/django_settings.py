@@ -30,3 +30,5 @@ DATABASES = {
         },
     }
 }
+
+STORAGE_TYPE = os.environ.get("STORAGE_TYPE", "minio")
