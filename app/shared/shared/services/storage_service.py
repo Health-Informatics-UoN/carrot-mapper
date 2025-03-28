@@ -31,8 +31,6 @@ class StorageService:
         providers (Azure Blob Storage and MinIO).
         """
         self._storage_type = os.getenv("STORAGE_TYPE")
-        self._azure_client = None
-        self._minio_client = None
         self._get_service_client()
 
     def _initialise_azure_client(self):
@@ -84,13 +82,11 @@ class StorageService:
         """
 
         if self._storage_type == STORAGE_TYPE.AZURE:
-            if self._azure_client is None:
-                self._initialise_azure_client()
+            self._initialise_azure_client()
             return self._azure_client
 
         elif self._storage_type == STORAGE_TYPE.MINIO:
-            if self._minio_client is None:
-                self._initialise_minio_client()
+            self._initialise_minio_client()
             return self._minio_client
 
         else:
