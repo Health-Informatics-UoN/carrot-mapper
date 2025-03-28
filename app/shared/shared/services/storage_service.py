@@ -30,18 +30,10 @@ class StorageService:
         Service for interacting with cloud storage
         providers (Azure Blob Storage and MinIO).
         """
-        self._storage_type = os.getenv("STORAGE_TYPE")
-
-        if self._storage_type == STORAGE_TYPE.AZURE:
-            self._azure_client = self._initialise_azure_client()
-
-        elif self._storage_type == STORAGE_TYPE.MINIO:
-            self._minio_client = self._initialise_minio_client()
-
-        else:
-            raise ValueError(
-                "Storage type not supported. Only Azure Blob Storage & MinIO is supported."
-            )
+        self._azure_client: Optional[BlobServiceClient] = None
+        self._minio_client: Optional[Minio] = None
+        self._storage_type = os.getenv("STORAGE_TYPE", "minio")
+        self._get_service_client()
 
     def _initialise_azure_client(self):
         """
@@ -54,7 +46,6 @@ class StorageService:
             self._azure_client = BlobServiceClient.from_connection_string(
                 storage_conn_string
             )
-            return self._azure_client
         except Exception as e:
             logger.error(f"Error connecting to Azure Blob Storage: {e}")
             raise ValueError("Failed to initialise Azure Blob Storage client.")
@@ -64,9 +55,10 @@ class StorageService:
         Initialises the MinIO client.
         """
         try:
-            minio_endpoint = os.getenv("MINIO_ENDPOINT")
-            minio_access_key = os.getenv("MINIO_ACCESS_KEY")
-            minio_secret_key = os.getenv("MINIO_SECRET_KEY")
+            # Hard-coded MinIO credentials for testing purposes
+            minio_endpoint = os.getenv("MINIO_ENDPOINT", "minio:9000")
+            minio_access_key = os.getenv("MINIO_ACCESS_KEY", "minioadmin")
+            minio_secret_key = os.getenv("MINIO_SECRET_KEY", "minioadmin")
             if not minio_endpoint or not minio_access_key or not minio_secret_key:
                 raise ValueError(
                     "MINIO_ENDPOINT, MINIO_ACCESS_KEY, or MINIO_SECRET_KEY environment variables are not set."
@@ -77,10 +69,35 @@ class StorageService:
                 secret_key=minio_secret_key,
                 secure=False,
             )
-            return self._minio_client
         except Exception as e:
             logger.error(f"Error connecting to MinIO: {e}")
             raise ValueError(f"Failed to initialise MinIO client: {e}")
+
+    def _get_service_client(self):
+        """
+        Get the service client for the specified storage type.
+
+        Args:
+            service_type (STORAGE_TYPE): The storage type to get the client for.
+
+        Returns:
+            Union[BlobServiceClient, Minio]: The service client.
+        """
+
+        if self._storage_type == STORAGE_TYPE.AZURE:
+            if self._azure_client is None:
+                self._initialise_azure_client()
+            return self._azure_client
+
+        elif self._storage_type == STORAGE_TYPE.MINIO:
+            if self._minio_client is None:
+                self._initialise_minio_client()
+            return self._minio_client
+
+        else:
+            raise ValueError(
+                "Storage type not supported. Only Azure Blob Storage & MinIO is supported."
+            )
 
     def get_scan_report(self, file_name: str) -> openpyxl.Workbook:
         """
