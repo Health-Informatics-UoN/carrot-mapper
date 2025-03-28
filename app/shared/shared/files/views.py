@@ -36,7 +36,7 @@ class FileDownloadView(GenericAPIView, ListModelMixin, RetrieveModelMixin):
     def get(self, request, *args, **kwargs):
         if "pk" in kwargs:
             entity = get_object_or_404(FileDownload, pk=kwargs["pk"])
-            file = storage_service.get_blob(entity.file_url, "rules-exports")
+            file = storage_service.get_file(entity.file_url, "rules-exports")
 
             response = HttpResponse(file, content_type="application/octet-stream")
             response["Content-Disposition"] = f'attachment; filename="{entity.name}"'

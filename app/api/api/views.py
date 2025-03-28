@@ -245,7 +245,7 @@ class ScanReportIndexV2(GenericAPIView, ListModelMixin, CreateModelMixin):
                 "data_dictionary_blob": "None",
             }
 
-            storage_service.upload_blob(
+            storage_service.upload_file(
                 scan_report.name,
                 "scan-reports",
                 valid_scan_report_file,
@@ -268,14 +268,14 @@ class ScanReportIndexV2(GenericAPIView, ListModelMixin, CreateModelMixin):
                 "data_dictionary_blob": data_dictionary.name,
             }
 
-            storage_service.upload_blob(
+            storage_service.upload_file(
                 scan_report.name,
                 "scan-reports",
                 valid_scan_report_file,
                 spreadsheet_content_type,
                 use_read_method=False,
             )
-            storage_service.upload_blob(
+            storage_service.upload_file(
                 data_dictionary.name,
                 "data-dictionaries",
                 valid_data_dictionary_file,
@@ -317,12 +317,12 @@ class ScanReportDetailV2(
 
     def perform_destroy(self, instance):
         try:
-            storage_service.delete_blob(instance.name, "scan-reports")
+            storage_service.delete_file(instance.name, "scan-reports")
         except Exception as e:
             raise Exception(f"Error deleting scan report: {e}")
         if instance.data_dictionary:
             try:
-                storage_service.delete_blob(
+                storage_service.delete_file(
                     instance.data_dictionary.name, "data-dictionaries"
                 )
             except Exception as e:
@@ -842,7 +842,7 @@ class DownloadScanReportViewSet(viewsets.ViewSet):
         # TODO: This should not be a list view...
         scan_report = ScanReport.objects.get(id=pk)
         blob_name = scan_report.name
-        scan_report_blob = storage_service.get_blob(blob_name, "scan-reports")
+        scan_report_blob = storage_service.get_file(blob_name, "scan-reports")
 
         response = HttpResponse(
             scan_report_blob,
