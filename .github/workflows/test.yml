@@ -147,7 +147,6 @@ jobs:
           DB_PASSWORD: "postgres"
           DB_PORT: "5432"
           DB_USER: "postgres"
-          STORAGE_TYPE: "minio"
         working-directory: app/api
         run: |
           poetry run pytest
