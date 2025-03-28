@@ -30,7 +30,7 @@ class StorageService:
         Service for interacting with cloud storage
         providers (Azure Blob Storage and MinIO).
         """
-        self._storage_type = os.getenv("STORAGE_TYPE")
+        self._storage_type = os.getenv("STORAGE_TYPE", "minio")
         logger.debug(f"Storage type set to: {self._storage_type}")
         self._get_service_client()
 
