@@ -131,7 +131,7 @@ def main(msg: func.QueueMessage) -> None:
         container="rules-exports",
         file=file,
         content_type=file_type,
-        minio_rules_export=(storage_service._storage_type == STORAGE_TYPE.MINIO),
+        use_minio_bytesio_method=(storage_service._storage_type == STORAGE_TYPE.MINIO),
         use_read_method=(storage_service._storage_type == STORAGE_TYPE.AZURE),
     )
 
