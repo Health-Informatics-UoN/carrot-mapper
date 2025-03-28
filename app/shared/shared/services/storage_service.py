@@ -31,6 +31,7 @@ class StorageService:
         providers (Azure Blob Storage and MinIO).
         """
         self._storage_type = os.getenv("STORAGE_TYPE")
+        logger.debug(f"Storage type set to: {self._storage_type}")
         self._get_service_client()
 
     def _initialise_azure_client(self):
@@ -91,7 +92,7 @@ class StorageService:
 
         else:
             raise ValueError(
-                "Storage type not supported. Only Azure Blob Storage & MinIO is supported."
+                f"Storage type not supported {self._storage_type}. Only Azure Blob Storage & MinIO is supported."
             )
 
     def get_scan_report(self, file_name: str) -> openpyxl.Workbook:
