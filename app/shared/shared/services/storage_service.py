@@ -55,7 +55,6 @@ class StorageService:
         Initialises the MinIO client.
         """
         try:
-            # Hard-coded MinIO credentials for testing purposes
             minio_endpoint = os.getenv("MINIO_ENDPOINT")
             minio_access_key = os.getenv("MINIO_ACCESS_KEY")
             minio_secret_key = os.getenv("MINIO_SECRET_KEY")
