@@ -32,7 +32,7 @@ class StorageService:
         """
         self._azure_client: Optional[BlobServiceClient] = None
         self._minio_client: Optional[Minio] = None
-        self._storage_type = os.getenv("STORAGE_TYPE", "minio")
+        self._storage_type = os.getenv("STORAGE_TYPE")
         self._get_service_client()
 
     def _initialise_azure_client(self):
@@ -56,9 +56,9 @@ class StorageService:
         """
         try:
             # Hard-coded MinIO credentials for testing purposes
-            minio_endpoint = os.getenv("MINIO_ENDPOINT", "minio:9000")
-            minio_access_key = os.getenv("MINIO_ACCESS_KEY", "minioadmin")
-            minio_secret_key = os.getenv("MINIO_SECRET_KEY", "minioadmin")
+            minio_endpoint = os.getenv("MINIO_ENDPOINT")
+            minio_access_key = os.getenv("MINIO_ACCESS_KEY")
+            minio_secret_key = os.getenv("MINIO_SECRET_KEY")
             if not minio_endpoint or not minio_access_key or not minio_secret_key:
                 raise ValueError(
                     "MINIO_ENDPOINT, MINIO_ACCESS_KEY, or MINIO_SECRET_KEY environment variables are not set."
