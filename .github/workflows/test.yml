@@ -147,6 +147,12 @@ jobs:
           DB_PASSWORD: "postgres"
           DB_PORT: "5432"
           DB_USER: "postgres"
+          STORAGE_TYPE: ${{env.STORAGE_TYPE}}
+          STORAGE_CONN_STRING: ${{env.STORAGE_CONN_STRING}}
+          MINIO_ENDPOINT: ${{env.MINIO_ENDPOINT}}
+          MINIO_ACCESS_KEY: ${{env.MINIO_ACCESS_KEY}}
+          MINIO_SECRET_KEY: ${{env.MINIO_SECRET_KEY}}
+          
         working-directory: app/api
         run: |
           poetry run pytest
