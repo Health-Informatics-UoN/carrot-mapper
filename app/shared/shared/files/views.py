@@ -50,6 +50,13 @@ class FileDownloadView(GenericAPIView, ListModelMixin, RetrieveModelMixin):
             return JsonResponse(
                 {"error": "scan_report_id and file_type are required."}, status=400
             )
+        
+        Job.objects.create(
+            scan_report=ScanReport.objects.get(id=scan_report_id),
+            stage=JobStage.objects.get(value="DOWNLOAD_RULES"),
+            status=StageStatus.objects.get(value="IN_PROGRESS"),
+            details=f"A Mapping Rules {'JSON' if file_type == 'application/json' else 'CSV'} is being generated.",
+        )
 
         msg = {
             "scan_report_id": scan_report_id,
@@ -75,12 +82,5 @@ class FileDownloadView(GenericAPIView, ListModelMixin, RetrieveModelMixin):
 
 
         response.raise_for_status()
-
-        Job.objects.create(
-            scan_report=ScanReport.objects.get(id=scan_report_id),
-            stage=JobStage.objects.get(value="DOWNLOAD_RULES"),
-            status=StageStatus.objects.get(value="IN_PROGRESS"),
-            details=f"A Mapping Rules {'JSON' if file_type == 'application/json' else 'CSV'} is being generated.",
-        )
 
         return HttpResponse(status=202)
