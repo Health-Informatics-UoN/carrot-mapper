@@ -76,7 +76,7 @@ def create_svg_rules(rules: QuerySet[MappingRule]) -> BytesIO:
     return BytesIO(svg_bytes)
 
 
-async def main(req: func.HttpRequest, msg: func.Out[str]) -> func.HttpResponse:
+def main(req: func.HttpRequest, msg: func.Out[str]) -> func.HttpResponse:
     logging.info("Received request for rules download.")
     
     # try:

@@ -42,43 +42,45 @@ class FileDownloadView(GenericAPIView, ListModelMixin, RetrieveModelMixin):
         return self.list(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
+        body = request.data
+        scan_report_id = body.get("scan_report_id")
+        file_type = body.get("file_type")
+
+        if not scan_report_id or not file_type:
+            return JsonResponse(
+                {"error": "scan_report_id and file_type are required."}, status=400
+            )
+
+        msg = {
+            "scan_report_id": scan_report_id,
+            "user_id": request.user.id,
+            "file_type": file_type,
+        }
+
+        base_url = f"{settings.WORKERS_URL}"
+        trigger = f"/api/rulesfilequeue/?code={settings.WORKERS_RULES_KEY}"
+
+        response = requests.post(
+            urljoin(base_url, trigger),
+            json=msg,
+            headers={"Content-Type": "application/json"}
+        )
+        print(f"Response from workers: {response.status_code} - {response.text}")
         try:
-            body = request.data
-            scan_report_id = body.get("scan_report_id")
-            file_type = body.get("file_type")
+            response_data = response.json()
+        except requests.exceptions.JSONDecodeError:
+            response_data = {"status_code": response.status_code, "text": response.text}
 
-            if not scan_report_id or not file_type:
-                return JsonResponse(
-                    {"error": "scan_report_id and file_type are required."}, status=400
-                )
+        print(f"Response from workers:\n{json.dumps(response_data, indent=2)}")
 
-            msg = {
-                "scan_report_id": scan_report_id,
-                "user_id": request.user.id,
-                "file_type": file_type,
-            }
 
-            base_url = f"{settings.WORKERS_URL}"
-            trigger = f"/api/rulesfilequeue/?code={settings.WORKERS_RULES_KEY}"
+        response.raise_for_status()
 
-            response = requests.post(
-                urljoin(base_url, trigger),
-                json=msg,
-                headers={"Content-Type": "application/json"}
-            )
-            response.raise_for_status()
-
-            Job.objects.create(
-                scan_report=ScanReport.objects.get(id=scan_report_id),
-                stage=JobStage.objects.get(value="DOWNLOAD_RULES"),
-                status=StageStatus.objects.get(value="IN_PROGRESS"),
-                details=f"A Mapping Rules {'JSON' if file_type == 'application/json' else 'CSV'} is being generated.",
-            )
-        except json.JSONDecodeError:
-            return JsonResponse({"error": "Invalid JSON data."}, status=400)
-        except requests.exceptions.HTTPError as e:
-            return JsonResponse({"error": f"HTTP error: {e}"}, status=500)
-        except Exception:
-            return JsonResponse({"error": "Internal server error."}, status=500)
+        Job.objects.create(
+            scan_report=ScanReport.objects.get(id=scan_report_id),
+            stage=JobStage.objects.get(value="DOWNLOAD_RULES"),
+            status=StageStatus.objects.get(value="IN_PROGRESS"),
+            details=f"A Mapping Rules {'JSON' if file_type == 'application/json' else 'CSV'} is being generated.",
+        )
 
         return HttpResponse(status=202)
