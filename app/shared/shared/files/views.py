@@ -1,6 +1,7 @@
-import json
-
 from django.conf import settings
+import json
+from urllib.parse import urljoin
+import requests
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
@@ -19,7 +20,6 @@ from .serializers import FileDownloadSerializer
 
 storage_service = StorageService()
 
-
 class FileDownloadView(GenericAPIView, ListModelMixin, RetrieveModelMixin):
     serializer_class = FileDownloadSerializer
     filter_backends = [DjangoFilterBackend, OrderingFilter]
@@ -30,24 +30,18 @@ class FileDownloadView(GenericAPIView, ListModelMixin, RetrieveModelMixin):
     def get_queryset(self):
         scan_report_id = self.kwargs["scanreport_pk"]
         scan_report = get_object_or_404(ScanReport, pk=scan_report_id)
-
         return FileDownload.objects.filter(scan_report=scan_report)
 
     def get(self, request, *args, **kwargs):
         if "pk" in kwargs:
             entity = get_object_or_404(FileDownload, pk=kwargs["pk"])
             file = storage_service.get_blob(entity.file_url, "rules-exports")
-
             response = HttpResponse(file, content_type="application/octet-stream")
             response["Content-Disposition"] = f'attachment; filename="{entity.name}"'
             return response
-
         return self.list(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
-        """
-        Requests a file to be generated for download by sending a message to the Rules Export Queue.
-        """
         try:
             body = request.data
             scan_report_id = body.get("scan_report_id")
@@ -64,8 +58,16 @@ class FileDownloadView(GenericAPIView, ListModelMixin, RetrieveModelMixin):
                 "file_type": file_type,
             }
 
-            add_message(settings.WORKERS_RULES_EXPORT_NAME, msg)
-            # Create job record for downloading file
+            base_url = f"{settings.WORKERS_URL}"
+            trigger = f"/api/rulesfilequeue/?code={settings.WORKERS_RULES_KEY}"
+
+            response = requests.post(
+                urljoin(base_url, trigger),
+                json=msg,
+                headers={"Content-Type": "application/json"}
+            )
+            response.raise_for_status()
+
             Job.objects.create(
                 scan_report=ScanReport.objects.get(id=scan_report_id),
                 stage=JobStage.objects.get(value="DOWNLOAD_RULES"),
@@ -74,6 +76,8 @@ class FileDownloadView(GenericAPIView, ListModelMixin, RetrieveModelMixin):
             )
         except json.JSONDecodeError:
             return JsonResponse({"error": "Invalid JSON data."}, status=400)
+        except requests.exceptions.HTTPError as e:
+            return JsonResponse({"error": f"HTTP error: {e}"}, status=500)
         except Exception:
             return JsonResponse({"error": "Internal server error."}, status=500)
 

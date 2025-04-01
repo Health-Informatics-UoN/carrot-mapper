@@ -2,11 +2,24 @@
   "scriptFile": "__init__.py",
   "bindings": [
     {
-      "name": "msg",
-      "type": "queueTrigger",
+      "authLevel": "function",
+      "name": "req",
+      "type": "httpTrigger",
       "direction": "in",
+      "route": "rulesfilequeue",
+      "methods": ["post", "get"]
+    },
+    {
+      "type": "queue",
+      "direction": "out",
+      "name": "msg",
       "queueName": "%RULES_FILE_QUEUE_NAME%",
       "connection": "STORAGE_CONN_STRING"
+    },
+    {
+      "name": "$return",
+      "type": "http",
+      "direction": "out"
     }
   ]
 }

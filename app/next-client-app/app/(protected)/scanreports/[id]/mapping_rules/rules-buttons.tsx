@@ -33,6 +33,7 @@ export function RulesButton({
 
   const handleDownload = async (fileType: FileTypeFormat) => {
     const resp = await requestFile(Number(scanreportId), fileType);
+    console.log("RESPONSE",resp);
     if (resp.success) {
       router.push(`downloads`);
       toast.success("File requested.");
