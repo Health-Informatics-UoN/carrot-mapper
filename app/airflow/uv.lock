@@ -466,7 +466,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "apache-airflow", specifier = ">=2.6.3" },
+    { name = "apache-airflow", specifier = ">=2.10.5" },
     { name = "apache-airflow-providers-postgres", specifier = ">=6.1.1" },
     { name = "types-psycopg2", specifier = ">=2.9.21.20250318" },
 ]
