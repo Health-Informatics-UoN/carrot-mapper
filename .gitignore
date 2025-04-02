@@ -16,3 +16,4 @@ dist
 api/static
 vocabs
 .idea
+.mypy_cache
