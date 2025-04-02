@@ -32,7 +32,24 @@ from shared.mapping.permissions import (
 
 class DatasetIndex(GenericAPIView, ListModelMixin, CreateModelMixin):
     """
-    API view to show all datasets.
+    API view to list all datasets with support for filtering and pagination.
+
+    This view allows users to retrieve a list of datasets based on specific
+    filter criteria such as dataset ID, data partner, and visibility status.
+    It also supports pagination to handle large datasets efficiently.
+
+    - If the request method is POST, the `DatasetCreateSerializerV2` is used
+      to handle dataset creation.
+    - For GET requests, the `DatasetViewSerializerV2` is used to serialize
+      the dataset data.
+
+    Filtering options:
+    - `id`: Filter datasets by their IDs.
+    - `data_partner`: Filter datasets by their associated data partner.
+    - `hidden`: Filter datasets based on their hidden status.
+
+    The queryset returned depends on the user's permissions and visibility
+    settings of the datasets.
     """
 
     serializer_class = DatasetViewSerializerV2

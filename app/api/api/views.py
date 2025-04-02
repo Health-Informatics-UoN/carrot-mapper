@@ -82,6 +82,21 @@ storage_service = StorageService()
 
 
 class DataPartnerViewSet(GenericAPIView, ListModelMixin):
+    """
+    A viewset for handling DataPartner objects.
+
+    This viewset provides a GET method to retrieve a list of all DataPartner
+    objects using the ListModelMixin.
+
+    Attributes:
+        queryset (QuerySet): A queryset containing all DataPartner objects.
+        serializer_class (Serializer): The serializer class used for serializing
+            and deserializing DataPartner objects.
+
+    Methods:
+        get(request, *args, **kwargs):
+            Handles GET requests to return a list of DataPartner objects.
+    """
     queryset = DataPartner.objects.all()
     serializer_class = DataPartnerSerializer
 
@@ -673,6 +688,40 @@ class ScanReportConceptDetailV2(GenericAPIView, DestroyModelMixin):
 
 
 class MappingRulesList(APIView):
+    """
+    API View to handle operations related to mapping rules.
+
+    This view provides functionality to retrieve mapping rules in a specific format
+    or generate an SVG representation of the mapping rules DAG (Directed Acyclic Graph).
+
+    Methods:
+        post(request, *args, **kwargs):
+            Handles POST requests to either retrieve mapping rules in JSON format
+            or generate an SVG representation of the mapping rules DAG.
+
+            Request Parameters:
+                - get_svg (optional, boolean): If provided and set to true, the response
+                  will include an SVG representation of the mapping rules DAG.
+
+            Request Body (JSON):
+                - get_svg (optional, boolean): Same as the request parameter.
+
+            Responses:
+                - 200 OK: Returns an SVG image if `get_svg` is provided.
+                - 400 Bad Request: Returns an error message if the request parameters
+                  are invalid.
+
+        get_queryset():
+            Retrieves the queryset of mapping rules based on the provided search term.
+
+            Query Parameters:
+                - pk (optional, integer): The primary key of the scan report to filter
+                  mapping rules by. If not provided, all mapping rules are returned.
+
+            Returns:
+                - QuerySet: A filtered queryset of MappingRule objects ordered by
+                  concept, OMOP table, OMOP field, source table, and source field.
+    """
     def post(self, request, *args, **kwargs):
         try:
             body = request.data
