@@ -1,12 +1,7 @@
 #!/bin/bash
 set -e
 
-# Print current environment for debugging
-echo "Current user: $(whoami)"
-echo "Home directory: $HOME"
-echo "Current directory: $(pwd)"
-echo "PATH: $PATH"
-
+# TODO: clean up the procedure of finding the airflow executable
 # Try to find the airflow executable
 echo "Searching for airflow executable..."
 AIRFLOW_PATHS=(
@@ -47,9 +42,6 @@ if [ -z "$AIRFLOW_EXEC" ]; then
   exit 1
 fi
 
-# Display permissions and test execution
-ls -la "$AIRFLOW_EXEC"
-echo "Airflow version: $($AIRFLOW_EXEC version || echo 'COMMAND FAILED')"
 
 # Wait for the database to be ready
 $AIRFLOW_EXEC db check || { echo "Database check failed"; exit 1; }
