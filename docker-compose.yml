@@ -165,7 +165,6 @@ services:
     build:
       context: app/airflow
       dockerfile: Dockerfile.webserver
-    restart: always
     depends_on:
       - db
     environment:
@@ -174,7 +173,7 @@ services:
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://postgres:postgres@db:5432/postgres?options=-csearch_path%3Dairflow
       AIRFLOW__DATABASE__SQL_ALCHEMY_SCHEMA: airflow
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
-      AIRFLOW__WEBSERVER__WEB_SERVER_PORT: 8080
+      AIRFLOW__WEBSERVER__WEB_SERVER_PORT: 8081
       AIRFLOW__WEBSERVER__SECRET_KEY: "test"
       AIRFLOW__API__AUTH_BACKENDS: airflow.api.auth.backend.basic_auth
       AIRFLOW_CONN_POSTGRES_DB_CONN: postgresql+psycopg2://postgres:postgres@db:5432/postgres
@@ -187,13 +186,13 @@ services:
       # TODO: decide which method to set Airflow config, if using the below, set it in the Dockerfile
       # - ./app/airflow/config/airflow.cfg:/opt/airflow/airflow.cfg
     ports:
-      - "8080:8080"
+      # normal port is 8080 but to avoid the conflict with workers, use 8081
+      - "8081:8081"
 
   scheduler:
     build:
       context: app/airflow
       dockerfile: Dockerfile.scheduler
-    restart: always
     depends_on:
       - webserver
     environment:
