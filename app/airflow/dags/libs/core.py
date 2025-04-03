@@ -25,7 +25,8 @@ def find_and_create_standard_concepts(**kwargs):
         CREATE TABLE temp_standard_concepts AS
         SELECT
             srv.id AS sr_value_id,
-            c2.concept_id AS standard_concept_id
+            c2.concept_id AS standard_concept_id,
+            ot.id AS destination_table_id
         FROM mapping_scanreportvalue srv
         JOIN omop.concept c1 ON
             c1.concept_code = srv.value AND
@@ -36,6 +37,17 @@ def find_and_create_standard_concepts(**kwargs):
         JOIN omop.concept c2 ON
             c2.concept_id = cr.concept_id_2 AND
             c2.standard_concept = 'S'
+        LEFT JOIN mapping_omoptable ot ON
+            CASE c2.domain_id
+                WHEN 'Observation' THEN 'observation'
+                WHEN 'Condition' THEN 'condition_occurrence'
+                WHEN 'Device' THEN 'device_exposure'
+                WHEN 'Measurement' THEN 'measurement'
+                WHEN 'Person' THEN 'person'
+                WHEN 'Drug' THEN 'drug_exposure'
+                WHEN 'Procedure' THEN 'procedure_occurrence'
+                ELSE LOWER(c2.domain_id)
+            END = ot.table
         WHERE srv.scan_report_field_id = {sr_field_id};
         """
 
