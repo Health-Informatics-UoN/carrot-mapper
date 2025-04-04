@@ -61,6 +61,8 @@ def find_and_create_standard_concepts(**kwargs):
                 WHEN 'Person' THEN 'person'
                 WHEN 'Drug' THEN 'drug_exposure'
                 WHEN 'Procedure' THEN 'procedure_occurrence'
+                -- TODO: having tests for the case when the domain is Specimen
+                WHEN 'Specimen' THEN 'specimen'
                 -- TODO: plan for other domains: Death, Specimen, etc. and for the case when the domain is not supported
                 ELSE LOWER(c2.domain_id)
             END = ot.table
@@ -76,6 +78,7 @@ def find_and_create_standard_concepts(**kwargs):
         pg_hook.run(step2_query)
         
         # Step 3: Add columns about dates: dest_date_field_id, dest_start_date_field_id, dest_end_date_field_id
+        # TODO: generate for both date and datetime fields in OMOP tables
         step3_query = """
         ALTER TABLE temp_standard_concepts 
         ADD COLUMN dest_date_field_id INTEGER,
@@ -104,6 +107,40 @@ def find_and_create_standard_concepts(**kwargs):
         WHERE dfa.sr_value_id = tsc.sr_value_id;
         """
         pg_hook.run(step3_query)
+
+        # Step 4: Add columns for source concept, source value, and destination concept fields
+        step4_query = """
+        ALTER TABLE temp_standard_concepts 
+        ADD COLUMN source_concept_field_id INTEGER,
+        ADD COLUMN source_value_field_id INTEGER,
+        ADD COLUMN dest_concept_field_id INTEGER;
+        
+        -- Update source_concept_field_id
+        UPDATE temp_standard_concepts tsc
+        SET source_concept_field_id = scf.id
+        FROM mapping_omopfield scf
+        WHERE scf.table_id = tsc.dest_table_id 
+        AND scf.field LIKE '%_source_concept_id'
+        -- skip the case when the domain is Specimen (because OMOP CDM does not have source_concept_id for Specimen)
+        -- TODO: remove the hardcoded table id
+        AND tsc.dest_table_id != 1685;
+
+        -- Update source_value_field_id
+        UPDATE temp_standard_concepts tsc
+        SET source_value_field_id = svf.id
+        FROM mapping_omopfield svf
+        WHERE svf.table_id = tsc.dest_table_id 
+        AND svf.field LIKE '%_source_value';
+        
+        -- Update dest_concept_field_id
+        UPDATE temp_standard_concepts tsc
+        SET dest_concept_field_id = dcf.id
+        FROM mapping_omopfield dcf
+        WHERE dcf.table_id = tsc.dest_table_id 
+        AND dcf.field LIKE '%_concept_id'
+        AND dcf.field NOT LIKE '%_source_concept_id';
+        """
+        pg_hook.run(step4_query)
 
         create_concept_query = """
         -- Insert standard concepts for field values (only if they don't already exist)
