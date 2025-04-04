@@ -160,7 +160,7 @@ services:
       timeout: 5s
       retries: 5
 
-  webserver:
+  airflow-webserver:
     build:
       context: app/airflow
       dockerfile: Dockerfile.webserver
