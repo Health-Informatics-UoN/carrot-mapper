@@ -26,6 +26,7 @@ def find_and_create_standard_concepts(**kwargs):
         CREATE TABLE temp_standard_concepts AS
         SELECT
             srv.id AS sr_value_id,
+            c1.concept_id AS source_concept_id,
             c2.concept_id AS standard_concept_id
         FROM mapping_scanreportvalue srv
         JOIN omop.concept c1 ON
