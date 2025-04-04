@@ -20,7 +20,7 @@ def find_and_create_standard_concepts(**kwargs):
                 "Invalid field_vocab_pair: requires sr_field_id and vocabulary_id"
             )
 
-        # Step 1: Form base table with columns 1 & 2 (sr_value_id and standard_concept_id)
+        # Step 1: Form base table (sr_value_id, source_concept_id, standard_concept_id)
         step1_query = f"""
         DROP TABLE IF EXISTS temp_standard_concepts;
         CREATE TABLE temp_standard_concepts AS
@@ -42,7 +42,7 @@ def find_and_create_standard_concepts(**kwargs):
         """
         pg_hook.run(step1_query)
         
-        # Step 2: Add columns 3 & 4 (dest_table_id and dest_person_field_id)
+        # Step 2: Add columns dest_table_id and dest_person_field_id
         step2_query = """
         ALTER TABLE temp_standard_concepts 
         ADD COLUMN dest_table_id INTEGER,
@@ -75,7 +75,7 @@ def find_and_create_standard_concepts(**kwargs):
         """
         pg_hook.run(step2_query)
         
-        # Step 3: Add columns 5, 6, 7 (date fields) with simpler implementation
+        # Step 3: Add columns about dates: dest_date_field_id, dest_start_date_field_id, dest_end_date_field_id
         step3_query = """
         ALTER TABLE temp_standard_concepts 
         ADD COLUMN dest_date_field_id INTEGER,
