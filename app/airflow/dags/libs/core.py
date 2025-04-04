@@ -66,12 +66,14 @@ def find_and_create_standard_concepts(**kwargs):
                 WHEN 'Person' THEN 'person'
                 WHEN 'Drug' THEN 'drug_exposure'
                 WHEN 'Procedure' THEN 'procedure_occurrence'
+                WHEN 'Meas Value' THEN 'measurement'
                 -- TODO: having tests for the case when the domain is Specimen
                 WHEN 'Specimen' THEN 'specimen'
                 -- TODO: plan for other domains: Death, Specimen, etc. and for the case when the domain is not supported
                 ELSE LOWER(c2.domain_id)
             END = ot.table
-        WHERE c2.concept_id = tsc.standard_concept_id;
+        -- TODO: this should be using standard or source concept?
+        WHERE c2.concept_id = tsc.source_concept_id;
         
         -- Update person field ID
         UPDATE temp_standard_concepts tsc
@@ -148,10 +150,12 @@ def find_and_create_standard_concepts(**kwargs):
         pg_hook.run(step4_query)
 
         # Step 5: Add value_as_number column for measurement domain concepts
+        # TODO: find the way to simplify this logic
         step5_query = f"""
         ALTER TABLE temp_standard_concepts 
         ADD COLUMN value_as_number_field_id INTEGER,
-        ADD COLUMN value_as_string_field_id INTEGER;
+        ADD COLUMN value_as_string_field_id INTEGER,
+        ADD COLUMN value_as_concept_field_id INTEGER;
 
         -- Update value_as_number_field_id for measurement domain concepts
         WITH measurement_concepts AS (
@@ -166,12 +170,27 @@ def find_and_create_standard_concepts(**kwargs):
         JOIN mapping_omopfield mf ON mf.table_id = mc.dest_table_id AND mf.field = 'value_as_number'
         WHERE tsc.sr_value_id = mc.sr_value_id;
 
-        -- Update value_as_number_field_id for observation domain concepts with numeric data types
+         -- Update value_as_number_field_id for Meas Value domain concepts
+         -- TODO: MEAS VALUE:This domain can barely be used in auto-mapping needs discussion with the team
+         -- TODO: need reviewing and testing
+         -- TODO: in the SR when the data type is varchar, Carrot will irgnore the numberic value???
+        WITH meas_value_concepts AS (
+            SELECT tsc.sr_value_id, tsc.standard_concept_id, tsc.dest_table_id
+            FROM temp_standard_concepts tsc
+            JOIN omop.concept c ON c.concept_id = tsc.standard_concept_id
+            WHERE c.domain_id = 'Meas Value'
+        )
+        UPDATE temp_standard_concepts tsc
+        SET value_as_concept_field_id = mf.id
+        FROM meas_value_concepts mvc
+        JOIN mapping_omopfield mf ON mf.table_id = mvc.dest_table_id AND mf.field = 'value_as_concept_id'
+        WHERE tsc.sr_value_id = mvc.sr_value_id;
         """
 
         # Only add the observation domain logic if the field data type is numeric
         if is_numeric:
             step5_query += """
+        -- Update value_as_number_field_id for observation domain concepts with numeric data types
         WITH observation_concepts AS (
             SELECT tsc.sr_value_id, tsc.standard_concept_id, tsc.dest_table_id
             FROM temp_standard_concepts tsc
