@@ -70,7 +70,7 @@ services:
       - WORKERS_RULES_EXPORT_NAME=rules-exports-local
       - STORAGE_CONN_STRING=DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;TableEndpoint=http://azurite:10002/devstoreaccount1;
       - SIGNING_KEY=secret
-      - STORAGE_TYPE=minio
+      - STORAGE_TYPE=${STORAGE_TYPE:-azure}
       - MINIO_ENDPOINT=minio:9000
       - MINIO_ACCESS_KEY=minioadmin
       - MINIO_SECRET_KEY=minioadmin 
@@ -111,7 +111,7 @@ services:
       - DB_USER=postgres
       - DB_PASSWORD=postgres
       - PYTHONPATH=/home/site/wwwroot:/home/site/wwwroot/shared
-      - STORAGE_TYPE=minio
+      - STORAGE_TYPE=${STORAGE_TYPE:-azure}
       - MINIO_ENDPOINT=minio:9000
       - MINIO_ACCESS_KEY=minioadmin
       - MINIO_SECRET_KEY=minioadmin
@@ -123,7 +123,6 @@ services:
     depends_on:
       - api
       - azurite
-      - minio 
 
   azurite:
     image: mcr.microsoft.com/azure-storage/azurite
@@ -139,6 +138,7 @@ services:
 
   
   minio:
+    profiles: ["minio"]
     image: minio/minio
     container_name: minio
     restart: always
