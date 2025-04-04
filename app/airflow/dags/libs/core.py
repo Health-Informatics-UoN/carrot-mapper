@@ -14,6 +14,11 @@ def find_and_create_standard_concepts(**kwargs):
 
         sr_field_id = pair.get("sr_field_id")
         vocabulary_id = pair.get("vocabulary_id")
+        field_data_type = pair.get("field_data_type", "").lower()  # Extract field_data_type from the pair
+        numeric_types = ["int", "real", "float"]
+        string_types = ["varchar", "nvarchar", "text", "string", "char"]
+        is_string = any(t in field_data_type for t in string_types) if field_data_type else False
+        is_numeric = any(t in field_data_type for t in numeric_types) if field_data_type else False
 
         if not sr_field_id or not vocabulary_id:
             raise ValueError(
@@ -141,6 +146,62 @@ def find_and_create_standard_concepts(**kwargs):
         AND dcf.field NOT LIKE '%_source_concept_id';
         """
         pg_hook.run(step4_query)
+
+        # Step 5: Add value_as_number column for measurement domain concepts
+        step5_query = f"""
+        ALTER TABLE temp_standard_concepts 
+        ADD COLUMN value_as_number_field_id INTEGER,
+        ADD COLUMN value_as_string_field_id INTEGER;
+
+        -- Update value_as_number_field_id for measurement domain concepts
+        WITH measurement_concepts AS (
+            SELECT tsc.sr_value_id, tsc.standard_concept_id, tsc.dest_table_id
+            FROM temp_standard_concepts tsc
+            JOIN omop.concept c ON c.concept_id = tsc.standard_concept_id
+            WHERE c.domain_id = 'Measurement'
+        )
+        UPDATE temp_standard_concepts tsc
+        SET value_as_number_field_id = mf.id
+        FROM measurement_concepts mc
+        JOIN mapping_omopfield mf ON mf.table_id = mc.dest_table_id AND mf.field = 'value_as_number'
+        WHERE tsc.sr_value_id = mc.sr_value_id;
+
+        -- Update value_as_number_field_id for observation domain concepts with numeric data types
+        """
+
+        # Only add the observation domain logic if the field data type is numeric
+        if is_numeric:
+            step5_query += """
+        WITH observation_concepts AS (
+            SELECT tsc.sr_value_id, tsc.standard_concept_id, tsc.dest_table_id
+            FROM temp_standard_concepts tsc
+            JOIN omop.concept c ON c.concept_id = tsc.standard_concept_id
+            WHERE c.domain_id = 'Observation'
+        )
+        UPDATE temp_standard_concepts tsc
+        SET value_as_number_field_id = of.id
+        FROM observation_concepts oc
+        JOIN mapping_omopfield of ON of.table_id = oc.dest_table_id AND of.field = 'value_as_number'
+        WHERE tsc.sr_value_id = oc.sr_value_id;
+        """
+            
+        if is_string:
+            step5_query += """
+        -- Update value_as_string_field_id for observation domain concepts with string data types
+        WITH observation_concepts AS (
+            SELECT tsc.sr_value_id, tsc.standard_concept_id, tsc.dest_table_id
+            FROM temp_standard_concepts tsc
+            JOIN omop.concept c ON c.concept_id = tsc.standard_concept_id
+            WHERE c.domain_id = 'Observation'
+        )
+        UPDATE temp_standard_concepts tsc
+        SET value_as_string_field_id = of.id
+        FROM observation_concepts oc
+        JOIN mapping_omopfield of ON of.table_id = oc.dest_table_id AND of.field = 'value_as_string'
+        WHERE tsc.sr_value_id = oc.sr_value_id;
+        """
+
+        pg_hook.run(step5_query)
 
         create_concept_query = """
         -- Insert standard concepts for field values (only if they don't already exist)
