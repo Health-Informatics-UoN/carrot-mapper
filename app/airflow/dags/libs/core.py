@@ -72,8 +72,8 @@ def find_and_create_standard_concepts(**kwargs):
                 -- TODO: plan for other domains: Death, Specimen, etc. and for the case when the domain is not supported
                 ELSE LOWER(c2.domain_id)
             END = ot.table
-        -- TODO: this should be using standard or source concept?
-        WHERE c2.concept_id = tsc.source_concept_id;
+        -- TODO: this should be using standard or source concept to find the dest table id?
+        WHERE c2.concept_id = tsc.standard_concept_id;
         
         -- Update person field ID
         UPDATE temp_standard_concepts tsc
