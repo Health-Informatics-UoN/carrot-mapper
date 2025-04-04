@@ -26,8 +26,11 @@ def find_and_create_standard_concepts(**kwargs):
         SELECT
             srv.id AS sr_value_id,
             c2.concept_id AS standard_concept_id,
-            ot.id AS destination_table_id
+            ot.id AS dest_table_id,
+            opf.id AS dest_person_field_id
+        -- Column 1: sr_value_id from scanreportvalue table
         FROM mapping_scanreportvalue srv
+        -- Column 2: concept_id from vocabulary table which fullfiled conditions
         JOIN omop.concept c1 ON
             c1.concept_code = srv.value AND
             c1.vocabulary_id = '{vocabulary_id}'
@@ -37,6 +40,7 @@ def find_and_create_standard_concepts(**kwargs):
         JOIN omop.concept c2 ON
             c2.concept_id = cr.concept_id_2 AND
             c2.standard_concept = 'S'
+        -- Column 3: destination_table_id from omoptable table
         LEFT JOIN mapping_omoptable ot ON
             CASE c2.domain_id
                 WHEN 'Observation' THEN 'observation'
@@ -46,8 +50,14 @@ def find_and_create_standard_concepts(**kwargs):
                 WHEN 'Person' THEN 'person'
                 WHEN 'Drug' THEN 'drug_exposure'
                 WHEN 'Procedure' THEN 'procedure_occurrence'
+                -- TODO: plan for other domains: Death, Specimen, etc. and for the case when the domain is not supported
                 ELSE LOWER(c2.domain_id)
             END = ot.table
+        -- Column 4: Dest. OMOP field for Person ID
+        LEFT JOIN mapping_omopfield opf ON
+            opf.table_id = ot.id AND
+            opf.field = 'person_id'
+        -- Supporting the first column
         WHERE srv.scan_report_field_id = {sr_field_id};
         """
 
