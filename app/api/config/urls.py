@@ -6,7 +6,6 @@ from drf_spectacular.views import (
     SpectacularRedocView,
 )
 
-
 urlpatterns = [
     path("api/", include("api.urls")),
     path("api/auth/", include("authn.urls")),
@@ -22,5 +21,4 @@ urlpatterns = [
         SpectacularRedocView.as_view(url_name="schema"),
         name="schema-redoc",
     ),
-    
 ]
