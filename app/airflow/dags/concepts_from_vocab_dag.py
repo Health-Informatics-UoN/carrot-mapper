@@ -91,5 +91,6 @@ end = EmptyOperator(task_id="end", dag=dag)
     >> find_date_fields_task
     >> find_concept_fields_task
     >> find_additional_fields_task
+    >> create_standard_concepts_task
     >> end
 )

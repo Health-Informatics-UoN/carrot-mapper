@@ -26,3 +26,8 @@ def extract_params(**kwargs):
             f"Invalid parameters: requires table_id and field_vocab_pairs (as list). Got table_id={table_id}, field_vocab_pairs={field_vocab_pairs} of type {type(field_vocab_pairs)}"
         )
     return table_id, field_vocab_pairs
+
+
+def update_job_status(job_id: int, status: str):
+    """Update the status of a job in the database"""
+    pass
