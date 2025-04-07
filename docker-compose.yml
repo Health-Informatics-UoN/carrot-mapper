@@ -177,8 +177,7 @@ services:
       AIRFLOW__API__AUTH_BACKENDS: airflow.api.auth.backend.basic_auth
       AIRFLOW_CONN_POSTGRES_DB_CONN: postgresql+psycopg2://postgres:postgres@db:5432/postgres
       AIRFLOW_CONN_MINIO_CONN: aws://minioadmin:minioadmin@/?endpoint_url=http://minio:9000
-      AIRFLOW_CONN_WASB__CONN:
-        wasb://DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;TableEndpoint=http://azurite:10002/devstoreaccount1;
+      AIRFLOW_CONN_WASB__CONN: wasb://DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;TableEndpoint=http://azurite:10002/devstoreaccount1;
       # TODO: enable CORS on production
     volumes:
       - ./app/airflow/dags:/opt/airflow/dags
@@ -193,7 +192,7 @@ services:
       context: app/airflow
       dockerfile: Dockerfile.scheduler
     depends_on:
-      - webserver
+      - airflow-webserver
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       # Update this connection string to point to your remote PostgreSQL
@@ -209,7 +208,6 @@ services:
       - ./app/airflow/dags:/opt/airflow/dags
       # TODO: decide which method to set Airflow config, if using the below, set it in the Dockerfile
       # - ./app/airflow/config/airflow.cfg:/opt/airflow/airflow.cfg
-
 
 volumes:
   db_data:
