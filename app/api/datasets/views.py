@@ -196,7 +196,7 @@ class DatasetDetail(
     
     GenericAPIView, RetrieveModelMixin, UpdateModelMixin, DestroyModelMixin
 ):
-    """§
+    """
     Dataset Detail View.
 
     This view provides detailed operations for a Dataset object, including 
