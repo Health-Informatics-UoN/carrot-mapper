@@ -97,6 +97,7 @@ class DataPartnerViewSet(GenericAPIView, ListModelMixin):
         get(request, *args, **kwargs):
             Handles GET requests to return a list of DataPartner objects.
     """
+
     queryset = DataPartner.objects.all()
     serializer_class = DataPartnerSerializer
 
@@ -131,6 +132,7 @@ class ConceptFilterViewSetV2(GenericAPIView, ListModelMixin):
             Handles GET requests to retrieve a filtered and paginated
             list of Concept objects.
     """
+
     queryset = Concept.objects.all().order_by("concept_id")
     serializer_class = ConceptSerializerV2
     filter_backends = [DjangoFilterBackend]
@@ -225,6 +227,7 @@ class UserDetailView(APIView):
         permission_classes (list): A list of permission classes that
             restrict access to authenticated users only.
     """
+
     permission_classes = [IsAuthenticated]
 
     def get(self, request, *args, **kwargs):
@@ -453,6 +456,7 @@ class ScanReportDetailV2(
             Deletes the given ScanReport instance and its associated
             data from the storage service.
     """
+
     queryset = ScanReport.objects.all()
     serializer_class = ScanReportViewSerializerV2
 
@@ -571,8 +575,7 @@ class ScanReportTableDetailV2(
             background jobs for mapping, and ensures no duplicate jobs
             are running for the same table.
     """
-    
-    
+
     queryset = ScanReportTable.objects.all()
     serializer_class = ScanReportTableListSerializerV2
 
@@ -813,7 +816,7 @@ class ScanReportFieldDetailV2(
             - PUT, PATCH: Uses ScanReportFieldEditSerializer.
             Falls back to the default implementation for other methods.
     """
-    
+
     model = ScanReportField
     serializer_class = ScanReportFieldListSerializerV2
 
@@ -1141,6 +1144,7 @@ class MappingRulesList(APIView):
                   ordered by concept, OMOP table, OMOP field, source
                   table, and source field.
     """
+
     def post(self, request, *args, **kwargs):
         try:
             body = request.data
@@ -1302,6 +1306,7 @@ class SummaryRulesListV2(RulesListV2):
             include additional details about related fields (e.g.,
             destination_table, source_field).
     """
+
     def list(self, request, *args, **kwargs):
         # Get p and page_size from query_params
         p = self.request.query_params.get("p", 1)
@@ -1371,6 +1376,7 @@ class AnalyseRulesV2(ScanReportPermissionMixin, GenericAPIView, RetrieveModelMix
         filterset_fields (dict): A dictionary defining the fields that
             can be filtered.
     """
+
     queryset = ScanReport.objects.all()
     serializer_class = GetRulesAnalysis
     filter_backends = [DjangoFilterBackend]
@@ -1413,7 +1419,6 @@ class DownloadScanReportViewSet(viewsets.ViewSet):
 
 
 class ScanReportPermissionView(APIView):
-    
     """
     Handles API requests to retrieve the permissions
       a user has on a specific scan report.

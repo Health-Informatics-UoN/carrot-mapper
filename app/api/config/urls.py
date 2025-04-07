@@ -8,11 +8,11 @@ urlpatterns = [
     path("api/auth/", include("authn.urls")),
     path("admin/", admin.site.urls),
     # Schema endpoint
-    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
+    path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     
     # Swagger UI
-    path('api/schema/swagger-ui/', SpectacularSwaggerView.as_view(url_name='schema'), name='schema-swagger-ui'),
+    path("api/schema/swagger-ui/", SpectacularSwaggerView.as_view(url_name="schema"), name="schema-swagger-ui"),
     
     # Redoc UI
-    path('api/schema/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='schema-redoc'),
+    path("api/schema/redoc/", SpectacularRedocView.as_view(url_name="schema"), name="schema-redoc"),
 ]

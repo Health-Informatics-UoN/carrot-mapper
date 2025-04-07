@@ -2,7 +2,6 @@ from django.shortcuts import get_object_or_404
 from rest_framework.permissions import AllowAny
 from shared.mapping.models import ScanReport
 from shared.mapping.permissions import CanAdmin, CanEditOrAdmin, CanView
-from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 
 
 class ScanReportPermissionMixin:

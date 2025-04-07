@@ -79,7 +79,7 @@ INSTALLED_APPS = [
     "shared",
     "shared.files",
     "shared.jobs",
-    "drf_spectacular"
+    "drf_spectacular",
 ]
 
 MIDDLEWARE = [
@@ -197,10 +197,10 @@ REST_FRAMEWORK = {
 }
 
 SPECTACULAR_SETTINGS = {
-    'TITLE': 'CARROT APIs',
-    'DESCRIPTION': 'API documentation for CARROT',
-    'VERSION': '1.0.0',
-    'SERVE_PERMISSIONS': ['rest_framework.permissions.AllowAny'],
+    "TITLE": "CARROT APIs",
+    "DESCRIPTION": "API documentation for CARROT",
+    "VERSION": "1.0.0",
+    "SERVE_PERMISSIONS": ["rest_framework.permissions.AllowAny"],
 }
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.1/howto/static-files/

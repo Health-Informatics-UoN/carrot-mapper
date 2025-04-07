@@ -112,23 +112,25 @@ class DatasetIndex(GenericAPIView, ListModelMixin, CreateModelMixin):
 
 
 class DatasetAndDataPartnerListView(GenericAPIView, ListModelMixin):
-    
     """
-    API view to list all datasets with filtering, ordering, and pagination support.
+    API view to list all datasets with filtering, ordering, and
+    pagination support.
 
-    This view provides a list of datasets based on the user's access level and 
-    membership in projects. It supports filtering by various fields, ordering 
-    by specific attributes, and paginated responses.
+    This view provides a list of datasets based on the user's access
+    level and membership in projects. It supports filtering by various
+    fields, ordering by specific attributes, and paginated responses.
 
     Attributes:
-        serializer_class (DatasetAndDataPartnerViewSerializer): The serializer 
-            used to format the dataset data.
-        pagination_class (CustomPagination): The pagination class used to 
-            paginate the dataset list.
-        filter_backends (list): A list of filter backends used for filtering 
-            and ordering the dataset list.
-        ordering_fields (list): Fields that can be used for ordering the dataset list.
-        filterset_fields (dict): Fields that can be used for filtering the dataset list.
+        serializer_class (DatasetAndDataPartnerViewSerializer): The
+            serializer used to format the dataset data.
+        pagination_class (CustomPagination): The pagination class used
+            to paginate the dataset list.
+        filter_backends (list): A list of filter backends used for
+            filtering and ordering the dataset list.
+        ordering_fields (list): Fields that can be used for ordering
+            the dataset list.
+        filterset_fields (dict): Fields that can be used for filtering
+            the dataset list.
         ordering (str): Default ordering for the dataset list.
 
     Methods:
@@ -136,11 +138,13 @@ class DatasetAndDataPartnerListView(GenericAPIView, ListModelMixin):
             Handles GET requests to retrieve the list of datasets.
 
         get_queryset():
-            Returns the queryset of datasets based on the user's access level:
-            - If the user is the `AZ_FUNCTION_USER`, all datasets are returned.
-            - Otherwise, only datasets that are public, restricted datasets 
-              the user has access to, or datasets in projects the user is a 
-              member of are returned.
+            Returns the queryset of datasets based on the user's access
+            level:
+            - If the user is the `AZ_FUNCTION_USER`, all datasets are
+              returned.
+            - Otherwise, only datasets that are public, restricted
+              datasets the user has access to, or datasets in projects
+              the user is a member of are returned.
     """
 
     serializer_class = DatasetAndDataPartnerViewSerializer
@@ -193,15 +197,15 @@ class DatasetAndDataPartnerListView(GenericAPIView, ListModelMixin):
 
 
 class DatasetDetail(
-    
     GenericAPIView, RetrieveModelMixin, UpdateModelMixin, DestroyModelMixin
 ):
     """
     Dataset Detail View.
 
-    This view provides detailed operations for a Dataset object, including 
-    retrieving, updating, and deleting. The permissions and serializers used 
-    are dynamically determined based on the HTTP method of the request.
+    This view provides detailed operations for a Dataset object,
+    including retrieving, updating, and deleting. The permissions and
+    serializers used are dynamically determined based on the HTTP
+    method of the request.
 
     Inherits:
         - GenericAPIView: Base class for all API views.
@@ -211,18 +215,24 @@ class DatasetDetail(
 
     Permissions:
         - GET: Requires `CanView`, `CanAdmin`, or `CanEdit` permissions.
-        - POST, PATCH, PUT: Requires `CanView` and either `CanAdmin` or `CanEdit` permissions.
+        - POST, PATCH, PUT: Requires `CanView` and either `CanAdmin` or
+          `CanEdit` permissions.
         - DELETE: Requires `CanView` and `CanAdmin` permissions.
 
     Serializers:
-        - DatasetEditSerializer: Used for POST, PATCH, PUT, and DELETE requests.
+        - DatasetEditSerializer: Used for POST, PATCH, PUT, and DELETE
+          requests.
         - DatasetViewSerializerV2: Used for GET requests.
 
     Methods:
-        - initial: Dynamically sets permissions based on the request method.
-        - get_queryset: Returns the queryset filtered by the primary key (`pk`).
-        - get_serializer_class: Determines the serializer class based on the request method.
-        - get_serializer_context: Provides additional context for the serializer.
+        - initial: Dynamically sets permissions based on the request
+          method.
+        - get_queryset: Returns the queryset filtered by the primary
+          key (`pk`).
+        - get_serializer_class: Determines the serializer class based
+          on the request method.
+        - get_serializer_context: Provides additional context for the
+          serializer.
         - get: Handles GET requests to retrieve a dataset.
         - patch: Handles PATCH requests to partially update a dataset.
     """
@@ -256,19 +266,18 @@ class DatasetDetail(
 
 
 class DatasetPermissionView(APIView):
-    
     """
     API for retrieving the permissions a user has on a specific dataset.
 
-    This view handles GET requests to fetch the permissions associated with a dataset
-    for the currently authenticated user. Permissions are determined based on the
-    user's role and access level for the specified dataset.
+    This view handles GET requests to fetch the permissions associated
+    with a dataset for the currently authenticated user. Permissions
+    are determined based on the user's role and access level for the
+    specified dataset.
 
     Methods:
         get(request, pk):
-            Handles GET requests to retrieve the user's permissions for the dataset
-            identified by the primary key (pk).
-
+            Handles GET requests to retrieve the user's permissions for
+            the dataset identified by the primary key (pk).
     """
 
     def get(self, request, pk):
