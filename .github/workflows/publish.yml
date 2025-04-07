@@ -106,7 +106,7 @@ jobs:
             ${{ env.RUN_TIMESTAMP }}
             "latest"
 
-      - name: Build and push backend image
+      - name: Build and push webserver image
         uses: docker/build-push-action@v5.3.0
         with:
           context: ./app/airflow
@@ -127,7 +127,7 @@ jobs:
             ${{ env.RUN_TIMESTAMP }}
             "latest"
 
-      - name: Build and push backend image
+      - name: Build and push scheduler image
         uses: docker/build-push-action@v5.3.0
         with:
           context: ./app/airflow

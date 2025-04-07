@@ -127,10 +127,7 @@ def find_and_create_standard_concepts(**kwargs):
         SET source_concept_field_id = scf.id
         FROM mapping_omopfield scf
         WHERE scf.table_id = tsc.dest_table_id 
-        AND scf.field LIKE '%_source_concept_id'
-        -- skip the case when the domain is Specimen (because OMOP CDM does not have source_concept_id for Specimen)
-        -- TODO: remove the hardcoded table id
-        AND tsc.dest_table_id != 1685;
+        AND scf.field LIKE '%_source_concept_id';
 
         -- Update source_value_field_id
         UPDATE temp_standard_concepts tsc
