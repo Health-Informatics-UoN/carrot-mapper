@@ -85,21 +85,17 @@ class DataPartnerViewSet(GenericAPIView, ListModelMixin):
     """
     A viewset for handling DataPartner objects.
 
-    This viewset provides a GET method to 
-    retrieve a list of all DataPartner
-    objects using the ListModelMixin.
+    This viewset provides a GET method to retrieve a list of all
+    DataPartner objects using the ListModelMixin.
 
     Attributes:
-        queryset (QuerySet): A queryset containing 
-        all DataPartner objects.
-        serializer_class (Serializer): The serializer 
-        class used for serializing
-            and deserializing DataPartner objects.
+        queryset (QuerySet): A queryset containing all DataPartner objects.
+        serializer_class (Serializer): The serializer class used for
+            serializing and deserializing DataPartner objects.
 
     Methods:
         get(request, *args, **kwargs):
-            Handles GET requests to return 
-            a list of DataPartner objects.
+            Handles GET requests to return a list of DataPartner objects.
     """
     queryset = DataPartner.objects.all()
     serializer_class = DataPartnerSerializer
@@ -112,35 +108,28 @@ class ConceptFilterViewSetV2(GenericAPIView, ListModelMixin):
     """
     A viewset for filtering and listing Concept objects.
 
-    This viewset provides functionality to 
-    filter and paginate Concept objects
-    based on specified fields and their values.
-      It uses DjangoFilterBackend for
-    filtering and a custom pagination class
-      for paginating the results.
+    This viewset provides functionality to filter and paginate Concept
+    objects based on specified fields and their values. It uses
+    DjangoFilterBackend for filtering and a custom pagination class for
+    paginating the results.
 
     Attributes:
-        queryset (QuerySet): The base queryset 
-        for retrieving Concept objects,
-            ordered by `concept_id`.
-        serializer_class (Serializer): The serializer 
-        class used for serializing
-            Concept objects.
-        filter_backends (list): A list of filter 
-        backends to apply to the queryset.
-        pagination_class (Pagination): The pagination 
-        class used for paginating
-            the results.
-        filterset_fields (dict): A dictionary 
-        defining the fields that can be
-            filtered and the types of filtering 
-            allowed for each field.
+        queryset (QuerySet): The base queryset for retrieving Concept
+            objects, ordered by `concept_id`.
+        serializer_class (Serializer): The serializer class used for
+            serializing Concept objects.
+        filter_backends (list): A list of filter backends to apply to
+            the queryset.
+        pagination_class (Pagination): The pagination class used for
+            paginating the results.
+        filterset_fields (dict): A dictionary defining the fields that
+            can be filtered and the types of filtering allowed for each
+            field.
 
     Methods:
         get(request, *args, **kwargs):
-            Handles GET requests to retrieve a 
-            filtered and paginated list of
-            Concept objects.
+            Handles GET requests to retrieve a filtered and paginated
+            list of Concept objects.
     """
     queryset = Concept.objects.all().order_by("concept_id")
     serializer_class = ConceptSerializerV2
@@ -159,13 +148,14 @@ class ConceptFilterViewSetV2(GenericAPIView, ListModelMixin):
 class UserViewSet(GenericAPIView, ListModelMixin):
     """
     A viewset for handling user-related API requests.
-    This viewset provides a GET method to retrieve 
-    a list of users.
+
+    This viewset provides a GET method to retrieve a list of users.
+
     Attributes:
-        queryset (QuerySet): The queryset containing 
-        all User objects.
-        serializer_class (Serializer): The serializer class
-          used to serialize User objects.
+        queryset (QuerySet): The queryset containing all User objects.
+        serializer_class (Serializer): The serializer class used to
+            serialize User objects.
+
     Methods:
         get(request, *args, **kwargs):
             Handles GET requests to return a list of users.
@@ -180,33 +170,31 @@ class UserViewSet(GenericAPIView, ListModelMixin):
 
 class UserFilterViewSet(GenericAPIView, ListModelMixin):
     """
-    UserFilterViewSet is a viewset that provides a 
-    filtered list of User objects.
-    This viewset supports filtering based on the 
-    `id` and `is_active` fields of the User model.
-    The `id` field can be filtered using the "in" and 
-    "exact" lookup expressions, while the
-    `is_active` field supports the "exact" 
-    lookup expression.
+    UserFilterViewSet is a viewset that provides a filtered list of
+    User objects.
+
+    This viewset supports filtering based on the `id` and `is_active`
+    fields of the User model. The `id` field can be filtered using the
+    "in" and "exact" lookup expressions, while the `is_active` field
+    supports the "exact" lookup expression.
+
     Inherits:
-        GenericAPIView: Provides the base 
-        functionality for API views.
-        ListModelMixin: Adds list functionality 
-        to the view.
+        GenericAPIView: Provides the base functionality for API views.
+        ListModelMixin: Adds list functionality to the view.
+
     Attributes:
-        queryset (QuerySet): The base queryset 
-        for retrieving User objects.
-        serializer_class (Serializer): The serializer 
-        class used for serializing User objects.
-        filter_backends (list): A list of filter 
-        backends to apply to the queryset.
-        filterset_fields (dict): A dictionary defining 
-        the fields and lookup expressions
-            available for filtering.
+        queryset (QuerySet): The base queryset for retrieving User objects.
+        serializer_class (Serializer): The serializer class used for
+            serializing User objects.
+        filter_backends (list): A list of filter backends to apply to
+            the queryset.
+        filterset_fields (dict): A dictionary defining the fields and
+            lookup expressions available for filtering.
+
     Methods:
         get(request, *args, **kwargs):
-            Handles GET requests and returns a 
-            filtered list of User objects.
+            Handles GET requests and returns a filtered list of User
+            objects.
     """
 
     queryset = User.objects.all()
@@ -220,27 +208,22 @@ class UserFilterViewSet(GenericAPIView, ListModelMixin):
 
 class UserDetailView(APIView):
     """
-    A view that handles retrieving the details 
-    of the authenticated user.
+    A view that handles retrieving the details of the authenticated user.
 
-    This view requires the user to be authenticated
-      and uses the `IsAuthenticated`
-    permission class to enforce this. When a GET
-      request is made to this view,
-    it serializes the authenticated user's data
-      using the `UserSerializer` and
-    returns it in the response.
+    This view requires the user to be authenticated and uses the
+    `IsAuthenticated` permission class to enforce this. When a GET
+    request is made to this view, it serializes the authenticated
+    user's data using the `UserSerializer` and returns it in the
+    response.
 
     Methods:
         get(request, *args, **kwargs):
-            Handles GET requests. Serializes the 
-            authenticated user's data and
-            returns it in the response.
+            Handles GET requests. Serializes the authenticated user's
+            data and returns it in the response.
 
     Attributes:
-        permission_classes (list): A list of permission 
-        classes that restrict
-            access to authenticated users only.
+        permission_classes (list): A list of permission classes that
+            restrict access to authenticated users only.
     """
     permission_classes = [IsAuthenticated]
 
@@ -251,31 +234,29 @@ class UserDetailView(APIView):
 
 class ScanReportIndexV2(GenericAPIView, ListModelMixin, CreateModelMixin):
     """
-    A custom viewset for managing and listing scan 
-    reports with enhanced functionality for version 2.
+    A custom viewset for managing and listing scan reports with
+    enhanced functionality for version 2.
 
-    This viewset extends the base functionality 
-    to include:
-    - Advanced filtering options for scan reports 
-    based on various fields.
-    - Custom ordering capabilities to sort scan 
-    reports by specific attributes.
-    - Integration with a custom pagination class 
-    for efficient data retrieval.
+    This viewset extends the base functionality to include:
+    - Advanced filtering options for scan reports based on various fields.
+    - Custom ordering capabilities to sort scan reports by specific
+      attributes.
+    - Integration with a custom pagination class for efficient data
+      retrieval.
 
     Features:
-    - Supports filtering by fields such as `hidden`, 
-    `dataset`, `upload_status`, and more.
-    - Allows ordering by attributes like `id`, `name`, 
-    `created_at`, and `dataset`.
-    - Provides a seamless interface for retrieving 
-    and creating scan reports.
+    - Supports filtering by fields such as `hidden`, `dataset`,
+      `upload_status`, and more.
+    - Allows ordering by attributes like `id`, `name`, `created_at`, and
+      `dataset`.
+    - Provides a seamless interface for retrieving and creating scan
+      reports.
 
     Methods:
-    - `get`: Handles GET requests to retrieve a paginated
-      and filtered list of scan reports.
-    - `post`: Handles POST requests to create new 
-    scan reports with file uploads.
+    - `get`: Handles GET requests to retrieve a paginated and filtered
+      list of scan reports.
+    - `post`: Handles POST requests to create new scan reports with file
+      uploads.
     """
 
     queryset = ScanReport.objects.all()
@@ -434,55 +415,44 @@ class ScanReportDetailV2(
     DestroyModelMixin,
 ):
     """
-        A view for handling detailed operations
-          on ScanReport objects.
+    A view for handling detailed operations on ScanReport objects.
 
-        This class-based view provides functionality
-          for retrieving, updating, 
-        and deleting ScanReport objects. It uses 
-        different serializers based 
-        on the HTTP method of the request.
+    This class-based view provides functionality for retrieving,
+    updating, and deleting ScanReport objects. It uses different
+    serializers based on the HTTP method of the request.
 
-        Inherits:
-            - ScanReportPermissionMixin: Mixin to
-              handle permissions for ScanReport objects.
-            - GenericAPIView: Base class for generic
-              API views.
-            - RetrieveModelMixin: Mixin to add 
-            retrieve functionality.
-            - UpdateModelMixin: Mixin to add 
-            update functionality.
-            - DestroyModelMixin: Mixin to add
-              delete functionality.
+    Inherits:
+        - ScanReportPermissionMixin: Mixin to handle permissions for
+          ScanReport objects.
+        - GenericAPIView: Base class for generic API views.
+        - RetrieveModelMixin: Mixin to add retrieve functionality.
+        - UpdateModelMixin: Mixin to add update functionality.
+        - DestroyModelMixin: Mixin to add delete functionality.
 
-        Attributes:
-            queryset (QuerySet): The queryset of
-              ScanReport objects.
-            serializer_class (Serializer): The 
-            default serializer class for the view.
+    Attributes:
+        queryset (QuerySet): The queryset of ScanReport objects.
+        serializer_class (Serializer): The default serializer class for
+            the view.
 
-        Methods:
-            get_serializer_class():
-                Returns the appropriate serializer
-                  class based on the HTTP method.
-            
-            get(request, *args, **kwargs):
-                Handles GET requests to retrieve
-                  a ScanReport object.
-            
-            patch(request, *args, **kwargs):
-                Handles PATCH requests to partially
-                  update a ScanReport object.
-            
-            delete(request, *args, **kwargs):
-                Handles DELETE requests to delete
-                  a ScanReport object.
-            
-            perform_destroy(instance):
-                Deletes the given ScanReport instance
-                  and its associated data 
-                from the storage service.
-        """
+    Methods:
+        get_serializer_class():
+            Returns the appropriate serializer class based on the HTTP
+            method.
+
+        get(request, *args, **kwargs):
+            Handles GET requests to retrieve a ScanReport object.
+
+        patch(request, *args, **kwargs):
+            Handles PATCH requests to partially update a ScanReport
+            object.
+
+        delete(request, *args, **kwargs):
+            Handles DELETE requests to delete a ScanReport object.
+
+        perform_destroy(instance):
+            Deletes the given ScanReport instance and its associated
+            data from the storage service.
+    """
     queryset = ScanReport.objects.all()
     serializer_class = ScanReportViewSerializerV2
 
@@ -520,27 +490,34 @@ class ScanReportDetailV2(
 
 
 class ScanReportTableIndexV2(ScanReportPermissionMixin, GenericAPIView, ListModelMixin):
-    
     """
-    ScanReportTableIndexV2 is a view that provides a paginated list of Scan Report Tables 
-    associated with a specific Scan Report. It supports filtering, ordering, and pagination.
+    ScanReportTableIndexV2 is a view that provides a paginated list of
+    Scan Report Tables associated with a specific Scan Report. It
+    supports filtering, ordering, and pagination.
 
     Features:
-    - **Filtering**: Allows filtering by the `name` field using case-insensitive containment (`icontains`).
-    - **Ordering**: Supports ordering by `name`, `person_id`, and `date_event`. Default ordering is by `-created_at`.
-    - **Pagination**: Utilizes a custom pagination class (`CustomPagination`) for paginated responses.
+    - **Filtering**: Allows filtering by the `name` field using
+      case-insensitive containment (`icontains`).
+    - **Ordering**: Supports ordering by `name`, `person_id`, and
+      `date_event`. Default ordering is by `-created_at`.
+    - **Pagination**: Utilizes a custom pagination class
+      (`CustomPagination`) for paginated responses.
 
     Attributes:
     - `filterset_fields`: Defines the fields available for filtering.
-    - `filter_backends`: Specifies the backends used for filtering and ordering.
+    - `filter_backends`: Specifies the backends used for filtering and
+      ordering.
     - `ordering_fields`: Lists the fields available for ordering.
     - `pagination_class`: Specifies the pagination class to be used.
     - `ordering`: Defines the default ordering for the queryset.
-    - `serializer_class`: Specifies the serializer used for serializing the response data.
+    - `serializer_class`: Specifies the serializer used for serializing
+      the response data.
 
     Methods:
-    - `get`: Handles GET requests and returns a paginated list of Scan Report Tables.
-    - `get_queryset`: Returns the queryset of Scan Report Tables filtered by the associated Scan Report.
+    - `get`: Handles GET requests and returns a paginated list of Scan
+      Report Tables.
+    - `get_queryset`: Returns the queryset of Scan Report Tables
+      filtered by the associated Scan Report.
     """
 
     filterset_fields = {
@@ -560,29 +537,39 @@ class ScanReportTableIndexV2(ScanReportPermissionMixin, GenericAPIView, ListMode
 
 
 class ScanReportTableDetailV2(
-    
     ScanReportPermissionMixin, GenericAPIView, RetrieveModelMixin, UpdateModelMixin
 ):
     """
     A view for handling detailed operations on ScanReportTable objects.
-    This view provides functionality for retrieving and updating ScanReportTable
-    instances. It uses different serializers for GET and modification requests
-    (PUT, PATCH, DELETE). Additionally, it triggers background jobs for mapping
-    rules when a partial update (PATCH) is performed.
+
+    This view provides functionality for retrieving and updating
+    ScanReportTable instances. It uses different serializers for GET and
+    modification requests (PUT, PATCH, DELETE). Additionally, it triggers
+    background jobs for mapping rules when a partial update (PATCH) is
+    performed.
+
     Attributes:
         queryset (QuerySet): The queryset of ScanReportTable objects.
-        serializer_class (Serializer): The default serializer class for the view.
+        serializer_class (Serializer): The default serializer class for
+            the view.
+
     Methods:
         get_object():
-            Retrieves a ScanReportTable instance based on the provided table_pk.
+            Retrieves a ScanReportTable instance based on the provided
+            table_pk.
+
         get(request, *args, **kwargs):
             Handles GET requests to retrieve a ScanReportTable instance.
+
         get_serializer_class():
-            Determines the serializer class to use based on the request method.
+            Determines the serializer class to use based on the request
+            method.
+
         patch(request, *args, **kwargs):
-            Handles PATCH requests to partially update a ScanReportTable instance.
-            Deletes existing mapping rules, triggers background jobs for mapping,
-            and ensures no duplicate jobs are running for the same table.
+            Handles PATCH requests to partially update a ScanReportTable
+            instance. Deletes existing mapping rules, triggers
+            background jobs for mapping, and ensures no duplicate jobs
+            are running for the same table.
     """
     
     
@@ -605,42 +592,54 @@ class ScanReportTableDetailV2(
         return super().get_serializer_class()
 
     def patch(self, request: Any, *args: Any, **kwargs: Any) -> Response:
-        
         """
-        Perform a partial update on the instance and trigger background processing jobs.
+        Perform a partial update on the instance and trigger background
+        processing jobs.
 
-        This method handles the partial update of a database instance, deletes existing 
-        mapping rules, and triggers a series of background jobs to process the updated data. 
-        It ensures that no duplicate jobs are created for the same table while a job is already 
-        in progress.
+        This method handles the partial update of a database instance,
+        deletes existing mapping rules, and triggers a series of
+        background jobs to process the updated data. It ensures that no
+        duplicate jobs are created for the same table while a job is
+        already in progress.
 
-            request (Any): The HTTP request object containing the data for the update.
-            **kwargs (Any): Additional keyword arguments. The "partial" key is used to 
-                            determine if the update is partial (default is True).
+        Args:
+            request (Any): The HTTP request object containing the data for
+                the update.
+            **kwargs (Any): Additional keyword arguments. The "partial" key
+                is used to determine if the update is partial (default is
+                True).
 
-            Response: A DRF Response object containing the serialized data of the updated 
-                      instance or an error message if a job is already in progress.
+        Returns:
+            Response: A DRF Response object containing the serialized data
+                of the updated instance or an error message if a job is
+                already in progress.
 
         Raises:
-            requests.exceptions.HTTPError: If the HTTP request to the worker service fails.
+            requests.exceptions.HTTPError: If the HTTP request to the worker
+                service fails.
 
         Workflow:
             1. Retrieve the instance to be updated.
             2. Validate and apply the partial update using the serializer.
             3. Delete existing mapping rules for the instance.
-            4. Prepare and send a message to the worker service to trigger background jobs.
+            4. Prepare and send a message to the worker service to trigger
+               background jobs.
             5. Create job records for the processing stages:
-               - BUILD_CONCEPTS_FROM_DICT (initial stage, marked as IN_PROGRESS)
+               - BUILD_CONCEPTS_FROM_DICT (initial stage, marked as
+                 IN_PROGRESS)
                - REUSE_CONCEPTS
                - GENERATE_RULES
             6. Handle any HTTP errors during the worker service request.
 
         Notes:
-            - The worker service URL and credentials are configured in the application settings.
-            - If a job is already in progress for the table, the method returns a 400 BAD REQUEST 
-              response with an appropriate error message.
-            - The worker ID returned by the worker service is not currently saved but can be 
-              utilized for tracking job status in the future.
+            - The worker service URL and credentials are configured in the
+              application settings.
+            - If a job is already in progress for the table, the method
+              returns a 400 BAD REQUEST response with an appropriate error
+              message.
+            - The worker ID returned by the worker service is not currently
+              saved but can be utilized for tracking job status in the
+              future.
         """
         instance = self.get_object()
         partial = kwargs.pop("partial", True)
