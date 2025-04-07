@@ -22,4 +22,5 @@ urlpatterns = [
         SpectacularRedocView.as_view(url_name="schema"),
         name="schema-redoc",
     ),
+    
 ]
