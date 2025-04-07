@@ -68,30 +68,38 @@ class FileDownloadView(GenericAPIView, ListModelMixin, RetrieveModelMixin):
 
     def post(self, request, *args, **kwargs):
         """
-       Handles POST requests to initiate the generation of a downloadable file by sending a message 
-        to the Rules Export Queue and creating a corresponding job record.
+        Handles POST requests to initiate the generation of a downloadable
+        file by sending a message to the Rules Export Queue and creating a
+        corresponding job record.
 
         This endpoint expects a JSON payload containing the following fields:
-            - scan_report_id (int): The ID of the scan report for which the file is to be generated.
-            - file_type (str): The type of file to generate (e.g., 'application/json' or 'text/csv').
+            - scan_report_id (int): The ID of the scan report for which the
+            file is to be generated.
+            - file_type (str): The type of file to generate (e.g.,
+            'application/json' or 'text/csv').
 
-        Upon successful validation of the input, a message is sent to the Rules Export Queue, and a 
-        job record is created in the database to track the file generation process.
+        Upon successful validation of the input, a message is sent to the
+        Rules Export Queue, and a job record is created in the database to
+        track the file generation process.
 
         Returns:
-            - 202 Accepted: If the request is successfully processed and the file generation is initiated.
-            - 400 Bad Request: If the required fields ('scan_report_id' or 'file_type') are missing 
-              or if the JSON payload is invalid.
-            - 500 Internal Server Error: If an unexpected error occurs during processing.
+            - 202 Accepted: If the request is successfully processed and
+            the file generation is initiated.
+            - 400 Bad Request: If the required fields ('scan_report_id' or
+            'file_type') are missing or if the JSON payload is invalid.
+            - 500 Internal Server Error: If an unexpected error occurs
+            during processing.
 
         Raises:
-            - json.JSONDecodeError: If the request body contains invalid JSON.
+            - json.JSONDecodeError: If the request body contains invalid
+            JSON.
             - Exception: For any other unexpected errors.
 
         Note:
-            - The `add_message` function is used to send the message to the Rules Export Queue.
-            - A job record is created with the status set to "IN_PROGRESS" and includes details 
-              about the file type being generated.
+            - The `add_message` function is used to send the message to the
+            Rules Export Queue.
+            - A job record is created with the status set to "IN_PROGRESS"
+            and includes details about the file type being generated.
         """
         try:
             body = request.data
