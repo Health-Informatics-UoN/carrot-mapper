@@ -1420,24 +1420,23 @@ class DownloadScanReportViewSet(viewsets.ViewSet):
 
 class ScanReportPermissionView(APIView):
     """
-    Handles API requests to retrieve the permissions
-      a user has on a specific scan report.
+    Handles API requests to retrieve the permissions a user has on a
+    specific scan report.
 
     Methods:
         get(request, pk):
-            Retrieves the permissions for the user on the 
-            scan report identified by the given primary key (pk).
+            Retrieves the permissions for the user on the scan report
+            identified by the given primary key (pk).
 
     Args:
-        request (Request): The HTTP request object containing
-          user and request data.
+        request (Request): The HTTP request object containing user and
+            request data.
         pk (int): The primary key of the scan report for which
-          permissions are being retrieved.
+            permissions are being retrieved.
 
     Returns:
-        Response: A JSON response containing the user's 
-        permissions on the scan report, 
-                  with an HTTP status code of 200 (OK).
+        Response: A JSON response containing the user's permissions on
+            the scan report, with an HTTP status code of 200 (OK).
     """
 
     def get(self, request, pk):
