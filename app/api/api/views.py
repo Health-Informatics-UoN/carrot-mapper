@@ -1201,24 +1201,33 @@ class RulesListV2(ScanReportPermissionMixin, GenericAPIView, ListModelMixin):
 
 
 class SummaryRulesListV2(RulesListV2):
-    """ 
-    A view that provides a paginated list of MappingRule objects filtered by the ID of a related
-    ScanReport. This view does not use a serializer class directly but instead processes the
-    queryset and pagination manually.
+    """
+    A view that provides a paginated list of MappingRule objects
+    filtered by the ID of a related ScanReport.
+    This view does not use a serializer class directly but instead
+    processes the queryset and pagination manually.
+
     Attributes:
-        queryset (QuerySet): The base queryset for MappingRule objects, ordered by ID.
-        pagination_class (CustomPagination): The pagination class used for paginating results.
-        filter_backends (list): A list of filter backends applied to the queryset.
+        queryset (QuerySet): The base queryset for MappingRule objects,
+            ordered by ID.
+        pagination_class (CustomPagination): The pagination class used for
+            paginating results.
+        filter_backends (list): A list of filter backends applied to the
+            queryset.
         http_method_names (list): Allowed HTTP methods for this view.
+
     Methods:
         get_queryset():
-            Retrieves the queryset filtered by the ScanReport ID provided in the URL kwargs.
+            Retrieves the queryset filtered by the ScanReport ID provided
+            in the URL kwargs.
         get(request, *args, **kwargs):
-            Handles GET requests and returns a paginated list of MappingRule objects.
+            Handles GET requests and returns a paginated list of
+            MappingRule objects.
         list(request, *args, **kwargs):
-            Custom implementation of the list method to handle pagination and filtering
-            manually. Processes MappingRule objects to include additional details about
-            related fields (e.g., destination_table, source_field).
+            Custom implementation of the list method to handle pagination
+            and filtering manually. Processes MappingRule objects to
+            include additional details about related fields (e.g.,
+            destination_table, source_field).
     """
     def list(self, request, *args, **kwargs):
         # Get p and page_size from query_params
