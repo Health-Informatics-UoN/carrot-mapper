@@ -105,6 +105,29 @@ class DataPartnerViewSet(GenericAPIView, ListModelMixin):
 
 
 class ConceptFilterViewSetV2(GenericAPIView, ListModelMixin):
+    """
+    A viewset for filtering and listing Concept objects.
+
+    This viewset provides functionality to filter and paginate Concept objects
+    based on specified fields and their values. It uses DjangoFilterBackend for
+    filtering and a custom pagination class for paginating the results.
+
+    Attributes:
+        queryset (QuerySet): The base queryset for retrieving Concept objects,
+            ordered by `concept_id`.
+        serializer_class (Serializer): The serializer class used for serializing
+            Concept objects.
+        filter_backends (list): A list of filter backends to apply to the queryset.
+        pagination_class (Pagination): The pagination class used for paginating
+            the results.
+        filterset_fields (dict): A dictionary defining the fields that can be
+            filtered and the types of filtering allowed for each field.
+
+    Methods:
+        get(request, *args, **kwargs):
+            Handles GET requests to retrieve a filtered and paginated list of
+            Concept objects.
+    """
     queryset = Concept.objects.all().order_by("concept_id")
     serializer_class = ConceptSerializerV2
     filter_backends = [DjangoFilterBackend]
@@ -120,6 +143,17 @@ class ConceptFilterViewSetV2(GenericAPIView, ListModelMixin):
 
 
 class UserViewSet(GenericAPIView, ListModelMixin):
+    """
+    A viewset for handling user-related API requests.
+    This viewset provides a GET method to retrieve a list of users.
+    Attributes:
+        queryset (QuerySet): The queryset containing all User objects.
+        serializer_class (Serializer): The serializer class used to serialize User objects.
+    Methods:
+        get(request, *args, **kwargs):
+            Handles GET requests to return a list of users.
+    """
+
     queryset = User.objects.all()
     serializer_class = UserSerializer
 
@@ -128,6 +162,25 @@ class UserViewSet(GenericAPIView, ListModelMixin):
 
 
 class UserFilterViewSet(GenericAPIView, ListModelMixin):
+    """
+    UserFilterViewSet is a viewset that provides a filtered list of User objects.
+    This viewset supports filtering based on the `id` and `is_active` fields of the User model.
+    The `id` field can be filtered using the "in" and "exact" lookup expressions, while the
+    `is_active` field supports the "exact" lookup expression.
+    Inherits:
+        GenericAPIView: Provides the base functionality for API views.
+        ListModelMixin: Adds list functionality to the view.
+    Attributes:
+        queryset (QuerySet): The base queryset for retrieving User objects.
+        serializer_class (Serializer): The serializer class used for serializing User objects.
+        filter_backends (list): A list of filter backends to apply to the queryset.
+        filterset_fields (dict): A dictionary defining the fields and lookup expressions
+            available for filtering.
+    Methods:
+        get(request, *args, **kwargs):
+            Handles GET requests and returns a filtered list of User objects.
+    """
+
     queryset = User.objects.all()
     serializer_class = UserSerializer
     filter_backends = [DjangoFilterBackend]
@@ -138,6 +191,23 @@ class UserFilterViewSet(GenericAPIView, ListModelMixin):
 
 
 class UserDetailView(APIView):
+    """
+    A view that handles retrieving the details of the authenticated user.
+
+    This view requires the user to be authenticated and uses the `IsAuthenticated`
+    permission class to enforce this. When a GET request is made to this view,
+    it serializes the authenticated user's data using the `UserSerializer` and
+    returns it in the response.
+
+    Methods:
+        get(request, *args, **kwargs):
+            Handles GET requests. Serializes the authenticated user's data and
+            returns it in the response.
+
+    Attributes:
+        permission_classes (list): A list of permission classes that restrict
+            access to authenticated users only.
+    """
     permission_classes = [IsAuthenticated]
 
     def get(self, request, *args, **kwargs):
@@ -147,11 +217,21 @@ class UserDetailView(APIView):
 
 class ScanReportIndexV2(GenericAPIView, ListModelMixin, CreateModelMixin):
     """
-    A custom viewset for retrieving and listing scan reports with additional functionality for version 2.
+    A custom viewset for managing and listing scan reports with enhanced functionality for version 2.
 
-    Remarks:
-    - This viewset extends ScanReportListViewSet and provides custom behavior listing scan reports.
-    - Includes custom filtering, ordering, and pagination.
+    This viewset extends the base functionality to include:
+    - Advanced filtering options for scan reports based on various fields.
+    - Custom ordering capabilities to sort scan reports by specific attributes.
+    - Integration with a custom pagination class for efficient data retrieval.
+
+    Features:
+    - Supports filtering by fields such as `hidden`, `dataset`, `upload_status`, and more.
+    - Allows ordering by attributes like `id`, `name`, `created_at`, and `dataset`.
+    - Provides a seamless interface for retrieving and creating scan reports.
+
+    Methods:
+    - `get`: Handles GET requests to retrieve a paginated and filtered list of scan reports.
+    - `post`: Handles POST requests to create new scan reports with file uploads.
     """
 
     queryset = ScanReport.objects.all()
@@ -309,6 +389,41 @@ class ScanReportDetailV2(
     UpdateModelMixin,
     DestroyModelMixin,
 ):
+    """
+        A view for handling detailed operations on ScanReport objects.
+
+        This class-based view provides functionality for retrieving, updating, 
+        and deleting ScanReport objects. It uses different serializers based 
+        on the HTTP method of the request.
+
+        Inherits:
+            - ScanReportPermissionMixin: Mixin to handle permissions for ScanReport objects.
+            - GenericAPIView: Base class for generic API views.
+            - RetrieveModelMixin: Mixin to add retrieve functionality.
+            - UpdateModelMixin: Mixin to add update functionality.
+            - DestroyModelMixin: Mixin to add delete functionality.
+
+        Attributes:
+            queryset (QuerySet): The queryset of ScanReport objects.
+            serializer_class (Serializer): The default serializer class for the view.
+
+        Methods:
+            get_serializer_class():
+                Returns the appropriate serializer class based on the HTTP method.
+            
+            get(request, *args, **kwargs):
+                Handles GET requests to retrieve a ScanReport object.
+            
+            patch(request, *args, **kwargs):
+                Handles PATCH requests to partially update a ScanReport object.
+            
+            delete(request, *args, **kwargs):
+                Handles DELETE requests to delete a ScanReport object.
+            
+            perform_destroy(instance):
+                Deletes the given ScanReport instance and its associated data 
+                from the storage service.
+        """
     queryset = ScanReport.objects.all()
     serializer_class = ScanReportViewSerializerV2
 
@@ -346,11 +461,27 @@ class ScanReportDetailV2(
 
 
 class ScanReportTableIndexV2(ScanReportPermissionMixin, GenericAPIView, ListModelMixin):
+    
     """
-    A paginated list of Scan Report Tables, for a specific Scan Report.
+    ScanReportTableIndexV2 is a view that provides a paginated list of Scan Report Tables 
+    associated with a specific Scan Report. It supports filtering, ordering, and pagination.
 
-    Allows ordering by name, person_id, and date_event
-    Allows filtering by name.
+    Features:
+    - **Filtering**: Allows filtering by the `name` field using case-insensitive containment (`icontains`).
+    - **Ordering**: Supports ordering by `name`, `person_id`, and `date_event`. Default ordering is by `-created_at`.
+    - **Pagination**: Utilizes a custom pagination class (`CustomPagination`) for paginated responses.
+
+    Attributes:
+    - `filterset_fields`: Defines the fields available for filtering.
+    - `filter_backends`: Specifies the backends used for filtering and ordering.
+    - `ordering_fields`: Lists the fields available for ordering.
+    - `pagination_class`: Specifies the pagination class to be used.
+    - `ordering`: Defines the default ordering for the queryset.
+    - `serializer_class`: Specifies the serializer used for serializing the response data.
+
+    Methods:
+    - `get`: Handles GET requests and returns a paginated list of Scan Report Tables.
+    - `get_queryset`: Returns the queryset of Scan Report Tables filtered by the associated Scan Report.
     """
 
     filterset_fields = {
@@ -370,8 +501,32 @@ class ScanReportTableIndexV2(ScanReportPermissionMixin, GenericAPIView, ListMode
 
 
 class ScanReportTableDetailV2(
+    
     ScanReportPermissionMixin, GenericAPIView, RetrieveModelMixin, UpdateModelMixin
 ):
+    """
+    A view for handling detailed operations on ScanReportTable objects.
+    This view provides functionality for retrieving and updating ScanReportTable
+    instances. It uses different serializers for GET and modification requests
+    (PUT, PATCH, DELETE). Additionally, it triggers background jobs for mapping
+    rules when a partial update (PATCH) is performed.
+    Attributes:
+        queryset (QuerySet): The queryset of ScanReportTable objects.
+        serializer_class (Serializer): The default serializer class for the view.
+    Methods:
+        get_object():
+            Retrieves a ScanReportTable instance based on the provided table_pk.
+        get(request, *args, **kwargs):
+            Handles GET requests to retrieve a ScanReportTable instance.
+        get_serializer_class():
+            Determines the serializer class to use based on the request method.
+        patch(request, *args, **kwargs):
+            Handles PATCH requests to partially update a ScanReportTable instance.
+            Deletes existing mapping rules, triggers background jobs for mapping,
+            and ensures no duplicate jobs are running for the same table.
+    """
+    
+    
     queryset = ScanReportTable.objects.all()
     serializer_class = ScanReportTableListSerializerV2
 
@@ -391,16 +546,42 @@ class ScanReportTableDetailV2(
         return super().get_serializer_class()
 
     def patch(self, request: Any, *args: Any, **kwargs: Any) -> Response:
+        
         """
-        Perform a partial update on the instance.
+        Perform a partial update on the instance and trigger background processing jobs.
 
-        Args:
-            request (Any): The request object.
-            *args (Any): Additional positional arguments.
-            **kwargs (Any): Additional keyword arguments.
+        This method handles the partial update of a database instance, deletes existing 
+        mapping rules, and triggers a series of background jobs to process the updated data. 
+        It ensures that no duplicate jobs are created for the same table while a job is already 
+        in progress.
 
-        Returns:
-            Response: The response object.
+            request (Any): The HTTP request object containing the data for the update.
+            **kwargs (Any): Additional keyword arguments. The "partial" key is used to 
+                            determine if the update is partial (default is True).
+
+            Response: A DRF Response object containing the serialized data of the updated 
+                      instance or an error message if a job is already in progress.
+
+        Raises:
+            requests.exceptions.HTTPError: If the HTTP request to the worker service fails.
+
+        Workflow:
+            1. Retrieve the instance to be updated.
+            2. Validate and apply the partial update using the serializer.
+            3. Delete existing mapping rules for the instance.
+            4. Prepare and send a message to the worker service to trigger background jobs.
+            5. Create job records for the processing stages:
+               - BUILD_CONCEPTS_FROM_DICT (initial stage, marked as IN_PROGRESS)
+               - REUSE_CONCEPTS
+               - GENERATE_RULES
+            6. Handle any HTTP errors during the worker service request.
+
+        Notes:
+            - The worker service URL and credentials are configured in the application settings.
+            - If a job is already in progress for the table, the method returns a 400 BAD REQUEST 
+              response with an appropriate error message.
+            - The worker ID returned by the worker service is not currently saved but can be 
+              utilized for tracking job status in the future.
         """
         instance = self.get_object()
         partial = kwargs.pop("partial", True)
@@ -472,6 +653,27 @@ class ScanReportTableDetailV2(
 
 
 class ScanReportFieldIndexV2(ScanReportPermissionMixin, GenericAPIView, ListModelMixin):
+    """
+    A view that provides a list of ScanReportField objects associated with a specific ScanReportTable.
+    This view supports filtering, ordering, and pagination for the ScanReportField objects. 
+    It also caches the response for 15 minutes and varies the cache based on cookies.
+    Attributes:
+        serializer_class (Serializer): The serializer class used for serializing the ScanReportField objects.
+        filterset_fields (dict): Fields that can be filtered, with their respective lookup expressions.
+        filter_backends (list): List of filter backends used for filtering and ordering.
+        ordering_fields (list): Fields that can be used for ordering the results.
+        pagination_class (Pagination): The pagination class used for paginating the results.
+    Methods:
+        get(request, *args, **kwargs):
+            Handles GET requests and retrieves the ScanReportTable object based on the provided table_pk.
+            Returns a list of ScanReportField objects associated with the table.
+        get_queryset():
+            Returns the queryset of ScanReportField objects filtered by the associated ScanReportTable.
+        list(request, *args, **kwargs):
+            Overrides the default list method to add caching and cookie-based variation.
+            Returns the paginated and serialized list of ScanReportField objects.
+    """
+
     serializer_class = ScanReportFieldListSerializerV2
     filterset_fields = {
         "name": ["icontains"],
@@ -499,6 +701,34 @@ class ScanReportFieldIndexV2(ScanReportPermissionMixin, GenericAPIView, ListMode
 class ScanReportFieldDetailV2(
     ScanReportPermissionMixin, GenericAPIView, RetrieveModelMixin, UpdateModelMixin
 ):
+    """
+    A view for handling detailed operations on ScanReportField objects.
+    This view supports retrieving and partially updating a ScanReportField object.
+    It uses different serializers for different HTTP methods and ensures proper
+    permissions are applied through the ScanReportPermissionMixin.
+    Inherits:
+        - ScanReportPermissionMixin: Ensures the user has the required permissions.
+        - GenericAPIView: Provides base functionality for API views.
+        - RetrieveModelMixin: Adds support for retrieving a single model instance.
+        - UpdateModelMixin: Adds support for updating a model instance.
+    Attributes:
+        model (Model): The model class associated with this view (ScanReportField).
+        serializer_class (Serializer): The default serializer class for the view.
+    Methods:
+        get_object():
+            Retrieves the ScanReportField object based on the `field_pk` URL parameter.
+            Returns a 404 response if the object is not found.
+        get(request, *args, **kwargs):
+            Handles GET requests to retrieve a ScanReportField object.
+        patch(request, *args, **kwargs):
+            Handles PATCH requests to partially update a ScanReportField object.
+        get_serializer_class():
+            Determines the serializer class to use based on the HTTP method.
+            - GET, POST: Uses ScanReportFieldListSerializerV2.
+            - PUT, PATCH: Uses ScanReportFieldEditSerializer.
+            Falls back to the default implementation for other methods.
+    """
+    
     model = ScanReportField
     serializer_class = ScanReportFieldListSerializerV2
 
@@ -520,6 +750,28 @@ class ScanReportFieldDetailV2(
 
 
 class ScanReportValueListV2(ScanReportPermissionMixin, GenericAPIView, ListModelMixin):
+    """
+    A view for listing ScanReportValue objects associated with a specific ScanReportField.
+    This view provides filtering, pagination, and caching capabilities for the ScanReportValue
+    objects. It uses DjangoFilterBackend for filtering and a custom pagination class for paginated
+    responses. The view also caches the list response for 15 minutes.
+    Attributes:
+        filterset_fields (dict): Specifies the fields and lookup types available for filtering.
+        filter_backends (list): Specifies the filter backends to be used.
+        pagination_class (class): Specifies the pagination class to be used.
+        serializer_class (class): Specifies the serializer class to be used for the response.
+    Methods:
+        get(request, *args, **kwargs):
+            Handles GET requests and retrieves the ScanReportField object based on the provided
+            field_pk. Returns the list of ScanReportValue objects associated with the field.
+        get_queryset():
+            Returns the queryset of ScanReportValue objects filtered by the associated
+            ScanReportField. The queryset is ordered by ID and only includes specific fields.
+        list(request, *args, **kwargs):
+            Overrides the default list method to add caching and vary-on-cookie functionality.
+            Returns the paginated list of ScanReportValue objects.
+    """
+
     filterset_fields = {
         "value": ["in", "icontains"],
     }
@@ -549,7 +801,35 @@ class ScanReportConceptListV2(
     GenericAPIView, ListModelMixin, CreateModelMixin, DestroyModelMixin
 ):
     """
-    Version V2.
+    API view for managing ScanReportConcept objects (Version V2).
+
+    This view provides functionality to list, create, and delete ScanReportConcept
+    objects. It includes validation logic for ensuring data integrity and consistency
+    when creating new ScanReportConcept entries.
+
+    Attributes:
+        queryset (QuerySet): Queryset for retrieving all ScanReportConcept objects,
+            ordered by their ID.
+        serializer_class (Serializer): Serializer class used for ScanReportConcept objects.
+        pagination_class (Pagination): Custom pagination class for paginating results.
+        filter_backends (list): List of filter backends used for filtering query results.
+        filterset_fields (dict): Dictionary defining the fields that can be filtered
+            and the filtering operations allowed.
+
+    Methods:
+        get(request, *args, **kwargs):
+            Handles GET requests to retrieve a list of ScanReportConcept objects.
+        
+        post(request, *args, **kwargs):
+            Handles POST requests to create a new ScanReportConcept object.
+            Includes validation for:
+                - Ensuring the associated table exists and has `person_id` and `date_event` set.
+                - Ensuring the referenced concept exists in the database.
+                - Validating the data type of the field for concepts with the "Observation" domain.
+                - Ensuring the destination table for the concept is valid.
+                - Preventing multiple concepts with the same ID from being added to the same object.
+            Returns appropriate error responses for validation failures.
+    GenericAPIView, ListModelMixin, CreateModelMixin, DestroyModelMixin
     """
 
     queryset = ScanReportConcept.objects.all().order_by("id")
@@ -679,6 +959,22 @@ class ScanReportConceptListV2(
 
 
 class ScanReportConceptDetailV2(GenericAPIView, DestroyModelMixin):
+    """
+    A view for handling detailed operations on ScanReportConcept objects.
+    This view provides functionality for retrieving and deleting individual
+    ScanReportConcept instances.
+    Attributes:
+        model (Model): The model associated with this view, which is ScanReportConcept.
+        queryset (QuerySet): The queryset used to retrieve ScanReportConcept objects.
+        serializer_class (Serializer): The serializer class used for serializing
+            and deserializing ScanReportConcept objects.
+    Methods:
+        delete(request, *args, **kwargs):
+            Handles DELETE requests to delete a specific ScanReportConcept instance.
+            Delegates the deletion logic to the `destroy` method provided by
+            DestroyModelMixin.
+    """
+
     model = ScanReportConcept
     queryset = ScanReportConcept.objects.all()
     serializer_class = ScanReportConceptSerializer
@@ -757,6 +1053,26 @@ class MappingRulesList(APIView):
 
 
 class RulesListV2(ScanReportPermissionMixin, GenericAPIView, ListModelMixin):
+    """
+    A view that provides a paginated list of MappingRule objects filtered by the ID of a related
+    ScanReport. This view does not use a serializer class directly but instead processes the
+    queryset and pagination manually.
+    Attributes:
+        queryset (QuerySet): The base queryset for MappingRule objects, ordered by ID.
+        pagination_class (CustomPagination): The pagination class used for paginating results.
+        filter_backends (list): A list of filter backends applied to the queryset.
+        http_method_names (list): Allowed HTTP methods for this view.
+    Methods:
+        get_queryset():
+            Retrieves the queryset filtered by the ScanReport ID provided in the URL kwargs.
+        get(request, *args, **kwargs):
+            Handles GET requests and returns a paginated list of MappingRule objects.
+        list(request, *args, **kwargs):
+            Custom implementation of the list method to handle pagination and filtering
+            manually. Processes MappingRule objects to include additional details about
+            related fields (e.g., destination_table, source_field).
+    """
+
     queryset = MappingRule.objects.all().order_by("id")
     pagination_class = CustomPagination
     filter_backends = [DjangoFilterBackend]
@@ -826,6 +1142,25 @@ class RulesListV2(ScanReportPermissionMixin, GenericAPIView, ListModelMixin):
 
 
 class SummaryRulesListV2(RulesListV2):
+    """ 
+    A view that provides a paginated list of MappingRule objects filtered by the ID of a related
+    ScanReport. This view does not use a serializer class directly but instead processes the
+    queryset and pagination manually.
+    Attributes:
+        queryset (QuerySet): The base queryset for MappingRule objects, ordered by ID.
+        pagination_class (CustomPagination): The pagination class used for paginating results.
+        filter_backends (list): A list of filter backends applied to the queryset.
+        http_method_names (list): Allowed HTTP methods for this view.
+    Methods:
+        get_queryset():
+            Retrieves the queryset filtered by the ScanReport ID provided in the URL kwargs.
+        get(request, *args, **kwargs):
+            Handles GET requests and returns a paginated list of MappingRule objects.
+        list(request, *args, **kwargs):
+            Custom implementation of the list method to handle pagination and filtering
+            manually. Processes MappingRule objects to include additional details about
+            related fields (e.g., destination_table, source_field).
+    """
     def list(self, request, *args, **kwargs):
         # Get p and page_size from query_params
         p = self.request.query_params.get("p", 1)
@@ -880,6 +1215,17 @@ class SummaryRulesListV2(RulesListV2):
 
 
 class AnalyseRulesV2(ScanReportPermissionMixin, GenericAPIView, RetrieveModelMixin):
+    """
+    A view for retrieving the analysis of rules for a specific scan report.
+    This view allows users to obtain detailed information about the rules
+    associated with a scan report, including their status and other relevant
+    details.
+    Attributes:
+        queryset (QuerySet): The base queryset for ScanReport objects.
+        serializer_class (Serializer): The serializer class used for serializing the response.
+        filter_backends (list): A list of filter backends applied to the queryset.
+        filterset_fields (dict): A dictionary defining the fields that can be filtered.
+    """
     queryset = ScanReport.objects.all()
     serializer_class = GetRulesAnalysis
     filter_backends = [DjangoFilterBackend]
@@ -887,6 +1233,25 @@ class AnalyseRulesV2(ScanReportPermissionMixin, GenericAPIView, RetrieveModelMix
 
 
 class DownloadScanReportViewSet(viewsets.ViewSet):
+    """
+    A ViewSet for handling the download of scan reports.
+    Methods:
+        list(request, pk):
+            Handles the retrieval and download of a specific scan report
+            based on its primary key (pk). This method is not intended to
+            behave as a typical list view.
+    Methods Details:
+        list(request, pk):
+            Args:
+                request (HttpRequest): The HTTP request object.
+                pk (int): The primary key of the scan report to be downloaded.
+            Returns:
+                HttpResponse: A response containing the scan report file as an
+                attachment with the appropriate content type and disposition.
+            Raises:
+                ScanReport.DoesNotExist: If no scan report is found with the given primary key.
+    """
+
     def list(self, request, pk):
         # TODO: This should not be a list view...
         scan_report = ScanReport.objects.get(id=pk)
@@ -903,8 +1268,21 @@ class DownloadScanReportViewSet(viewsets.ViewSet):
 
 
 class ScanReportPermissionView(APIView):
+    
     """
-    API for permissions a user has on a specific scan report.
+    Handles API requests to retrieve the permissions a user has on a specific scan report.
+
+    Methods:
+        get(request, pk):
+            Retrieves the permissions for the user on the scan report identified by the given primary key (pk).
+
+    Args:
+        request (Request): The HTTP request object containing user and request data.
+        pk (int): The primary key of the scan report for which permissions are being retrieved.
+
+    Returns:
+        Response: A JSON response containing the user's permissions on the scan report, 
+                  with an HTTP status code of 200 (OK).
     """
 
     def get(self, request, pk):
