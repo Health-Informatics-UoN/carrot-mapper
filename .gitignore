@@ -15,3 +15,5 @@ app/api/staticfiles
 dist
 api/static
 vocabs
+.idea
+.mypy_cache

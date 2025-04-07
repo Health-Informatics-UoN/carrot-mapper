@@ -1,0 +1,27 @@
+FROM apache/airflow:latest
+
+# Install provider packages
+RUN pip install --no-cache-dir \
+    apache-airflow-providers-microsoft-azure \
+    apache-airflow-providers-postgres \
+    apache-airflow-providers-amazon \
+    apache-airflow-providers-http
+
+# Copy DAGs to the container
+COPY ./dags /opt/airflow/dags
+
+# Set ownership and permissions for directories
+USER root
+RUN mkdir -p /opt/airflow/logs /opt/airflow/config
+RUN chown -R airflow:root /opt/airflow/dags /opt/airflow/logs /opt/airflow/config
+RUN chmod -R 775 /opt/airflow/logs /opt/airflow/dags /opt/airflow/config
+
+# Create entrypoint script
+COPY entrypoint-scheduler.sh /entrypoint-scheduler.sh
+RUN chmod +x /entrypoint-scheduler.sh
+
+USER airflow
+
+ENTRYPOINT ["/entrypoint-scheduler.sh"]
+
+
