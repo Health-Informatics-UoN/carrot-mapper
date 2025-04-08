@@ -1,6 +1,7 @@
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 import logging
 from airflow.exceptions import AirflowException
+from libs.utils import extract_params
 
 # PostgreSQL connection hook
 pg_hook = PostgresHook(postgres_conn_id="postgres_db_conn")
@@ -158,3 +159,112 @@ def create_dates_rules(**kwargs):
     except Exception as e:
         logging.error(f"Error in create_dates_rules: {str(e)}")
         raise AirflowException(f"Error in create_dates_rules: {str(e)}")
+
+
+def create_concepts_rules(**kwargs):
+    """
+    Create mapping rules in the mapping_mappingrule table for concept-related fields.
+    Maps fields to their corresponding destination concept fields.
+    """
+    try:
+        table_id, field_vocab_pairs = extract_params(**kwargs)
+        scan_report_id = kwargs.get("dag_run", {}).conf.get("scan_report_id")
+
+        if not field_vocab_pairs:
+            logging.error("No field-vocabulary pairs provided")
+            raise ValueError("No field-vocabulary pairs provided")
+
+        for pair in field_vocab_pairs:
+            sr_field_id = pair.get("sr_field_id")
+
+            if not scan_report_id:
+                logging.warning("No scan_report_id provided in create_concepts_rules")
+                raise AirflowException(
+                    "scan_report_id is required for creating mapping rules"
+                )
+
+            if not sr_field_id:
+                logging.warning("No sr_field_id provided in create_concepts_rules")
+                raise AirflowException(
+                    "sr_field_id is required for creating mapping rules"
+                )
+
+            # Create mapping rules for all concept-related field types in a single query
+            concepts_mapping_query = f"""
+            INSERT INTO mapping_mappingrule (
+                created_at, updated_at, omop_field_id, source_field_id, concept_id, scan_report_id, approved
+            )
+            SELECT NOW(), NOW(), field_id, {sr_field_id}, concept_id, {scan_report_id}, TRUE
+            FROM (
+                -- Source value fields
+                SELECT 
+                    tsc.source_value_field_id AS field_id,
+                    src.id AS concept_id
+                FROM temp_standard_concepts tsc
+                JOIN mapping_scanreportconcept src ON 
+                    src.object_id = tsc.sr_value_id AND
+                    src.concept_id = tsc.standard_concept_id AND
+                    src.content_type_id = 23
+                WHERE tsc.source_value_field_id IS NOT NULL
+                
+                UNION ALL
+                
+                -- Destination concept fields
+                SELECT 
+                    tsc.dest_concept_field_id AS field_id,
+                    src.id AS concept_id
+                FROM temp_standard_concepts tsc
+                JOIN mapping_scanreportconcept src ON 
+                    src.object_id = tsc.sr_value_id AND
+                    src.concept_id = tsc.standard_concept_id AND
+                    src.content_type_id = 23
+                WHERE tsc.dest_concept_field_id IS NOT NULL
+                
+                UNION ALL
+                
+                -- Value as number fields
+                SELECT 
+                    tsc.value_as_number_field_id AS field_id,
+                    src.id AS concept_id
+                FROM temp_standard_concepts tsc
+                JOIN mapping_scanreportconcept src ON 
+                    src.object_id = tsc.sr_value_id AND
+                    src.concept_id = tsc.standard_concept_id AND
+                    src.content_type_id = 23
+                WHERE tsc.value_as_number_field_id IS NOT NULL
+                
+                UNION ALL
+                
+                -- Value as string fields
+                SELECT 
+                    tsc.value_as_string_field_id AS field_id,
+                    src.id AS concept_id
+                FROM temp_standard_concepts tsc
+                JOIN mapping_scanreportconcept src ON 
+                    src.object_id = tsc.sr_value_id AND
+                    src.concept_id = tsc.standard_concept_id AND
+                    src.content_type_id = 23
+                WHERE tsc.value_as_string_field_id IS NOT NULL
+            ) AS concept_fields
+            WHERE NOT EXISTS (
+                -- Check if the mapping rule already exists
+                SELECT 1 FROM mapping_mappingrule mr
+                WHERE mr.omop_field_id = concept_fields.field_id
+                AND mr.source_field_id = {sr_field_id}
+                AND mr.concept_id = concept_fields.concept_id
+                AND mr.scan_report_id = {scan_report_id}
+            );
+            """
+
+            try:
+                result = pg_hook.run(concepts_mapping_query)
+                logging.info("Successfully created mapping rules for concept fields")
+                return result
+            except Exception as e:
+                logging.error(f"Database error in create_concepts_rules: {str(e)}")
+                raise AirflowException(
+                    f"Database error in create_concepts_rules: {str(e)}"
+                )
+    except Exception as e:
+        logging.error(f"Error in create_concepts_rules: {str(e)}")
+        raise AirflowException(f"Error in create_concepts_rules: {str(e)}")

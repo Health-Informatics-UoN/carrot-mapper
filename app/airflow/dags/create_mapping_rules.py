@@ -2,7 +2,11 @@ from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.operators.empty import EmptyOperator
 from airflow.operators.python import PythonOperator
-from libs.core_rules_creation import create_person_rules, create_dates_rules
+from libs.core_rules_creation import (
+    create_person_rules,
+    create_dates_rules,
+    create_concepts_rules,
+)
 
 default_args = {
     "owner": "airflow",
@@ -42,6 +46,12 @@ create_dates_rules_task = PythonOperator(
     dag=dag,
 )
 
+create_concepts_rules_task = PythonOperator(
+    task_id="create_concepts_rules",
+    python_callable=create_concepts_rules,
+    provide_context=True,
+    dag=dag,
+)
 
 # TODO: add tasks to do error handling and update status
 
@@ -49,4 +59,10 @@ create_dates_rules_task = PythonOperator(
 # End the workflow
 end = EmptyOperator(task_id="end", dag=dag)
 
-(start >> create_person_rules_task >> create_dates_rules_task >> end)
+(
+    start
+    >> create_person_rules_task
+    >> create_dates_rules_task
+    >> create_concepts_rules_task
+    >> end
+)
