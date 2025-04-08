@@ -14,6 +14,7 @@ def find_standard_concepts(**kwargs):
     try:
         # TODO: move table id on top of the function and reuse it every where --> change the extract_params function
         # TODO: remove the hardcoded 23 for content_type_id
+        # TODO: change the order in the UI of the mapping rules page, and review page
         table_id, field_vocab_pairs = extract_params(**kwargs)
 
         if not field_vocab_pairs:
