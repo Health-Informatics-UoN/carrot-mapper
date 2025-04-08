@@ -22,7 +22,7 @@ dag = DAG(
     # Add these settings:
     concurrency=20,  # Allow more concurrent tasks in this DAG
     max_active_runs=5,  # Allow multiple concurrent DAG runs
-    dagrun_timeout=timedelta(minutes=60),  # Set a timeout for runs
+    dagrun_timeout=timedelta(minutes=15),  # Set a timeout for runs
 )
 
 # Start the workflow
@@ -40,16 +40,30 @@ trigger_create_concepts_vocabs = TriggerDagRunOperator(
     dag=dag,
 )
 
+#  TODO: add trigger for Reuse concepts here
+
+# Trigger concept mapping
+trigger_create_mapping_rules = TriggerDagRunOperator(
+    task_id="trigger_create_mapping_rules",
+    trigger_dag_id="create_mapping_rules",
+    conf={
+        "table_id": "{{ dag_run.conf['table_id'] }}",
+        "person_id_field": "{{ dag_run.conf['person_id_field'] }}",
+        "date_event_field": "{{ dag_run.conf['date_event_field'] }}",
+        "scan_report_id": "{{ dag_run.conf['scan_report_id'] }}",
+    },
+    wait_for_completion=True,
+    dag=dag,
+)
+
 
 # TODO: add this task in the end of Everything
-# cleanup_tables = SQLExecuteQueryOperator(
-#     task_id="cleanup_tables",
+# cleanup_temp_table_task = SQLExecuteQueryOperator(
+#     task_id="cleanup_temp_table",
 #     sql="""
-#     DROP TABLE IF EXISTS temp_sr_values;
-#     DROP TABLE IF EXISTS temp_nonstandard_concepts;
 #     DROP TABLE IF EXISTS temp_standard_concepts;
 #     """,
-#     conn_id="1-conn-db",
+#     conn_id="postgres_db_conn",
 #     dag=dag,
 # )
 
@@ -58,4 +72,4 @@ trigger_create_concepts_vocabs = TriggerDagRunOperator(
 end = EmptyOperator(task_id="end", dag=dag)
 
 # Define task dependencies
-start >> trigger_create_concepts_vocabs >> end
+start >> trigger_create_concepts_vocabs >> trigger_create_mapping_rules >> end

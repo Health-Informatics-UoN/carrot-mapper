@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.operators.empty import EmptyOperator
 from airflow.operators.python import PythonOperator
-from libs.core import (
+from libs.core_create_concepts import (
     find_standard_concepts,
     create_standard_concepts,
     find_date_fields,
@@ -18,8 +18,7 @@ default_args = {
     "email_on_failure": False,
     "email_on_retry": False,
     # TODO: modify these settings about retries
-    "retries": 2,
-    "retry_delay": timedelta(minutes=1),
+    "retries": 0,
 }
 
 dag = DAG(
