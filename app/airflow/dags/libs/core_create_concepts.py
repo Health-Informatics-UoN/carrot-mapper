@@ -12,15 +12,29 @@ def find_standard_concepts(**kwargs):
     Creates a temporary table containing mappings between source and standard concepts.
     """
     try:
-        # TODO: move table id on top of the function and reuse it every where --> change the extract_params function
-        # TODO: remove the hardcoded 23 for content_type_id
-        # TODO: change the order in the UI of the mapping rules page, and review page
         table_id, field_vocab_pairs = extract_params(**kwargs)
 
         if not field_vocab_pairs:
             logging.error("No field-vocabulary pairs provided")
             raise ValueError("No field-vocabulary pairs provided")
 
+        # Create the temporary table once, outside the loop
+        create_table_query = """
+        DROP TABLE IF EXISTS temp_standard_concepts;
+        CREATE TABLE temp_standard_concepts (
+            sr_value_id INTEGER,
+            source_concept_id INTEGER,
+            standard_concept_id INTEGER
+        );
+        """
+        try:
+            pg_hook.run(create_table_query)
+            logging.info("Successfully created temp_standard_concepts table")
+        except Exception as e:
+            logging.error(f"Failed to create temp_standard_concepts table: {str(e)}")
+            raise
+
+        # Process each field-vocabulary pair
         for pair in field_vocab_pairs:
             sr_field_id = pair.get("sr_field_id")
             vocabulary_id = pair.get("vocabulary_id")
@@ -30,10 +44,9 @@ def find_standard_concepts(**kwargs):
                     "Invalid field_vocab_pair: requires sr_field_id and vocabulary_id"
                 )
 
-            # Step 1: Form base table (sr_value_id, source_concept_id, standard_concept_id)
-            standard_concepts_query = f"""
-            DROP TABLE IF EXISTS temp_standard_concepts;
-            CREATE TABLE temp_standard_concepts AS
+            # Insert data for each field-vocabulary pair
+            insert_concepts_query = f"""
+            INSERT INTO temp_standard_concepts (sr_value_id, source_concept_id, standard_concept_id)
             SELECT
                 srv.id AS sr_value_id,
                 c1.concept_id AS source_concept_id,
@@ -51,13 +64,13 @@ def find_standard_concepts(**kwargs):
             WHERE srv.scan_report_field_id = {sr_field_id};
             """
             try:
-                pg_hook.run(standard_concepts_query)
+                pg_hook.run(insert_concepts_query)
                 logging.info(
-                    f"Successfully created standard concepts for field ID {sr_field_id}"
+                    f"Successfully inserted standard concepts for field ID {sr_field_id}"
                 )
             except Exception as e:
                 logging.error(
-                    f"Failed to create standard concepts for field ID {sr_field_id}: {str(e)}"
+                    f"Failed to insert standard concepts for field ID {sr_field_id}: {str(e)}"
                 )
                 raise
     except Exception as e:
@@ -249,9 +262,9 @@ def find_additional_fields(**kwargs):
 
             value_as_number_query = f"""
             ALTER TABLE temp_standard_concepts 
-            ADD COLUMN value_as_number_field_id INTEGER,
-            ADD COLUMN value_as_string_field_id INTEGER,
-            ADD COLUMN value_as_concept_field_id INTEGER;
+            ADD COLUMN IF NOT EXISTS value_as_number_field_id INTEGER,
+            ADD COLUMN IF NOT EXISTS value_as_string_field_id INTEGER,
+            ADD COLUMN IF NOT EXISTS value_as_concept_field_id INTEGER;
 
             -- Update value_as_number_field_id for measurement domain concepts
             WITH measurement_concepts AS (
