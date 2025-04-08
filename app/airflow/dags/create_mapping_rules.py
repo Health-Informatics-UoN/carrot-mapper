@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.operators.empty import EmptyOperator
 from airflow.operators.python import PythonOperator
-from libs.core_rules_creation import create_mapping_rules
+from libs.core_rules_creation import create_person_rules, create_dates_rules
 
 default_args = {
     "owner": "airflow",
@@ -28,9 +28,16 @@ dag = DAG(
 start = EmptyOperator(task_id="start", dag=dag)
 
 
-create_mapping_rules_task = PythonOperator(
-    task_id="create_mapping_rules",
-    python_callable=create_mapping_rules,
+create_person_rules_task = PythonOperator(
+    task_id="create_person_rules",
+    python_callable=create_person_rules,
+    provide_context=True,
+    dag=dag,
+)
+
+create_dates_rules_task = PythonOperator(
+    task_id="create_dates_rules",
+    python_callable=create_dates_rules,
     provide_context=True,
     dag=dag,
 )
@@ -42,4 +49,4 @@ create_mapping_rules_task = PythonOperator(
 # End the workflow
 end = EmptyOperator(task_id="end", dag=dag)
 
-(start >> create_mapping_rules_task >> end)
+(start >> create_person_rules_task >> create_dates_rules_task >> end)
