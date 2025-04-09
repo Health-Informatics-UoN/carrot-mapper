@@ -19,7 +19,7 @@ export default function SignIn() {
     const result = await signIn("credentials", {
       redirect: false,
       username,
-      password,
+      password
     });
     if (result?.ok) {
       router.push("/projects");
@@ -66,6 +66,12 @@ export default function SignIn() {
             Sign In
           </Button>
         </form>
+
+        <div className="text-sm text-center mt-2">
+          <a href="/accounts/password-reset" className="text-blue-600 hover:underline">
+            Forgot your password?
+          </a>
+        </div>
       </div>
     </div>
   );
