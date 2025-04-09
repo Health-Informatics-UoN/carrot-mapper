@@ -2,6 +2,10 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Alert } from "@/components/ui/alert";
 
 export default function PasswordResetPage() {
   const [email, setEmail] = useState('');
@@ -36,38 +40,63 @@ export default function PasswordResetPage() {
 
   if (submitted) {
     return (
-      <div className="max-w-md mx-auto mt-20 p-4 border rounded shadow">
-        <h1 className="text-xl font-semibold mb-4">Check your inbox</h1>
-        <p>If an account exists for <strong>{email}</strong>, a password reset link has been sent.</p>
+      <div className="flex min-h-96 items-center justify-center">
+        <div className="w-full max-w-md p-8 space-y-4">
+          <h1 className="text-2xl font-semibold text-center text-gray-800 dark:text-white">
+            Check your inbox
+          </h1>
+          <p className="text-center text-sm text-gray-600 dark:text-gray-300">
+            If an account exists for <strong>{email}</strong>, a password reset link has been sent.
+          </p>
+          <div className="text-center">
+            <a
+              href="/accounts/login"
+              className="text-blue-600 hover:underline text-sm"
+            >
+              Back to login
+            </a>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-md mx-auto mt-20 p-4 border rounded shadow">
-      <h1 className="text-xl font-semibold mb-4">Reset your password</h1>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label htmlFor="email" className="block text-sm font-medium mb-1">
-            Email address
-          </label>
-          <input
-            id="email"
-            type="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-3 py-2 border rounded"
-          />
+    <div className="flex min-h-96 items-center justify-center">
+      <div className="w-full max-w-md p-8 space-y-6">
+        <h1 className="text-2xl font-semibold text-center text-gray-800 dark:text-white">
+          Reset your password
+        </h1>
+
+        {error && (
+          <Alert variant="destructive">
+            {error}
+          </Alert>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <Label htmlFor="email">Email address</Label>
+            <Input
+              id="email"
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Enter your email"
+            />
+          </div>
+          <Button type="submit" className="w-full">
+            Send reset link
+          </Button>
+        </form>
+
+        <div className="text-sm text-center mt-2">
+          <a href="/accounts/login" className="text-blue-600 hover:underline">
+            Back to login
+          </a>
         </div>
-        {error && <p className="text-red-600 text-sm">{error}</p>}
-        <button
-          type="submit"
-          className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
-        >
-          Send reset link
-        </button>
-      </form>
+      </div>
     </div>
   );
 }
