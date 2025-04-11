@@ -5,6 +5,10 @@ from rest_framework.exceptions import ValidationError
 from django.contrib.auth.models import User
 from django.contrib.auth.hashers import make_password
 from rest_framework.permissions import AllowAny
+from django.middleware.csrf import get_token
+from django.http import JsonResponse
+from rest_framework.permissions import AllowAny
+from rest_framework.views import APIView
 
 
 class DirectPasswordResetView(APIView):
@@ -40,3 +44,15 @@ class DirectPasswordResetView(APIView):
         user.save()
 
         return Response({"detail": "Password has been reset successfully. You can now log in."}, status=status.HTTP_200_OK)
+
+
+
+class CSRFTokenView(APIView):
+    """
+    A view to get the CSRF token.
+    This is useful for CSRF protection in AJAX requests.
+    """
+    permission_classes = [AllowAny]
+
+    def get(self, request, *args, **kwargs):
+        return JsonResponse({'csrfToken': get_token(request)})

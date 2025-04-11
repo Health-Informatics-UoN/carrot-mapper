@@ -94,6 +94,20 @@ MIDDLEWARE = [
     "whitenoise.middleware.WhiteNoiseMiddleware",
 ]
 
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",  # Next.js frontend
+]
+
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:3000",  # Allow CSRF from frontend
+]
+
+# This allows the cookie to be accessible from cross-site
+CSRF_COOKIE_HTTPONLY = False
+CSRF_COOKIE_SAMESITE = 'Lax'  # or 'None' if using HTTPS and cross-origin
+
+
 CSRF_TRUSTED_ORIGINS = [os.environ.get("FRONTEND_URL", "http://localhost:3000")]
 SITE_ID = 1
 
