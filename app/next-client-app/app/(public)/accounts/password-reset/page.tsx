@@ -23,7 +23,7 @@ export default function PasswordResetPage() {
     }
   
     try {
-      const res = await fetch("/api/password/reset", { // Use the Next.js API route
+      const res = await fetch("/api/password/reset", { 
         method: "POST",
         headers: {
           "Content-Type": "application/json",
