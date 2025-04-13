@@ -3,7 +3,6 @@ from collections import defaultdict
 from typing import Any, Dict, List, Union
 
 from shared.services.storage_service import StorageService
-from shared_code import helpers
 from shared_code.logger import logger
 from shared_code.models import ScanReportConceptContentType, ScanReportValueDict
 
@@ -252,7 +251,7 @@ def _update_entries_with_standard_concepts(
 
 
 def _handle_table(
-    table: ScanReportTable, vocab: Union[Dict[str, Dict[str, str]], None]
+    table: ScanReportTable, vocab: List[Dict[str, Any]]
 ) -> None:
     """
     Handles Concept Creation on a table.
@@ -269,9 +268,16 @@ def _handle_table(
     """
     table_values = db.get_scan_report_values(table.pk)
     table_fields = db.get_scan_report_fields(table.pk)
+    
+    # Convert mappings to {field_id: vocab_id}
+    field_vocab_map = {
+        mapping["sr_field_id"]: mapping["vocabulary_id"] for mapping in vocab
+    }
 
-    # Add vocab id to each entry from the vocab dict
-    helpers.add_vocabulary_id_to_entries(table_values, vocab, table.name)
+    # Assign vocabulary IDs
+    for value in table_values:
+        field_id = value["scan_report_field"]["id"]
+        value["vocabulary_id"] = field_vocab_map.get(field_id)
 
     _transform_concepts(table_values, table)
     logger.debug("finished standard concepts lookup")
@@ -279,23 +285,20 @@ def _handle_table(
     concepts = _create_concepts(table_values)
 
     # Bulk create Concepts
-    logger.info(f"Creating {len(concepts)} concepts for table {table.name}")
-    ScanReportConcept.objects.bulk_create(concepts)
-
-    logger.info("Create concepts all finished")
-    if len(concepts) == 0:
+    if concepts:
+        ScanReportConcept.objects.bulk_create(concepts)
         update_job(
             JobStageType.BUILD_CONCEPTS_FROM_DICT,
             StageStatusType.COMPLETE,
             scan_report_table=table,
-            details="Finished",
+            details=f"Created {len(concepts)} concepts",
         )
     else:
         update_job(
             JobStageType.BUILD_CONCEPTS_FROM_DICT,
             StageStatusType.COMPLETE,
             scan_report_table=table,
-            details=f"Created {len(concepts)} concepts based on provided data dictionary.",
+            details="No concepts created",
         )
 
     # Starting the concepts reusing process
@@ -304,23 +307,49 @@ def _handle_table(
         StageStatusType.IN_PROGRESS,
         scan_report_table=table,
     )
-    # handle reuse of concepts at field level
+    
+    # handle reuse of concepts at field level & value level
     reuse_existing_field_concepts(table_fields, table)
-    update_job(
-        JobStageType.REUSE_CONCEPTS,
-        StageStatusType.IN_PROGRESS,
-        scan_report_table=table,
-        details="Finished at field level. Continuing at value level...",
-    )
-    # handle reuse of concepts at value level
     reuse_existing_value_concepts(table_values, table)
     update_job(
         JobStageType.REUSE_CONCEPTS,
         StageStatusType.COMPLETE,
         scan_report_table=table,
-        details="Finished",
     )
+    
+def get_table_vocabulary_mappings(
+    data_dictionary_blob: str, table_id: int
+) -> List[Dict[str, Any]]:
+    
+    # 1. Get the table name (if needed for DD lookup)
+    table = ScanReportTable.objects.get(pk=table_id)
 
+    # 2. Get field data from table_values
+    table_fields = db.get_scan_report_fields(table_id)
+    
+    # 3. Extract field information, including data type
+    field_info = {
+        field["id"]: {
+            "name": field["name"],
+            "data_type": field.get("data_type"),
+        }
+        for field in table_fields
+    }
+    
+    # 4. Get vocabulary mappings from the DD blob
+    _, vocab_dictionary = storage_service.get_data_dictionary(data_dictionary_blob)
+    table_vocab = vocab_dictionary.get(table.name, {})
+    
+    # 5. Build the output list
+    return [
+        {
+            "sr_field_id": field_id,
+            "field_data_type": info["data_type"],
+            "vocabulary_id": table_vocab.get(info["name"]),
+        }
+        for field_id, info in field_info.items()
+        if table_vocab.get(info["name"])
+    ]
 
 def main(msg: Dict[str, str]):
     """
@@ -338,7 +367,8 @@ def main(msg: Dict[str, str]):
     # get the table
     table = ScanReportTable.objects.get(pk=table_id)
 
-    # get the vocab dictionary
-    _, vocab_dictionary = storage_service.get_data_dictionary(data_dictionary_blob)
+    # Pre-process vocabulary mappings
+    vocab_mappings = get_table_vocabulary_mappings(data_dictionary_blob, table_id)
 
-    _handle_table(table, vocab_dictionary)
+    _handle_table(table, vocab_mappings)
+    logger.info("Concept generation process completed successfully")
