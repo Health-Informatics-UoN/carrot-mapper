@@ -1,6 +1,10 @@
 from dj_rest_auth.jwt_auth import get_refresh_view
 from dj_rest_auth.registration.views import RegisterView
-from dj_rest_auth.views import LoginView, LogoutView, UserDetailsView, PasswordResetView, PasswordResetConfirmView
+from dj_rest_auth.views import (
+    LoginView, 
+    LogoutView,
+    UserDetailsView,
+    PasswordResetConfirmView)
 from django.urls import path
 from rest_framework_simplejwt.views import TokenVerifyView
 from .views import DirectPasswordResetView, CSRFTokenView
@@ -16,7 +20,7 @@ urlpatterns = [
     path(
         "auth/password-reset-confirm/<uidb64>/<token>/",
         PasswordResetConfirmView.as_view(),
-        name="password_reset_confirm"
+        name="password_reset_confirm",
     ),
     path("user/", UserDetailsView.as_view(), name="rest_user_details"),
     path("token/verify/", TokenVerifyView.as_view(), name="token_verify"),

@@ -16,7 +16,9 @@ class DirectPasswordResetView(APIView):
     A view to reset the user's password directly without email confirmation.
     Users provide their username, new password, and confirm password.
     """
+
     permission_classes = [AllowAny]
+
     def post(self, request, *args, **kwargs):
 
         # Extract username, new_password, and confirm_password from the request data
@@ -48,7 +50,7 @@ class DirectPasswordResetView(APIView):
 
         return Response(
             {"detail": "Password has been reset successfully. You can now log in."},
-            status=status.HTTP_200_OK
+            status=status.HTTP_200_OK,
         )
 
 
@@ -58,6 +60,7 @@ class CSRFTokenView(APIView):
     A view to get the CSRF token.
     This is useful for CSRF protection in AJAX requests.
     """
+    
     permission_classes = [AllowAny]
 
     def get(self, request, *args, **kwargs):
