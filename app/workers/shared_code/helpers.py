@@ -4,7 +4,6 @@ from typing import Any, Dict, List, Literal, Optional, Tuple, Union
 
 import azure.functions as func
 from shared_code.logger import logger
-from shared_code.models import ScanReportFieldDict, ScanReportValueDict
 
 
 def unwrap_message(msg: func.QueueMessage) -> Tuple[str, str, str, str]:
@@ -187,47 +186,6 @@ def paginate(entries: List[str], max_chars: Optional[int] = None) -> List[List[s
         paginated_entries.append(this_page)
 
     return paginated_entries
-
-
-def get_by_concept_id(list_of_dicts: List[ScanReportValueDict], concept_id: str):
-    """
-    Given a list of dicts, return the dict from the list which
-    contains the concept_id supplied
-    """
-    for item in list_of_dicts:
-        if str(item["concept_id"]) == str(concept_id):
-            return item
-    return None
-
-
-def add_vocabulary_id_to_entries(
-    table_values: List[ScanReportValueDict],
-    vocab: Union[Dict[str, Any], None],
-    table_name: str,
-):
-    """
-    Add vocabulary_id to each entry from the vocab dictionary, defaulting to None if
-    either there is no vocab dictionary provided, or non vocabs associated to the given field.
-
-    Transforms the dictionary in place.
-    [{'id': 569, 'value': '46457-8', 'created_at': '2024-02-22T11:01:48.520215Z',
-    'updated_at': '2024-02-22T11:01:48.520284Z', 'frequency': 5, 'conceptID': -1,
-    'value_description': None, 'scan_report_field': 80, 'vocabulary_id': 'LOINC'}]
-
-    Args:
-        posted_values (list[ScanReportValueDict]): List of Scan Report Value of previously posted values.
-        vocab (Dict[str, Any]): Dict mapping table names to dictionaries of field names and vocab IDs.
-        table_name (str): The current table name.
-
-    Returns:
-        None
-    """
-    for value in table_values:
-        vocab_id = None
-        if vocab and vocab.get(table_name):
-            scan_report_field = value["scan_report_field"]
-            vocab_id = vocab[table_name].get(scan_report_field["name"])
-        value["vocabulary_id"] = vocab_id
 
 
 def create_concept(
