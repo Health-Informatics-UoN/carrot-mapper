@@ -60,7 +60,7 @@ class CSRFTokenView(APIView):
     A view to get the CSRF token.
     This is useful for CSRF protection in AJAX requests.
     """
-    
+
     permission_classes = [AllowAny]
 
     def get(self, request, *args, **kwargs):

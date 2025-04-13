@@ -4,7 +4,8 @@ from dj_rest_auth.views import (
     LoginView, 
     LogoutView,
     UserDetailsView,
-    PasswordResetConfirmView)
+    PasswordResetConfirmView,
+)
 from django.urls import path
 from rest_framework_simplejwt.views import TokenVerifyView
 from .views import DirectPasswordResetView, CSRFTokenView
