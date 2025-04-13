@@ -54,7 +54,6 @@ class DirectPasswordResetView(APIView):
         )
 
 
-
 class CSRFTokenView(APIView):
     """
     A view to get the CSRF token.
