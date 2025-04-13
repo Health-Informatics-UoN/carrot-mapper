@@ -24,7 +24,6 @@ class DirectPasswordResetView(APIView):
         new_password = request.data.get("new_password")
         confirm_password = request.data.get("confirm_password")
 
-
         # Validate that all fields are provided
         if not username or not new_password or not confirm_password:
             raise ValidationError(
@@ -49,7 +48,8 @@ class DirectPasswordResetView(APIView):
 
         return Response(
             {"detail": "Password has been reset successfully. You can now log in."},
-            status=status.HTTP_200_OK)
+            status=status.HTTP_200_OK
+        )
 
 
 
