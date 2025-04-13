@@ -250,9 +250,7 @@ def _update_entries_with_standard_concepts(
             entry["concept_id"] = standard_concepts_dict[concept_id]
 
 
-def _handle_table(
-    table: ScanReportTable, vocab: List[Dict[str, Any]]
-) -> None:
+def _handle_table(table: ScanReportTable, vocab: List[Dict[str, Any]]) -> None:
     """
     Handles Concept Creation on a table.
 
@@ -268,7 +266,7 @@ def _handle_table(
     """
     table_values = db.get_scan_report_values(table.pk)
     table_fields = db.get_scan_report_fields(table.pk)
-    
+
     # Convert mappings to {field_id: vocab_id}
     field_vocab_map = {
         mapping["sr_field_id"]: mapping["vocabulary_id"] for mapping in vocab
@@ -307,7 +305,7 @@ def _handle_table(
         StageStatusType.IN_PROGRESS,
         scan_report_table=table,
     )
-    
+
     # handle reuse of concepts at field level & value level
     reuse_existing_field_concepts(table_fields, table)
     reuse_existing_value_concepts(table_values, table)
@@ -316,17 +314,18 @@ def _handle_table(
         StageStatusType.COMPLETE,
         scan_report_table=table,
     )
-    
+
+
 def get_table_vocabulary_mappings(
     data_dictionary_blob: str, table_id: int
 ) -> List[Dict[str, Any]]:
-    
+
     # 1. Get the table name (if needed for DD lookup)
     table = ScanReportTable.objects.get(pk=table_id)
 
     # 2. Get field data from table_values
     table_fields = db.get_scan_report_fields(table_id)
-    
+
     # 3. Extract field information, including data type
     field_info = {
         field["id"]: {
@@ -335,11 +334,11 @@ def get_table_vocabulary_mappings(
         }
         for field in table_fields
     }
-    
+
     # 4. Get vocabulary mappings from the DD blob
     _, vocab_dictionary = storage_service.get_data_dictionary(data_dictionary_blob)
     table_vocab = vocab_dictionary.get(table.name, {})
-    
+
     # 5. Build the output list
     return [
         {
@@ -350,6 +349,7 @@ def get_table_vocabulary_mappings(
         for field_id, info in field_info.items()
         if table_vocab.get(info["name"])
     ]
+
 
 def main(msg: Dict[str, str]):
     """
