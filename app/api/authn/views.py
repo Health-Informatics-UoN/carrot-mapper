@@ -27,7 +27,9 @@ class DirectPasswordResetView(APIView):
 
         # Validate that all fields are provided
         if not username or not new_password or not confirm_password:
-            raise ValidationError({"detail": "Username, new_password, and confirm_password are required."})
+            raise ValidationError(
+                {"detail": "Username, new_password, and confirm_password are required."}
+            )
 
         # Validate that the passwords match
         if new_password != confirm_password:
@@ -37,13 +39,17 @@ class DirectPasswordResetView(APIView):
         try:
             user = User.objects.get(username=username)
         except User.DoesNotExist:
-            return Response({"detail": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"detail": "User not found."}, status=status.HTTP_404_NOT_FOUND
+            )
 
         # Update the user's password
         user.password = make_password(new_password)
         user.save()
 
-        return Response({"detail": "Password has been reset successfully. You can now log in."}, status=status.HTTP_200_OK)
+        return Response(
+            {"detail": "Password has been reset successfully. You can now log in."},
+            status=status.HTTP_200_OK)
 
 
 
@@ -55,4 +61,4 @@ class CSRFTokenView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request, *args, **kwargs):
-        return JsonResponse({'csrfToken': get_token(request)})
+        return JsonResponse({"csrfToken": get_token(request)})
