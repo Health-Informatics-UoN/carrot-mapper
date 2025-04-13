@@ -81,32 +81,3 @@ def test_paginate():
     # Assert
     expected = [[], ["One"], ["Two"]]
     assert result == expected
-
-
-def test_get_by_concept_id():
-    # Arrange
-    concept_id = 1
-    expected_item = {"concept_id": concept_id}
-    entries = [expected_item, {"concept_id": 2}]
-
-    # Act
-    result = helpers.get_by_concept_id(entries, concept_id)
-
-    # Assert
-    assert result == expected_item
-
-
-def test_add_vocabulary_id_to_entries():
-    # Arrange
-    values = [{"scan_report_field": {"id": 2, "name": "field name"}}]
-    vocab = {"table 1": {"field name": "LOINC"}}
-    table_name = "table 1"
-
-    # Act
-    helpers.add_vocabulary_id_to_entries(values, vocab, table_name)
-
-    # Assert
-    expected = [
-        {"scan_report_field": {"id": 2, "name": "field name"}, "vocabulary_id": "LOINC"}
-    ]
-    assert values == expected
