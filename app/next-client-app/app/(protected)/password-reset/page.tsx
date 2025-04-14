@@ -62,10 +62,10 @@ export default function PasswordResetPage() {
           </p>
           <div className="text-center">
             <a
-              href="/accounts/login"
+              href="/projects"
               className="text-blue-600 hover:underline text-sm"
             >
-              Back to login
+              Dashboard
             </a>
           </div>
         </div>
@@ -122,7 +122,7 @@ export default function PasswordResetPage() {
         </form>
 
         <div className="text-sm text-center mt-2">
-          <a href="/accounts/login" className="text-blue-600 hover:underline">
+          <a href="/accounts/projects" className="text-blue-600 hover:underline">
             Back to login
           </a>
         </div>
