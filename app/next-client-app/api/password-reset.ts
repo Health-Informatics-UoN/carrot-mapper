@@ -1,40 +1,53 @@
 "use server";
 
-export async function resetPassword(username: string, newPassword: string, confirmPassword: string): Promise<{ success: boolean; message?: string }> {
-  const backendUrl = process.env.NEXT_PUBLIC_NEXTAUTH_BACKEND_URL;
+import request from "@/lib/api/request";
 
-  if (!backendUrl) return { success: false, message: "Backend URL not defined." };
+const fetchKeys = {
+  passwordReset: () => `auth/password/reset/`,
+  csrfToken: () => `auth/csrf-token/`,
+};
 
+export async function passwordReset({
+  username,
+  new_password,
+  confirm_password,
+}: {
+  username: string;
+  new_password: string;
+  confirm_password: string;
+}) {
   try {
-    const csrfRes = await fetch(`${backendUrl}auth/csrf-token/`, {
-      credentials: "include",
-    });
-
-    if (!csrfRes.ok) return { success: false, message: "Unable to fetch CSRF token." };
-
-    const { csrfToken } = await csrfRes.json();
-
-    const resetRes = await fetch(`${backendUrl}auth/password/reset/`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-CSRFToken": csrfToken,
-      },
-      body: JSON.stringify({
-        username,
-        new_password: newPassword,
-        confirm_password: confirmPassword,
-      }),
-    });
-
-    if (!resetRes.ok) {
-      const errorData = await resetRes.json();
-      return { success: false, message: errorData.detail || "Password reset failed." };
+    if (!username || !new_password || !confirm_password) {
+      throw new Error("All fields are required.");
     }
 
-    return { success: true };
+    const backendUrl = process.env.NEXT_PUBLIC_NEXTAUTH_BACKEND_URL;
+    console.log("Backend URL:", backendUrl);
+
+    if (!backendUrl) {
+      throw new Error("Backend URL not defined.");
+    }
+
+    // Get CSRF token from backend
+    const csrfRes = await request(fetchKeys.csrfToken());
+
+    const csrfToken = csrfRes.csrfToken;
+
+    // Send password reset request to backend
+    const resetRes = await request(
+      fetchKeys.passwordReset(),
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": csrfToken,
+        },
+        body: JSON.stringify({ username, new_password, confirm_password }),
+      },
+    );
+
+    return resetRes;
   } catch (error: any) {
-    console.error("Error in resetPassword:", error);
-    return { success: false, message: error.message || "Unknown error occurred." };
+    throw new Error(error.message || "An unexpected error occurred.");
   }
 }
