@@ -26,10 +26,6 @@ export async function passwordReset({
       throw new Error("Backend URL not defined.");
     }
 
-    // Get CSRF token from backend
-    const csrfRes = await request(fetchKeys.csrfToken());
-
-    const csrfToken = csrfRes.csrfToken;
 
     // Send password reset request to backend
     const resetRes = await request(
@@ -38,7 +34,7 @@ export async function passwordReset({
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-CSRFToken": csrfToken,
+         
         },
         body: JSON.stringify({ new_password, confirm_password }),
       },

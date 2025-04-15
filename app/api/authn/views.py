@@ -28,7 +28,7 @@ class PasswordResetView(APIView):
         # Validate that all fields are provided
         if not new_password or not confirm_password:
             raise ValidationError(
-                {"detail": "new_password and confirm_password are required."}\
+                {"detail": "new_password and confirm_password are required."}
             )
 
         # Validate that the passwords match
@@ -46,15 +46,3 @@ class PasswordResetView(APIView):
             {"detail": "Password has been reset successfully."},
             status=status.HTTP_200_OK,
         )
-
-
-class CSRFTokenView(APIView):
-    """
-    A view to get the CSRF token.
-    This is useful for CSRF protection in AJAX requests.
-    """
-
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request, *args, **kwargs):
-        return JsonResponse({"csrfToken": get_token(request)})
