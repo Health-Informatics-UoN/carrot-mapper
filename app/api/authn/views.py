@@ -15,42 +15,33 @@ from rest_framework.permissions import IsAuthenticated
 class PasswordResetView(APIView):
     """
     A view to reset the user's password directly without email confirmation.
-    Users provide their username, new password, and confirm password.
+    Users provide their new password, and confirm password.
     """
 
     permission_classes = [IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
-
-        # Extract username, new_password, and confirm_password from the request data
-        username = request.data.get("username")
+        # Extract new_password and confirm_password from the request data
         new_password = request.data.get("new_password")
         confirm_password = request.data.get("confirm_password")
 
         # Validate that all fields are provided
-        if not username or not new_password or not confirm_password:
-            raise ValidationError(
-                {"detail": "Username, new_password, and confirm_password are required."}
-            )
+        if not new_password or not confirm_password:
+            raise ValidationError({"detail": "new_password and confirm_password are required."})
 
         # Validate that the passwords match
         if new_password != confirm_password:
             raise ValidationError({"detail": "Passwords do not match."})
 
-        # Check if the user exists
-        try:
-            user = User.objects.get(username=username)
-        except User.DoesNotExist:
-            return Response(
-                {"detail": "User not found."}, status=status.HTTP_404_NOT_FOUND
-            )
+        # Get the authenticated user
+        user = request.user
 
         # Update the user's password
-        user.password = make_password(new_password)
+        user.set_password(new_password)
         user.save()
 
         return Response(
-            {"detail": "Password has been reset successfully. You can now log in."},
+            {"detail": "Password has been reset successfully."},
             status=status.HTTP_200_OK,
         )
 

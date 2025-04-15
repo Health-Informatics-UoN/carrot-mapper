@@ -8,16 +8,14 @@ const fetchKeys = {
 };
 
 export async function passwordReset({
-  username,
   new_password,
   confirm_password,
 }: {
-  username: string;
   new_password: string;
   confirm_password: string;
 }) {
   try {
-    if (!username || !new_password || !confirm_password) {
+    if (!new_password || !confirm_password) {
       throw new Error("All fields are required.");
     }
 
@@ -42,7 +40,7 @@ export async function passwordReset({
           "Content-Type": "application/json",
           "X-CSRFToken": csrfToken,
         },
-        body: JSON.stringify({ username, new_password, confirm_password }),
+        body: JSON.stringify({ new_password, confirm_password }),
       },
     );
 

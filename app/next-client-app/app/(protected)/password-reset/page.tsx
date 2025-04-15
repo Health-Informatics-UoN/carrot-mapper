@@ -11,12 +11,12 @@ import { useState } from "react";
 
 // ✅ Validation schema
 const validationSchema = Yup.object({
-  username: Yup.string().required("Username is required!"),
   newPassword: Yup.string().min(6, "Minimum 6 characters!").required("New password is required!"),
   confirmPassword: Yup.string()
     .oneOf([Yup.ref("newPassword"), ""], "Passwords must match!")
     .required("Confirm password is required!"),
 });
+
 
 export default function PasswordResetPage() {
   const [submitted, setSubmitted] = useState(false);
@@ -53,14 +53,13 @@ export default function PasswordResetPage() {
         </h1>
 
         <Formik
-          initialValues={{ username: "", newPassword: "", confirmPassword: "" }}
+          initialValues={{ newPassword: "", confirmPassword: "" }}
           validationSchema={validationSchema}
           onSubmit={async (values, { setSubmitting }) => {
             setError("");
 
             try {
               const res = await passwordReset({
-                username: values.username,
                 new_password: values.newPassword,
                 confirm_password: values.confirmPassword,
               });
@@ -82,13 +81,6 @@ export default function PasswordResetPage() {
           {({ isSubmitting }) => (
             <Form className="space-y-4">
               {error && <Alert variant="destructive">{error}</Alert>}
-
-              <div>
-                <Label htmlFor="username">Username</Label>
-                <Field as={Input} id="username" name="username" placeholder="Enter your username" />
-                <ErrorMessage name="username" component="div" className="text-red-500 text-sm" />
-              </div>
-
               <div>
                 <Label htmlFor="newPassword">New Password</Label>
                 <Field as={Input} id="newPassword" name="newPassword" type="password" placeholder="Enter new password" />
