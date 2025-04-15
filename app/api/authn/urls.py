@@ -4,7 +4,6 @@ from dj_rest_auth.views import (
     LoginView,
     LogoutView,
     UserDetailsView,
-    PasswordResetConfirmView,
 )
 from django.urls import path
 from rest_framework_simplejwt.views import TokenVerifyView
@@ -19,11 +18,6 @@ urlpatterns = [
         "password/reset/",
         PasswordResetView.as_view(),
         name="rest_password_reset",
-    ),
-    path(
-        "auth/password-reset-confirm/<uidb64>/<token>/",
-        PasswordResetConfirmView.as_view(),
-        name="password_reset_confirm",
     ),
     path("user/", UserDetailsView.as_view(), name="rest_user_details"),
     path("token/verify/", TokenVerifyView.as_view(), name="token_verify"),
