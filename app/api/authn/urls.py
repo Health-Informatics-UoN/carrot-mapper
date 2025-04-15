@@ -9,7 +9,7 @@ from dj_rest_auth.views import (
 from django.urls import path
 from rest_framework_simplejwt.views import TokenVerifyView
 
-from .views import DirectPasswordResetView, CSRFTokenView
+from .views import PasswordResetView, CSRFTokenView
 
 urlpatterns = [
     path("register/", RegisterView.as_view(), name="rest_register"),
@@ -17,7 +17,7 @@ urlpatterns = [
     path("logout/", LogoutView.as_view(), name="rest_logout"),
     path(
         "password/reset/",
-        DirectPasswordResetView.as_view(),
+        PasswordResetView.as_view(),
         name="rest_password_reset",
     ),
     path(

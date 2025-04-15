@@ -9,15 +9,15 @@ from django.middleware.csrf import get_token
 from django.http import JsonResponse
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticated
 
 
-class DirectPasswordResetView(APIView):
+class PasswordResetView(APIView):
     """
     A view to reset the user's password directly without email confirmation.
     Users provide their username, new password, and confirm password.
     """
-
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
 
@@ -60,7 +60,7 @@ class CSRFTokenView(APIView):
     This is useful for CSRF protection in AJAX requests.
     """
 
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request, *args, **kwargs):
         return JsonResponse({"csrfToken": get_token(request)})
