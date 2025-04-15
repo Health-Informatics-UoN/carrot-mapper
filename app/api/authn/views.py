@@ -27,7 +27,9 @@ class PasswordResetView(APIView):
 
         # Validate that all fields are provided
         if not new_password or not confirm_password:
-            raise ValidationError({"detail": "new_password and confirm_password are required."})
+            raise ValidationError(
+                {"detail": "new_password and confirm_password are required."}\
+            )
 
         # Validate that the passwords match
         if new_password != confirm_password:
