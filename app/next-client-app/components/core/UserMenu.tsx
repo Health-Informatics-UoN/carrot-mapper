@@ -45,7 +45,6 @@ export async function UserMenu({ username }: { username?: string }) {
               <button className="flex items-center w-full">
                 <Settings className="icon-md mr-2" />
                 <span>Change Password</span>
-                <DropdownMenuShortcut>⌘S</DropdownMenuShortcut>
               </button>
             </DropdownMenuItem>
           </Link>
