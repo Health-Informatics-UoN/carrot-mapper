@@ -7,7 +7,6 @@ from dj_rest_auth.views import (
 )
 from django.urls import path
 from rest_framework_simplejwt.views import TokenVerifyView
-
 from .views import PasswordResetView
 
 urlpatterns = [
