@@ -69,6 +69,7 @@ export default async function ScanReportLayout({
   }
 
   const createdDate = new Date(scanreport.created_at);
+  const isUploading = scanreport.upload_status?.value === "IN_PROGRESS";
   return (
     <div className="space-y-2">
       {/* Details line */}
@@ -117,7 +118,11 @@ export default async function ScanReportLayout({
             mapping_status={scanreport.mapping_status || { value: "PENDING" }}
             dataset={scanreport.dataset}
             className="w-[180px] h-5"
-            disabled={!canEdit || scanreport.upload_status.value !== "COMPLETE"} // Disable when users don't have permission or upload status is not complete
+            disabled={
+              !canEdit ||
+              !scanreport.upload_status ||
+               scanreport.upload_status.value!== "COMPLETE"
+             } // Make sure the status exists before checking its value and thus solve the bug on issue #1016
           />
         </div>
       </div>
