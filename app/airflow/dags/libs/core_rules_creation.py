@@ -34,7 +34,7 @@ def create_person_rules(**kwargs):
 
         # Create mapping rules for person ID fields
         mapping_rule_query = f"""
-        INSERT INTO mapping_mappingrule (
+        INSERT INTO temp_mapping_rules (
             created_at,
             updated_at,
             omop_field_id,
@@ -101,7 +101,7 @@ def create_dates_rules(**kwargs):
 
         # Create mapping rules for all date field types in a single query
         date_mapping_query = f"""
-        INSERT INTO mapping_mappingrule (
+        INSERT INTO temp_mapping_rules (
             created_at, updated_at, omop_field_id, source_field_id, concept_id, scan_report_id, approved
         )
         -- Single date fields
@@ -195,7 +195,7 @@ def create_concepts_rules(**kwargs):
 
             # Create mapping rules for all concept-related field types in a single query
             concepts_mapping_query = f"""
-            INSERT INTO mapping_mappingrule (
+            INSERT INTO temp_mapping_rules (
                 created_at, updated_at, omop_field_id, source_field_id, concept_id, scan_report_id, approved
             )
             SELECT NOW(), NOW(), field_id, {sr_field_id}, concept_id, {scan_report_id}, TRUE
@@ -323,7 +323,7 @@ def create_source_concept_rules(**kwargs):
 
             # Create mapping rules for source concept fields using source_concept_id
             source_concept_query = f"""
-            INSERT INTO mapping_mappingrule (
+            INSERT INTO temp_mapping_rules (
                 created_at, updated_at, omop_field_id, source_field_id, concept_id, scan_report_id, approved
             )
             SELECT
@@ -362,3 +362,83 @@ def create_source_concept_rules(**kwargs):
     except Exception as e:
         logging.error(f"Error in create_source_concept_rules: {str(e)}")
         raise AirflowException(f"Error in create_source_concept_rules: {str(e)}")
+
+
+def temp_mapping_rules_table_creation():
+    """
+    Create the temp_mapping_rules table if it doesn't exist.
+    """
+    try:
+        create_temp_table_query = """
+        DROP TABLE IF EXISTS temp_mapping_rules;
+        CREATE TABLE IF NOT EXISTS temp_mapping_rules (
+            id SERIAL PRIMARY KEY,
+            created_at TIMESTAMP,
+            updated_at TIMESTAMP,
+            omop_field_id INTEGER,
+            source_field_id INTEGER,
+            concept_id INTEGER,
+            scan_report_id INTEGER,
+            approved BOOLEAN
+        );
+        """
+        pg_hook.run(create_temp_table_query)
+    except Exception as e:
+        logging.error(f"Error in temp_mapping_rules_table_creation: {str(e)}")
+        raise AirflowException(f"Error in temp_mapping_rules_table_creation: {str(e)}")
+
+
+def add_rules_to_temp_table(**kwargs):
+    """
+    Add all mapping rules created for a scan report to a temporary table called temp_mapping_rules.
+    This should be called after all other rule creation functions to ensure all rules are captured.
+    """
+    try:
+        scan_report_id = kwargs.get("dag_run", {}).conf.get("scan_report_id")
+
+        if not scan_report_id:
+            logging.warning("No scan_report_id provided in add_rules_to_temp_table")
+            raise AirflowException(
+                "scan_report_id is required for adding rules to temporary table"
+            )
+
+        # # Clear any existing rules for this scan report to avoid duplicates
+        # clear_existing_query = f"""
+        # DELETE FROM temp_mapping_rules
+        # WHERE scan_report_id = {scan_report_id};
+        # """
+
+        # Insert mapping rules into temp_mapping_rules
+        insert_rules_query = f"""
+        INSERT INTO mapping_mappingrule (
+            created_at, updated_at, omop_field_id, 
+            source_field_id, concept_id, scan_report_id, approved
+        )
+        SELECT 
+            mr.created_at,
+            mr.updated_at,
+            mr.omop_field_id,
+            mr.source_field_id,
+            mr.concept_id,
+            mr.scan_report_id,
+            mr.approved
+        FROM temp_mapping_rules mr
+        WHERE mr.scan_report_id = {scan_report_id};
+        """
+
+        try:
+
+            # Clear existing rules for this scan report
+            # pg_hook.run(clear_existing_query)
+
+            # Insert the mapping rules into the temporary table
+            pg_hook.run(insert_rules_query)
+
+        except Exception as e:
+            logging.error(f"Database error in add_rules_to_temp_table: {str(e)}")
+            raise AirflowException(
+                f"Database error in add_rules_to_temp_table: {str(e)}"
+            )
+    except Exception as e:
+        logging.error(f"Error in add_rules_to_temp_table: {str(e)}")
+        raise AirflowException(f"Error in add_rules_to_temp_table: {str(e)}")

@@ -34,6 +34,9 @@ trigger_create_concepts_vocabs = TriggerDagRunOperator(
     trigger_dag_id="create_concepts_from_vocab_dict",
     conf={
         "table_id": "{{ dag_run.conf['table_id'] }}",
+        "person_id_field": "{{ dag_run.conf['person_id_field'] }}",
+        "date_event_field": "{{ dag_run.conf['date_event_field'] }}",
+        "scan_report_id": "{{ dag_run.conf['scan_report_id'] }}",
         "field_vocab_pairs": "{{ dag_run.conf['field_vocab_pairs'] }}",
     },
     wait_for_completion=True,
@@ -43,19 +46,19 @@ trigger_create_concepts_vocabs = TriggerDagRunOperator(
 #  TODO: add trigger for Reuse concepts here
 
 # Trigger concept mapping
-trigger_create_mapping_rules = TriggerDagRunOperator(
-    task_id="trigger_create_mapping_rules",
-    trigger_dag_id="create_mapping_rules",
-    conf={
-        "table_id": "{{ dag_run.conf['table_id'] }}",
-        "person_id_field": "{{ dag_run.conf['person_id_field'] }}",
-        "date_event_field": "{{ dag_run.conf['date_event_field'] }}",
-        "scan_report_id": "{{ dag_run.conf['scan_report_id'] }}",
-        "field_vocab_pairs": "{{ dag_run.conf['field_vocab_pairs'] }}",
-    },
-    wait_for_completion=True,
-    dag=dag,
-)
+# trigger_create_mapping_rules = TriggerDagRunOperator(
+#     task_id="trigger_create_mapping_rules",
+#     trigger_dag_id="create_mapping_rules",
+# conf={
+#     "table_id": "{{ dag_run.conf['table_id'] }}",
+#     "person_id_field": "{{ dag_run.conf['person_id_field'] }}",
+#     "date_event_field": "{{ dag_run.conf['date_event_field'] }}",
+#     "scan_report_id": "{{ dag_run.conf['scan_report_id'] }}",
+#     "field_vocab_pairs": "{{ dag_run.conf['field_vocab_pairs'] }}",
+# },
+#     wait_for_completion=True,
+#     dag=dag,
+# )
 
 
 # TODO: add this task in the end of Everything
@@ -73,4 +76,4 @@ trigger_create_mapping_rules = TriggerDagRunOperator(
 end = EmptyOperator(task_id="end", dag=dag)
 
 # Define task dependencies
-start >> trigger_create_concepts_vocabs >> trigger_create_mapping_rules >> end
+start >> trigger_create_concepts_vocabs >> end

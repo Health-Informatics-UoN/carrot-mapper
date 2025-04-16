@@ -136,45 +136,71 @@ def find_dest_table_and_person_field_id(**kwargs):
 
 def find_date_fields(**kwargs):
     """
-    Add date field IDs to the temporary concepts table.
-    Handles single date fields and start/end date pairs.
+    Add date field IDs to the temporary concepts table based on the date field mapper.
+    Uses the predefined mapping between tables and their datetime fields.
     """
     try:
         table_id = kwargs.get("dag_run", {}).conf.get("table_id")
-
         if not table_id:
             logging.warning("No table_id provided in find_date_fields")
 
+        # Optimized SQL with better structure and reduced redundancy
         dates_query = """
         ALTER TABLE temp_standard_concepts 
         ADD COLUMN dest_date_field_id INTEGER,
         ADD COLUMN dest_start_date_field_id INTEGER,
         ADD COLUMN dest_end_date_field_id INTEGER;
 
-        -- Add all date fields in one go
-        WITH date_field_analysis AS (
-            SELECT 
-                tsc.sr_value_id,
-                MIN(df.id) AS min_id,
-                MAX(df.id) AS max_id,
-                COUNT(*) AS count
-            FROM temp_standard_concepts tsc
-            JOIN mapping_omopfield df ON
-                df.table_id = tsc.dest_table_id AND
-                df.field LIKE '%datetime'
-            GROUP BY tsc.sr_value_id
-        )
+        -- Single consolidated update using CASE expressions for better performance
         UPDATE temp_standard_concepts tsc
         SET 
-            dest_date_field_id = CASE WHEN dfa.count = 1 THEN dfa.min_id ELSE NULL END,
-            dest_start_date_field_id = CASE WHEN dfa.count > 1 THEN dfa.min_id ELSE NULL END,
-            dest_end_date_field_id = CASE WHEN dfa.count > 1 THEN dfa.max_id ELSE NULL END
-        FROM date_field_analysis dfa
-        WHERE dfa.sr_value_id = tsc.sr_value_id;
+            dest_date_field_id = (
+                SELECT mf.id
+                FROM mapping_omopfield mf
+                JOIN mapping_omoptable mt ON mt.id = mf.table_id
+                WHERE mf.table_id = tsc.dest_table_id
+                AND (
+                    (mt.table = 'person' AND mf.field = 'birth_datetime') OR
+                    (mt.table = 'measurement' AND mf.field = 'measurement_datetime') OR
+                    (mt.table = 'observation' AND mf.field = 'observation_datetime') OR
+                    (mt.table = 'procedure_occurrence' AND mf.field = 'procedure_datetime') OR
+                    (mt.table = 'specimen' AND mf.field = 'specimen_datetime')
+                )
+                LIMIT 1
+            ),
+            
+            dest_start_date_field_id = (
+                SELECT mf.id
+                FROM mapping_omopfield mf
+                JOIN mapping_omoptable mt ON mt.id = mf.table_id
+                WHERE mf.table_id = tsc.dest_table_id
+                AND (
+                    (mt.table = 'condition_occurrence' AND mf.field = 'condition_start_datetime') OR
+                    (mt.table = 'drug_exposure' AND mf.field = 'drug_exposure_start_datetime') OR
+                    (mt.table = 'device_exposure' AND mf.field = 'device_exposure_start_datetime')
+                )
+                LIMIT 1
+            ),
+            
+            dest_end_date_field_id = (
+                SELECT mf.id
+                FROM mapping_omopfield mf
+                JOIN mapping_omoptable mt ON mt.id = mf.table_id
+                WHERE mf.table_id = tsc.dest_table_id
+                AND (
+                    (mt.table = 'condition_occurrence' AND mf.field = 'condition_end_datetime') OR
+                    (mt.table = 'drug_exposure' AND mf.field = 'drug_exposure_end_datetime') OR
+                    (mt.table = 'device_exposure' AND mf.field = 'device_exposure_end_datetime')
+                )
+                LIMIT 1
+            );
         """
+
         try:
             pg_hook.run(dates_query)
-            logging.info("Successfully added date field IDs")
+            logging.info(
+                "Successfully added date field IDs based on the date field mapper"
+            )
         except Exception as e:
             logging.error(f"Database error in find_date_fields: {str(e)}")
             raise

@@ -11,6 +11,14 @@ from libs.core_create_concepts import (
     find_dest_table_and_person_field_id,
 )
 
+from libs.core_rules_creation import (
+    create_person_rules,
+    create_dates_rules,
+    create_concepts_rules,
+    add_rules_to_temp_table,
+    temp_mapping_rules_table_creation,
+)
+
 default_args = {
     "owner": "airflow",
     "depends_on_past": False,
@@ -77,6 +85,41 @@ create_standard_concepts_task = PythonOperator(
     provide_context=True,
     dag=dag,
 )
+
+temp_task_2 = PythonOperator(
+    task_id="temp_mapping_rules_table_creation",
+    python_callable=temp_mapping_rules_table_creation,
+    provide_context=True,
+    dag=dag,
+)
+
+temp_task = PythonOperator(
+    task_id="add_rules_to_temp_table",
+    python_callable=add_rules_to_temp_table,
+    provide_context=True,
+    dag=dag,
+)
+
+create_person_rules_task = PythonOperator(
+    task_id="create_person_rules",
+    python_callable=create_person_rules,
+    provide_context=True,
+    dag=dag,
+)
+
+create_dates_rules_task = PythonOperator(
+    task_id="create_dates_rules",
+    python_callable=create_dates_rules,
+    provide_context=True,
+    dag=dag,
+)
+
+create_concepts_rules_task = PythonOperator(
+    task_id="create_concepts_rules",
+    python_callable=create_concepts_rules,
+    provide_context=True,
+    dag=dag,
+)
 # TODO: add tasks to do error handling and update status
 
 
@@ -91,5 +134,10 @@ end = EmptyOperator(task_id="end", dag=dag)
     >> find_concept_fields_task
     >> find_additional_fields_task
     >> create_standard_concepts_task
+    >> temp_task_2
+    >> create_person_rules_task
+    >> create_dates_rules_task
+    >> create_concepts_rules_task
+    >> temp_task
     >> end
 )
