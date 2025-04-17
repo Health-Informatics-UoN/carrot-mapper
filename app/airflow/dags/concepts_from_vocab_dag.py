@@ -9,6 +9,7 @@ from libs.core_create_concepts import (
     find_additional_fields,
     find_concept_fields,
     find_dest_table_and_person_field_id,
+    find_sr_concept_id,
 )
 
 from libs.core_rules_creation import (
@@ -17,6 +18,7 @@ from libs.core_rules_creation import (
     create_concepts_rules,
     add_rules_to_temp_table,
     temp_mapping_rules_table_creation,
+    delete_mapping_rules,
 )
 
 default_args = {
@@ -32,12 +34,19 @@ default_args = {
 dag = DAG(
     "create_concepts_from_vocab_dict",
     default_args=default_args,
-    description="Create standard concepts using vocabulary id from data dictionary for each scan report field. Also, find dest. table and OMOP field ids.",
-    tags=["V-concepts"],
+    description="""Create standard concepts using vocabulary id from data dictionary for each scan report field. 
+    After that, find the dest. table and OMOP field ids for each concept. 
+    Eventually, create mapping rules for each scan report field.""",
+    tags=["V-concepts", "mapping_rules_creation"],
     schedule_interval=None,
     catchup=False,
 )
 
+# TODO: to shorten the Query,create a column standard_concept_id_id (get from the table SR_concepts) in the table temp_standard_concepts, when creating standard concepts
+# TODO: do we need to check AND NOT EXISTS?
+# TODO: how to prevent someone using the temp_standard_concepts table from other's dag_run?
+# TODO: do we need to delete all of the mapping rules before creating/updating new ones? - we have to delete everything becasue of the DEATH table, right?
+# TODO: many concepts have the domain "SPEC ANATOMIC SITE", which should be added to the table "SPECIMEN"
 
 # Start the workflow
 start = EmptyOperator(task_id="start", dag=dag)
@@ -50,6 +59,20 @@ find_std_concepts_task = PythonOperator(
     dag=dag,
 )
 
+
+create_standard_concepts_task = PythonOperator(
+    task_id="create_standard_concepts",
+    python_callable=create_standard_concepts,
+    provide_context=True,
+    dag=dag,
+)
+
+find_sr_concept_id_task = PythonOperator(
+    task_id="find_sr_concept_id",
+    python_callable=find_sr_concept_id,
+    provide_context=True,
+    dag=dag,
+)
 
 find_dest_table_and_person_field_task = PythonOperator(
     task_id="find_dest_table_and_person_field_id",
@@ -79,9 +102,9 @@ find_additional_fields_task = PythonOperator(
     dag=dag,
 )
 
-create_standard_concepts_task = PythonOperator(
-    task_id="create_standard_concepts",
-    python_callable=create_standard_concepts,
+delete_mapping_rules_task = PythonOperator(
+    task_id="delete_mapping_rules",
+    python_callable=delete_mapping_rules,
     provide_context=True,
     dag=dag,
 )
@@ -129,11 +152,13 @@ end = EmptyOperator(task_id="end", dag=dag)
 (
     start
     >> find_std_concepts_task
+    >> create_standard_concepts_task
+    >> find_sr_concept_id_task
     >> find_dest_table_and_person_field_task
     >> find_date_fields_task
     >> find_concept_fields_task
     >> find_additional_fields_task
-    >> create_standard_concepts_task
+    >> delete_mapping_rules_task
     >> temp_task_2
     >> create_person_rules_task
     >> create_dates_rules_task

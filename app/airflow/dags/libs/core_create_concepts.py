@@ -307,12 +307,12 @@ def find_additional_fields(**kwargs):
 
             # TODO: refine and find solution for value_as_concept_field_id
             # ADD COLUMN IF NOT EXISTS value_as_concept_field_id INTEGER;
-            # -- Update value_as_number_field_id for Meas Value domain concepts
+            # -- Update value_as_concept_field_id for concepts
             # WITH meas_value_concepts AS (
             #     SELECT tsc.sr_value_id, tsc.standard_concept_id, tsc.dest_table_id
             #     FROM temp_standard_concepts tsc
             #     JOIN omop.concept c ON c.concept_id = tsc.standard_concept_id
-            #     WHERE c.domain_id = 'Meas Value'
+            #     WHERE c.domain_id = 'Meas Value' -- TODO: do this for domains Observation and Measurement
             # )
             # UPDATE temp_standard_concepts tsc
             # SET value_as_concept_field_id = mf.id
@@ -414,4 +414,40 @@ def create_standard_concepts(**kwargs):
             raise
     except Exception as e:
         logging.error(f"Error in create_standard_concepts: {str(e)}")
+        raise
+
+
+def find_sr_concept_id(**kwargs):
+    """
+    Update temp_standard_concepts table with sr_concept_id column
+    containing the IDs of standard concepts added to mapping_scanreportconcept.
+    This will help the next steps to be shorter.
+    """
+    try:
+        update_query = """
+        -- Add sr_concept_id column to temp_standard_concepts
+        ALTER TABLE temp_standard_concepts 
+        ADD COLUMN IF NOT EXISTS sr_concept_id INTEGER;
+        
+        -- Update sr_concept_id with the mapping_scanreportconcept ID
+        UPDATE temp_standard_concepts tsc
+        SET sr_concept_id = src.id
+        FROM mapping_scanreportconcept src
+        WHERE src.object_id = tsc.sr_value_id
+        AND src.concept_id = tsc.standard_concept_id
+        AND src.content_type_id = 23;
+        """
+
+        try:
+            pg_hook.run(update_query)
+            logging.info(
+                "Successfully added sr_concept_id to temp_standard_concepts table"
+            )
+        except Exception as e:
+            logging.error(
+                f"Database error in update_temp_table_with_sr_concept_id: {str(e)}"
+            )
+            raise
+    except Exception as e:
+        logging.error(f"Error in update_temp_table_with_sr_concept_id: {str(e)}")
         raise

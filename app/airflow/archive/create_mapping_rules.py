@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.operators.empty import EmptyOperator
 from airflow.operators.python import PythonOperator
-from libs.core_rules_creation import (
+from dags.libs.core_rules_creation import (
     create_person_rules,
     create_dates_rules,
     create_concepts_rules,
