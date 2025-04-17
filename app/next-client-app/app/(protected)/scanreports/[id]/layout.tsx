@@ -69,7 +69,7 @@ export default async function ScanReportLayout({
   }
 
   const createdDate = new Date(scanreport.created_at);
-  const isUploading = scanreport.upload_status?.value === "IN_PROGRESS";
+
   return (
     <div className="space-y-2">
       {/* Details line */}
@@ -111,6 +111,11 @@ export default async function ScanReportLayout({
             statusOptions={UploadStatusOptions}
             status={scanreport.upload_status || { value: "IN_PROGRESS" }}
           />
+          {(!scanreport.upload_status || scanreport.upload_status.value === "IN_PROGRESS") && (
+            <span className="text-gray-500 text-sm">
+              Upload is in progress and scan report data will be available soon.
+            </span>
+          )}
         </div>
         <div className="py-1 md:py-0 md:px-3 h-5">
           <MappingStatus
