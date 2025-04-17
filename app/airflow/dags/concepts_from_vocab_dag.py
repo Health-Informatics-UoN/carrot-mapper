@@ -49,6 +49,7 @@ dag = DAG(
 # TODO: ordering the temp standard concepts id before creating the mapping rules --> have the nice order match with the UI
 # TODO: add dest field name to the UI
 # TODO: add tasks to do error handling and update status
+# TODO: should we add `value` column in MAPPINGRULE model? in order to filter the mapping rule based on the SR value?
 
 # Start the workflow
 start = EmptyOperator(task_id="start", dag=dag)
