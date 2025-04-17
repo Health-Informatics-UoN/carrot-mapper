@@ -17,6 +17,7 @@ django.setup()
 
 from shared.data.models import Concept
 from shared.mapping.models import ScanReportConcept, ScanReportTable
+from shared.services import table_mappings
 from shared_code import db
 from shared_code.db import JobStageType, StageStatusType, update_job
 
@@ -328,61 +329,6 @@ def _handle_table(
     )
 
 
-def get_table_vocabulary_mappings(
-    data_dictionary_blob: str, table: ScanReportTable
-) -> List[VocabularyMapping]:
-    """
-    Get vocabulary mappings for a table from the data dictionary.
-
-    Args:
-        data_dictionary_blob: Path to the data dictionary blob in storage
-        table: Pre-fetched ScanReportTable instance to get mappings for
-
-    Returns:
-        List of vocabulary mappings containing:
-        - sr_field_id: Scan report field ID
-        - field_data_type: The field's data type (optional)
-        - vocabulary_id: Assigned vocabulary ID (optional)
-
-    Example:
-        [{
-            "sr_field_id": 123,
-            "field_data_type": "string",
-            "vocabulary_id": "LOINC"
-        }]
-    """
-    # 1. Get field data from table_values
-    table_fields = db.get_scan_report_fields(table.pk)
-
-    # 2. Extract field information, including data type
-    field_info = {
-        field["id"]: {
-            "name": field["name"],
-            "data_type": field.get("data_type"),
-        }
-        for field in table_fields
-    }
-
-    # 3. Get vocabulary mappings from the DD blob
-    try:
-        _, vocab_dictionary = storage_service.get_data_dictionary(data_dictionary_blob)
-        table_vocab = vocab_dictionary.get(table.name, {})
-    except Exception as e:
-        logger.error(f"Failed to load data dictionary: {e}")
-        table_vocab = {}
-
-    # 4. Build the output list
-    return [
-        {
-            "sr_field_id": field_id,
-            "field_data_type": info["data_type"],
-            "vocabulary_id": table_vocab.get(info["name"]),
-        }
-        for field_id, info in field_info.items()
-        if table_vocab.get(info["name"])  # Only include fields with vocab mappings
-    ]
-
-
 def main(msg: Dict[str, str]):
     """
     Processes a queue message.
@@ -400,7 +346,9 @@ def main(msg: Dict[str, str]):
     table = ScanReportTable.objects.get(pk=table_id)
 
     # Pre-process vocabulary mappings
-    vocab_mappings = get_table_vocabulary_mappings(data_dictionary_blob, table)
+    vocab_mappings = table_mappings.get_table_vocabulary_mappings(
+        data_dictionary_blob, table
+    )
 
     _handle_table(table, vocab_mappings)
     logger.info("Concept generation process completed successfully")

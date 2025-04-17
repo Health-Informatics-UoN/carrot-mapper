@@ -120,6 +120,8 @@ services:
     volumes:
       - ./app/workers:/home/site/wwwroot
       - ./app/shared:/home/site/wwwroot/shared
+      - ./app/workers/shared_code:/home/site/wwwroot/shared_code  # Workers shared code
+      - ./app/workers/shared_code:/shared_code 
       # Mount the local secret to Docker container
       - ./app/workers/Secrets:/azure-functions-host/Secrets/
     depends_on:
