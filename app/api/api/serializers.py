@@ -249,10 +249,6 @@ class ScanReportFilesSerializer(DynamicFieldsMixin, serializers.ModelSerializer)
             if line and len(line) > 0:
                 csv_file_names.add(line[0].strip())
 
-        # Log the collected csv_file_names and sr_table_names
-        logger.info(f"CSV file names: {csv_file_names}")
-        logger.info(f"Scan Report table names: {self.sr_table_names}")
-
         # Checking for mismatches between csv_file_name entries and expected table names:
         logger.info("Checking for matching table names of DD and SR.")
 
@@ -270,8 +266,8 @@ class ScanReportFilesSerializer(DynamicFieldsMixin, serializers.ModelSerializer)
             if csv_name not in self.sr_table_names:
                 errors.append(
                     ParseError(
-                        f"CSV name in Data Dictionary '{csv_name}' is not matching any table in Scan Report. "
-                        f"Available tables: {', '.join(sorted(self.sr_table_names))}"
+                        f"'{csv_name}' in the column 'csv_file_name' in the Data Dictionary does not match any table name in the Scan Report. Hint: Make sure the extension '.csv' is included"
+                        f"Available table names/CSV file names: {', '.join(sorted(self.sr_table_names))}"
                     )
                 )
 
@@ -559,7 +555,7 @@ class ScanReportFilesSerializer(DynamicFieldsMixin, serializers.ModelSerializer)
         try:
             # Store table names in the serializer
             logger.info("Collecting table names from the scan report...")
-            self.sr_table_names = self.run_fast_consistency_checks(wb)
+            _, self.sr_table_names = self.run_fast_consistency_checks(wb)
         except ParseError as e:
             raise e
 
