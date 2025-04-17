@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Callable, Dict, Literal, NotRequired, Optional, TypedDict, Union
+from typing import Any, Callable, Literal, NotRequired, Optional, TypedDict, Union
 
 
 class ScanReportConceptContentType(Enum):
@@ -35,3 +35,9 @@ class FileHandlerConfig:
     handler: Callable[[Any], Any]
     file_type_value: str
     file_extension: str
+
+
+class VocabularyMapping(TypedDict):
+    sr_field_id: int
+    field_data_type: Optional[str]
+    vocabulary_id: Optional[str]
