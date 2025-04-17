@@ -19,6 +19,7 @@ from libs.core_rules_creation import (
     add_rules_to_temp_table,
     temp_mapping_rules_table_creation,
     delete_mapping_rules,
+    create_mapping_rules,
 )
 
 default_args = {
@@ -45,6 +46,8 @@ dag = DAG(
 # TODO: do we need to check AND NOT EXISTS?
 # TODO: how to prevent someone using the temp_standard_concepts table from other's dag_run?
 # TODO: many concepts have the domain "SPEC ANATOMIC SITE", which should be added to the table "SPECIMEN"
+# TODO: ordering the temp standard concepts id before creating the mapping rules --> have the nice order match with the UI
+# TODO: add dest field name to the UI
 
 # Start the workflow
 start = EmptyOperator(task_id="start", dag=dag)
@@ -141,11 +144,36 @@ create_concepts_rules_task = PythonOperator(
     provide_context=True,
     dag=dag,
 )
+
+create_mapping_rules_task = PythonOperator(
+    task_id="create_mapping_rules",
+    python_callable=create_mapping_rules,
+    provide_context=True,
+    dag=dag,
+)
 # TODO: add tasks to do error handling and update status
 
 
 # End the workflow
 end = EmptyOperator(task_id="end", dag=dag)
+
+# (
+#     start
+#     >> find_std_concepts_task
+#     >> create_standard_concepts_task
+#     >> find_sr_concept_id_task
+#     >> find_dest_table_and_person_field_task
+#     >> find_date_fields_task
+#     >> find_concept_fields_task
+#     >> find_additional_fields_task
+#     >> delete_mapping_rules_task
+#     >> temp_task_2
+#     >> create_person_rules_task
+#     >> create_dates_rules_task
+#     >> create_concepts_rules_task
+#     >> temp_task
+#     >> end
+# )
 
 (
     start
@@ -157,10 +185,6 @@ end = EmptyOperator(task_id="end", dag=dag)
     >> find_concept_fields_task
     >> find_additional_fields_task
     >> delete_mapping_rules_task
-    >> temp_task_2
-    >> create_person_rules_task
-    >> create_dates_rules_task
-    >> create_concepts_rules_task
-    >> temp_task
+    >> create_mapping_rules_task
     >> end
 )
