@@ -170,6 +170,7 @@ def serialize_scan_report_values(
             "scan_report_field": {
                 "id": value.scan_report_field.pk,
                 "name": value.scan_report_field.name,
+                "data_type": value.scan_report_field.type_column,
             },
             "value": value.value,
             "frequency": value.frequency,
