@@ -12,6 +12,7 @@ class PasswordResetView(APIView):
     A view to reset the user's password directly without email confirmation.
     Users provide their new password and confirm password.
     """
+
     permission_classes = [IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
