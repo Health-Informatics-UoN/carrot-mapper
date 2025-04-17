@@ -444,10 +444,8 @@ def find_sr_concept_id(**kwargs):
                 "Successfully added sr_concept_id to temp_standard_concepts table"
             )
         except Exception as e:
-            logging.error(
-                f"Database error in update_temp_table_with_sr_concept_id: {str(e)}"
-            )
+            logging.error(f"Database error in find_sr_concept_id: {str(e)}")
             raise
     except Exception as e:
-        logging.error(f"Error in update_temp_table_with_sr_concept_id: {str(e)}")
+        logging.error(f"Error in find_sr_concept_id: {str(e)}")
         raise

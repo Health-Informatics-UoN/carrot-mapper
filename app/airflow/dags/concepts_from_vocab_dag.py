@@ -42,10 +42,8 @@ dag = DAG(
     catchup=False,
 )
 
-# TODO: to shorten the Query,create a column standard_concept_id_id (get from the table SR_concepts) in the table temp_standard_concepts, when creating standard concepts
 # TODO: do we need to check AND NOT EXISTS?
 # TODO: how to prevent someone using the temp_standard_concepts table from other's dag_run?
-# TODO: do we need to delete all of the mapping rules before creating/updating new ones? - we have to delete everything becasue of the DEATH table, right?
 # TODO: many concepts have the domain "SPEC ANATOMIC SITE", which should be added to the table "SPECIMEN"
 
 # Start the workflow
