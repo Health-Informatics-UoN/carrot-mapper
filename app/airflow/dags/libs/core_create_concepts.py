@@ -289,8 +289,7 @@ def find_additional_fields(**kwargs):
             value_as_number_query = f"""
             ALTER TABLE temp_standard_concepts 
             ADD COLUMN IF NOT EXISTS value_as_number_field_id INTEGER,
-            ADD COLUMN IF NOT EXISTS value_as_string_field_id INTEGER,
-            ADD COLUMN IF NOT EXISTS value_as_concept_field_id INTEGER;
+            ADD COLUMN IF NOT EXISTS value_as_string_field_id INTEGER;
 
             -- Update value_as_number_field_id for measurement domain concepts
             WITH measurement_concepts AS (
@@ -304,20 +303,22 @@ def find_additional_fields(**kwargs):
             FROM measurement_concepts mc
             JOIN mapping_omopfield mf ON mf.table_id = mc.dest_table_id AND mf.field = 'value_as_number'
             WHERE tsc.sr_value_id = mc.sr_value_id;
-
-            -- Update value_as_number_field_id for Meas Value domain concepts
-            WITH meas_value_concepts AS (
-                SELECT tsc.sr_value_id, tsc.standard_concept_id, tsc.dest_table_id
-                FROM temp_standard_concepts tsc
-                JOIN omop.concept c ON c.concept_id = tsc.standard_concept_id
-                WHERE c.domain_id = 'Meas Value'
-            )
-            UPDATE temp_standard_concepts tsc
-            SET value_as_concept_field_id = mf.id
-            FROM meas_value_concepts mvc
-            JOIN mapping_omopfield mf ON mf.table_id = mvc.dest_table_id AND mf.field = 'value_as_concept_id'
-            WHERE tsc.sr_value_id = mvc.sr_value_id;
             """
+
+            # TODO: refine and find solution for value_as_concept_field_id
+            # ADD COLUMN IF NOT EXISTS value_as_concept_field_id INTEGER;
+            # -- Update value_as_number_field_id for Meas Value domain concepts
+            # WITH meas_value_concepts AS (
+            #     SELECT tsc.sr_value_id, tsc.standard_concept_id, tsc.dest_table_id
+            #     FROM temp_standard_concepts tsc
+            #     JOIN omop.concept c ON c.concept_id = tsc.standard_concept_id
+            #     WHERE c.domain_id = 'Meas Value'
+            # )
+            # UPDATE temp_standard_concepts tsc
+            # SET value_as_concept_field_id = mf.id
+            # FROM meas_value_concepts mvc
+            # JOIN mapping_omopfield mf ON mf.table_id = mvc.dest_table_id AND mf.field = 'value_as_concept_id'
+            # WHERE tsc.sr_value_id = mvc.sr_value_id;
 
             # Only add the observation domain logic if the field data type is numeric
             if is_numeric:
