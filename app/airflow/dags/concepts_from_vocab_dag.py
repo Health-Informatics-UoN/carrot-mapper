@@ -43,11 +43,12 @@ dag = DAG(
     catchup=False,
 )
 
-# TODO: do we need to check AND NOT EXISTS?
+# TODO: do we need to check AND NOT EXISTS? and when?
 # TODO: how to prevent someone using the temp_standard_concepts table from other's dag_run?
-# TODO: many concepts have the domain "SPEC ANATOMIC SITE", which should be added to the table "SPECIMEN"
+# TODO: many concepts have the domain "SPEC ANATOMIC SITE", which should be added to the table "SPECIMEN" in a different way (OMOP field id is different)
 # TODO: ordering the temp standard concepts id before creating the mapping rules --> have the nice order match with the UI
 # TODO: add dest field name to the UI
+# TODO: add tasks to do error handling and update status
 
 # Start the workflow
 start = EmptyOperator(task_id="start", dag=dag)
@@ -151,8 +152,6 @@ create_mapping_rules_task = PythonOperator(
     provide_context=True,
     dag=dag,
 )
-# TODO: add tasks to do error handling and update status
-
 
 # End the workflow
 end = EmptyOperator(task_id="end", dag=dag)
