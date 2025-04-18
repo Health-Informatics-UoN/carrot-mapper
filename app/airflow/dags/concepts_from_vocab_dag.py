@@ -48,6 +48,8 @@ dag = DAG(
 # TODO: add dest field name to the UI
 # TODO: add tasks to do error handling and update status
 # TODO: should we add `value` column in MAPPINGRULE model? in order to filter the mapping rule based on the SR value?
+# TODO: add the source_concept_id to the UI
+# TODO: reduce the ALTER TABLE statements
 
 # Start the workflow
 start = EmptyOperator(task_id="start", dag=dag)
