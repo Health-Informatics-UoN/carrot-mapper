@@ -101,11 +101,13 @@ def find_dest_table_and_person_field_id(**kwargs):
         FROM omop.concept c2
         LEFT JOIN mapping_omoptable ot ON
             CASE c2.domain_id
+                WHEN 'Race' THEN 'person'
+                WHEN 'Gender' THEN 'person'
+                WHEN 'Ethnicity' THEN 'person'
                 WHEN 'Observation' THEN 'observation'
                 WHEN 'Condition' THEN 'condition_occurrence'
                 WHEN 'Device' THEN 'device_exposure'
                 WHEN 'Measurement' THEN 'measurement'
-                WHEN 'Person' THEN 'person'
                 WHEN 'Drug' THEN 'drug_exposure'
                 WHEN 'Procedure' THEN 'procedure_occurrence'
                 WHEN 'Meas Value' THEN 'measurement'
