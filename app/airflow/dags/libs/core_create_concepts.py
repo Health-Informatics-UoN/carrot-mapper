@@ -19,9 +19,9 @@ def find_standard_concepts(**kwargs):
             raise ValueError("No field-vocabulary pairs provided")
 
         # Create the temporary table once, outside the loop
-        create_table_query = """
-        DROP TABLE IF EXISTS temp_standard_concepts;
-        CREATE TABLE temp_standard_concepts (
+        create_table_query = f"""
+        DROP TABLE IF EXISTS temp_standard_concepts_{table_id};
+        CREATE TABLE temp_standard_concepts_{table_id} (
             sr_value_id INTEGER,
             source_concept_id INTEGER,
             standard_concept_id INTEGER
@@ -29,9 +29,13 @@ def find_standard_concepts(**kwargs):
         """
         try:
             pg_hook.run(create_table_query)
-            logging.info("Successfully created temp_standard_concepts table")
+            logging.info(
+                f"Successfully created temp_standard_concepts_{table_id} table"
+            )
         except Exception as e:
-            logging.error(f"Failed to create temp_standard_concepts table: {str(e)}")
+            logging.error(
+                f"Failed to create temp_standard_concepts_{table_id} table: {str(e)}"
+            )
             raise
 
         # Process each field-vocabulary pair
@@ -46,7 +50,7 @@ def find_standard_concepts(**kwargs):
 
             # Insert data for each field-vocabulary pair
             insert_concepts_query = f"""
-            INSERT INTO temp_standard_concepts (sr_value_id, source_concept_id, standard_concept_id)
+            INSERT INTO temp_standard_concepts_{table_id} (sr_value_id, source_concept_id, standard_concept_id)
             SELECT
                 srv.id AS sr_value_id,
                 c1.concept_id AS source_concept_id,
@@ -90,13 +94,13 @@ def find_dest_table_and_person_field_id(**kwargs):
                 "No table_id provided in find_dest_table_and_person_field_id"
             )
 
-        core_query = """
-        ALTER TABLE temp_standard_concepts 
+        core_query = f"""
+        ALTER TABLE temp_standard_concepts_{table_id} 
         ADD COLUMN dest_table_id INTEGER,
         ADD COLUMN dest_person_field_id INTEGER;
         
         -- Update destination table ID
-        UPDATE temp_standard_concepts tsc
+        UPDATE temp_standard_concepts_{table_id} tsc
         SET dest_table_id = ot.id
         FROM omop.concept c2
         LEFT JOIN mapping_omoptable ot ON
@@ -117,7 +121,7 @@ def find_dest_table_and_person_field_id(**kwargs):
         WHERE c2.concept_id = tsc.standard_concept_id;
         
         -- Update person field ID
-        UPDATE temp_standard_concepts tsc
+        UPDATE temp_standard_concepts_{table_id} tsc
         SET dest_person_field_id = opf.id
         FROM mapping_omopfield opf
         WHERE opf.table_id = tsc.dest_table_id
@@ -147,14 +151,14 @@ def find_date_fields(**kwargs):
             logging.warning("No table_id provided in find_date_fields")
 
         # Optimized SQL with better structure and reduced redundancy
-        dates_query = """
-        ALTER TABLE temp_standard_concepts 
+        dates_query = f"""
+        ALTER TABLE temp_standard_concepts_{table_id} 
         ADD COLUMN dest_date_field_id INTEGER,
         ADD COLUMN dest_start_date_field_id INTEGER,
         ADD COLUMN dest_end_date_field_id INTEGER;
 
         -- Single consolidated update using CASE expressions for better performance
-        UPDATE temp_standard_concepts tsc
+        UPDATE temp_standard_concepts_{table_id} tsc
         SET 
             dest_date_field_id = (
                 SELECT mf.id
@@ -222,28 +226,28 @@ def find_concept_fields(**kwargs):
         if not table_id:
             logging.warning("No table_id provided in find_concept_fields")
 
-        concept_query = """
-        ALTER TABLE temp_standard_concepts 
+        concept_query = f"""
+        ALTER TABLE temp_standard_concepts_{table_id} 
         ADD COLUMN source_concept_field_id INTEGER,
         ADD COLUMN source_value_field_id INTEGER,
         ADD COLUMN dest_concept_field_id INTEGER;
         
         -- Update source_concept_field_id
-        UPDATE temp_standard_concepts tsc
+        UPDATE temp_standard_concepts_{table_id} tsc
         SET source_concept_field_id = scf.id
         FROM mapping_omopfield scf
         WHERE scf.table_id = tsc.dest_table_id 
         AND scf.field LIKE '%_source_concept_id';
 
         -- Update source_value_field_id
-        UPDATE temp_standard_concepts tsc
+        UPDATE temp_standard_concepts_{table_id} tsc
         SET source_value_field_id = svf.id
         FROM mapping_omopfield svf
         WHERE svf.table_id = tsc.dest_table_id 
         AND svf.field LIKE '%_source_value';
         
         -- Update dest_concept_field_id
-        UPDATE temp_standard_concepts tsc
+        UPDATE temp_standard_concepts_{table_id} tsc
         SET dest_concept_field_id = dcf.id
         FROM mapping_omopfield dcf
         WHERE dcf.table_id = tsc.dest_table_id 
@@ -289,18 +293,18 @@ def find_additional_fields(**kwargs):
             )
 
             value_as_number_query = f"""
-            ALTER TABLE temp_standard_concepts 
+            ALTER TABLE temp_standard_concepts_{table_id} 
             ADD COLUMN IF NOT EXISTS value_as_number_field_id INTEGER,
             ADD COLUMN IF NOT EXISTS value_as_string_field_id INTEGER;
 
             -- Update value_as_number_field_id for measurement domain concepts
             WITH measurement_concepts AS (
                 SELECT tsc.sr_value_id, tsc.standard_concept_id, tsc.dest_table_id
-                FROM temp_standard_concepts tsc
+                FROM temp_standard_concepts_{table_id} tsc
                 JOIN omop.concept c ON c.concept_id = tsc.standard_concept_id
                 WHERE c.domain_id = 'Measurement'
             )
-            UPDATE temp_standard_concepts tsc
+            UPDATE temp_standard_concepts_{table_id} tsc
             SET value_as_number_field_id = mf.id
             FROM measurement_concepts mc
             JOIN mapping_omopfield mf ON mf.table_id = mc.dest_table_id AND mf.field = 'value_as_number'
@@ -324,15 +328,15 @@ def find_additional_fields(**kwargs):
 
             # Only add the observation domain logic if the field data type is numeric
             if is_numeric:
-                value_as_number_query += """
+                value_as_number_query += f"""
             -- Update value_as_number_field_id for observation domain concepts with numeric data types
             WITH observation_concepts AS (
                 SELECT tsc.sr_value_id, tsc.standard_concept_id, tsc.dest_table_id
-                FROM temp_standard_concepts tsc
+                FROM temp_standard_concepts_{table_id} tsc
                 JOIN omop.concept c ON c.concept_id = tsc.standard_concept_id
                 WHERE c.domain_id = 'Observation'
             )
-            UPDATE temp_standard_concepts tsc
+            UPDATE temp_standard_concepts_{table_id} tsc
             SET value_as_number_field_id = of.id
             FROM observation_concepts oc
             JOIN mapping_omopfield of ON of.table_id = oc.dest_table_id AND of.field = 'value_as_number'
@@ -340,15 +344,15 @@ def find_additional_fields(**kwargs):
             """
 
             if is_string:
-                value_as_number_query += """
+                value_as_number_query += f"""
             -- Update value_as_string_field_id for observation domain concepts with string data types
             WITH observation_concepts AS (
                 SELECT tsc.sr_value_id, tsc.standard_concept_id, tsc.dest_table_id
-                FROM temp_standard_concepts tsc
+                FROM temp_standard_concepts_{table_id} tsc
                 JOIN omop.concept c ON c.concept_id = tsc.standard_concept_id
                 WHERE c.domain_id = 'Observation'
             )
-            UPDATE temp_standard_concepts tsc
+            UPDATE temp_standard_concepts_{table_id} tsc
             SET value_as_string_field_id = of.id
             FROM observation_concepts oc
             JOIN mapping_omopfield of ON of.table_id = oc.dest_table_id AND of.field = 'value_as_string'
@@ -381,7 +385,7 @@ def create_standard_concepts(**kwargs):
         if not table_id:
             logging.warning("No table_id provided in create_standard_concepts")
 
-        create_concept_query = """
+        create_concept_query = f"""
             -- Insert standard concepts for field values (only if they don't already exist)
             INSERT INTO mapping_scanreportconcept (
                 created_at,
@@ -398,7 +402,7 @@ def create_standard_concepts(**kwargs):
                 'V', -- Creation type: Built from Vocab dict
                 tsc.standard_concept_id,
                 23 -- content_type_id for scanreportvalue
-            FROM temp_standard_concepts tsc
+            FROM temp_standard_concepts_{table_id} tsc
             WHERE NOT EXISTS (
                 -- Check if the concept already exists
                 SELECT 1 FROM mapping_scanreportconcept
@@ -426,13 +430,18 @@ def find_sr_concept_id(**kwargs):
     This will help the next steps to be shorter.
     """
     try:
-        update_query = """
+        table_id = kwargs.get("dag_run", {}).conf.get("table_id")
+
+        if not table_id:
+            logging.warning("No table_id provided in find_sr_concept_id")
+
+        update_query = f"""
         -- Add sr_concept_id column to temp_standard_concepts
-        ALTER TABLE temp_standard_concepts 
+        ALTER TABLE temp_standard_concepts_{table_id} 
         ADD COLUMN IF NOT EXISTS sr_concept_id INTEGER;
         
         -- Update sr_concept_id with the mapping_scanreportconcept ID
-        UPDATE temp_standard_concepts tsc
+        UPDATE temp_standard_concepts_{table_id} tsc
         SET sr_concept_id = src.id
         FROM mapping_scanreportconcept src
         WHERE src.object_id = tsc.sr_value_id
@@ -443,7 +452,7 @@ def find_sr_concept_id(**kwargs):
         try:
             pg_hook.run(update_query)
             logging.info(
-                "Successfully added sr_concept_id to temp_standard_concepts table"
+                f"Successfully added sr_concept_id to temp_standard_concepts_{table_id} table"
             )
         except Exception as e:
             logging.error(f"Database error in find_sr_concept_id: {str(e)}")

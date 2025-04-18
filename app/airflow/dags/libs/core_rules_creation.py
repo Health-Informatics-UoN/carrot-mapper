@@ -61,7 +61,7 @@ def create_mapping_rules(**kwargs):
             )
             SELECT 
                 NOW(), NOW(), field_id, source_id, sr_concept_id, {scan_report_id}, TRUE
-            FROM temp_standard_concepts
+            FROM temp_standard_concepts_{table_id}
             CROSS JOIN LATERAL (
                 VALUES 
                     (dest_person_field_id, {person_id_field}),
@@ -107,6 +107,7 @@ def create_person_rules(**kwargs):
     try:
         scan_report_id = kwargs.get("dag_run", {}).conf.get("scan_report_id")
         person_id_field = kwargs.get("dag_run", {}).conf.get("person_id_field")
+        table_id = kwargs.get("dag_run", {}).conf.get("table_id")
 
         if not scan_report_id or not person_id_field:
             logging.warning(
@@ -135,7 +136,7 @@ def create_person_rules(**kwargs):
             tsc.sr_concept_id,
             {scan_report_id},
             TRUE
-        FROM temp_standard_concepts tsc
+        FROM temp_standard_concepts_{table_id} tsc
         WHERE tsc.dest_person_field_id IS NOT NULL;
         """
         try:
@@ -158,6 +159,7 @@ def create_dates_rules(**kwargs):
     try:
         scan_report_id = kwargs.get("dag_run", {}).conf.get("scan_report_id")
         date_event_field = kwargs.get("dag_run", {}).conf.get("date_event_field")
+        table_id = kwargs.get("dag_run", {}).conf.get("table_id")
 
         if not scan_report_id or not date_event_field:
             logging.warning(
@@ -173,7 +175,7 @@ def create_dates_rules(**kwargs):
             created_at, updated_at, omop_field_id, source_field_id, concept_id, scan_report_id, approved
         )
         SELECT NOW(), NOW(), date_field, {date_event_field}, tsc.sr_concept_id, {scan_report_id}, TRUE
-        FROM temp_standard_concepts tsc
+        FROM temp_standard_concepts_{table_id} tsc
         CROSS JOIN LATERAL (
             VALUES 
                 (tsc.dest_date_field_id),
@@ -221,7 +223,7 @@ def create_concepts_rules(**kwargs):
                 created_at, updated_at, omop_field_id, source_field_id, concept_id, scan_report_id, approved
             )
             SELECT NOW(), NOW(), field_id, {sr_field_id}, tsc.sr_concept_id, {scan_report_id}, TRUE
-            FROM temp_standard_concepts tsc
+            FROM temp_standard_concepts_{table_id} tsc
             CROSS JOIN LATERAL (
                 VALUES 
                     (tsc.source_value_field_id),
