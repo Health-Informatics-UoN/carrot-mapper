@@ -18,13 +18,24 @@ def find_standard_concepts(**kwargs):
             logging.error("No field-vocabulary pairs provided")
             raise ValueError("No field-vocabulary pairs provided")
 
-        # Create the temporary table once, outside the loop
+        # Create the temporary table once, outside the loop, with all the columns needed
         create_table_query = f"""
         DROP TABLE IF EXISTS temp_standard_concepts_{table_id};
         CREATE TABLE temp_standard_concepts_{table_id} (
             sr_value_id INTEGER,
             source_concept_id INTEGER,
-            standard_concept_id INTEGER
+            standard_concept_id INTEGER,
+            sr_concept_id INTEGER,
+            dest_table_id INTEGER,
+            dest_person_field_id INTEGER,
+            dest_date_field_id INTEGER,
+            dest_start_date_field_id INTEGER,
+            dest_end_date_field_id INTEGER,
+            source_concept_field_id INTEGER,
+            source_value_field_id INTEGER,
+            dest_concept_field_id INTEGER,
+            value_as_number_field_id INTEGER,
+            value_as_string_field_id INTEGER
         );
         """
         try:
@@ -143,11 +154,7 @@ def find_sr_concept_id(**kwargs):
         if not table_id:
             logging.warning("No table_id provided in find_sr_concept_id")
 
-        update_query = f"""
-        -- Add sr_concept_id column to temp_standard_concepts
-        ALTER TABLE temp_standard_concepts_{table_id} 
-        ADD COLUMN IF NOT EXISTS sr_concept_id INTEGER;
-        
+        update_query = f"""        
         -- Update sr_concept_id with the mapping_scanreportconcept ID
         UPDATE temp_standard_concepts_{table_id} tsc
         SET sr_concept_id = src.id

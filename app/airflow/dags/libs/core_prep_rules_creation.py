@@ -19,10 +19,6 @@ def find_dest_table_and_person_field_id(**kwargs):
             )
 
         core_query = f"""
-        ALTER TABLE temp_standard_concepts_{table_id} 
-        ADD COLUMN dest_table_id INTEGER,
-        ADD COLUMN dest_person_field_id INTEGER;
-        
         -- Update destination table ID
         UPDATE temp_standard_concepts_{table_id} tsc
         SET dest_table_id = ot.id
@@ -76,11 +72,6 @@ def find_date_fields(**kwargs):
 
         # Optimized SQL with better structure and reduced redundancy
         dates_query = f"""
-        ALTER TABLE temp_standard_concepts_{table_id} 
-        ADD COLUMN dest_date_field_id INTEGER,
-        ADD COLUMN dest_start_date_field_id INTEGER,
-        ADD COLUMN dest_end_date_field_id INTEGER;
-
         -- Single consolidated update using CASE expressions for better performance
         UPDATE temp_standard_concepts_{table_id} tsc
         SET 
@@ -151,14 +142,6 @@ def find_concept_fields(**kwargs):
         if not table_id:
             logging.warning("No table_id provided in find_concept_fields")
 
-        # First, add the standard columns
-        base_query = f"""
-        ALTER TABLE temp_standard_concepts_{table_id} 
-        ADD COLUMN source_concept_field_id INTEGER,
-        ADD COLUMN source_value_field_id INTEGER,
-        ADD COLUMN dest_concept_field_id INTEGER;
-        """
-
         # Person table specific handling based on domain
         person_specific_query = f"""
         -- For person table, update based on domain_id
@@ -188,30 +171,31 @@ def find_concept_fields(**kwargs):
 
         # For non-person tables or unmatched domains, use generic pattern matching in a single update
         non_person_query = f"""
-        WITH field_mappings AS (
-            SELECT 
-                tsc.sr_value_id,
-                MAX(CASE WHEN mf.field LIKE '%_source_concept_id' THEN mf.id END) AS source_concept_field_id,
-                MAX(CASE WHEN mf.field LIKE '%_source_value' THEN mf.id END) AS source_value_field_id,
-                MAX(CASE WHEN mf.field LIKE '%_concept_id' AND mf.field NOT LIKE '%_source_concept_id' THEN mf.id END) AS dest_concept_field_id
-            FROM temp_standard_concepts_{table_id} tsc
-            JOIN mapping_omopfield mf ON mf.table_id = tsc.dest_table_id
-            WHERE tsc.source_concept_field_id IS NULL 
-               OR tsc.source_value_field_id IS NULL 
-               OR tsc.dest_concept_field_id IS NULL
-            GROUP BY tsc.sr_value_id
-        )
+        -- Update source_concept_field_id
         UPDATE temp_standard_concepts_{table_id} tsc
-        SET 
-            source_concept_field_id = COALESCE(tsc.source_concept_field_id, fm.source_concept_field_id),
-            source_value_field_id = COALESCE(tsc.source_value_field_id, fm.source_value_field_id),
-            dest_concept_field_id = COALESCE(tsc.dest_concept_field_id, fm.dest_concept_field_id)
-        FROM field_mappings fm
-        WHERE fm.sr_value_id = tsc.sr_value_id;
+        SET source_concept_field_id = scf.id
+        FROM mapping_omopfield scf
+        WHERE scf.table_id = tsc.dest_table_id 
+        AND scf.field LIKE '%_source_concept_id';
+
+        -- Update source_value_field_id
+        UPDATE temp_standard_concepts_{table_id} tsc
+        SET source_value_field_id = svf.id
+        FROM mapping_omopfield svf
+        WHERE svf.table_id = tsc.dest_table_id 
+        AND svf.field LIKE '%_source_value';
+        
+        -- Update dest_concept_field_id
+        UPDATE temp_standard_concepts_{table_id} tsc
+        SET dest_concept_field_id = dcf.id
+        FROM mapping_omopfield dcf
+        WHERE dcf.table_id = tsc.dest_table_id 
+        AND dcf.field LIKE '%_concept_id'
+        AND dcf.field NOT LIKE '%_source_concept_id';
         """
 
         # Combine queries
-        concept_query = base_query + person_specific_query
+        concept_query = person_specific_query + non_person_query
 
         try:
             pg_hook.run(concept_query)
@@ -252,10 +236,6 @@ def find_additional_fields(**kwargs):
             )
 
             value_as_number_query = f"""
-            ALTER TABLE temp_standard_concepts_{table_id} 
-            ADD COLUMN IF NOT EXISTS value_as_number_field_id INTEGER,
-            ADD COLUMN IF NOT EXISTS value_as_string_field_id INTEGER;
-
             -- Update value_as_number_field_id for measurement domain concepts
             WITH measurement_concepts AS (
                 SELECT tsc.sr_value_id, tsc.standard_concept_id, tsc.dest_table_id
@@ -271,21 +251,8 @@ def find_additional_fields(**kwargs):
             """
 
             # TODO: refine and find solution for value_as_concept_field_id
-            # ADD COLUMN IF NOT EXISTS value_as_concept_field_id INTEGER;
-            # -- Update value_as_concept_field_id for concepts
-            # WITH meas_value_concepts AS (
-            #     SELECT tsc.sr_value_id, tsc.standard_concept_id, tsc.dest_table_id
-            #     FROM temp_standard_concepts tsc
-            #     JOIN omop.concept c ON c.concept_id = tsc.standard_concept_id
-            #     WHERE c.domain_id = 'Meas Value' -- TODO: do this for domains Observation and Measurement
-            # )
-            # UPDATE temp_standard_concepts tsc
-            # SET value_as_concept_field_id = mf.id
-            # FROM meas_value_concepts mvc
-            # JOIN mapping_omopfield mf ON mf.table_id = mvc.dest_table_id AND mf.field = 'value_as_concept_id'
-            # WHERE tsc.sr_value_id = mvc.sr_value_id;
 
-            # Only add the observation domain logic if the field data type is numeric
+            # Depend on the field data type, add the appropriate query
             if is_numeric:
                 value_as_number_query += f"""
             -- Update value_as_number_field_id for observation domain concepts with numeric data types
