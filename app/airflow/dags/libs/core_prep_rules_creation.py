@@ -170,6 +170,9 @@ def find_concept_fields(**kwargs):
         """
 
         # For non-person tables or unmatched domains, use generic pattern matching in a single update
+        # NOTE: This approach is not perfect, especially for the dest_concept_field_id,
+        # because it will be updated with the first concept_id that matches the pattern (depends on the order of the field in the DB)
+        # But so far it is working as expected
         non_person_query = f"""
         -- Update source_concept_field_id for non-person tables
         UPDATE temp_standard_concepts_{table_id} tsc
