@@ -42,14 +42,12 @@ dag = DAG(
 )
 
 # TODO: do we need to check AND NOT EXISTS? and when?
-# TODO: how to prevent someone using the temp_standard_concepts table from other's dag_run?
 # TODO: many concepts have the domain "SPEC ANATOMIC SITE", which should be added to the table "SPECIMEN" in a different way (OMOP field id is different)
 # TODO: ordering the temp standard concepts id before creating the mapping rules --> have the nice order match with the UI
 # TODO: add dest field name to the UI
 # TODO: add tasks to do error handling and update status
 # TODO: should we add `value` column in MAPPINGRULE model? in order to filter the mapping rule based on the SR value?
 # TODO: add the source_concept_id to the UI
-# TODO: reduce the ALTER TABLE statements
 # TODO: improve naming of columns
 
 # Start the workflow
