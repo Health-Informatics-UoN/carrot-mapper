@@ -75,7 +75,8 @@ def create_mapping_rules(**kwargs):
                 WHERE mr.omop_field_id = field_mapping.field_id
                 AND mr.source_field_id = field_mapping.source_id
                 AND mr.scan_report_id = {scan_report_id}
-            );
+            )
+            ORDER BY sr_value_id;
             """
 
             try:
