@@ -142,7 +142,7 @@ def find_concept_fields(**kwargs):
         if not table_id:
             logging.warning("No table_id provided in find_concept_fields")
 
-        # Person table specific handling based on domain
+        # Person table specific handling based on domain, because Race, Gander and Ethnicity are in the same table Person
         person_specific_query = f"""
         -- For person table, update based on domain_id
         WITH domain_field_map AS (
@@ -171,27 +171,33 @@ def find_concept_fields(**kwargs):
 
         # For non-person tables or unmatched domains, use generic pattern matching in a single update
         non_person_query = f"""
-        -- Update source_concept_field_id
+        -- Update source_concept_field_id for non-person tables
         UPDATE temp_standard_concepts_{table_id} tsc
         SET source_concept_field_id = scf.id
-        FROM mapping_omopfield scf
+        FROM mapping_omopfield scf, mapping_omoptable ot
         WHERE scf.table_id = tsc.dest_table_id 
-        AND scf.field LIKE '%_source_concept_id';
+        AND ot.id = tsc.dest_table_id
+        AND scf.field LIKE '%_source_concept_id'
+        AND ot.table != 'person';
 
-        -- Update source_value_field_id
+        -- Update source_value_field_id for non-person tables
         UPDATE temp_standard_concepts_{table_id} tsc
         SET source_value_field_id = svf.id
-        FROM mapping_omopfield svf
+        FROM mapping_omopfield svf, mapping_omoptable ot
         WHERE svf.table_id = tsc.dest_table_id 
-        AND svf.field LIKE '%_source_value';
+        AND ot.id = tsc.dest_table_id
+        AND svf.field LIKE '%_source_value'
+        AND ot.table != 'person';
         
-        -- Update dest_concept_field_id
+        -- Update dest_concept_field_id for non-person tables
         UPDATE temp_standard_concepts_{table_id} tsc
         SET dest_concept_field_id = dcf.id
-        FROM mapping_omopfield dcf
+        FROM mapping_omopfield dcf, mapping_omoptable ot
         WHERE dcf.table_id = tsc.dest_table_id 
+        AND ot.id = tsc.dest_table_id
         AND dcf.field LIKE '%_concept_id'
-        AND dcf.field NOT LIKE '%_source_concept_id';
+        AND dcf.field NOT LIKE '%_source_concept_id'
+        AND ot.table != 'person';
         """
 
         # Combine queries
