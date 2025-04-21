@@ -143,6 +143,7 @@ def find_concept_fields(**kwargs):
     """
     Add concept-related field IDs to the temporary concepts table.
     Includes source concept, source value, and destination concept fields.
+    For person table, handles gender, race, and ethnicity domains separately.
     """
     try:
         table_id = kwargs.get("dag_run", {}).conf.get("table_id")
@@ -150,34 +151,68 @@ def find_concept_fields(**kwargs):
         if not table_id:
             logging.warning("No table_id provided in find_concept_fields")
 
-        concept_query = f"""
+        # First, add the standard columns
+        base_query = f"""
         ALTER TABLE temp_standard_concepts_{table_id} 
         ADD COLUMN source_concept_field_id INTEGER,
         ADD COLUMN source_value_field_id INTEGER,
         ADD COLUMN dest_concept_field_id INTEGER;
-        
-        -- Update source_concept_field_id
-        UPDATE temp_standard_concepts_{table_id} tsc
-        SET source_concept_field_id = scf.id
-        FROM mapping_omopfield scf
-        WHERE scf.table_id = tsc.dest_table_id 
-        AND scf.field LIKE '%_source_concept_id';
-
-        -- Update source_value_field_id
-        UPDATE temp_standard_concepts_{table_id} tsc
-        SET source_value_field_id = svf.id
-        FROM mapping_omopfield svf
-        WHERE svf.table_id = tsc.dest_table_id 
-        AND svf.field LIKE '%_source_value';
-        
-        -- Update dest_concept_field_id
-        UPDATE temp_standard_concepts_{table_id} tsc
-        SET dest_concept_field_id = dcf.id
-        FROM mapping_omopfield dcf
-        WHERE dcf.table_id = tsc.dest_table_id 
-        AND dcf.field LIKE '%_concept_id'
-        AND dcf.field NOT LIKE '%_source_concept_id';
         """
+
+        # Person table specific handling based on domain
+        person_specific_query = f"""
+        -- For person table, update based on domain_id
+        WITH domain_field_map AS (
+            SELECT 
+                tsc.sr_value_id,
+                c.domain_id,
+                LOWER(c.domain_id) AS field_prefix,
+                MAX(CASE WHEN mf.field = LOWER(c.domain_id) || '_source_concept_id' THEN mf.id END) AS source_concept_field_id,
+                MAX(CASE WHEN mf.field = LOWER(c.domain_id) || '_source_value' THEN mf.id END) AS source_value_field_id,
+                MAX(CASE WHEN mf.field = LOWER(c.domain_id) || '_concept_id' THEN mf.id END) AS dest_concept_field_id
+            FROM temp_standard_concepts_{table_id} tsc
+            JOIN omop.concept c ON c.concept_id = tsc.standard_concept_id
+            JOIN mapping_omoptable ot ON ot.table = 'person' AND tsc.dest_table_id = ot.id
+            JOIN mapping_omopfield mf ON mf.table_id = ot.id
+            WHERE c.domain_id IN ('Gender', 'Race', 'Ethnicity')
+            GROUP BY tsc.sr_value_id, c.domain_id
+        )
+        UPDATE temp_standard_concepts_{table_id} tsc
+        SET 
+            source_concept_field_id = dfm.source_concept_field_id,
+            source_value_field_id = dfm.source_value_field_id,
+            dest_concept_field_id = dfm.dest_concept_field_id
+        FROM domain_field_map dfm
+        WHERE dfm.sr_value_id = tsc.sr_value_id;
+        """
+
+        # For non-person tables or unmatched domains, use generic pattern matching in a single update
+        non_person_query = f"""
+        WITH field_mappings AS (
+            SELECT 
+                tsc.sr_value_id,
+                MAX(CASE WHEN mf.field LIKE '%_source_concept_id' THEN mf.id END) AS source_concept_field_id,
+                MAX(CASE WHEN mf.field LIKE '%_source_value' THEN mf.id END) AS source_value_field_id,
+                MAX(CASE WHEN mf.field LIKE '%_concept_id' AND mf.field NOT LIKE '%_source_concept_id' THEN mf.id END) AS dest_concept_field_id
+            FROM temp_standard_concepts_{table_id} tsc
+            JOIN mapping_omopfield mf ON mf.table_id = tsc.dest_table_id
+            WHERE tsc.source_concept_field_id IS NULL 
+               OR tsc.source_value_field_id IS NULL 
+               OR tsc.dest_concept_field_id IS NULL
+            GROUP BY tsc.sr_value_id
+        )
+        UPDATE temp_standard_concepts_{table_id} tsc
+        SET 
+            source_concept_field_id = COALESCE(tsc.source_concept_field_id, fm.source_concept_field_id),
+            source_value_field_id = COALESCE(tsc.source_value_field_id, fm.source_value_field_id),
+            dest_concept_field_id = COALESCE(tsc.dest_concept_field_id, fm.dest_concept_field_id)
+        FROM field_mappings fm
+        WHERE fm.sr_value_id = tsc.sr_value_id;
+        """
+
+        # Combine queries
+        concept_query = base_query + person_specific_query
+
         try:
             pg_hook.run(concept_query)
             logging.info("Successfully added concept field IDs")
