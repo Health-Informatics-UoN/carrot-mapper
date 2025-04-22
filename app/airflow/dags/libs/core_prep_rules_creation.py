@@ -1,4 +1,9 @@
-from libs.utils import process_field_vocab_pairs
+from libs.utils import (
+    process_field_vocab_pairs,
+    update_job_status,
+    JobStageType,
+    StageStatusType,
+)
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 import logging
 
@@ -12,7 +17,13 @@ def find_dest_table_and_person_field_id(**kwargs):
     """
     try:
         table_id = kwargs.get("dag_run", {}).conf.get("table_id")
-
+        update_job_status(
+            scan_report_id=kwargs.get("dag_run", {}).conf.get("scan_report_id"),
+            table_id=table_id,
+            stage=JobStageType.GENERATE_RULES,
+            status=StageStatusType.IN_PROGRESS,
+            details="Finding destination table and field IDs...",
+        )
         if not table_id:
             logging.warning(
                 "No table_id provided in find_dest_table_and_person_field_id"

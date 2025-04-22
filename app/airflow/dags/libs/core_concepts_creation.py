@@ -1,4 +1,9 @@
-from libs.utils import process_field_vocab_pairs
+from libs.utils import (
+    process_field_vocab_pairs,
+    update_job_status,
+    JobStageType,
+    StageStatusType,
+)
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 import logging
 
@@ -12,6 +17,7 @@ def find_standard_concepts(**kwargs):
     Creates a temporary table containing mappings between source and standard concepts.
     """
     try:
+        scan_report_id = kwargs.get("dag_run", {}).conf.get("scan_report_id")
         table_id = kwargs.get("dag_run", {}).conf.get("table_id")
         field_vocab_pairs = process_field_vocab_pairs(
             kwargs.get("dag_run", {}).conf.get("field_vocab_pairs")
@@ -62,8 +68,15 @@ def find_standard_concepts(**kwargs):
                     "Invalid field_vocab_pair: requires sr_field_id and vocabulary_id"
                 )
 
+            update_job_status(
+                scan_report_id=scan_report_id,
+                table_id=table_id,
+                stage=JobStageType.BUILD_CONCEPTS_FROM_DICT,
+                status=StageStatusType.IN_PROGRESS,
+                details=f"Finding standard concepts for field ID {sr_field_id} with vocabulary ID {vocabulary_id}",
+            )
             # Insert data for each field-vocabulary pair
-            insert_concepts_query = f"""
+            find_standard_concepts_query = f"""
             INSERT INTO temp_standard_concepts_{table_id} (sr_value_id, source_concept_id, standard_concept_id)
             SELECT
                 srv.id AS sr_value_id,
@@ -82,13 +95,20 @@ def find_standard_concepts(**kwargs):
             WHERE srv.scan_report_field_id = {sr_field_id};
             """
             try:
-                pg_hook.run(insert_concepts_query)
+                pg_hook.run(find_standard_concepts_query)
                 logging.info(
                     f"Successfully inserted standard concepts for field ID {sr_field_id}"
                 )
             except Exception as e:
                 logging.error(
                     f"Failed to insert standard concepts for field ID {sr_field_id}: {str(e)}"
+                )
+                update_job_status(
+                    scan_report_id=scan_report_id,
+                    table_id=table_id,
+                    stage=JobStageType.BUILD_CONCEPTS_FROM_DICT,
+                    status=StageStatusType.FAILED,
+                    details=f"Error in find_standard_concepts_query: {str(e)}",
                 )
                 raise
     except Exception as e:
@@ -102,6 +122,7 @@ def create_standard_concepts(**kwargs):
     Only inserts concepts that don't already exist.
     """
     try:
+        scan_report_id = kwargs.get("dag_run", {}).conf.get("scan_report_id")
         table_id = kwargs.get("dag_run", {}).conf.get("table_id")
 
         if not table_id:
@@ -134,12 +155,24 @@ def create_standard_concepts(**kwargs):
             );
             """
         try:
-            result = pg_hook.run(create_concept_query)
+            pg_hook.run(create_concept_query)
             logging.info("Successfully created standard concepts")
-            return result
+            update_job_status(
+                scan_report_id=scan_report_id,
+                table_id=table_id,
+                stage=JobStageType.BUILD_CONCEPTS_FROM_DICT,
+                status=StageStatusType.COMPLETE,
+                details="Successfully created standard concepts",
+            )
         except Exception as e:
             logging.error(f"Database error in create_standard_concepts: {str(e)}")
-            raise
+            update_job_status(
+                scan_report_id=scan_report_id,
+                table_id=table_id,
+                stage=JobStageType.BUILD_CONCEPTS_FROM_DICT,
+                status=StageStatusType.FAILED,
+                details=f"Error in create_standard_concepts: {str(e)}",
+            )
     except Exception as e:
         logging.error(f"Error in create_standard_concepts: {str(e)}")
         raise

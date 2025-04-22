@@ -1,9 +1,27 @@
 import logging
 import ast
 import json
+from airflow.providers.postgres.hooks.postgres import PostgresHook
+from enum import Enum
 
+# PostgreSQL connection hook
+pg_hook = PostgresHook(postgres_conn_id="postgres_db_conn")
 # Set up logger
 logger = logging.getLogger(__name__)
+
+
+class StageStatusType(Enum):
+    IN_PROGRESS = "Job in Progress"
+    COMPLETE = "Job Complete"
+    FAILED = "Job Failed"
+
+
+class JobStageType(Enum):
+    UPLOAD_SCAN_REPORT = "Upload Scan Report"
+    BUILD_CONCEPTS_FROM_DICT = "Build concepts from OMOP Data dictionary"
+    REUSE_CONCEPTS = "Reuse concepts from other scan reports"
+    GENERATE_RULES = "Generate mapping rules from available concepts"
+    DOWNLOAD_RULES = "Generate and download mapping rules JSON"
 
 
 # TODO: more error handling and comments for this function
@@ -21,6 +39,31 @@ def process_field_vocab_pairs(field_vocab_pairs: str):
     return field_vocab_pairs
 
 
-def update_job_status(job_id: int, status: str):
+def update_job_status(
+    scan_report_id: int,
+    table_id: int,
+    stage: JobStageType,
+    status: StageStatusType,
+    details: str = "",
+):
     """Update the status of a job in the database"""
-    pass
+    # TODO: for upload SR, this fuction will update the SR record in mapping_scanreport, not the job record
+    update_query = f"""
+        UPDATE jobs_job
+        SET status_id = (
+            SELECT id FROM jobs_stagestatus WHERE value = '{status.name}'
+        ),
+        details = '{details}', 
+        updated_at = NOW()
+        WHERE id = (
+            SELECT id FROM jobs_job
+            WHERE scan_report_id = {scan_report_id}
+            AND scan_report_table_id = {table_id}
+            AND stage_id IN (
+                SELECT id FROM jobs_jobstage WHERE value = '{stage.name}'
+            )
+            ORDER BY updated_at DESC
+            LIMIT 1
+        )
+    """
+    pg_hook.run(update_query)

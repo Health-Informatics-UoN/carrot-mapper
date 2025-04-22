@@ -1,7 +1,12 @@
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 import logging
 from airflow.exceptions import AirflowException
-from libs.utils import process_field_vocab_pairs
+from libs.utils import (
+    process_field_vocab_pairs,
+    update_job_status,
+    JobStageType,
+    StageStatusType,
+)
 
 # PostgreSQL connection hook
 pg_hook = PostgresHook(postgres_conn_id="postgres_db_conn")
@@ -40,6 +45,13 @@ def create_mapping_rules(**kwargs):
         scan_report_id = kwargs.get("dag_run", {}).conf.get("scan_report_id")
         person_id_field = kwargs.get("dag_run", {}).conf.get("person_id_field")
         date_field_id = kwargs.get("dag_run", {}).conf.get("date_event_field")
+        update_job_status(
+            scan_report_id=kwargs.get("dag_run", {}).conf.get("scan_report_id"),
+            table_id=table_id,
+            stage=JobStageType.GENERATE_RULES,
+            status=StageStatusType.IN_PROGRESS,
+            details="Creating mapping rules...",
+        )
 
         if not scan_report_id or not field_vocab_pairs:
             logging.warning(
@@ -87,6 +99,13 @@ def create_mapping_rules(**kwargs):
                 logging.info(
                     "Successfully created all mapping rules for each standard concept"
                 )
+                update_job_status(
+                    scan_report_id=scan_report_id,
+                    table_id=table_id,
+                    stage=JobStageType.GENERATE_RULES,
+                    status=StageStatusType.COMPLETE,
+                    details="Successfully created mapping rules",
+                )
                 return result
             except Exception as e:
                 logging.error(f"Database error in create_mapping_rules: {str(e)}")
@@ -95,4 +114,11 @@ def create_mapping_rules(**kwargs):
                 )
     except Exception as e:
         logging.error(f"Error in create_mapping_rules: {str(e)}")
+        update_job_status(
+            scan_report_id=scan_report_id,
+            table_id=table_id,
+            stage=JobStageType.GENERATE_RULES,
+            status=StageStatusType.FAILED,
+            details=f"Error in create_mapping_rules: {str(e)}",
+        )
         raise AirflowException(f"Error in create_mapping_rules: {str(e)}")
