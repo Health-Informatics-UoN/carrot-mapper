@@ -27,3 +27,6 @@ dependencies:
 
 "Area: Workers":
   - "app/workers/**"
+
+"Area: Airflow":
+  - "app/airflow/**"
