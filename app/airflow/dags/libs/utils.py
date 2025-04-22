@@ -7,11 +7,8 @@ logger = logging.getLogger(__name__)
 
 
 # TODO: more error handling and comments for this function
-def extract_params(**kwargs):
+def process_field_vocab_pairs(field_vocab_pairs: str):
     """Extract and validate parameters from DAG run configuration"""
-    table_id = kwargs["dag_run"].conf.get("table_id")
-
-    field_vocab_pairs = kwargs["dag_run"].conf.get("field_vocab_pairs")
 
     # Check if field_vocab_pairs is a string and try to parse it as JSON
     if isinstance(field_vocab_pairs, str):
@@ -21,11 +18,7 @@ def extract_params(**kwargs):
         except json.JSONDecodeError:
             print("Failed to parse field_vocab_pairs as JSON")
 
-    if not table_id or not field_vocab_pairs or not isinstance(field_vocab_pairs, list):
-        raise ValueError(
-            f"Invalid parameters: requires table_id and field_vocab_pairs (as list). Got table_id={table_id}, field_vocab_pairs={field_vocab_pairs} of type {type(field_vocab_pairs)}"
-        )
-    return table_id, field_vocab_pairs
+    return field_vocab_pairs
 
 
 def update_job_status(job_id: int, status: str):

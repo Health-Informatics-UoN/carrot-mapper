@@ -1,7 +1,7 @@
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 import logging
 from airflow.exceptions import AirflowException
-from libs.utils import extract_params
+from libs.utils import process_field_vocab_pairs
 
 # PostgreSQL connection hook
 pg_hook = PostgresHook(postgres_conn_id="postgres_db_conn")
@@ -33,7 +33,10 @@ def create_mapping_rules(**kwargs):
     Each record can generate multiple mapping rules based on the provided rules criteria.
     """
     try:
-        table_id, field_vocab_pairs = extract_params(**kwargs)
+        table_id = kwargs.get("dag_run", {}).conf.get("table_id")
+        field_vocab_pairs = process_field_vocab_pairs(
+            kwargs.get("dag_run", {}).conf.get("field_vocab_pairs")
+        )
         scan_report_id = kwargs.get("dag_run", {}).conf.get("scan_report_id")
         person_id_field = kwargs.get("dag_run", {}).conf.get("person_id_field")
         date_field_id = kwargs.get("dag_run", {}).conf.get("date_event_field")

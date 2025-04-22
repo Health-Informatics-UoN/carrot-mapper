@@ -1,4 +1,4 @@
-from libs.utils import extract_params
+from libs.utils import process_field_vocab_pairs
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 import logging
 
@@ -223,7 +223,10 @@ def find_additional_fields(**kwargs):
     Handles measurement domain and observation domain concepts.
     """
     try:
-        table_id, field_vocab_pairs = extract_params(**kwargs)
+        table_id = kwargs.get("dag_run", {}).conf.get("table_id")
+        field_vocab_pairs = process_field_vocab_pairs(
+            kwargs.get("dag_run", {}).conf.get("field_vocab_pairs")
+        )
 
         if not field_vocab_pairs:
             logging.error("No field-vocabulary pairs provided")
