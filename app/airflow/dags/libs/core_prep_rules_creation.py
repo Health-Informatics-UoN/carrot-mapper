@@ -184,6 +184,7 @@ def find_concept_fields(**kwargs):
         # NOTE: This approach is not perfect, especially for the dest_concept_field_id,
         # because it will be updated with the first concept_id that matches the pattern (depends on the order of the field in the DB)
         # But so far it is working as expected
+        # can be improved by doing something similar to person table (match domain + suffix) or adding more conditions to the LIKE or/and NOT LIKE
         non_person_query = f"""
         -- Update source_concept_field_id for non-person tables
         UPDATE temp_standard_concepts_{table_id} tsc
@@ -211,6 +212,7 @@ def find_concept_fields(**kwargs):
         AND ot.id = tsc.dest_table_id
         AND dcf.field LIKE '%_concept_id'
         AND dcf.field NOT LIKE '%_source_concept_id'
+        AND dcf.field NOT LIKE '%_type_concept_id'
         AND ot.table != 'person';
         """
 

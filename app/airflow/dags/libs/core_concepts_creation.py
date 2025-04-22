@@ -127,7 +127,7 @@ def create_standard_concepts(**kwargs):
 
         if not table_id:
             logging.warning("No table_id provided in create_standard_concepts")
-
+        # TODO: when source_concept_id is added to the model SCANREPORTCONCEPT, we need to update the query belowto solve the issue #1006
         create_concept_query = f"""
             -- Insert standard concepts for field values (only if they don't already exist)
             INSERT INTO mapping_scanreportconcept (
