@@ -14,6 +14,15 @@ pg_hook = PostgresHook(postgres_conn_id="postgres_db_conn")
 def find_dest_table_and_person_field_id(**kwargs):
     """
     Add destination table IDs and person field IDs to the temporary concepts table.
+    This function updates the temporary standard concepts table with appropriate
+    destination table IDs and person field IDs based on OMOP concept domains. It performs
+    two main SQL operations:
+
+    1. Maps concept domains to appropriate OMOP tables (e.g., 'Race'/'Gender'/'Ethnicity'
+       to 'person', 'Condition' to 'condition_occurrence', etc.) and sets the dest_table_id
+       in the temporary concepts table.
+    2. Adds the person_id field reference to each record by finding the corresponding field
+       in the mapping_omopfield table.
     """
     try:
         table_id = kwargs.get("dag_run", {}).conf.get("table_id")
@@ -74,7 +83,19 @@ def find_dest_table_and_person_field_id(**kwargs):
 def find_date_fields(**kwargs):
     """
     Add date field IDs to the temporary concepts table based on the date field mapper.
-    Uses the predefined mapping between tables and their datetime fields.
+
+    This function updates the temporary standard concepts table with appropriate date-related
+    field IDs from the OMOP CDM model. It handles three types of date fields:
+
+    1. dest_date_field_id: Single datetime fields for tables with one date (person, measurement,
+       observation, procedure_occurrence, specimen)
+    2. dest_start_date_field_id: Start datetime fields for tables with date ranges
+       (condition_occurrence, drug_exposure, device_exposure)
+    3. dest_end_date_field_id: End datetime fields for tables with date ranges
+       (condition_occurrence, drug_exposure, device_exposure)
+
+    The function uses a single SQL query with subqueries to efficiently map the correct
+    datetime fields for each table based on OMOP CDM conventions.
     """
     try:
         table_id = kwargs.get("dag_run", {}).conf.get("table_id")

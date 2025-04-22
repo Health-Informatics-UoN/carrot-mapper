@@ -13,8 +13,12 @@ pg_hook = PostgresHook(postgres_conn_id="postgres_db_conn")
 
 def find_standard_concepts(**kwargs):
     """
-    Find standard concepts for field-vocabulary pairs.
-    Creates a temporary table containing mappings between source and standard concepts.
+    Maps source field values to standard OMOP concepts based on field-vocabulary pairs.
+
+    Creates a temporary table to store mapping information between source values and
+    standard concepts. For each field-vocabulary pair provided, finds corresponding
+    standard concepts in the OMOP vocabulary and inserts them into the temporary table.
+
     """
     try:
         scan_report_id = kwargs.get("dag_run", {}).conf.get("scan_report_id")
