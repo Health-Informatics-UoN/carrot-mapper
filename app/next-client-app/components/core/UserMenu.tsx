@@ -38,13 +38,12 @@ export async function UserMenu({ username }: { username?: string }) {
       <DropdownMenuContent className="w-56">
         <DropdownMenuLabel>My Account</DropdownMenuLabel>
         <DropdownMenuSeparator />
-        {/* TODO: Add change password here */}
         <DropdownMenuGroup>
           <Link href="/password-reset" passHref>
             <DropdownMenuItem asChild>
               <button className="flex items-center w-full">
                 <Settings className="icon-md mr-2" />
-                <span>Change Password</span>
+                <span>Reset Password</span>
               </button>
             </DropdownMenuItem>
           </Link>

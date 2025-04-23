@@ -17,6 +17,33 @@ const validationSchema = Yup.object({
     .required("Confirm password is required!"),
 });
 
+const   = async (
+  values: { newPassword: string; confirmPassword: string },
+  setError: (error: string) => void,
+  setSubmitted: (submitted: boolean) => void,
+  setSubmitting: (isSubmitting: boolean) => void
+) => {
+  setError("");
+
+  try {
+    const res = await passwordReset({
+      new_password: values.newPassword,
+      confirm_password: values.confirmPassword,
+    });
+
+    if (res?.status && res.status !== 200) {
+      setError(res?.detail || "Something went wrong.");
+      console.error("Password reset error:", res);
+    } else {
+      setSubmitted(true);
+    }
+  } catch (err) {
+    console.error("Password reset error:", err);
+    setError("An error occurred while trying to reset the password.");
+  }
+
+  setSubmitting(false);
+};
 
 export default function PasswordResetPage() {
   const [submitted, setSubmitted] = useState(false);
@@ -32,14 +59,11 @@ export default function PasswordResetPage() {
           <p className="text-center text-sm text-gray-600 dark:text-gray-300">
             Your password has been reset successfully. You can now log in with your new password.
           </p>
-          <div className="text-center">
-            <a
-              href="/projects"
-              className="text-blue-600 hover:underline text-sm"
-            >
-              Dashboard
-            </a>
-          </div>
+          <div className="text-sm text-center mt-2">
+          <a href="/projects" className="text-blue-600 hover:underline">
+            Back to Projects
+          </a>
+        </div>
         </div>
       </div>
     );
@@ -55,44 +79,24 @@ export default function PasswordResetPage() {
         <Formik
           initialValues={{ newPassword: "", confirmPassword: "" }}
           validationSchema={validationSchema}
-          onSubmit={async (values, { setSubmitting }) => {
-            setError("");
-
-            try {
-              const res = await passwordReset({
-                new_password: values.newPassword,
-                confirm_password: values.confirmPassword,
-              });
-
-              if (res?.status && res.status !== 200) {
-                setError(res?.detail || "Something went wrong.");
-                console.error("Password reset error:", res);
-              } else {
-                setSubmitted(true);
-              }
-            } catch (err) {
-              console.error("Password reset error:", err);
-              setError("An error occurred while trying to reset the password.");
-            }
-
-            setSubmitting(false);
-          }}
+          onSubmit={(values, { setSubmitting }) =>
+            handleSubmit(values, setError, setSubmitted, setSubmitting)
+          }
         >
           {({ isSubmitting }) => (
             <Form className="space-y-4">
               {error && <Alert variant="destructive">{error}</Alert>}
-              <div>
+              <div className="space-y-2">
                 <Label htmlFor="newPassword">New Password</Label>
                 <Field as={Input} id="newPassword" name="newPassword" type="password" placeholder="Enter new password" />
                 <ErrorMessage name="newPassword" component="div" className="text-red-500 text-sm" />
               </div>
 
-              <div>
+              <div className="space-y-2">
                 <Label htmlFor="confirmPassword">Confirm Password</Label>
                 <Field as={Input} id="confirmPassword" name="confirmPassword" type="password" placeholder="Re-enter password" />
                 <ErrorMessage name="confirmPassword" component="div" className="text-red-500 text-sm" />
               </div>
-
               <Button type="submit" className="w-full" disabled={isSubmitting}>
                 {isSubmitting ? "Submitting..." : "Reset Password"}
               </Button>
@@ -102,7 +106,7 @@ export default function PasswordResetPage() {
 
         <div className="text-sm text-center mt-2">
           <a href="/projects" className="text-blue-600 hover:underline">
-            Back to Dashboard
+            Back to Projects
           </a>
         </div>
       </div>
