@@ -47,10 +47,6 @@ default-groups = [
 [tool.uv.sources]
 shared = { path = "../shared" }
 
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
 [tool.pytest.ini_options]
 minversion = "6.0"
 pythonpath = ["."]
