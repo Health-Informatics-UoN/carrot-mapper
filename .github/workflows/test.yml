@@ -156,4 +156,4 @@ jobs:
           
         working-directory: app/api
         run: |
-          poetry run pytest
+          uv run pytest
