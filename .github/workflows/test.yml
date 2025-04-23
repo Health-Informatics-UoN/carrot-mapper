@@ -73,14 +73,14 @@ jobs:
         if: steps.cached-uv-dependencies.outputs.cache-hit != 'true'
         working-directory: app/workers
         run: |
-          uv venv  #
-          uv pip install -e . --no-deps  
-          uv pip sync  
+          uv venv
+          uv pip install --no-deps .
+          uv pip sync 
 
       - name: Test with pytest UV
         working-directory: app/workers
         run: |
-          uv run pytest --junitxml=pytest.xml --cov-report=term-missing:skip-covered --cov=sources test | tee pytest-coverage.txt
+          .venv/bin/pytest --junitxml=pytest.xml --cov-report=term-missing:skip-covered --cov=sources test | tee pytest-coverage.txt
 
       - name: Pytest coverage comment
         uses: MishaKav/pytest-coverage-comment@main
