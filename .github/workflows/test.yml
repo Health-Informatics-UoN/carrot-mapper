@@ -115,27 +115,29 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
+      - name: Install UV
+        run: pip install uv
 
       - name: Load cached venv
         id: cached-poetry-dependencies
         uses: actions/cache@v3
         with:
           path: .venv
-          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
+          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/uv.lock') }}
 
       - name: Install dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         working-directory: app/api
-        run: poetry install --no-interaction --no-root
+        run: |
+          uv venv
+          source .venv/bin/activate
+          uv pip install -e ".[dev,test]"
 
       - name: Install django ${{ matrix.django-version }}
         working-directory: app/api
         run: |
-          poetry run python -m venv .venv
           source .venv/bin/activate
-          pip install "Django==${{ matrix.django-version }}"
+          uv pip install "Django==${{ matrix.django-version }}"
 
       - name: Test with Django
         env:
