@@ -54,6 +54,20 @@ default-groups = [
 [tool.uv.sources]
 shared = { path = "../shared", editable = true }
 
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = [
+    "api",
+    "authn",
+    "config",
+    "static",
+    "datasets",
+    "projects"
+]
+
 [tool.pytest.ini_options]
 minversion = "6.0"
 addopts = "-ra -q"
