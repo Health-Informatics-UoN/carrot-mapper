@@ -1,48 +1,58 @@
-[tool.poetry]
+[project]
 name = "api"
 version = "2.2.13"
 description = "Web app for Carrot-Mapper"
-authors = ["Sam Cox <sam.cox@nottingham.ac.uk>", "Philip Quinlan <philip.quinlan@nottingham.ac.uk>"]
+
+authors = [
+    { name = "Sam Cox", email = "sam.cox@nottingham.ac.uk" },
+    { name = "Philip Quinlan", email = "philip.quinlan@nottingham.ac.uk" },
+]
+
+requires-python = "~=3.11"
 license = "MIT"
 
-[tool.poetry.dependencies]
-python = "^3.11"
-django = "4.2.15"
-openpyxl = "3.1.3"
-django-select2 = "^8.1.2"
-django-extra-views = "^0.14.0"
-psycopg2 = "^2.9.9"
-djangorestframework = "^3.15.2"
-django-filter = "^24.2"
-requests = "^2.31.0"
-azure-common = "^1.1.28"
-azure-storage-queue = "^12.10.0"
-azure-storage-blob = "^12.20.0"
-whitenoise = "^6.7.0"
-gunicorn = "22.0.0"
-graphviz = "^0.20.3"
-drf-dynamic-fields = "^0.4.0"
-django-cors-headers = "^4.4.0"
-python-dotenv = "^1.0.1"
-shared = {path = "../shared", develop = true}
-azure-monitor-opentelemetry = "^1.6.0"
-djangorestframework-simplejwt = "^5.3.1"
-django-allauth = "0.61.1"
-dj-rest-auth = {extras = ["with-social"], version = "^6.0.0"}
-minio = "^7.2.15"
+dependencies = [
+    "django==4.2.15",
+    "openpyxl==3.1.3",
+    "django-select2>=8.1.2,<9",
+    "django-extra-views>=0.14.0,<0.15",
+    "psycopg2>=2.9.9,<3",
+    "djangorestframework>=3.15.2,<4",
+    "django-filter~=24.2",
+    "requests>=2.31.0,<3",
+    "azure-common>=1.1.28,<2",
+    "azure-storage-queue>=12.10.0,<13",
+    "azure-storage-blob>=12.20.0,<13",
+    "whitenoise>=6.7.0,<7",
+    "gunicorn==22.0.0",
+    "graphviz>=0.20.3,<0.21",
+    "drf-dynamic-fields>=0.4.0,<0.5",
+    "django-cors-headers>=4.4.0,<5",
+    "python-dotenv>=1.0.1,<2",
+    "shared",
+    "azure-monitor-opentelemetry>=1.6.0,<2",
+    "djangorestframework-simplejwt>=5.3.1,<6",
+    "django-allauth==0.61.1",
+    "dj-rest-auth[with-social]>=6.0.0,<7",
+    "minio>=7.2.15,<8",
+]
 
-[tool.poetry.group.test.dependencies]
-pytest-django = "^4.8.0"
+[dependency-groups]
+test = ["pytest-django>=4.8.0,<5"]
+dev = [
+    "django-stubs>=5.0.2,<6",
+    "djangorestframework-stubs>=3.15.0,<4",
+    "django-filter-stubs>=0.1.3,<0.2",
+]
 
+[tool.uv]
+default-groups = [
+    "test",
+    "dev",
+]
 
-[tool.poetry.group.dev.dependencies]
-django-stubs = "^5.0.2"
-djangorestframework-stubs = "^3.15.0"
-django-filter-stubs = "^0.1.3"
-
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+[tool.uv.sources]
+shared = { path = "../shared", editable = true }
 
 [tool.pytest.ini_options]
 minversion = "6.0"
