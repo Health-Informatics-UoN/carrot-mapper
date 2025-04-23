@@ -41,6 +41,9 @@ COPY ./api/poetry.lock ./api/poetry.lock
 COPY ./shared /shared
 
 # Install Poetry and Export Poetry Plugin
+RUN pip install --upgrade pip
+RUN pip install --upgrade setuptools
+RUN pip install --upgrade wheel
 RUN pip install poetry
 RUN pip install poetry-plugin-export
 
