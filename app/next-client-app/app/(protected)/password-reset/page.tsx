@@ -17,7 +17,7 @@ const validationSchema = Yup.object({
     .required("Confirm password is required!"),
 });
 
-const   = async (
+const handleSubmit = async (
   values: { newPassword: string; confirmPassword: string },
   setError: (error: string) => void,
   setSubmitted: (submitted: boolean) => void,
