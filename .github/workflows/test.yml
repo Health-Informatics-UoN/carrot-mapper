@@ -74,7 +74,12 @@ jobs:
         working-directory: app/workers
         run: |
           uv venv
-          run: uv pip install --no-deps --no-editable .
+          source .venv/bin/activate
+          cd ../shared
+          uv pip install -e .
+          cd ../workers
+          uv pip install --no-deps .
+          uv pip install -e ".[dev,test]"
 
       - name: Test with pytest UV
         working-directory: app/workers
