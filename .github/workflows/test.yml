@@ -73,8 +73,6 @@ jobs:
         if: steps.cached-uv-dependencies.outputs.cache-hit != 'true'
         working-directory: app/workers
         run: |
-          uv venv
-          source .venv/bin/activate
           uv pip install -e ".[dev,test]"
 
       - name: Test with pytest UV
