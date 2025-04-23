@@ -42,9 +42,9 @@ def find_dest_table_and_person_field_id(**kwargs):
         -- Update destination table ID
         UPDATE temp_standard_concepts_{table_id} tsc
         SET dest_table_id = ot.id
-        FROM omop.concept c2
+        FROM omop.concept std_concept
         LEFT JOIN mapping_omoptable ot ON
-            CASE c2.domain_id
+            CASE std_concept.domain_id
                 WHEN 'Race' THEN 'person'
                 WHEN 'Gender' THEN 'person'
                 WHEN 'Ethnicity' THEN 'person'
@@ -56,9 +56,9 @@ def find_dest_table_and_person_field_id(**kwargs):
                 WHEN 'Procedure' THEN 'procedure_occurrence'
                 WHEN 'Meas Value' THEN 'measurement'
                 WHEN 'Specimen' THEN 'specimen'
-                ELSE LOWER(c2.domain_id)
+                ELSE LOWER(std_concept.domain_id)
             END = ot.table
-        WHERE c2.concept_id = tsc.standard_concept_id;
+        WHERE std_concept.concept_id = tsc.standard_concept_id;
         
         -- Update person field ID
         UPDATE temp_standard_concepts_{table_id} tsc

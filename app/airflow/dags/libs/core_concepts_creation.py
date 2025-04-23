@@ -84,18 +84,18 @@ def find_standard_concepts(**kwargs):
             INSERT INTO temp_standard_concepts_{table_id} (sr_value_id, source_concept_id, standard_concept_id)
             SELECT
                 srv.id AS sr_value_id,
-                c1.concept_id AS source_concept_id,
-                c2.concept_id AS standard_concept_id
+                src_concept.concept_id AS source_concept_id,
+                std_concept.concept_id AS standard_concept_id
             FROM mapping_scanreportvalue srv
-            JOIN omop.concept c1 ON
-                c1.concept_code = srv.value AND
-                c1.vocabulary_id = '{vocabulary_id}'
+            JOIN omop.concept src_concept ON
+                src_concept.concept_code = srv.value AND
+                src_concept.vocabulary_id = '{vocabulary_id}'
             JOIN omop.concept_relationship cr ON
-                cr.concept_id_1 = c1.concept_id AND
+                cr.concept_id_1 = src_concept.concept_id AND
                 cr.relationship_id = 'Maps to'
-            JOIN omop.concept c2 ON
-                c2.concept_id = cr.concept_id_2 AND
-                c2.standard_concept = 'S'
+            JOIN omop.concept std_concept ON
+                std_concept.concept_id = cr.concept_id_2 AND
+                std_concept.standard_concept = 'S'
             WHERE srv.scan_report_field_id = {sr_field_id};
             """
             try:
