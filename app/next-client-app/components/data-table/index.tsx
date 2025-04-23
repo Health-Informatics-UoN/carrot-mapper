@@ -17,6 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+
 import React from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,6 +28,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+
 import { DataTablePagination } from "./DataTablePagination";
 import { Columns3 } from "lucide-react";
 
@@ -41,6 +43,7 @@ interface DataTableProps<TData, TValue> {
   overflow?: boolean;
   RefreshButton?: JSX.Element;
   defaultPageSize?: 10 | 20 | 30 | 40 | 50;
+  isUploading?: boolean; // New prop
 }
 
 function UrlBuilder(id: string, prefix: string = "") {
@@ -58,6 +61,7 @@ export function DataTable<TData, TValue>({
   overflow = true,
   RefreshButton,
   defaultPageSize,
+  isUploading = false, // Default to false
 }: DataTableProps<TData, TValue>) {
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({});
@@ -78,8 +82,6 @@ export function DataTable<TData, TValue>({
 
   const handleRowClick = (id: string) => {
     let location = window.location.pathname;
-    // the test method of the regular expression object to check if location contains "datasets/" followed by one or more digits.
-    // If it does, it sets location to "/scanreports/"
     if (/datasets\/\d+/.test(location)) {
       location = "/scanreports/";
     }
@@ -97,7 +99,6 @@ export function DataTable<TData, TValue>({
       <div className="flex justify-between items-center mb-3">
         {Filter}
         {RefreshButton}
-        {/* Views Columns Menu */}
         {viewColumns && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -134,65 +135,59 @@ export function DataTable<TData, TValue>({
           </DropdownMenu>
         )}
       </div>
+
       <div className="rounded-md border">
         <Table overflow={overflow}>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => {
-                  return (
-                    <TableHead key={header.id}>
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                    </TableHead>
-                  );
-                })}
+                {headerGroup.headers.map((header) => (
+                  <TableHead key={header.id}>
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
+                  </TableHead>
+                ))}
               </TableRow>
             ))}
           </TableHeader>
+
           <TableBody>
-            {table.getRowModel().rows?.length ? (
+            {data.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={columns.length} className="h-24 text-center">
+                  {isUploading
+                    ? "Upload is in progress and scan report data will be available soon."
+                    : "No results."}
+                </TableCell>
+              </TableRow>
+            ) : (
               table.getRowModel().rows.map((row) => (
                 <TableRow
                   key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
+                  onClick={() => handleRowClick(row.original["id"])}
+                  className="cursor-pointer"
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
-                      <div>
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
-                      </div>
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext()
+                      )}
                     </TableCell>
                   ))}
                 </TableRow>
               ))
-            ) : (
-              <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="h-24 text-center"
-                >
-                  No results.
-                </TableCell>
-              </TableRow>
             )}
           </TableBody>
         </Table>
       </div>
+
       {paginated && (
-        <div className="flex items-center justify-center space-x-2 pt-4">
-          <DataTablePagination
-            count={count}
-            defaultPageSize={defaultPageSize}
-          />
-        </div>
+        <DataTablePagination table={table} totalCount={count} />
       )}
     </div>
   );
