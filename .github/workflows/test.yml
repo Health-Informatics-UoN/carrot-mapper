@@ -75,12 +75,17 @@ jobs:
         run: |
           uv venv
           source .venv/bin/activate
-          uv pip install -e ".[dev]" 
+          cd ../shared
+          uv pip install -e .
+          cd ../workers
+          uv pip install --no-deps .
+          uv pip sync
 
       - name: Test with pytest UV
         working-directory: app/workers
         run: |
-          .venv/bin/pytest --junitxml=pytest.xml --cov-report=term-missing:skip-covered --cov=sources test | tee pytest-coverage.txt
+          source .venv/bin/activate
+          pytest --junitxml=pytest.xml --cov-report=term-missing:skip-covered --cov=. test | tee pytest-coverage.txt
 
       - name: Pytest coverage comment
         uses: MishaKav/pytest-coverage-comment@main
