@@ -74,8 +74,8 @@ jobs:
         working-directory: app/workers
         run: |
           uv venv
-          uv pip install --no-build-isolation -e . --no-deps
-          uv pip sync
+          source .venv/bin/activate
+          uv pip install .
 
       - name: Test with pytest UV
         working-directory: app/workers
