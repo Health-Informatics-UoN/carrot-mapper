@@ -29,10 +29,28 @@ dag = DAG(
 start = EmptyOperator(task_id="start", dag=dag)
 
 # Trigger concept mapping
-trigger_create_concepts_vocabs = TriggerDagRunOperator(
-    task_id="trigger_create_concepts_from_vocab_dict",
-    trigger_dag_id="create_concepts_from_vocab_dict",
+# trigger_create_concepts_vocabs = TriggerDagRunOperator(
+#     task_id="trigger_create_concepts_from_vocab_dict",
+#     trigger_dag_id="create_concepts_from_vocab_dict",
+#     conf={
+#         "parent_dataset_id": "{{ dag_run.conf['parent_dataset_id'] }}",
+#         "table_id": "{{ dag_run.conf['table_id'] }}",
+#         "person_id_field": "{{ dag_run.conf['person_id_field'] }}",
+#         "date_event_field": "{{ dag_run.conf['date_event_field'] }}",
+#         "scan_report_id": "{{ dag_run.conf['scan_report_id'] }}",
+#         "field_vocab_pairs": "{{ dag_run.conf['field_vocab_pairs'] }}",
+#     },
+#     wait_for_completion=True,
+#     dag=dag,
+# )
+
+
+# Trigger concept mapping
+trigger_reuse_concepts = TriggerDagRunOperator(
+    task_id="trigger_reuse_concepts",
+    trigger_dag_id="reuse_concepts",
     conf={
+        "parent_dataset_id": "{{ dag_run.conf['parent_dataset_id'] }}",
         "table_id": "{{ dag_run.conf['table_id'] }}",
         "person_id_field": "{{ dag_run.conf['person_id_field'] }}",
         "date_event_field": "{{ dag_run.conf['date_event_field'] }}",
@@ -42,7 +60,6 @@ trigger_create_concepts_vocabs = TriggerDagRunOperator(
     wait_for_completion=True,
     dag=dag,
 )
-
 #  TODO: add trigger for Reuse concepts here
 
 
@@ -61,4 +78,7 @@ trigger_create_concepts_vocabs = TriggerDagRunOperator(
 end = EmptyOperator(task_id="end", dag=dag)
 
 # Define task dependencies
-start >> trigger_create_concepts_vocabs >> end
+# start >> trigger_create_concepts_vocabs >> trigger_reuse_concepts >> end
+
+
+start >> trigger_reuse_concepts >> end
