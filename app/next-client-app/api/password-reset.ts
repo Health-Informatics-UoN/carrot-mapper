@@ -19,8 +19,8 @@ export async function passwordReset({
       throw new Error("All fields are required.");
     }
 
-    const backendUrl = process.env.NEXT_PUBLIC_NEXTAUTH_BACKEND_URL;
-    console.log("Backend URL:", backendUrl);
+    const backendUrl = process.env.NEXTAUTH_BACKEND_URL;
+  
 
     if (!backendUrl) {
       throw new Error("Backend URL not defined.");
