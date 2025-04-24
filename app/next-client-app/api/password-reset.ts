@@ -4,7 +4,6 @@ import request from "@/lib/api/request";
 
 const fetchKeys = {
   passwordReset: () => `auth/password/reset/`,
-  csrfToken: () => `auth/csrf-token/`,
 };
 
 export async function passwordReset({
