@@ -94,7 +94,10 @@ MIDDLEWARE = [
     "whitenoise.middleware.WhiteNoiseMiddleware",
 ]
 
+CORS_ALLOW_CREDENTIALS = os.getenv("CORS_ALLOW_CREDENTIALS", "False")
+CORS_ALLOWED_ORIGINS = [os.environ.get("FRONTEND_URL", "http://localhost:3000")]
 CSRF_TRUSTED_ORIGINS = [os.environ.get("FRONTEND_URL", "http://localhost:3000")]
+
 SITE_ID = 1
 
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
@@ -176,7 +179,6 @@ USE_L10N = True
 
 USE_TZ = True
 
-CORS_ORIGIN_ALLOW_ALL = True
 
 CACHES = {
     "default": {
@@ -195,7 +197,6 @@ REST_FRAMEWORK = {
 }
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.1/howto/static-files/
-
 STATIC_URL = "/static/"
 
 LOGIN_REDIRECT_URL = "/scanreports/"
@@ -213,9 +214,13 @@ FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:3000")
 WORKERS_URL = os.environ.get("WORKERS_URL", "http://localhost:7071")
 WORKERS_RULES_NAME = os.environ.get("WORKERS_RULES_NAME", "RulesOrchestrator")
 WORKERS_RULES_KEY = os.environ.get("WORKERS_RULES_KEY", "")
+
+# Queue Names
 WORKERS_RULES_EXPORT_NAME = os.environ.get(
-    "WORKERS_RULES_EXPORT_NAME", "rules-exports-local"
+    "WORKERS_RULES_EXPORT_NAME", "rules-exports-queue"
 )
+WORKERS_UPLOAD_NAME = os.environ.get("WORKERS_UPLOAD_NAME", "upload-reports-queue")
+RULES_QUEUE_NAME = os.environ.get("RULES_QUEUE_NAME", "rules-queue")
 
 # Auth
 
