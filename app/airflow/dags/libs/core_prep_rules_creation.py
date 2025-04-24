@@ -27,8 +27,8 @@ def find_dest_table_and_person_field_id(**kwargs):
     try:
         table_id = kwargs.get("dag_run", {}).conf.get("table_id")
         update_job_status(
-            scan_report_id=kwargs.get("dag_run", {}).conf.get("scan_report_id"),
-            table_id=table_id,
+            scan_report=kwargs.get("dag_run", {}).conf.get("scan_report_id"),
+            scan_report_table=table_id,
             stage=JobStageType.GENERATE_RULES,
             status=StageStatusType.IN_PROGRESS,
             details="Finding destination table and field IDs...",
@@ -40,10 +40,10 @@ def find_dest_table_and_person_field_id(**kwargs):
 
         core_query = f"""
         -- Update destination table ID
-        UPDATE temp_standard_concepts_{table_id} tsc
-        SET dest_table_id = ot.id
-        FROM omop.concept std_concept
-        LEFT JOIN mapping_omoptable ot ON
+        UPDATE temp_standard_concepts_{table_id} temp_std_concepts
+        SET dest_table_id = omop_table.id
+        FROM omop.concept AS std_concept
+        LEFT JOIN mapping_omoptable AS omop_table ON
             CASE std_concept.domain_id
                 WHEN 'Race' THEN 'person'
                 WHEN 'Gender' THEN 'person'
@@ -54,18 +54,17 @@ def find_dest_table_and_person_field_id(**kwargs):
                 WHEN 'Measurement' THEN 'measurement'
                 WHEN 'Drug' THEN 'drug_exposure'
                 WHEN 'Procedure' THEN 'procedure_occurrence'
-                WHEN 'Meas Value' THEN 'measurement'
                 WHEN 'Specimen' THEN 'specimen'
                 ELSE LOWER(std_concept.domain_id)
-            END = ot.table
-        WHERE std_concept.concept_id = tsc.standard_concept_id;
+            END = omop_table.table
+        WHERE std_concept.concept_id = temp_std_concepts.standard_concept_id;
         
         -- Update person field ID
-        UPDATE temp_standard_concepts_{table_id} tsc
-        SET dest_person_field_id = opf.id
-        FROM mapping_omopfield opf
-        WHERE opf.table_id = tsc.dest_table_id
-        AND opf.field = 'person_id';
+        UPDATE temp_standard_concepts_{table_id} temp_std_concepts
+        SET dest_person_field_id = omop_field.id
+        FROM mapping_omopfield omop_field
+        WHERE omop_field.table_id = temp_std_concepts.dest_table_id
+        AND omop_field.field = 'person_id';
         """
         try:
             pg_hook.run(core_query)
@@ -105,45 +104,45 @@ def find_date_fields(**kwargs):
         # Optimized SQL with better structure and reduced redundancy
         dates_query = f"""
         -- Single consolidated update using CASE expressions for better performance
-        UPDATE temp_standard_concepts_{table_id} tsc
+        UPDATE temp_standard_concepts_{table_id} temp_std_concepts
         SET 
             dest_date_field_id = (
-                SELECT mf.id
-                FROM mapping_omopfield mf
-                JOIN mapping_omoptable mt ON mt.id = mf.table_id
-                WHERE mf.table_id = tsc.dest_table_id
+                SELECT omop_field.id
+                FROM mapping_omopfield AS omop_field
+                JOIN mapping_omoptable AS omop_table ON omop_table.id = omop_field.table_id
+                WHERE omop_field.table_id = temp_std_concepts.dest_table_id
                 AND (
-                    (mt.table = 'person' AND mf.field = 'birth_datetime') OR
-                    (mt.table = 'measurement' AND mf.field = 'measurement_datetime') OR
-                    (mt.table = 'observation' AND mf.field = 'observation_datetime') OR
-                    (mt.table = 'procedure_occurrence' AND mf.field = 'procedure_datetime') OR
-                    (mt.table = 'specimen' AND mf.field = 'specimen_datetime')
+                    (omop_table.table = 'person' AND omop_field.field = 'birth_datetime') OR
+                    (omop_table.table = 'measurement' AND omop_field.field = 'measurement_datetime') OR
+                    (omop_table.table = 'observation' AND omop_field.field = 'observation_datetime') OR
+                    (omop_table.table = 'procedure_occurrence' AND omop_field.field = 'procedure_datetime') OR
+                    (omop_table.table = 'specimen' AND omop_field.field = 'specimen_datetime')
                 )
                 LIMIT 1
             ),
             
             dest_start_date_field_id = (
-                SELECT mf.id
-                FROM mapping_omopfield mf
-                JOIN mapping_omoptable mt ON mt.id = mf.table_id
-                WHERE mf.table_id = tsc.dest_table_id
+                SELECT omop_field.id
+                FROM mapping_omopfield AS omop_field
+                JOIN mapping_omoptable AS omop_table ON omop_table.id = omop_field.table_id
+                WHERE omop_field.table_id = temp_std_concepts.dest_table_id
                 AND (
-                    (mt.table = 'condition_occurrence' AND mf.field = 'condition_start_datetime') OR
-                    (mt.table = 'drug_exposure' AND mf.field = 'drug_exposure_start_datetime') OR
-                    (mt.table = 'device_exposure' AND mf.field = 'device_exposure_start_datetime')
+                    (omop_table.table = 'condition_occurrence' AND omop_field.field = 'condition_start_datetime') OR
+                    (omop_table.table = 'drug_exposure' AND omop_field.field = 'drug_exposure_start_datetime') OR
+                    (omop_table.table = 'device_exposure' AND omop_field.field = 'device_exposure_start_datetime')
                 )
                 LIMIT 1
             ),
             
             dest_end_date_field_id = (
-                SELECT mf.id
-                FROM mapping_omopfield mf
-                JOIN mapping_omoptable mt ON mt.id = mf.table_id
-                WHERE mf.table_id = tsc.dest_table_id
+                SELECT omop_field.id
+                FROM mapping_omopfield AS omop_field
+                JOIN mapping_omoptable AS omop_table ON omop_table.id = omop_field.table_id
+                WHERE omop_field.table_id = temp_std_concepts.dest_table_id
                 AND (
-                    (mt.table = 'condition_occurrence' AND mf.field = 'condition_end_datetime') OR
-                    (mt.table = 'drug_exposure' AND mf.field = 'drug_exposure_end_datetime') OR
-                    (mt.table = 'device_exposure' AND mf.field = 'device_exposure_end_datetime')
+                    (omop_table.table = 'condition_occurrence' AND omop_field.field = 'condition_end_datetime') OR
+                    (omop_table.table = 'drug_exposure' AND omop_field.field = 'drug_exposure_end_datetime') OR
+                    (omop_table.table = 'device_exposure' AND omop_field.field = 'device_exposure_end_datetime')
                 )
                 LIMIT 1
             );
@@ -166,7 +165,7 @@ def find_concept_fields(**kwargs):
     """
     Add concept-related field IDs to the temporary concepts table.
     Includes source concept, source value, and destination concept fields.
-    For person table, handles gender, race, and ethnicity domains separately.
+    Uses domain-specific field patterns with strict table mapping.
     """
     try:
         table_id = kwargs.get("dag_run", {}).conf.get("table_id")
@@ -174,74 +173,54 @@ def find_concept_fields(**kwargs):
         if not table_id:
             logging.warning("No table_id provided in find_concept_fields")
 
-        # Person table specific handling based on domain, because Race, Gander and Ethnicity are in the same table Person
-        person_specific_query = f"""
-        -- For person table, update based on domain_id
-        WITH domain_field_map AS (
-            SELECT 
-                tsc.sr_value_id,
-                c.domain_id,
-                LOWER(c.domain_id) AS field_prefix,
-                MAX(CASE WHEN mf.field = LOWER(c.domain_id) || '_source_concept_id' THEN mf.id END) AS source_concept_field_id,
-                MAX(CASE WHEN mf.field = LOWER(c.domain_id) || '_source_value' THEN mf.id END) AS source_value_field_id,
-                MAX(CASE WHEN mf.field = LOWER(c.domain_id) || '_concept_id' THEN mf.id END) AS dest_concept_field_id
-            FROM temp_standard_concepts_{table_id} tsc
-            JOIN omop.concept c ON c.concept_id = tsc.standard_concept_id
-            JOIN mapping_omoptable ot ON ot.table = 'person' AND tsc.dest_table_id = ot.id
-            JOIN mapping_omopfield mf ON mf.table_id = ot.id
-            WHERE c.domain_id IN ('Gender', 'Race', 'Ethnicity')
-            GROUP BY tsc.sr_value_id, c.domain_id
-        )
-        UPDATE temp_standard_concepts_{table_id} tsc
-        SET 
-            source_concept_field_id = dfm.source_concept_field_id,
-            source_value_field_id = dfm.source_value_field_id,
-            dest_concept_field_id = dfm.dest_concept_field_id
-        FROM domain_field_map dfm
-        WHERE dfm.sr_value_id = tsc.sr_value_id;
-        """
+        # Create a staging table with computed field values
+        stage_query = f"""
+        -- Create a staging table with the correct field IDs for each record
+        CREATE TABLE temp_concept_fields_staging_{table_id} AS
+        SELECT 
+            temp_std_concepts.sr_value_id,
+            temp_std_concepts.standard_concept_id,
+            std_concept.domain_id,
+            -- Use domain-specific source_concept_field_id
+            (SELECT omop_field.id 
+            FROM mapping_omopfield AS omop_field 
+            WHERE omop_field.table_id = temp_std_concepts.dest_table_id 
+            AND omop_field.field = LOWER(std_concept.domain_id) || '_source_concept_id'
+            LIMIT 1) AS source_concept_field_id,
 
-        # For non-person tables or unmatched domains, use generic pattern matching in a single update
-        # NOTE: This approach is not perfect, especially for the dest_concept_field_id,
-        # because it will be updated with the first concept_id that matches the pattern (depends on the order of the field in the DB)
-        # But so far it is working as expected
-        # can be improved by doing something similar to person table (match domain + suffix) or adding more conditions to the LIKE or/and NOT LIKE
-        non_person_query = f"""
-        -- Update source_concept_field_id for non-person tables
-        UPDATE temp_standard_concepts_{table_id} tsc
-        SET source_concept_field_id = scf.id
-        FROM mapping_omopfield scf, mapping_omoptable ot
-        WHERE scf.table_id = tsc.dest_table_id 
-        AND ot.id = tsc.dest_table_id
-        AND scf.field LIKE '%_source_concept_id'
-        AND ot.table != 'person';
+            -- Use domain-specific source_value_field_id
+            (SELECT omop_field.id 
+            FROM mapping_omopfield AS omop_field 
+            WHERE omop_field.table_id = temp_std_concepts.dest_table_id 
+            AND omop_field.field = LOWER(std_concept.domain_id) || '_source_value'
+            LIMIT 1) AS source_value_field_id,
 
-        -- Update source_value_field_id for non-person tables
-        UPDATE temp_standard_concepts_{table_id} tsc
-        SET source_value_field_id = svf.id
-        FROM mapping_omopfield svf, mapping_omoptable ot
-        WHERE svf.table_id = tsc.dest_table_id 
-        AND ot.id = tsc.dest_table_id
-        AND svf.field LIKE '%_source_value'
-        AND ot.table != 'person';
+            -- Use domain-specific dest_concept_field_id
+            (SELECT omop_field.id 
+            FROM mapping_omopfield AS omop_field 
+            WHERE omop_field.table_id = temp_std_concepts.dest_table_id 
+            AND omop_field.field = LOWER(std_concept.domain_id) || '_concept_id'
+            LIMIT 1) AS dest_concept_field_id
+
+        FROM temp_standard_concepts_{table_id} temp_std_concepts
+        JOIN omop.concept AS std_concept ON std_concept.concept_id = temp_std_concepts.standard_concept_id;
         
-        -- Update dest_concept_field_id for non-person tables
-        UPDATE temp_standard_concepts_{table_id} tsc
-        SET dest_concept_field_id = dcf.id
-        FROM mapping_omopfield dcf, mapping_omoptable ot
-        WHERE dcf.table_id = tsc.dest_table_id 
-        AND ot.id = tsc.dest_table_id
-        AND dcf.field LIKE '%_concept_id'
-        AND dcf.field NOT LIKE '%_source_concept_id'
-        AND dcf.field NOT LIKE '%_type_concept_id'
-        AND ot.table != 'person';
+        -- Then update the main table from the staging table
+        UPDATE temp_standard_concepts_{table_id} temp_std_concepts
+        SET 
+            source_concept_field_id = temp_staging_table.source_concept_field_id,
+            source_value_field_id = temp_staging_table.source_value_field_id,
+            dest_concept_field_id = temp_staging_table.dest_concept_field_id
+        FROM temp_concept_fields_staging_{table_id} temp_staging_table
+        WHERE temp_staging_table.sr_value_id = temp_std_concepts.sr_value_id
+        AND temp_staging_table.standard_concept_id = temp_std_concepts.standard_concept_id;
+        
+        -- Clean up
+        DROP TABLE IF EXISTS temp_concept_fields_staging_{table_id};
         """
-
-        # Combine queries
-        concept_query = person_specific_query + non_person_query
 
         try:
-            pg_hook.run(concept_query)
+            pg_hook.run(stage_query)
             logging.info("Successfully added concept field IDs")
         except Exception as e:
             logging.error(f"Database error in find_concept_fields: {str(e)}")
@@ -268,7 +247,7 @@ def find_additional_fields(**kwargs):
 
         for pair in field_vocab_pairs:
             field_data_type = pair.get("field_data_type", "").lower()
-            numeric_types = ["int", "real", "float"]
+            numeric_types = ["int", "real", "float", "numeric", "decimal", "double"]
             string_types = ["varchar", "nvarchar", "text", "string", "char"]
             is_string = (
                 any(t in field_data_type for t in string_types)
@@ -281,66 +260,84 @@ def find_additional_fields(**kwargs):
                 else False
             )
 
-            value_as_number_query = f"""
-            -- Update value_as_number_field_id for measurement domain concepts
-            WITH measurement_concepts AS (
-                SELECT tsc.sr_value_id, tsc.standard_concept_id, tsc.dest_table_id
-                FROM temp_standard_concepts_{table_id} tsc
-                JOIN omop.concept c ON c.concept_id = tsc.standard_concept_id
-                WHERE c.domain_id = 'Measurement'
-            )
-            UPDATE temp_standard_concepts_{table_id} tsc
-            SET value_as_number_field_id = mf.id
-            FROM measurement_concepts mc
-            JOIN mapping_omopfield mf ON mf.table_id = mc.dest_table_id AND mf.field = 'value_as_number'
-            WHERE tsc.sr_value_id = mc.sr_value_id;
-            """
-
-            # TODO: refine and find solution for value_as_concept_field_id
-
-            # Depend on the field data type, add the appropriate query
-            if is_numeric:
-                value_as_number_query += f"""
-            -- Update value_as_number_field_id for observation domain concepts with numeric data types
-            WITH observation_concepts AS (
-                SELECT tsc.sr_value_id, tsc.standard_concept_id, tsc.dest_table_id
-                FROM temp_standard_concepts_{table_id} tsc
-                JOIN omop.concept c ON c.concept_id = tsc.standard_concept_id
-                WHERE c.domain_id = 'Observation'
-            )
-            UPDATE temp_standard_concepts_{table_id} tsc
-            SET value_as_number_field_id = of.id
-            FROM observation_concepts oc
-            JOIN mapping_omopfield of ON of.table_id = oc.dest_table_id AND of.field = 'value_as_number'
-            WHERE tsc.sr_value_id = oc.sr_value_id;
-            """
-
-            if is_string:
-                value_as_number_query += f"""
-            -- Update value_as_string_field_id for observation domain concepts with string data types
-            WITH observation_concepts AS (
-                SELECT tsc.sr_value_id, tsc.standard_concept_id, tsc.dest_table_id
-                FROM temp_standard_concepts_{table_id} tsc
-                JOIN omop.concept c ON c.concept_id = tsc.standard_concept_id
-                WHERE c.domain_id = 'Observation'
-            )
-            UPDATE temp_standard_concepts_{table_id} tsc
-            SET value_as_string_field_id = of.id
-            FROM observation_concepts oc
-            JOIN mapping_omopfield of ON of.table_id = oc.dest_table_id AND of.field = 'value_as_string'
-            WHERE tsc.sr_value_id = oc.sr_value_id;
+            # Always add value_as_number to Measurement domain concepts, but ONLY if they're in the measurement table
+            measurement_query = f"""
+            -- Update value_as_number_field_id for measurement domain concepts ONLY
+            UPDATE temp_standard_concepts_{table_id}
+            SET value_as_number_field_id = omop_field.id
+            FROM mapping_omopfield omop_field, omop.concept std_concept, mapping_omoptable omop_table
+            WHERE 
+                std_concept.concept_id = temp_standard_concepts_{table_id}.standard_concept_id AND
+                std_concept.domain_id = 'Measurement' AND
+                omop_field.table_id = temp_standard_concepts_{table_id}.dest_table_id AND
+                omop_field.field = 'value_as_number' AND
+                omop_table.id = temp_standard_concepts_{table_id}.dest_table_id AND
+                omop_table.table = 'measurement';
             """
 
             try:
-                pg_hook.run(value_as_number_query)
+                pg_hook.run(measurement_query)
                 logging.info(
-                    f"Successfully added additional fields for data type {field_data_type}"
+                    "Successfully added value_as_number for Measurement domain concepts"
                 )
             except Exception as e:
-                logging.error(
-                    f"Database error in find_additional_fields for data type {field_data_type}: {str(e)}"
-                )
+                logging.error(f"Database error in measurement_query: {str(e)}")
                 raise
+
+            # Only add value_as_number to Observation domain concepts with numeric data types
+            if is_numeric:
+                observation_number_query = f"""
+                -- Update value_as_number_field_id for Observation domain concepts with numeric data types
+                UPDATE temp_standard_concepts_{table_id}
+                SET value_as_number_field_id = omop_field.id
+                FROM mapping_omopfield omop_field, omop.concept std_concept, mapping_omoptable omop_table
+                WHERE 
+                    std_concept.concept_id = temp_standard_concepts_{table_id}.standard_concept_id AND
+                    std_concept.domain_id = 'Observation' AND
+                    omop_field.table_id = temp_standard_concepts_{table_id}.dest_table_id AND
+                    omop_field.field = 'value_as_number' AND
+                    omop_table.id = temp_standard_concepts_{table_id}.dest_table_id AND
+                    omop_table.table = 'observation';
+                """
+
+                try:
+                    pg_hook.run(observation_number_query)
+                    logging.info(
+                        "Successfully added value_as_number for Observation domain concepts"
+                    )
+                except Exception as e:
+                    logging.error(
+                        f"Database error in observation_number_query: {str(e)}"
+                    )
+                    raise
+
+            # Only add value_as_string to Observation domain concepts with string data types
+            if is_string:
+                observation_string_query = f"""
+                -- Update value_as_string_field_id for Observation domain concepts with string data types
+                UPDATE temp_standard_concepts_{table_id}
+                SET value_as_string_field_id = omop_field.id
+                FROM mapping_omopfield omop_field, omop.concept std_concept, mapping_omoptable omop_table
+                WHERE 
+                    std_concept.concept_id = temp_standard_concepts_{table_id}.standard_concept_id AND
+                    std_concept.domain_id = 'Observation' AND
+                    omop_field.table_id = temp_standard_concepts_{table_id}.dest_table_id AND
+                    omop_field.field = 'value_as_string' AND
+                    omop_table.id = temp_standard_concepts_{table_id}.dest_table_id AND
+                    omop_table.table = 'observation';
+                """
+
+                try:
+                    pg_hook.run(observation_string_query)
+                    logging.info(
+                        "Successfully added value_as_string for Observation domain concepts"
+                    )
+                except Exception as e:
+                    logging.error(
+                        f"Database error in observation_string_query: {str(e)}"
+                    )
+                    raise
+
     except Exception as e:
         logging.error(f"Error in find_additional_fields: {str(e)}")
         raise

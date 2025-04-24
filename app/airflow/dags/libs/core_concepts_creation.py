@@ -73,8 +73,8 @@ def find_standard_concepts(**kwargs):
                 )
 
             update_job_status(
-                scan_report_id=scan_report_id,
-                table_id=table_id,
+                scan_report=scan_report_id,
+                scan_report_table=table_id,
                 stage=JobStageType.BUILD_CONCEPTS_FROM_DICT,
                 status=StageStatusType.IN_PROGRESS,
                 details=f"Finding standard concepts for field ID {sr_field_id} with vocabulary ID {vocabulary_id}",
@@ -83,20 +83,20 @@ def find_standard_concepts(**kwargs):
             find_standard_concepts_query = f"""
             INSERT INTO temp_standard_concepts_{table_id} (sr_value_id, source_concept_id, standard_concept_id)
             SELECT
-                srv.id AS sr_value_id,
+                sr_value.id AS sr_value_id,
                 src_concept.concept_id AS source_concept_id,
                 std_concept.concept_id AS standard_concept_id
-            FROM mapping_scanreportvalue srv
-            JOIN omop.concept src_concept ON
-                src_concept.concept_code = srv.value AND
+            FROM mapping_scanreportvalue AS sr_value
+            JOIN omop.concept AS src_concept ON
+                src_concept.concept_code = sr_value.value AND
                 src_concept.vocabulary_id = '{vocabulary_id}'
-            JOIN omop.concept_relationship cr ON
-                cr.concept_id_1 = src_concept.concept_id AND
-                cr.relationship_id = 'Maps to'
-            JOIN omop.concept std_concept ON
-                std_concept.concept_id = cr.concept_id_2 AND
+            JOIN omop.concept_relationship AS concept_relationship ON
+                concept_relationship.concept_id_1 = src_concept.concept_id AND
+                concept_relationship.relationship_id = 'Maps to'
+            JOIN omop.concept AS std_concept ON
+                std_concept.concept_id = concept_relationship.concept_id_2 AND
                 std_concept.standard_concept = 'S'
-            WHERE srv.scan_report_field_id = {sr_field_id};
+            WHERE sr_value.scan_report_field_id = {sr_field_id};
             """
             try:
                 pg_hook.run(find_standard_concepts_query)
@@ -108,8 +108,8 @@ def find_standard_concepts(**kwargs):
                     f"Failed to insert standard concepts for field ID {sr_field_id}: {str(e)}"
                 )
                 update_job_status(
-                    scan_report_id=scan_report_id,
-                    table_id=table_id,
+                    scan_report=scan_report_id,
+                    scan_report_table=table_id,
                     stage=JobStageType.BUILD_CONCEPTS_FROM_DICT,
                     status=StageStatusType.FAILED,
                     details=f"Error in find_standard_concepts_query: {str(e)}",
@@ -145,16 +145,16 @@ def create_standard_concepts(**kwargs):
             SELECT
                 NOW(),
                 NOW(),
-                tsc.sr_value_id,
-                'V', -- Creation type: Built from Vocab dict
-                tsc.standard_concept_id,
-                23 -- content_type_id for scanreportvalue
-            FROM temp_standard_concepts_{table_id} tsc
+                temp_std_concepts.sr_value_id,
+                'V',           -- Creation type: Built from Vocab dict
+                temp_std_concepts.standard_concept_id,
+                23             -- content_type_id for scanreportvalue
+            FROM temp_standard_concepts_{table_id} AS temp_std_concepts
             WHERE NOT EXISTS (
                 -- Check if the concept already exists
                 SELECT 1 FROM mapping_scanreportconcept
-                WHERE object_id = tsc.sr_value_id
-                AND concept_id = tsc.standard_concept_id
+                WHERE object_id = temp_std_concepts.sr_value_id
+                AND concept_id = temp_std_concepts.standard_concept_id
                 AND content_type_id = 23
             );
             """
@@ -162,8 +162,8 @@ def create_standard_concepts(**kwargs):
             pg_hook.run(create_concept_query)
             logging.info("Successfully created standard concepts")
             update_job_status(
-                scan_report_id=scan_report_id,
-                table_id=table_id,
+                scan_report=scan_report_id,
+                scan_report_table=table_id,
                 stage=JobStageType.BUILD_CONCEPTS_FROM_DICT,
                 status=StageStatusType.COMPLETE,
                 details="Successfully created standard concepts",
@@ -171,8 +171,8 @@ def create_standard_concepts(**kwargs):
         except Exception as e:
             logging.error(f"Database error in create_standard_concepts: {str(e)}")
             update_job_status(
-                scan_report_id=scan_report_id,
-                table_id=table_id,
+                scan_report=scan_report_id,
+                scan_report_table=table_id,
                 stage=JobStageType.BUILD_CONCEPTS_FROM_DICT,
                 status=StageStatusType.FAILED,
                 details=f"Error in create_standard_concepts: {str(e)}",
@@ -196,12 +196,12 @@ def find_sr_concept_id(**kwargs):
 
         update_query = f"""        
         -- Update sr_concept_id with the mapping_scanreportconcept ID
-        UPDATE temp_standard_concepts_{table_id} tsc
-        SET sr_concept_id = src.id
-        FROM mapping_scanreportconcept src
-        WHERE src.object_id = tsc.sr_value_id
-        AND src.concept_id = tsc.standard_concept_id
-        AND src.content_type_id = 23;
+        UPDATE temp_standard_concepts_{table_id} AS temp_std_concepts
+        SET sr_concept_id = sr_concept.id
+        FROM mapping_scanreportconcept AS sr_concept
+        WHERE sr_concept.object_id = temp_std_concepts.sr_value_id
+        AND sr_concept.concept_id = temp_std_concepts.standard_concept_id
+        AND sr_concept.content_type_id = 23;
         """
 
         try:

@@ -40,8 +40,8 @@ def process_field_vocab_pairs(field_vocab_pairs: str):
 
 
 def update_job_status(
-    scan_report_id: int,
-    table_id: int,
+    scan_report: int,
+    scan_report_table: int,
     stage: JobStageType,
     status: StageStatusType,
     details: str = "",
@@ -57,8 +57,8 @@ def update_job_status(
         updated_at = NOW()
         WHERE id = (
             SELECT id FROM jobs_job
-            WHERE scan_report_id = {scan_report_id}
-            AND scan_report_table_id = {table_id}
+            WHERE scan_report_id = {scan_report}
+            AND scan_report_table_id = {scan_report_table}
             AND stage_id IN (
                 SELECT id FROM jobs_jobstage WHERE value = '{stage.name}'
             )

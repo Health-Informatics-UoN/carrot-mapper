@@ -46,8 +46,8 @@ def create_mapping_rules(**kwargs):
         person_id_field = kwargs.get("dag_run", {}).conf.get("person_id_field")
         date_field_id = kwargs.get("dag_run", {}).conf.get("date_event_field")
         update_job_status(
-            scan_report_id=kwargs.get("dag_run", {}).conf.get("scan_report_id"),
-            table_id=table_id,
+            scan_report=scan_report_id,
+            scan_report_table=table_id,
             stage=JobStageType.GENERATE_RULES,
             status=StageStatusType.IN_PROGRESS,
             details="Creating mapping rules...",
@@ -86,10 +86,10 @@ def create_mapping_rules(**kwargs):
             ) AS field_mapping(field_id, source_id)
             WHERE field_id IS NOT NULL
             AND NOT EXISTS (
-                SELECT 1 FROM mapping_mappingrule mr
-                WHERE mr.omop_field_id = field_mapping.field_id
-                AND mr.source_field_id = field_mapping.source_id
-                AND mr.scan_report_id = {scan_report_id}
+                SELECT 1 FROM mapping_mappingrule exited_mapping_rule
+                WHERE exited_mapping_rule.omop_field_id = field_mapping.field_id
+                AND exited_mapping_rule.source_field_id = field_mapping.source_id
+                AND exited_mapping_rule.scan_report_id = {scan_report_id}
             )
             ORDER BY sr_value_id;
             """
@@ -100,8 +100,8 @@ def create_mapping_rules(**kwargs):
                     "Successfully created all mapping rules for each standard concept"
                 )
                 update_job_status(
-                    scan_report_id=scan_report_id,
-                    table_id=table_id,
+                    scan_report=scan_report_id,
+                    scan_report_table=table_id,
                     stage=JobStageType.GENERATE_RULES,
                     status=StageStatusType.COMPLETE,
                     details="Successfully created mapping rules",
@@ -115,8 +115,8 @@ def create_mapping_rules(**kwargs):
     except Exception as e:
         logging.error(f"Error in create_mapping_rules: {str(e)}")
         update_job_status(
-            scan_report_id=scan_report_id,
-            table_id=table_id,
+            scan_report=scan_report_id,
+            scan_report_table=table_id,
             stage=JobStageType.GENERATE_RULES,
             status=StageStatusType.FAILED,
             details=f"Error in create_mapping_rules: {str(e)}",
