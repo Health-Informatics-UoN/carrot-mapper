@@ -213,9 +213,13 @@ FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:3000")
 WORKERS_URL = os.environ.get("WORKERS_URL", "http://localhost:7071")
 WORKERS_RULES_NAME = os.environ.get("WORKERS_RULES_NAME", "RulesOrchestrator")
 WORKERS_RULES_KEY = os.environ.get("WORKERS_RULES_KEY", "")
+
+# Queue Names
 WORKERS_RULES_EXPORT_NAME = os.environ.get(
-    "WORKERS_RULES_EXPORT_NAME", "rules-exports-local"
+    "WORKERS_RULES_EXPORT_NAME", "rules-exports-queue"
 )
+WORKERS_UPLOAD_NAME = os.environ.get("WORKERS_UPLOAD_NAME", "upload-reports-queue")
+RULES_QUEUE_NAME = os.environ.get("RULES_QUEUE_NAME", "rules-queue")
 
 # Auth
 
