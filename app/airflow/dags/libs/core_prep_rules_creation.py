@@ -42,8 +42,8 @@ def find_dest_table_and_person_field_id(**kwargs):
         -- Update destination table ID
         UPDATE temp_standard_concepts_{table_id} temp_std_concepts
         SET dest_table_id = omop_table.id
-        FROM omop.concept std_concept
-        LEFT JOIN mapping_omoptable omop_table ON
+        FROM omop.concept AS std_concept
+        LEFT JOIN mapping_omoptable AS omop_table ON
             CASE std_concept.domain_id
                 WHEN 'Race' THEN 'person'
                 WHEN 'Gender' THEN 'person'
@@ -108,8 +108,8 @@ def find_date_fields(**kwargs):
         SET 
             dest_date_field_id = (
                 SELECT omop_field.id
-                FROM mapping_omopfield omop_field
-                JOIN mapping_omoptable omop_table ON omop_table.id = omop_field.table_id
+                FROM mapping_omopfield AS omop_field
+                JOIN mapping_omoptable AS omop_table ON omop_table.id = omop_field.table_id
                 WHERE omop_field.table_id = temp_std_concepts.dest_table_id
                 AND (
                     (omop_table.table = 'person' AND omop_field.field = 'birth_datetime') OR
@@ -123,8 +123,8 @@ def find_date_fields(**kwargs):
             
             dest_start_date_field_id = (
                 SELECT omop_field.id
-                FROM mapping_omopfield omop_field
-                JOIN mapping_omoptable omop_table ON omop_table.id = omop_field.table_id
+                FROM mapping_omopfield AS omop_field
+                JOIN mapping_omoptable AS omop_table ON omop_table.id = omop_field.table_id
                 WHERE omop_field.table_id = temp_std_concepts.dest_table_id
                 AND (
                     (omop_table.table = 'condition_occurrence' AND omop_field.field = 'condition_start_datetime') OR
@@ -136,8 +136,8 @@ def find_date_fields(**kwargs):
             
             dest_end_date_field_id = (
                 SELECT omop_field.id
-                FROM mapping_omopfield omop_field
-                JOIN mapping_omoptable omop_table ON omop_table.id = omop_field.table_id
+                FROM mapping_omopfield AS omop_field
+                JOIN mapping_omoptable AS omop_table ON omop_table.id = omop_field.table_id
                 WHERE omop_field.table_id = temp_std_concepts.dest_table_id
                 AND (
                     (omop_table.table = 'condition_occurrence' AND omop_field.field = 'condition_end_datetime') OR
@@ -183,27 +183,27 @@ def find_concept_fields(**kwargs):
             std_concept.domain_id,
             -- Use domain-specific source_concept_field_id
             (SELECT omop_field.id 
-            FROM mapping_omopfield omop_field 
+            FROM mapping_omopfield AS omop_field 
             WHERE omop_field.table_id = temp_std_concepts.dest_table_id 
             AND omop_field.field = LOWER(std_concept.domain_id) || '_source_concept_id'
             LIMIT 1) AS source_concept_field_id,
 
             -- Use domain-specific source_value_field_id
             (SELECT omop_field.id 
-            FROM mapping_omopfield omop_field 
+            FROM mapping_omopfield AS omop_field 
             WHERE omop_field.table_id = temp_std_concepts.dest_table_id 
             AND omop_field.field = LOWER(std_concept.domain_id) || '_source_value'
             LIMIT 1) AS source_value_field_id,
 
             -- Use domain-specific dest_concept_field_id
             (SELECT omop_field.id 
-            FROM mapping_omopfield omop_field 
+            FROM mapping_omopfield AS omop_field 
             WHERE omop_field.table_id = temp_std_concepts.dest_table_id 
             AND omop_field.field = LOWER(std_concept.domain_id) || '_concept_id'
             LIMIT 1) AS dest_concept_field_id
 
         FROM temp_standard_concepts_{table_id} temp_std_concepts
-        JOIN omop.concept std_concept ON std_concept.concept_id = temp_std_concepts.standard_concept_id;
+        JOIN omop.concept AS std_concept ON std_concept.concept_id = temp_std_concepts.standard_concept_id;
         
         -- Then update the main table from the staging table
         UPDATE temp_standard_concepts_{table_id} temp_std_concepts
