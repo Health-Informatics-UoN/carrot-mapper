@@ -55,13 +55,13 @@ def find_eligible_objects(**kwargs):
             )
             raise
 
-        update_job_status(
-            scan_report_id=scan_report_id,
-            table_id=table_id,
-            stage=JobStageType.BUILD_CONCEPTS_FROM_DICT,
-            status=StageStatusType.IN_PROGRESS,
-            details=f"Finding eligible objects for table ID {table_id}",
-        )
+        # update_job_status(
+        #     scan_report_id=scan_report_id,
+        #     table_id=table_id,
+        #     stage=JobStageType.BUILD_CONCEPTS_FROM_DICT,
+        #     status=StageStatusType.IN_PROGRESS,
+        #     details=f"Finding eligible objects for table ID {table_id}",
+        # )
         # Insert data for each field-vocabulary pair
         find_eligible_objects_query = f"""
         INSERT INTO temp_reuse_concepts_{table_id} (source_concept_id, source_object_id, content_type_id, source_scanreport_id)
@@ -128,7 +128,7 @@ def find_eligible_objects(**kwargs):
                     (SELECT srf.id 
                     FROM mapping_scanreportfield srf 
                     JOIN mapping_scanreporttable srt ON srf.scan_report_table_id = srt.id
-                    WHERE srt.scan_report_id = {scan_report_id}
+                    WHERE srt.scan_report_id = {scan_report_id} AND srt.id = {table_id}
                     AND srf.name = trc.matching_name
                     LIMIT 1)
                 WHEN trc.content_type_id = 23 THEN  -- For ScanReportValue
@@ -136,12 +136,15 @@ def find_eligible_objects(**kwargs):
                     FROM mapping_scanreportvalue srv
                     JOIN mapping_scanreportfield srf ON srv.scan_report_field_id = srf.id
                     JOIN mapping_scanreporttable srt ON srf.scan_report_table_id = srt.id
-                    WHERE srt.scan_report_id = {scan_report_id}
+                    WHERE srt.scan_report_id = {scan_report_id} AND srt.id = {table_id}
                     AND srv.value = trc.matching_name
                     LIMIT 1)
                 ELSE NULL
             END
         WHERE trc.matching_name IS NOT NULL;
+
+        DELETE FROM temp_reuse_concepts_{table_id}
+        WHERE object_id IS NULL;
         """
         try:
             pg_hook.run(find_eligible_objects_query)
@@ -152,20 +155,20 @@ def find_eligible_objects(**kwargs):
             logging.error(
                 f"Failed to insert eligible objects for table ID {table_id}: {str(e)}"
             )
-            update_job_status(
-                scan_report_id=scan_report_id,
-                table_id=table_id,
-                stage=JobStageType.REUSE_CONCEPTS,
-                status=StageStatusType.FAILED,
-                details=f"Error in find_eligible_objects_query: {str(e)}",
-            )
+            # update_job_status(
+            #     scan_report_id=scan_report_id,
+            #     table_id=table_id,
+            #     stage=JobStageType.REUSE_CONCEPTS,
+            #     status=StageStatusType.FAILED,
+            #     details=f"Error in find_eligible_objects_query: {str(e)}",
+            # )
             raise
     except Exception as e:
         logging.error(f"Error in find_eligible_objects: {str(e)}")
         raise
 
 
-def create_standard_concepts(**kwargs):
+def create_reusing_concepts(**kwargs):
     """
     Create standard concepts for field values in the mapping_scanreportconcept table.
     Only inserts concepts that don't already exist.
@@ -191,16 +194,16 @@ def create_standard_concepts(**kwargs):
                 NOW(),
                 NOW(),
                 tsc.sr_value_id,
-                'V', -- Creation type: Built from Vocab dict
+                'R', -- Creation type: Built from Vocab dict
                 tsc.standard_concept_id,
-                23 -- content_type_id for scanreportvalue
-            FROM temp_standard_concepts_{table_id} tsc
+                tsc.content_type_id -- content_type_id for scanreportvalue
+            FROM temp_reuse_concepts_{table_id} tsc
             WHERE NOT EXISTS (
                 -- Check if the concept already exists
                 SELECT 1 FROM mapping_scanreportconcept
                 WHERE object_id = tsc.sr_value_id
                 AND concept_id = tsc.standard_concept_id
-                AND content_type_id = 23
+                AND content_type_id = tsc.content_type_id
             );
             """
         try:

@@ -55,7 +55,6 @@ trigger_reuse_concepts = TriggerDagRunOperator(
         "person_id_field": "{{ dag_run.conf['person_id_field'] }}",
         "date_event_field": "{{ dag_run.conf['date_event_field'] }}",
         "scan_report_id": "{{ dag_run.conf['scan_report_id'] }}",
-        "field_vocab_pairs": "{{ dag_run.conf['field_vocab_pairs'] }}",
     },
     wait_for_completion=True,
     dag=dag,
