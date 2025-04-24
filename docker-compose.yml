@@ -195,7 +195,7 @@ services:
       context: app/airflow
       dockerfile: Dockerfile.scheduler
     depends_on:
-      - webserver
+      - airflow-webserver
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       # Update this connection string to point to your remote PostgreSQL
