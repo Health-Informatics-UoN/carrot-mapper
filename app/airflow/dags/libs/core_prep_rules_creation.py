@@ -27,8 +27,8 @@ def find_dest_table_and_person_field_id(**kwargs):
     try:
         table_id = kwargs.get("dag_run", {}).conf.get("table_id")
         update_job_status(
-            scan_report_id=kwargs.get("dag_run", {}).conf.get("scan_report_id"),
-            table_id=table_id,
+            scan_report=kwargs.get("dag_run", {}).conf.get("scan_report_id"),
+            scan_report_table=table_id,
             stage=JobStageType.GENERATE_RULES,
             status=StageStatusType.IN_PROGRESS,
             details="Finding destination table and field IDs...",

@@ -73,8 +73,8 @@ def find_standard_concepts(**kwargs):
                 )
 
             update_job_status(
-                scan_report_id=scan_report_id,
-                table_id=table_id,
+                scan_report=scan_report_id,
+                scan_report_table=table_id,
                 stage=JobStageType.BUILD_CONCEPTS_FROM_DICT,
                 status=StageStatusType.IN_PROGRESS,
                 details=f"Finding standard concepts for field ID {sr_field_id} with vocabulary ID {vocabulary_id}",
@@ -108,8 +108,8 @@ def find_standard_concepts(**kwargs):
                     f"Failed to insert standard concepts for field ID {sr_field_id}: {str(e)}"
                 )
                 update_job_status(
-                    scan_report_id=scan_report_id,
-                    table_id=table_id,
+                    scan_report=scan_report_id,
+                    scan_report_table=table_id,
                     stage=JobStageType.BUILD_CONCEPTS_FROM_DICT,
                     status=StageStatusType.FAILED,
                     details=f"Error in find_standard_concepts_query: {str(e)}",
@@ -162,8 +162,8 @@ def create_standard_concepts(**kwargs):
             pg_hook.run(create_concept_query)
             logging.info("Successfully created standard concepts")
             update_job_status(
-                scan_report_id=scan_report_id,
-                table_id=table_id,
+                scan_report=scan_report_id,
+                scan_report_table=table_id,
                 stage=JobStageType.BUILD_CONCEPTS_FROM_DICT,
                 status=StageStatusType.COMPLETE,
                 details="Successfully created standard concepts",
@@ -171,8 +171,8 @@ def create_standard_concepts(**kwargs):
         except Exception as e:
             logging.error(f"Database error in create_standard_concepts: {str(e)}")
             update_job_status(
-                scan_report_id=scan_report_id,
-                table_id=table_id,
+                scan_report=scan_report_id,
+                scan_report_table=table_id,
                 stage=JobStageType.BUILD_CONCEPTS_FROM_DICT,
                 status=StageStatusType.FAILED,
                 details=f"Error in create_standard_concepts: {str(e)}",
