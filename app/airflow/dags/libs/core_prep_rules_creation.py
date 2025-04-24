@@ -40,10 +40,10 @@ def find_dest_table_and_person_field_id(**kwargs):
 
         core_query = f"""
         -- Update destination table ID
-        UPDATE temp_standard_concepts_{table_id} tsc
-        SET dest_table_id = ot.id
+        UPDATE temp_standard_concepts_{table_id} temp_std_concepts
+        SET dest_table_id = omop_table.id
         FROM omop.concept std_concept
-        LEFT JOIN mapping_omoptable ot ON
+        LEFT JOIN mapping_omoptable omop_table ON
             CASE std_concept.domain_id
                 WHEN 'Race' THEN 'person'
                 WHEN 'Gender' THEN 'person'
@@ -56,15 +56,15 @@ def find_dest_table_and_person_field_id(**kwargs):
                 WHEN 'Procedure' THEN 'procedure_occurrence'
                 WHEN 'Specimen' THEN 'specimen'
                 ELSE LOWER(std_concept.domain_id)
-            END = ot.table
-        WHERE std_concept.concept_id = tsc.standard_concept_id;
+            END = omop_table.table
+        WHERE std_concept.concept_id = temp_std_concepts.standard_concept_id;
         
         -- Update person field ID
-        UPDATE temp_standard_concepts_{table_id} tsc
-        SET dest_person_field_id = opf.id
-        FROM mapping_omopfield opf
-        WHERE opf.table_id = tsc.dest_table_id
-        AND opf.field = 'person_id';
+        UPDATE temp_standard_concepts_{table_id} temp_std_concepts
+        SET dest_person_field_id = omop_field.id
+        FROM mapping_omopfield omop_field
+        WHERE omop_field.table_id = temp_std_concepts.dest_table_id
+        AND omop_field.field = 'person_id';
         """
         try:
             pg_hook.run(core_query)
@@ -104,45 +104,45 @@ def find_date_fields(**kwargs):
         # Optimized SQL with better structure and reduced redundancy
         dates_query = f"""
         -- Single consolidated update using CASE expressions for better performance
-        UPDATE temp_standard_concepts_{table_id} tsc
+        UPDATE temp_standard_concepts_{table_id} temp_std_concepts
         SET 
             dest_date_field_id = (
-                SELECT mf.id
-                FROM mapping_omopfield mf
-                JOIN mapping_omoptable mt ON mt.id = mf.table_id
-                WHERE mf.table_id = tsc.dest_table_id
+                SELECT omop_field.id
+                FROM mapping_omopfield omop_field
+                JOIN mapping_omoptable omop_table ON omop_table.id = omop_field.table_id
+                WHERE omop_field.table_id = temp_std_concepts.dest_table_id
                 AND (
-                    (mt.table = 'person' AND mf.field = 'birth_datetime') OR
-                    (mt.table = 'measurement' AND mf.field = 'measurement_datetime') OR
-                    (mt.table = 'observation' AND mf.field = 'observation_datetime') OR
-                    (mt.table = 'procedure_occurrence' AND mf.field = 'procedure_datetime') OR
-                    (mt.table = 'specimen' AND mf.field = 'specimen_datetime')
+                    (omop_table.table = 'person' AND omop_field.field = 'birth_datetime') OR
+                    (omop_table.table = 'measurement' AND omop_field.field = 'measurement_datetime') OR
+                    (omop_table.table = 'observation' AND omop_field.field = 'observation_datetime') OR
+                    (omop_table.table = 'procedure_occurrence' AND omop_field.field = 'procedure_datetime') OR
+                    (omop_table.table = 'specimen' AND omop_field.field = 'specimen_datetime')
                 )
                 LIMIT 1
             ),
             
             dest_start_date_field_id = (
-                SELECT mf.id
-                FROM mapping_omopfield mf
-                JOIN mapping_omoptable mt ON mt.id = mf.table_id
-                WHERE mf.table_id = tsc.dest_table_id
+                SELECT omop_field.id
+                FROM mapping_omopfield omop_field
+                JOIN mapping_omoptable omop_table ON omop_table.id = omop_field.table_id
+                WHERE omop_field.table_id = temp_std_concepts.dest_table_id
                 AND (
-                    (mt.table = 'condition_occurrence' AND mf.field = 'condition_start_datetime') OR
-                    (mt.table = 'drug_exposure' AND mf.field = 'drug_exposure_start_datetime') OR
-                    (mt.table = 'device_exposure' AND mf.field = 'device_exposure_start_datetime')
+                    (omop_table.table = 'condition_occurrence' AND omop_field.field = 'condition_start_datetime') OR
+                    (omop_table.table = 'drug_exposure' AND omop_field.field = 'drug_exposure_start_datetime') OR
+                    (omop_table.table = 'device_exposure' AND omop_field.field = 'device_exposure_start_datetime')
                 )
                 LIMIT 1
             ),
             
             dest_end_date_field_id = (
-                SELECT mf.id
-                FROM mapping_omopfield mf
-                JOIN mapping_omoptable mt ON mt.id = mf.table_id
-                WHERE mf.table_id = tsc.dest_table_id
+                SELECT omop_field.id
+                FROM mapping_omopfield omop_field
+                JOIN mapping_omoptable omop_table ON omop_table.id = omop_field.table_id
+                WHERE omop_field.table_id = temp_std_concepts.dest_table_id
                 AND (
-                    (mt.table = 'condition_occurrence' AND mf.field = 'condition_end_datetime') OR
-                    (mt.table = 'drug_exposure' AND mf.field = 'drug_exposure_end_datetime') OR
-                    (mt.table = 'device_exposure' AND mf.field = 'device_exposure_end_datetime')
+                    (omop_table.table = 'condition_occurrence' AND omop_field.field = 'condition_end_datetime') OR
+                    (omop_table.table = 'drug_exposure' AND omop_field.field = 'drug_exposure_end_datetime') OR
+                    (omop_table.table = 'device_exposure' AND omop_field.field = 'device_exposure_end_datetime')
                 )
                 LIMIT 1
             );
@@ -178,42 +178,42 @@ def find_concept_fields(**kwargs):
         -- Create a staging table with the correct field IDs for each record
         CREATE TABLE temp_concept_fields_staging_{table_id} AS
         SELECT 
-            tsc.sr_value_id,
-            tsc.standard_concept_id,
-            c.domain_id,
+            temp_std_concepts.sr_value_id,
+            temp_std_concepts.standard_concept_id,
+            std_concept.domain_id,
             -- Use domain-specific source_concept_field_id
-            (SELECT mf.id 
-            FROM mapping_omopfield mf 
-            WHERE mf.table_id = tsc.dest_table_id 
-            AND mf.field = LOWER(c.domain_id) || '_source_concept_id'
+            (SELECT omop_field.id 
+            FROM mapping_omopfield omop_field 
+            WHERE omop_field.table_id = temp_std_concepts.dest_table_id 
+            AND omop_field.field = LOWER(std_concept.domain_id) || '_source_concept_id'
             LIMIT 1) AS source_concept_field_id,
 
             -- Use domain-specific source_value_field_id
-            (SELECT mf.id 
-            FROM mapping_omopfield mf 
-            WHERE mf.table_id = tsc.dest_table_id 
-            AND mf.field = LOWER(c.domain_id) || '_source_value'
+            (SELECT omop_field.id 
+            FROM mapping_omopfield omop_field 
+            WHERE omop_field.table_id = temp_std_concepts.dest_table_id 
+            AND omop_field.field = LOWER(std_concept.domain_id) || '_source_value'
             LIMIT 1) AS source_value_field_id,
 
             -- Use domain-specific dest_concept_field_id
-            (SELECT mf.id 
-            FROM mapping_omopfield mf 
-            WHERE mf.table_id = tsc.dest_table_id 
-            AND mf.field = LOWER(c.domain_id) || '_concept_id'
+            (SELECT omop_field.id 
+            FROM mapping_omopfield omop_field 
+            WHERE omop_field.table_id = temp_std_concepts.dest_table_id 
+            AND omop_field.field = LOWER(std_concept.domain_id) || '_concept_id'
             LIMIT 1) AS dest_concept_field_id
 
-        FROM temp_standard_concepts_{table_id} tsc
-        JOIN omop.concept c ON c.concept_id = tsc.standard_concept_id;
+        FROM temp_standard_concepts_{table_id} temp_std_concepts
+        JOIN omop.concept std_concept ON std_concept.concept_id = temp_std_concepts.standard_concept_id;
         
         -- Then update the main table from the staging table
-        UPDATE temp_standard_concepts_{table_id} tsc
+        UPDATE temp_standard_concepts_{table_id} temp_std_concepts
         SET 
-            source_concept_field_id = stg.source_concept_field_id,
-            source_value_field_id = stg.source_value_field_id,
-            dest_concept_field_id = stg.dest_concept_field_id
-        FROM temp_concept_fields_staging_{table_id} stg
-        WHERE stg.sr_value_id = tsc.sr_value_id
-        AND stg.standard_concept_id = tsc.standard_concept_id;
+            source_concept_field_id = temp_staging_table.source_concept_field_id,
+            source_value_field_id = temp_staging_table.source_value_field_id,
+            dest_concept_field_id = temp_staging_table.dest_concept_field_id
+        FROM temp_concept_fields_staging_{table_id} temp_staging_table
+        WHERE temp_staging_table.sr_value_id = temp_std_concepts.sr_value_id
+        AND temp_staging_table.standard_concept_id = temp_std_concepts.standard_concept_id;
         
         -- Clean up
         DROP TABLE IF EXISTS temp_concept_fields_staging_{table_id};
@@ -264,15 +264,15 @@ def find_additional_fields(**kwargs):
             measurement_query = f"""
             -- Update value_as_number_field_id for measurement domain concepts ONLY
             UPDATE temp_standard_concepts_{table_id}
-            SET value_as_number_field_id = mf.id
-            FROM mapping_omopfield mf, omop.concept c, mapping_omoptable ot
+            SET value_as_number_field_id = omop_field.id
+            FROM mapping_omopfield omop_field, omop.concept std_concept, mapping_omoptable omop_table
             WHERE 
-                c.concept_id = temp_standard_concepts_{table_id}.standard_concept_id AND
-                c.domain_id = 'Measurement' AND
-                mf.table_id = temp_standard_concepts_{table_id}.dest_table_id AND
-                mf.field = 'value_as_number' AND
-                ot.id = temp_standard_concepts_{table_id}.dest_table_id AND
-                ot.table = 'measurement';
+                std_concept.concept_id = temp_standard_concepts_{table_id}.standard_concept_id AND
+                std_concept.domain_id = 'Measurement' AND
+                omop_field.table_id = temp_standard_concepts_{table_id}.dest_table_id AND
+                omop_field.field = 'value_as_number' AND
+                omop_table.id = temp_standard_concepts_{table_id}.dest_table_id AND
+                omop_table.table = 'measurement';
             """
 
             try:
@@ -289,15 +289,15 @@ def find_additional_fields(**kwargs):
                 observation_number_query = f"""
                 -- Update value_as_number_field_id for Observation domain concepts with numeric data types
                 UPDATE temp_standard_concepts_{table_id}
-                SET value_as_number_field_id = mf.id
-                FROM mapping_omopfield mf, omop.concept c, mapping_omoptable ot
+                SET value_as_number_field_id = omop_field.id
+                FROM mapping_omopfield omop_field, omop.concept std_concept, mapping_omoptable omop_table
                 WHERE 
-                    c.concept_id = temp_standard_concepts_{table_id}.standard_concept_id AND
-                    c.domain_id = 'Observation' AND
-                    mf.table_id = temp_standard_concepts_{table_id}.dest_table_id AND
-                    mf.field = 'value_as_number' AND
-                    ot.id = temp_standard_concepts_{table_id}.dest_table_id AND
-                    ot.table = 'observation';
+                    std_concept.concept_id = temp_standard_concepts_{table_id}.standard_concept_id AND
+                    std_concept.domain_id = 'Observation' AND
+                    omop_field.table_id = temp_standard_concepts_{table_id}.dest_table_id AND
+                    omop_field.field = 'value_as_number' AND
+                    omop_table.id = temp_standard_concepts_{table_id}.dest_table_id AND
+                    omop_table.table = 'observation';
                 """
 
                 try:
@@ -316,15 +316,15 @@ def find_additional_fields(**kwargs):
                 observation_string_query = f"""
                 -- Update value_as_string_field_id for Observation domain concepts with string data types
                 UPDATE temp_standard_concepts_{table_id}
-                SET value_as_string_field_id = mf.id
-                FROM mapping_omopfield mf, omop.concept c, mapping_omoptable ot
+                SET value_as_string_field_id = omop_field.id
+                FROM mapping_omopfield omop_field, omop.concept std_concept, mapping_omoptable omop_table
                 WHERE 
-                    c.concept_id = temp_standard_concepts_{table_id}.standard_concept_id AND
-                    c.domain_id = 'Observation' AND
-                    mf.table_id = temp_standard_concepts_{table_id}.dest_table_id AND
-                    mf.field = 'value_as_string' AND
-                    ot.id = temp_standard_concepts_{table_id}.dest_table_id AND
-                    ot.table = 'observation';
+                    std_concept.concept_id = temp_standard_concepts_{table_id}.standard_concept_id AND
+                    std_concept.domain_id = 'Observation' AND
+                    omop_field.table_id = temp_standard_concepts_{table_id}.dest_table_id AND
+                    omop_field.field = 'value_as_string' AND
+                    omop_table.id = temp_standard_concepts_{table_id}.dest_table_id AND
+                    omop_table.table = 'observation';
                 """
 
                 try:

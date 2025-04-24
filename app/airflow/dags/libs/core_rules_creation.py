@@ -86,10 +86,10 @@ def create_mapping_rules(**kwargs):
             ) AS field_mapping(field_id, source_id)
             WHERE field_id IS NOT NULL
             AND NOT EXISTS (
-                SELECT 1 FROM mapping_mappingrule mr
-                WHERE mr.omop_field_id = field_mapping.field_id
-                AND mr.source_field_id = field_mapping.source_id
-                AND mr.scan_report_id = {scan_report_id}
+                SELECT 1 FROM mapping_mappingrule exited_mapping_rule
+                WHERE exited_mapping_rule.omop_field_id = field_mapping.field_id
+                AND exited_mapping_rule.source_field_id = field_mapping.source_id
+                AND exited_mapping_rule.scan_report_id = {scan_report_id}
             )
             ORDER BY sr_value_id;
             """
