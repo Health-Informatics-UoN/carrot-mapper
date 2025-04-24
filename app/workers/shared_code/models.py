@@ -35,9 +35,3 @@ class FileHandlerConfig:
     handler: Callable[[Any], Any]
     file_type_value: str
     file_extension: str
-
-
-class VocabularyMapping(TypedDict):
-    sr_field_id: int
-    field_data_type: Optional[str]
-    vocabulary_id: Optional[str]
