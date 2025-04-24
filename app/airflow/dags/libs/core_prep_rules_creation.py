@@ -54,7 +54,6 @@ def find_dest_table_and_person_field_id(**kwargs):
                 WHEN 'Measurement' THEN 'measurement'
                 WHEN 'Drug' THEN 'drug_exposure'
                 WHEN 'Procedure' THEN 'procedure_occurrence'
-                WHEN 'Meas Value' THEN 'measurement'
                 WHEN 'Specimen' THEN 'specimen'
                 ELSE LOWER(std_concept.domain_id)
             END = ot.table
