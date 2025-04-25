@@ -31,6 +31,7 @@ def find_eligible_objects(**kwargs):
             content_type_id INTEGER,
             source_concept_id INTEGER,
             standard_concept_id INTEGER,
+            source_field_id INTEGER,
             sr_concept_id INTEGER,
             dest_table_id INTEGER,
             dest_person_field_id INTEGER,
@@ -66,82 +67,82 @@ def find_eligible_objects(**kwargs):
         find_eligible_objects_query = f"""
         INSERT INTO temp_reuse_concepts_{table_id} (source_concept_id, source_object_id, content_type_id, source_scanreport_id)
         SELECT 
-            src.concept_id,
-            src.object_id,
-            src.content_type_id,
-            sr.id
+            sr_concept.concept_id,
+            sr_concept.object_id,
+            sr_concept.content_type_id,
+            scan_report.id
         FROM 
-            mapping_scanreportconcept src
+            mapping_scanreportconcept AS sr_concept
         JOIN 
-            mapping_scanreport sr ON 
+            mapping_scanreport AS scan_report ON 
                 -- This join depends on the content_type
                 CASE 
-                    WHEN src.content_type_id = 23 THEN  -- For ScanReportValue
+                    WHEN sr_concept.content_type_id = 23 THEN  -- For ScanReportValue
                         EXISTS (
-                            SELECT 1 FROM mapping_scanreportvalue srv
-                            JOIN mapping_scanreportfield srf ON srv.scan_report_field_id = srf.id
-                            JOIN mapping_scanreporttable srt ON srf.scan_report_table_id = srt.id
-                            WHERE srv.id = src.object_id AND srt.scan_report_id = sr.id
+                            SELECT 1 FROM mapping_scanreportvalue AS sr_value
+                            JOIN mapping_scanreportfield AS sr_field ON sr_value.scan_report_field_id = sr_field.id
+                            JOIN mapping_scanreporttable AS sr_table ON sr_field.scan_report_table_id = sr_table.id
+                            WHERE sr_value.id = sr_concept.object_id AND sr_table.scan_report_id = scan_report.id
                         )
-                    WHEN src.content_type_id = 22 THEN  -- For ScanReportField
+                    WHEN sr_concept.content_type_id = 22 THEN  -- For ScanReportField
                         EXISTS (
-                            SELECT 1 FROM mapping_scanreportfield srf
-                            JOIN mapping_scanreporttable srt ON srf.scan_report_table_id = srt.id
-                            WHERE srf.id = src.object_id AND srt.scan_report_id = sr.id
+                            SELECT 1 FROM mapping_scanreportfield AS sr_field
+                            JOIN mapping_scanreporttable AS sr_table ON sr_field.scan_report_table_id = sr_table.id
+                            WHERE sr_field.id = sr_concept.object_id AND sr_table.scan_report_id = scan_report.id
                         )
                     ELSE FALSE
                 END
         JOIN 
-            mapping_dataset ds ON sr.parent_dataset_id = ds.id
+            mapping_dataset AS dataset ON scan_report.parent_dataset_id = dataset.id
         JOIN 
-            mapping_mappingstatus ms ON sr.mapping_status_id = ms.id
+            mapping_mappingstatus AS mapping_status ON scan_report.mapping_status_id = mapping_status.id
         WHERE 
-            ds.id = {parent_dataset_id}
-            AND ds.visibility = 'PUBLIC'
-            AND sr.visibility = 'PUBLIC'
-            AND ms.value = 'COMPLETE'
-            AND src.creation_type != 'R'
+            dataset.id = {parent_dataset_id}
+            AND dataset.visibility = 'PUBLIC'
+            AND scan_report.visibility = 'PUBLIC'
+            AND mapping_status.value = 'COMPLETE'
+            AND sr_concept.creation_type != 'R'
         ORDER BY 
-            src.id;
+            sr_concept.id;
 
-        UPDATE temp_reuse_concepts_{table_id} trc
+        UPDATE temp_reuse_concepts_{table_id} temp_reuse_concepts
         SET matching_name = 
             CASE 
-                WHEN trc.content_type_id = 22 THEN  -- For ScanReportField
-                    (SELECT srf.name 
-                    FROM mapping_scanreportfield srf 
-                    WHERE srf.id = trc.source_object_id)
-                WHEN trc.content_type_id = 23 THEN  -- For ScanReportValue
-                    (SELECT srv.value 
-                    FROM mapping_scanreportvalue srv 
-                    WHERE srv.id = trc.source_object_id)
+                WHEN temp_reuse_concepts.content_type_id = 22 THEN  -- For ScanReportField
+                    (SELECT sr_field.name 
+                    FROM mapping_scanreportfield AS sr_field 
+                    WHERE sr_field.id = temp_reuse_concepts.source_object_id)
+                WHEN temp_reuse_concepts.content_type_id = 23 THEN  -- For ScanReportValue
+                    (SELECT sr_value.value 
+                    FROM mapping_scanreportvalue AS sr_value 
+                    WHERE sr_value.id = temp_reuse_concepts.source_object_id)
                 ELSE NULL
             END
-        WHERE trc.source_object_id IS NOT NULL;
+        WHERE temp_reuse_concepts.source_object_id IS NOT NULL;
         
 
 
-        UPDATE temp_reuse_concepts_{table_id} trc
+        UPDATE temp_reuse_concepts_{table_id} temp_reuse_concepts
         SET object_id = 
             CASE 
-                WHEN trc.content_type_id = 22 THEN  -- For ScanReportField
-                    (SELECT srf.id 
-                    FROM mapping_scanreportfield srf 
-                    JOIN mapping_scanreporttable srt ON srf.scan_report_table_id = srt.id
-                    WHERE srt.scan_report_id = {scan_report_id} AND srt.id = {table_id}
-                    AND srf.name = trc.matching_name
+                WHEN temp_reuse_concepts.content_type_id = 22 THEN  -- For ScanReportField
+                    (SELECT sr_field.id 
+                    FROM mapping_scanreportfield AS sr_field 
+                    JOIN mapping_scanreporttable AS sr_table ON sr_field.scan_report_table_id = sr_table.id
+                    WHERE sr_table.scan_report_id = {scan_report_id} AND sr_table.id = {table_id}
+                    AND sr_field.name = temp_reuse_concepts.matching_name
                     LIMIT 1)
-                WHEN trc.content_type_id = 23 THEN  -- For ScanReportValue
-                    (SELECT srv.id 
-                    FROM mapping_scanreportvalue srv
-                    JOIN mapping_scanreportfield srf ON srv.scan_report_field_id = srf.id
-                    JOIN mapping_scanreporttable srt ON srf.scan_report_table_id = srt.id
-                    WHERE srt.scan_report_id = {scan_report_id} AND srt.id = {table_id}
-                    AND srv.value = trc.matching_name
+                WHEN temp_reuse_concepts.content_type_id = 23 THEN  -- For ScanReportValue
+                    (SELECT sr_value.id 
+                    FROM mapping_scanreportvalue AS sr_value
+                    JOIN mapping_scanreportfield AS sr_field ON sr_value.scan_report_field_id = sr_field.id
+                    JOIN mapping_scanreporttable AS sr_table ON sr_field.scan_report_table_id = sr_table.id
+                    WHERE sr_table.scan_report_id = {scan_report_id} AND sr_table.id = {table_id}
+                    AND sr_value.value = temp_reuse_concepts.matching_name
                     LIMIT 1)
                 ELSE NULL
             END
-        WHERE trc.matching_name IS NOT NULL;
+        WHERE temp_reuse_concepts.matching_name IS NOT NULL;
 
         DELETE FROM temp_reuse_concepts_{table_id}
         WHERE object_id IS NULL;
@@ -193,17 +194,17 @@ def create_reusing_concepts(**kwargs):
             SELECT
                 NOW(),
                 NOW(),
-                tsc.sr_value_id,
-                'R', -- Creation type: Built from Vocab dict
-                tsc.standard_concept_id,
-                tsc.content_type_id -- content_type_id for scanreportvalue
-            FROM temp_reuse_concepts_{table_id} tsc
+                temp_reuse_concepts.sr_value_id,
+                'R',       -- Creation type: Reused
+                temp_reuse_concepts.standard_concept_id,
+                temp_reuse_concepts.content_type_id -- content_type_id for scanreportvalue
+            FROM temp_reuse_concepts_{table_id} AS temp_reuse_concepts
             WHERE NOT EXISTS (
                 -- Check if the concept already exists
-                SELECT 1 FROM mapping_scanreportconcept
-                WHERE object_id = tsc.sr_value_id
-                AND concept_id = tsc.standard_concept_id
-                AND content_type_id = tsc.content_type_id
+                SELECT 1 FROM mapping_scanreportconcept AS sr_concept
+                WHERE sr_concept.object_id = temp_reuse_concepts.sr_value_id
+                AND sr_concept.concept_id = temp_reuse_concepts.standard_concept_id
+                AND sr_concept.content_type_id = temp_reuse_concepts.content_type_id
             );
             """
         try:
@@ -244,12 +245,12 @@ def find_sr_concept_id(**kwargs):
 
         update_query = f"""        
         -- Update sr_concept_id with the mapping_scanreportconcept ID
-        UPDATE temp_standard_concepts_{table_id} tsc
-        SET sr_concept_id = src.id
-        FROM mapping_scanreportconcept src
-        WHERE src.object_id = tsc.sr_value_id
-        AND src.concept_id = tsc.standard_concept_id
-        AND src.content_type_id = 23;
+        UPDATE temp_standard_concepts_{table_id} temp_reuse_concepts
+        SET sr_concept_id = sr_concept.id
+        FROM mapping_scanreportconcept sr_concept
+        WHERE sr_concept.object_id = temp_reuse_concepts.sr_value_id
+        AND sr_concept.concept_id = temp_reuse_concepts.standard_concept_id
+        AND sr_concept.content_type_id = 23;
         """
 
         try:
