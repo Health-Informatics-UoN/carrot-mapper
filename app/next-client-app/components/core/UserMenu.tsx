@@ -1,4 +1,5 @@
 import { LogOut, Settings } from "lucide-react";
+import Link from "next/link";
 
 import { LoginButton, LogoutButton } from "@/auth/login";
 import { Button } from "@/components/ui/button";
@@ -37,16 +38,17 @@ export async function UserMenu({ username }: { username?: string }) {
       <DropdownMenuContent className="w-56">
         <DropdownMenuLabel>My Account</DropdownMenuLabel>
         <DropdownMenuSeparator />
-        {/* TODO: Add change password here */}
-        {/* <DropdownMenuGroup>
-          <DropdownMenuItem>
-            <Settings className="icon-md mr-2" />
-            <span>Change Password</span>
-            <DropdownMenuShortcut>⌘S</DropdownMenuShortcut>
-          </DropdownMenuItem>
+        <DropdownMenuGroup>
+          <Link href="/password-reset" passHref>
+            <DropdownMenuItem asChild>
+              <button className="flex items-center w-full">
+                <Settings className="icon-md mr-2" />
+                <span>Reset Password</span>
+              </button>
+            </DropdownMenuItem>
+          </Link>
         </DropdownMenuGroup>
-        <DropdownMenuSeparator /> */}
-
+        <DropdownMenuSeparator />
         <DropdownMenuItem>
           <LogOut className="icon-md mr-2" />
           <LogoutButton />

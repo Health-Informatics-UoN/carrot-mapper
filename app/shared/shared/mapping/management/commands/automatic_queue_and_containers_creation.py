@@ -20,7 +20,12 @@ class Command(BaseCommand):
     MINIO_SECRET_KEY = os.getenv("MINIO_SECRET_KEY")
 
     # Define the required queues and blob containers or buckets
-    QUEUES = ["rules-local", "rules-exports-local", "uploadreports-local"]
+    QUEUES = [
+        os.getenv("RULES_QUEUE_NAME"),
+        os.getenv("WORKERS_RULES_EXPORT_NAME"),
+        os.getenv("WORKERS_UPLOAD_NAME"),
+    ]
+
     CONTAINERS = ["scan-reports", "data-dictionaries", "rules-exports"]
 
     def _create_azure_queues(self, queue_service: str):
