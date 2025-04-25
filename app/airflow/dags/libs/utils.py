@@ -3,6 +3,8 @@ import ast
 import json
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from enum import Enum
+from airflow.operators.python import PythonOperator
+
 
 # PostgreSQL connection hook
 pg_hook = PostgresHook(postgres_conn_id="postgres_db_conn")
@@ -67,3 +69,12 @@ def update_job_status(
         )
     """
     pg_hook.run(update_query)
+
+
+def create_task(task_id, python_callable, dag, provide_context=True):
+    return PythonOperator(
+        task_id=task_id,
+        python_callable=python_callable,
+        provide_context=provide_context,
+        dag=dag,
+    )

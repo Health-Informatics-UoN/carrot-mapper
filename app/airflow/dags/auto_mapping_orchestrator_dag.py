@@ -17,7 +17,7 @@ Requires:
 - person_id_field (int): The ID of the person ID field
 - date_event_field (int): The ID of the date event field
 - scan_report_id (int): The ID of the scan report to process
-- field_vocab_pairs (list): A list of dictionaries containing field-vocab pairs
+- field_vocab_pairs (list): A list (in string format) of dictionaries containing field-vocab pairs
     For example: 
     "field_vocab_pairs": [
         {

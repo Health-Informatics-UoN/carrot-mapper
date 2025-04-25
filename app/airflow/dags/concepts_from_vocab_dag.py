@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.operators.empty import EmptyOperator
-from airflow.operators.python import PythonOperator
 from libs.core_concepts_creation import (
     find_standard_concepts,
     create_standard_concepts,
@@ -19,6 +18,7 @@ from libs.core_rules_creation import (
     delete_mapping_rules,
     create_mapping_rules,
 )
+from libs.utils import create_task
 
 """
 This DAG automates the process of creating standard concepts and mapping rules from vocabulary dictionaries.
@@ -69,83 +69,27 @@ dag = DAG(
 start = EmptyOperator(task_id="start", dag=dag)
 
 
-find_std_concepts_task = PythonOperator(
-    task_id="find_standard_concepts",
-    python_callable=find_standard_concepts,
-    provide_context=True,
-    dag=dag,
-)
+tasks = [
+    create_task("find_standard_concepts", find_standard_concepts, dag),
+    create_task("create_standard_concepts", create_standard_concepts, dag),
+    create_task("find_sr_concept_id", find_sr_concept_id, dag),
+    create_task(
+        "find_dest_table_and_person_field_id", find_dest_table_and_person_field_id, dag
+    ),
+    create_task("find_date_fields", find_date_fields, dag),
+    create_task("find_concept_fields", find_concept_fields, dag),
+    create_task("find_additional_fields", find_additional_fields, dag),
+    create_task("delete_mapping_rules", delete_mapping_rules, dag),
+    create_task("create_mapping_rules", create_mapping_rules, dag),
+]
 
-
-create_standard_concepts_task = PythonOperator(
-    task_id="create_standard_concepts",
-    python_callable=create_standard_concepts,
-    provide_context=True,
-    dag=dag,
-)
-
-find_sr_concept_id_task = PythonOperator(
-    task_id="find_sr_concept_id",
-    python_callable=find_sr_concept_id,
-    provide_context=True,
-    dag=dag,
-)
-
-find_dest_table_and_person_field_task = PythonOperator(
-    task_id="find_dest_table_and_person_field_id",
-    python_callable=find_dest_table_and_person_field_id,
-    provide_context=True,
-    dag=dag,
-)
-
-find_date_fields_task = PythonOperator(
-    task_id="find_date_fields",
-    python_callable=find_date_fields,
-    provide_context=True,
-    dag=dag,
-)
-
-find_concept_fields_task = PythonOperator(
-    task_id="find_concept_fields",
-    python_callable=find_concept_fields,
-    provide_context=True,
-    dag=dag,
-)
-
-find_additional_fields_task = PythonOperator(
-    task_id="find_additional_fields",
-    python_callable=find_additional_fields,
-    provide_context=True,
-    dag=dag,
-)
-
-delete_mapping_rules_task = PythonOperator(
-    task_id="delete_mapping_rules",
-    python_callable=delete_mapping_rules,
-    provide_context=True,
-    dag=dag,
-)
-
-create_mapping_rules_task = PythonOperator(
-    task_id="create_mapping_rules",
-    python_callable=create_mapping_rules,
-    provide_context=True,
-    dag=dag,
-)
 
 # End the workflow
 end = EmptyOperator(task_id="end", dag=dag)
 
-(
-    start
-    >> find_std_concepts_task
-    >> create_standard_concepts_task
-    >> find_sr_concept_id_task
-    >> find_dest_table_and_person_field_task
-    >> find_date_fields_task
-    >> find_concept_fields_task
-    >> find_additional_fields_task
-    >> delete_mapping_rules_task
-    >> create_mapping_rules_task
-    >> end
-)
+# Execute the tasks
+curr = start
+for task in tasks:
+    curr >> task
+    curr = task
+curr >> end
