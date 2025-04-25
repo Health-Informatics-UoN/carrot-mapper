@@ -20,6 +20,21 @@ from libs.core_rules_creation import (
     create_mapping_rules,
 )
 
+"""
+This DAG automates the process of creating standard concepts and mapping rules from vocabulary dictionaries.
+
+Workflow steps:
+1. Find standard concepts using vocabulary IDs from data dictionaries
+2. Create standard concepts in the database
+3. Find scan report concept IDs
+4. Find destination tables and person field IDs
+5. Identify date fields, concept fields, and additional fields
+6. Delete existing mapping rules
+7. Create new mapping rules for each scan report field
+
+"""
+
+
 default_args = {
     "owner": "airflow",
     "depends_on_past": False,
