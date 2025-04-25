@@ -3,20 +3,11 @@ from airflow import DAG
 from airflow.operators.empty import EmptyOperator
 from airflow.operators.python import PythonOperator
 from libs.core_reuse_concepts import (
+    create_temp_reusing_concepts_table,
     find_eligible_objects,
+    find_reusing_value,
 )
 
-from libs.core_prep_rules_creation import (
-    find_dest_table_and_person_field_id,
-    find_date_fields,
-    find_concept_fields,
-    find_additional_fields,
-)
-
-from libs.core_rules_creation import (
-    delete_mapping_rules,
-    create_mapping_rules,
-)
 
 default_args = {
     "owner": "airflow",
@@ -52,9 +43,23 @@ dag = DAG(
 start = EmptyOperator(task_id="start", dag=dag)
 
 
-find_eligible_objects_task = PythonOperator(
-    task_id="find_eligible_objects",
-    python_callable=find_eligible_objects,
+create_temp_reusing_concepts_table_task = PythonOperator(
+    task_id="create_temp_reusing_concepts_table",
+    python_callable=create_temp_reusing_concepts_table,
+    provide_context=True,
+    dag=dag,
+)
+
+# find_eligible_objects_task = PythonOperator(
+#     task_id="find_eligible_objects",
+#     python_callable=find_eligible_objects,
+#     provide_context=True,
+#     dag=dag,
+# )
+
+find_reusing_value_task = PythonOperator(
+    task_id="find_reusing_value",
+    python_callable=find_reusing_value,
     provide_context=True,
     dag=dag,
 )
@@ -63,4 +68,4 @@ find_eligible_objects_task = PythonOperator(
 # End the workflow
 end = EmptyOperator(task_id="end", dag=dag)
 
-(start >> find_eligible_objects_task >> end)
+(start >> create_temp_reusing_concepts_table_task >> find_reusing_value_task >> end)

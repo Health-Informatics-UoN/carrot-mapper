@@ -20,49 +20,6 @@ def find_eligible_objects(**kwargs):
         parent_dataset_id = kwargs.get("dag_run", {}).conf.get("parent_dataset_id")
         table_id = kwargs.get("dag_run", {}).conf.get("table_id")
 
-        # Create the temporary table once, outside the loop, with all the columns needed
-        create_table_query = f"""
-        DROP TABLE IF EXISTS temp_reuse_concepts_{table_id};
-        CREATE TABLE temp_reuse_concepts_{table_id} (
-            object_id INTEGER,
-            matching_name TEXT,
-            source_object_id INTEGER,
-            source_scanreport_id INTEGER,
-            content_type_id INTEGER,
-            source_concept_id INTEGER,
-            standard_concept_id INTEGER,
-            source_field_id INTEGER,
-            sr_concept_id INTEGER,
-            dest_table_id INTEGER,
-            dest_person_field_id INTEGER,
-            dest_date_field_id INTEGER,
-            dest_start_date_field_id INTEGER,
-            dest_end_date_field_id INTEGER,
-            source_concept_field_id INTEGER,
-            source_value_field_id INTEGER,
-            dest_concept_field_id INTEGER,
-            value_as_number_field_id INTEGER,
-            value_as_string_field_id INTEGER
-        );
-        """
-        try:
-            pg_hook.run(create_table_query)
-            logging.info(
-                f"Successfully created temp_standard_concepts_{table_id} table"
-            )
-        except Exception as e:
-            logging.error(
-                f"Failed to create temp_standard_concepts_{table_id} table: {str(e)}"
-            )
-            raise
-
-        # update_job_status(
-        #     scan_report_id=scan_report_id,
-        #     table_id=table_id,
-        #     stage=JobStageType.BUILD_CONCEPTS_FROM_DICT,
-        #     status=StageStatusType.IN_PROGRESS,
-        #     details=f"Finding eligible objects for table ID {table_id}",
-        # )
         # Insert data for each field-vocabulary pair
         find_eligible_objects_query = f"""
         INSERT INTO temp_reuse_concepts_{table_id} (source_concept_id, source_object_id, content_type_id, source_scanreport_id)
@@ -166,6 +123,112 @@ def find_eligible_objects(**kwargs):
             raise
     except Exception as e:
         logging.error(f"Error in find_eligible_objects: {str(e)}")
+        raise
+
+
+def create_temp_reusing_concepts_table(**kwargs):
+    """
+    Create the temporary table for reusing concepts.
+    """
+
+    table_id = kwargs.get("dag_run", {}).conf.get("table_id")
+
+    # Create the temporary table once, outside the loop, with all the columns needed
+    create_table_query = f"""
+    DROP TABLE IF EXISTS temp_reuse_concepts_{table_id};
+    CREATE TABLE temp_reuse_concepts_{table_id} (
+        object_id INTEGER,
+        matching_name TEXT,
+        source_object_id INTEGER,
+        source_scanreport_id INTEGER,
+        content_type_id INTEGER,
+        source_concept_id INTEGER,
+        standard_concept_id INTEGER,
+        source_field_id INTEGER,
+        sr_concept_id INTEGER,
+        dest_table_id INTEGER,
+        dest_person_field_id INTEGER,
+        dest_date_field_id INTEGER,
+        dest_start_date_field_id INTEGER,
+        dest_end_date_field_id INTEGER,
+        source_concept_field_id INTEGER,
+        source_value_field_id INTEGER,
+        dest_concept_field_id INTEGER,
+        value_as_number_field_id INTEGER,
+        value_as_string_field_id INTEGER
+    );
+    """
+    try:
+        pg_hook.run(create_table_query)
+        logging.info(f"Successfully created temp_standard_concepts_{table_id} table")
+    except Exception as e:
+        logging.error(
+            f"Failed to create temp_standard_concepts_{table_id} table: {str(e)}"
+        )
+        raise
+
+
+def find_reusing_value(**kwargs):
+    """
+    Find reusing concepts at the value level.
+    """
+
+    parent_dataset_id = kwargs.get("dag_run", {}).conf.get("parent_dataset_id")
+    table_id = kwargs.get("dag_run", {}).conf.get("table_id")
+
+    find_reusing_value_query = f"""
+    INSERT INTO temp_reuse_concepts_{table_id} (
+        matching_name, content_type_id, source_object_id, source_concept_id, source_scanreport_id
+    )
+    SELECT DISTINCT 
+        sr_value.value, 
+        23,
+        eligible_sr_value.id,
+        eligible_sr_concept.concept_id,
+        eligible_scan_report.id
+    FROM mapping_scanreportvalue AS sr_value
+    JOIN mapping_scanreportfield AS sr_field 
+        ON sr_value.scan_report_field_id = sr_field.id
+    JOIN mapping_scanreporttable AS sr_table 
+        ON sr_field.scan_report_table_id = sr_table.id
+
+    -- Join to eligible values in other eligible scan reports
+    JOIN mapping_scanreportvalue AS eligible_sr_value 
+        ON sr_value.value = eligible_sr_value.value
+    JOIN mapping_scanreportfield AS eligible_sr_field 
+        ON eligible_sr_value.scan_report_field_id = eligible_sr_field.id
+    JOIN mapping_scanreporttable AS eligible_sr_table 
+        ON eligible_sr_field.scan_report_table_id = eligible_sr_table.id
+    JOIN mapping_scanreport AS eligible_scan_report 
+        ON eligible_sr_table.scan_report_id = eligible_scan_report.id
+    JOIN mapping_dataset AS dataset 
+        ON eligible_scan_report.parent_dataset_id = dataset.id
+    JOIN mapping_mappingstatus AS map_status 
+        ON eligible_scan_report.mapping_status_id = map_status.id
+    JOIN mapping_scanreportconcept AS eligible_sr_concept
+        ON eligible_sr_concept.object_id = eligible_sr_value.id
+        AND eligible_sr_concept.content_type_id = 23
+        AND eligible_sr_concept.creation_type != 'R'
+
+    WHERE dataset.id = {parent_dataset_id}
+    AND dataset.hidden = FALSE
+    AND eligible_scan_report.hidden = FALSE
+    AND map_status.value = 'COMPLETE';
+    """
+
+    # TODO: find a way to drop duplicated pair (object - source_concept_id - standard_concept_id)
+    #    DELETE FROM temp_reuse_concepts_{table_id}
+    # WHERE matching_name IN (
+    #     SELECT matching_name FROM temp_reuse_concepts_{table_id}
+    #     GROUP BY matching_name, source_concept_id
+    #     HAVING COUNT(*) > 1
+    # );
+
+    try:
+        pg_hook.run(find_reusing_value_query)
+        logging.info(f"Successfully found reusing concepts at the value level")
+    except Exception as e:
+        logging.error(f"Failed to find reusing concepts at the value level: {str(e)}")
         raise
 
 
