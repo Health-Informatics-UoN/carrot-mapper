@@ -19,7 +19,7 @@ export default function SignIn() {
     const result = await signIn("credentials", {
       redirect: false,
       username,
-      password,
+      password
     });
     if (result?.ok) {
       router.push("/projects");
