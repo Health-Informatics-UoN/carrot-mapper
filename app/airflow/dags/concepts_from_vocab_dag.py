@@ -18,7 +18,7 @@ from libs.core_rules_creation import (
     delete_mapping_rules,
     create_mapping_rules,
 )
-from libs.utils import create_task
+from libs.utils import create_task, validate_params_V_concepts
 
 """
 This DAG automates the process of creating standard concepts and mapping rules from vocabulary dictionaries.
@@ -56,7 +56,7 @@ dag = DAG(
     catchup=False,
 )
 
-# TODO: do we need to check AND NOT EXISTS? and when?
+
 # TODO: many concepts have the domain "SPEC ANATOMIC SITE", which should be added to the table "SPECIMEN" in a different way (OMOP field id is different)
 # TODO: ordering the temp standard concepts id before creating the mapping rules --> have the nice order match with the UI
 # TODO: add dest field name to the UI??
@@ -70,6 +70,7 @@ start = EmptyOperator(task_id="start", dag=dag)
 
 
 tasks = [
+    create_task("validate_params_V_concepts", validate_params_V_concepts, dag),
     create_task("find_standard_concepts", find_standard_concepts, dag),
     create_task("create_standard_concepts", create_standard_concepts, dag),
     create_task("find_sr_concept_id", find_sr_concept_id, dag),
