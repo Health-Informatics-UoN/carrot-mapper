@@ -56,7 +56,7 @@ dag = DAG(
     catchup=False,
 )
 
-
+# TODO: orchestrator to be deleted because users will trigger this DAG directly. Similar for reuse DAG
 # TODO: many concepts have the domain "SPEC ANATOMIC SITE", which should be added to the table "SPECIMEN" in a different way (OMOP field id is different)
 # TODO: ordering the temp standard concepts id before creating the mapping rules --> have the nice order match with the UI
 # TODO: add dest field name to the UI??

@@ -23,6 +23,10 @@ def find_dest_table_and_person_field_id(**kwargs) -> None:
        in the temporary concepts table.
     2. Adds the person_id field reference to each record by finding the corresponding field
        in the mapping_omopfield table.
+
+    Validated params needed are:
+    - scan_report_id (int): The ID of the scan report to process
+    - table_id (int): The ID of the scan report table to process
     """
     try:
         # Get validated parameters from XCom
@@ -95,6 +99,9 @@ def find_date_fields(**kwargs) -> None:
 
     The function uses a single SQL query with subqueries to efficiently map the correct
     datetime fields for each table based on OMOP CDM conventions.
+
+    Validated params needed are:
+    - table_id (int): The ID of the scan report table to process
     """
     try:
         # Get validated parameters from XCom
@@ -167,6 +174,9 @@ def find_concept_fields(**kwargs) -> None:
     Add concept-related field IDs to the temporary concepts table.
     Includes source concept, source value, and destination concept fields.
     Uses domain-specific field patterns with strict table mapping.
+
+    Validated params needed are:
+    - table_id (int): The ID of the scan report table to process
     """
     try:
         # Get validated parameters from XCom
@@ -235,6 +245,10 @@ def find_additional_fields(**kwargs) -> None:
     """
     Add additional field IDs to the temporary concepts table based on data types.
     Handles measurement domain and observation domain concepts.
+
+    Validated params needed are:
+    - table_id (int): The ID of the scan report table to process
+    - field_vocab_pairs (list): List of dictionaries containing field-vocab pairs
     """
     try:
         # Get validated parameters from XCom

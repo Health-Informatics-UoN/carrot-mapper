@@ -15,6 +15,8 @@ pg_hook = PostgresHook(postgres_conn_id="postgres_db_conn")
 def delete_mapping_rules(**kwargs) -> None:
     """
     Delete all mapping rules for a given scan report table.
+    Validated param needed is:
+    - table_id (int): The ID of the scan report table to process
     """
     try:
         # Get validated parameters from XCom
@@ -39,6 +41,13 @@ def create_mapping_rules(**kwargs) -> None:
     """
     Create mapping rules in the mapping_mappingrule table for each record in temp_standard_concepts.
     Each record can generate multiple mapping rules based on the provided rules criteria.
+
+    Validated params needed are:
+    - scan_report_id (int): The ID of the scan report to process
+    - table_id (int): The ID of the scan report table to process
+    - field_vocab_pairs (list): List of dictionaries containing field-vocab pairs
+    - date_event_field (int): The ID of the date event field
+    - person_id_field (int): The ID of the person ID field
     """
     try:
         # Get validated parameters from XCom

@@ -18,7 +18,17 @@ def find_standard_concepts(**kwargs) -> None:
     Creates a temporary table to store mapping information between source values and
     standard concepts. For each field-vocabulary pair provided, finds corresponding
     standard concepts in the OMOP vocabulary and inserts them into the temporary table.
-
+    Validated params needed are:
+    - scan_report_id (int): The ID of the scan report to process
+    - table_id (int): The ID of the scan report table to process
+    - field_vocab_pairs (list): List of dictionaries containing field-vocab pairs
+        For example:
+        "field_vocab_pairs": [
+            {
+                "sr_field_id": "437",
+                "vocabulary_id": "ICD10"
+            }
+        ]
     """
     try:
         # Get validated parameters from XCom
@@ -120,6 +130,9 @@ def create_standard_concepts(**kwargs) -> None:
     """
     Create standard concepts for field values in the mapping_scanreportconcept table.
     Only inserts concepts that don't already exist.
+    Validated params needed are:
+    - scan_report_id (int): The ID of the scan report to process
+    - table_id (int): The ID of the scan report table to process
     """
     try:
         # Get validated parameters from XCom
@@ -184,6 +197,8 @@ def find_sr_concept_id(**kwargs) -> None:
     Update temp_standard_concepts table with sr_concept_id column
     containing the IDs of standard concepts added to mapping_scanreportconcept.
     This will help the next steps to be shorter.
+    Validated params needed are:
+    - table_id (int): The ID of the scan report table to process
     """
     try:
         # Get validated parameters from XCom
