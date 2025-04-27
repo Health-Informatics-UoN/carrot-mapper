@@ -2,22 +2,25 @@ from airflow.providers.postgres.hooks.postgres import PostgresHook
 import logging
 from airflow.exceptions import AirflowException
 from libs.utils import (
-    process_field_vocab_pairs,
     update_job_status,
     JobStageType,
     StageStatusType,
+    pull_validated_params,
 )
 
 # PostgreSQL connection hook
 pg_hook = PostgresHook(postgres_conn_id="postgres_db_conn")
 
 
-def delete_mapping_rules(**kwargs):
+def delete_mapping_rules(**kwargs) -> None:
     """
     Delete all mapping rules for a given scan report table.
     """
     try:
-        table_id = kwargs.get("dag_run", {}).conf.get("table_id")
+        # Get validated parameters from XCom
+        validated_params = pull_validated_params(kwargs, "validate_params_V_concepts")
+
+        table_id = validated_params["table_id"]
 
         delete_query = f"""
         DELETE FROM mapping_mappingrule
@@ -32,19 +35,21 @@ def delete_mapping_rules(**kwargs):
         raise AirflowException(f"Error in delete_mapping_rules: {str(e)}")
 
 
-def create_mapping_rules(**kwargs):
+def create_mapping_rules(**kwargs) -> None:
     """
     Create mapping rules in the mapping_mappingrule table for each record in temp_standard_concepts.
     Each record can generate multiple mapping rules based on the provided rules criteria.
     """
     try:
-        table_id = kwargs.get("dag_run", {}).conf.get("table_id")
-        field_vocab_pairs = process_field_vocab_pairs(
-            kwargs.get("dag_run", {}).conf.get("field_vocab_pairs")
-        )
-        scan_report_id = kwargs.get("dag_run", {}).conf.get("scan_report_id")
-        person_id_field = kwargs.get("dag_run", {}).conf.get("person_id_field")
-        date_field_id = kwargs.get("dag_run", {}).conf.get("date_event_field")
+        # Get validated parameters from XCom
+        validated_params = pull_validated_params(kwargs, "validate_params_V_concepts")
+
+        scan_report_id = validated_params["scan_report_id"]
+        table_id = validated_params["table_id"]
+        field_vocab_pairs = validated_params["field_vocab_pairs"]
+        date_field_id = validated_params["date_event_field"]
+        person_id_field = validated_params["person_id_field"]
+
         update_job_status(
             scan_report=scan_report_id,
             scan_report_table=table_id,
@@ -62,7 +67,7 @@ def create_mapping_rules(**kwargs):
             )
 
         for pair in field_vocab_pairs:
-            sr_field_id = pair.get("sr_field_id")
+            sr_field_id = pair["sr_field_id"]
 
             # Create comprehensive single mapping rule query to handle all rules at once
             mapping_rule_query = f"""

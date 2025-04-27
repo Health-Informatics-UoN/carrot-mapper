@@ -1,8 +1,8 @@
 from libs.utils import (
-    process_field_vocab_pairs,
     update_job_status,
     JobStageType,
     StageStatusType,
+    pull_validated_params,
 )
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 import logging
@@ -11,7 +11,7 @@ import logging
 pg_hook = PostgresHook(postgres_conn_id="postgres_db_conn")
 
 
-def find_dest_table_and_person_field_id(**kwargs):
+def find_dest_table_and_person_field_id(**kwargs) -> None:
     """
     Add destination table IDs and person field IDs to the temporary concepts table.
     This function updates the temporary standard concepts table with appropriate
@@ -25,19 +25,19 @@ def find_dest_table_and_person_field_id(**kwargs):
        in the mapping_omopfield table.
     """
     try:
-        table_id = kwargs.get("dag_run", {}).conf.get("table_id")
+        # Get validated parameters from XCom
+        validated_params = pull_validated_params(kwargs, "validate_params_V_concepts")
+
+        table_id = validated_params["table_id"]
+        scan_report_id = validated_params["scan_report_id"]
+
         update_job_status(
-            scan_report=kwargs.get("dag_run", {}).conf.get("scan_report_id"),
+            scan_report=scan_report_id,
             scan_report_table=table_id,
             stage=JobStageType.GENERATE_RULES,
             status=StageStatusType.IN_PROGRESS,
             details="Finding destination table and field IDs...",
         )
-        if not table_id:
-            logging.warning(
-                "No table_id provided in find_dest_table_and_person_field_id"
-            )
-
         core_query = f"""
         -- Update destination table ID
         UPDATE temp_standard_concepts_{table_id} temp_std_concepts
@@ -79,7 +79,7 @@ def find_dest_table_and_person_field_id(**kwargs):
         raise
 
 
-def find_date_fields(**kwargs):
+def find_date_fields(**kwargs) -> None:
     """
     Add date field IDs to the temporary concepts table based on the date field mapper.
 
@@ -97,9 +97,10 @@ def find_date_fields(**kwargs):
     datetime fields for each table based on OMOP CDM conventions.
     """
     try:
-        table_id = kwargs.get("dag_run", {}).conf.get("table_id")
-        if not table_id:
-            logging.warning("No table_id provided in find_date_fields")
+        # Get validated parameters from XCom
+        validated_params = pull_validated_params(kwargs, "validate_params_V_concepts")
+
+        table_id = validated_params["table_id"]
 
         # Optimized SQL with better structure and reduced redundancy
         dates_query = f"""
@@ -161,17 +162,17 @@ def find_date_fields(**kwargs):
         raise
 
 
-def find_concept_fields(**kwargs):
+def find_concept_fields(**kwargs) -> None:
     """
     Add concept-related field IDs to the temporary concepts table.
     Includes source concept, source value, and destination concept fields.
     Uses domain-specific field patterns with strict table mapping.
     """
     try:
-        table_id = kwargs.get("dag_run", {}).conf.get("table_id")
+        # Get validated parameters from XCom
+        validated_params = pull_validated_params(kwargs, "validate_params_V_concepts")
 
-        if not table_id:
-            logging.warning("No table_id provided in find_concept_fields")
+        table_id = validated_params["table_id"]
 
         # Create a staging table with computed field values
         stage_query = f"""
@@ -230,23 +231,20 @@ def find_concept_fields(**kwargs):
         raise
 
 
-def find_additional_fields(**kwargs):
+def find_additional_fields(**kwargs) -> None:
     """
     Add additional field IDs to the temporary concepts table based on data types.
     Handles measurement domain and observation domain concepts.
     """
     try:
-        table_id = kwargs.get("dag_run", {}).conf.get("table_id")
-        field_vocab_pairs = process_field_vocab_pairs(
-            kwargs.get("dag_run", {}).conf.get("field_vocab_pairs")
-        )
+        # Get validated parameters from XCom
+        validated_params = pull_validated_params(kwargs, "validate_params_V_concepts")
 
-        if not field_vocab_pairs:
-            logging.error("No field-vocabulary pairs provided")
-            raise ValueError("No field-vocabulary pairs provided")
+        table_id = validated_params["table_id"]
+        field_vocab_pairs = validated_params["field_vocab_pairs"]
 
         for pair in field_vocab_pairs:
-            field_data_type = pair.get("field_data_type", "").lower()
+            field_data_type = pair["field_data_type"].lower()
             numeric_types = ["int", "real", "float", "numeric", "decimal", "double"]
             string_types = ["varchar", "nvarchar", "text", "string", "char"]
             is_string = (

@@ -1,8 +1,8 @@
 from libs.utils import (
-    process_field_vocab_pairs,
     update_job_status,
     JobStageType,
     StageStatusType,
+    pull_validated_params,
 )
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 import logging
@@ -11,7 +11,7 @@ import logging
 pg_hook = PostgresHook(postgres_conn_id="postgres_db_conn")
 
 
-def find_standard_concepts(**kwargs):
+def find_standard_concepts(**kwargs) -> None:
     """
     Maps source field values to standard OMOP concepts based on field-vocabulary pairs.
 
@@ -21,16 +21,12 @@ def find_standard_concepts(**kwargs):
 
     """
     try:
-        scan_report_id = kwargs.get("dag_run", {}).conf.get("scan_report_id")
-        table_id = kwargs.get("dag_run", {}).conf.get("table_id")
-        field_vocab_pairs = process_field_vocab_pairs(
-            kwargs.get("dag_run", {}).conf.get("field_vocab_pairs")
-        )
+        # Get validated parameters from XCom
+        validated_params = pull_validated_params(kwargs, "validate_params_V_concepts")
 
-        if not field_vocab_pairs:
-            logging.error("No field-vocabulary pairs provided")
-            raise ValueError("No field-vocabulary pairs provided")
-
+        scan_report_id = validated_params["scan_report_id"]
+        table_id = validated_params["table_id"]
+        field_vocab_pairs = validated_params["field_vocab_pairs"]
         # Create the temporary table once, outside the loop, with all the columns needed
         create_table_query = f"""
         DROP TABLE IF EXISTS temp_standard_concepts_{table_id};
@@ -64,8 +60,8 @@ def find_standard_concepts(**kwargs):
 
         # Process each field-vocabulary pair
         for pair in field_vocab_pairs:
-            sr_field_id = pair.get("sr_field_id")
-            vocabulary_id = pair.get("vocabulary_id")
+            sr_field_id = pair["sr_field_id"]
+            vocabulary_id = pair["vocabulary_id"]
 
             if not sr_field_id or not vocabulary_id:
                 raise ValueError(
@@ -120,17 +116,18 @@ def find_standard_concepts(**kwargs):
         raise
 
 
-def create_standard_concepts(**kwargs):
+def create_standard_concepts(**kwargs) -> None:
     """
     Create standard concepts for field values in the mapping_scanreportconcept table.
     Only inserts concepts that don't already exist.
     """
     try:
-        scan_report_id = kwargs.get("dag_run", {}).conf.get("scan_report_id")
-        table_id = kwargs.get("dag_run", {}).conf.get("table_id")
+        # Get validated parameters from XCom
+        validated_params = pull_validated_params(kwargs, "validate_params_V_concepts")
 
-        if not table_id:
-            logging.warning("No table_id provided in create_standard_concepts")
+        scan_report_id = validated_params["scan_report_id"]
+        table_id = validated_params["table_id"]
+
         # TODO: when source_concept_id is added to the model SCANREPORTCONCEPT, we need to update the query belowto solve the issue #1006
         create_concept_query = f"""
             -- Insert standard concepts for field values (only if they don't already exist)
@@ -182,17 +179,17 @@ def create_standard_concepts(**kwargs):
         raise
 
 
-def find_sr_concept_id(**kwargs):
+def find_sr_concept_id(**kwargs) -> None:
     """
     Update temp_standard_concepts table with sr_concept_id column
     containing the IDs of standard concepts added to mapping_scanreportconcept.
     This will help the next steps to be shorter.
     """
     try:
-        table_id = kwargs.get("dag_run", {}).conf.get("table_id")
+        # Get validated parameters from XCom
+        validated_params = pull_validated_params(kwargs, "validate_params_V_concepts")
 
-        if not table_id:
-            logging.warning("No table_id provided in find_sr_concept_id")
+        table_id = validated_params["table_id"]
 
         update_query = f"""        
         -- Update sr_concept_id with the mapping_scanreportconcept ID
