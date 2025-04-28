@@ -1,7 +1,7 @@
 [project]
 name = "workers"
 version = "0.1.0"
-description = "Workers for CaRROT Mapper"
+description = "Workers for Carrot Mapper"
 authors = [
     { name = "Sam Cox", email = "sam.cox@nottingham.ac.uk" },
     { name = "Philip Quinlan", email = "philip.quinlan@nottingham.ac.uk" },
