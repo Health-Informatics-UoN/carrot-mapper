@@ -3,6 +3,39 @@ from airflow import DAG
 from airflow.operators.trigger_dagrun import TriggerDagRunOperator
 from airflow.operators.empty import EmptyOperator
 
+
+"""
+This DAG orchestrates the automatic mapping rules generation workflow.
+
+Workflow steps:
+1. Trigger the concepts_from_vocab_dag to create standard concepts and mapping rules from vocabulary dictionaries
+2. Trigger the reuse_concepts_dag to reuse concepts from other scan reports (coming soon)
+NOTE: The reuse_concepts_dag will be triggered conditionally based on users's choice.
+
+Requires:
+- table_id (int): The ID of the scan report table to process
+- person_id_field (int): The ID of the person ID field
+- date_event_field (int): The ID of the date event field
+- scan_report_id (int): The ID of the scan report to process
+- field_vocab_pairs (list): A list (in string format) of dictionaries containing field-vocab pairs
+    For example: 
+    "field_vocab_pairs": [
+        {
+            "sr_field_id": "437",
+            "field_data_type": "VARCHAR",
+            "vocabulary_id": "ICD10"
+        },
+        {
+            "sr_field_id": "438",
+            "field_data_type": "VARCHAR",
+            "vocabulary_id": "Gender"
+        }
+        ]
+- parent_dataset_id (int): The ID of the parent dataset where the scan report belongs to (for reuse_concepts_dag (coming soon))
+
+"""
+
+
 default_args = {
     "owner": "airflow",
     "depends_on_past": False,
@@ -59,6 +92,8 @@ trigger_reuse_concepts = TriggerDagRunOperator(
     wait_for_completion=True,
     dag=dag,
 )
+#  TODO: add trigger for Reuse concepts here
+
 #  TODO: add trigger for Reuse concepts here
 
 
