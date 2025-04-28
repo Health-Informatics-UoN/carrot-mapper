@@ -12,7 +12,7 @@ logger = logging.getLogger("test_table_mapping_logger")
 storage_service = StorageService()
 
 
-def _validate_data_dictionary(data_dictionary: List[Dict]) -> None:
+def validate_data_dictionary(data_dictionary: List[Dict]) -> None:
     """
     Validate the data dictionary for multiple empty 'value' mappings.
 
@@ -86,28 +86,25 @@ def get_field_vocab_mappings(
         # STEP: 1. Get vocabulary mappings from the DD blob
         _, vocab_dictionary = storage_service.get_data_dictionary(data_dictionary_blob)
 
-        # STEP: 2. Validate the data dictionary
-        _validate_data_dictionary(vocab_dictionary)
-
-        # STEP: 3. Check if the table has vocabulary mappings
+        # STEP: 2. Check if the table has vocabulary mappings
         table_vocab = vocab_dictionary.get(table.name, {})
 
         if not table_vocab:
             logger.info(f"No vocabulary mappings found for table {table.name}")
             return []
 
-        # STEP: 4. Get all fields for the table
+        # STEP: 3. Get all fields for the table
         fields = ScanReportField.objects.filter(
             scan_report_table=table.pk, name__in=table_vocab.keys()
         ).values("id", "name", "type_column")
 
-        # STEP: 5. Build a mapping of field names to their IDs and data types
+        # STEP: 4. Build a mapping of field names to their IDs and data types
         field_info = {
             field["name"]: {"id": field["id"], "data_type": field["type_column"]}
             for field in fields
         }
 
-        # STEP: 6. Build the output list
+        # STEP: 5. Build the output list
         output_list = [
             {
                 "sr_field_id": field_info[field_name]["id"],
