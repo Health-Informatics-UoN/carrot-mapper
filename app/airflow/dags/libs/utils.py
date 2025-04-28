@@ -95,16 +95,14 @@ def create_task(task_id, python_callable, dag, provide_context=True):
     )
 
 
-def validate_params_V_concepts(**context) -> ValidatedParams:
+def _validate_params(
+    context, int_params: list, require_field_vocab_pairs: bool = False
+) -> dict:
     """
-    Validate and convert input parameters to the correct types.
-    This centralizes input validation to avoid repetitive validation in downstream tasks.
+    Generic parameter validation for DAG tasks.
     """
     conf = context["dag_run"].conf
     errors = []
-
-    # Required integer parameters
-    int_params = ["table_id", "person_id_field", "date_event_field", "scan_report_id"]
     validated_params = {}
 
     # Validate and convert integer parameters
@@ -113,29 +111,54 @@ def validate_params_V_concepts(**context) -> ValidatedParams:
         if not value:
             errors.append(f"Missing required parameter: {param}")
             continue
-
         try:
             validated_params[param] = int(value)
         except (ValueError, TypeError):
             errors.append(f"Invalid {param}: {value}. Must be an integer.")
 
-    # Validate field_vocab_pairs (mandatory)
-    field_vocab_pairs = conf.get("field_vocab_pairs")
-    if not field_vocab_pairs:
-        errors.append("Missing required parameter: field_vocab_pairs")
-    else:
-        validated_params["field_vocab_pairs"] = _process_field_vocab_pairs(
-            field_vocab_pairs
-        )
+    # Optionally validate field_vocab_pairs
+    if require_field_vocab_pairs:
+        field_vocab_pairs = conf.get("field_vocab_pairs")
+        if not field_vocab_pairs:
+            errors.append("Missing required parameter: field_vocab_pairs")
+        else:
+            validated_params["field_vocab_pairs"] = _process_field_vocab_pairs(
+                field_vocab_pairs
+            )
 
-    # If any errors, raise exception with details
     if errors:
         error_message = "Parameter validation failed: " + "; ".join(errors)
         logging.error(error_message)
         raise ValueError(error_message)
 
-    # Store validated parameters in XCom for downstream tasks
-    return validated_params  # type: ignore
+    return validated_params
+
+
+def validate_params_V_concepts(**context):
+    return _validate_params(
+        context,
+        int_params=[
+            "table_id",
+            "person_id_field",
+            "date_event_field",
+            "scan_report_id",
+        ],
+        require_field_vocab_pairs=True,
+    )
+
+
+def validate_params_R_concepts(**context):
+    return _validate_params(
+        context,
+        int_params=[
+            "table_id",
+            "person_id_field",
+            "date_event_field",
+            "scan_report_id",
+            "parent_dataset_id",
+        ],
+        require_field_vocab_pairs=False,
+    )
 
 
 def pull_validated_params(kwargs: dict, task_id: str) -> ValidatedParams:
