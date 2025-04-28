@@ -84,9 +84,7 @@ def get_field_vocab_mappings(
     """
     try:
         # STEP: 1. Get vocabulary mappings from the DD blob
-        _, vocab_dictionary = storage_service.get_data_dictionary(
-            data_dictionary_blob
-        )
+        _, vocab_dictionary = storage_service.get_data_dictionary(data_dictionary_blob)
 
         # STEP: 2. Validate the data dictionary
         _validate_data_dictionary(vocab_dictionary)
