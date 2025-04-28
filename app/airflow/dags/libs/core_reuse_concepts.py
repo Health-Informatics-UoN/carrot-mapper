@@ -1,8 +1,8 @@
 from libs.utils import (
-    process_field_vocab_pairs,
     update_job_status,
     JobStageType,
     StageStatusType,
+    pull_validated_params,
 )
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 import logging
@@ -130,8 +130,9 @@ def create_temp_reusing_concepts_table(**kwargs):
     """
     Create the temporary table for reusing concepts.
     """
-
-    table_id = kwargs.get("dag_run", {}).conf.get("table_id")
+    # Get validated parameters from XCom
+    validated_params = pull_validated_params(kwargs, "validate_params_R_concepts")
+    table_id = validated_params["table_id"]
 
     # Create the temporary table once, outside the loop, with all the columns needed
     create_table_query = f"""
@@ -168,13 +169,15 @@ def create_temp_reusing_concepts_table(**kwargs):
         raise
 
 
-def find_reusing_value(**kwargs):
+def find_matching_value(**kwargs):
     """
-    Find reusing concepts at the value level.
+    Find matching values for reusing concepts.
     """
+    # Get validated parameters from XCom
+    validated_params = pull_validated_params(kwargs, "validate_params_R_concepts")
 
-    parent_dataset_id = kwargs.get("dag_run", {}).conf.get("parent_dataset_id")
-    table_id = kwargs.get("dag_run", {}).conf.get("table_id")
+    parent_dataset_id = validated_params["parent_dataset_id"]
+    table_id = validated_params["table_id"]
 
     find_reusing_value_query = f"""
     INSERT INTO temp_reuse_concepts_{table_id} (
@@ -190,7 +193,7 @@ def find_reusing_value(**kwargs):
     JOIN mapping_scanreportfield AS sr_field 
         ON sr_value.scan_report_field_id = sr_field.id
     JOIN mapping_scanreporttable AS sr_table 
-        ON sr_field.scan_report_table_id = sr_table.id
+        ON sr_field.scan_report_table_id = {table_id}
 
     -- Join to eligible values in other eligible scan reports
     JOIN mapping_scanreportvalue AS eligible_sr_value 
@@ -223,6 +226,7 @@ def find_reusing_value(**kwargs):
     #     GROUP BY matching_name, source_concept_id
     #     HAVING COUNT(*) > 1
     # );
+    # TODO: add field name vanf value description mathicng as well
 
     try:
         pg_hook.run(find_reusing_value_query)

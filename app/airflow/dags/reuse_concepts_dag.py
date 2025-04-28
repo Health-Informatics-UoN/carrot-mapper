@@ -1,13 +1,11 @@
 from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.operators.empty import EmptyOperator
-from airflow.operators.python import PythonOperator
 from libs.core_reuse_concepts import (
     create_temp_reusing_concepts_table,
-    find_eligible_objects,
-    find_reusing_value,
+    find_matching_value,
 )
-
+from libs.utils import create_task, validate_params_R_concepts
 
 default_args = {
     "owner": "airflow",
@@ -30,42 +28,26 @@ dag = DAG(
     catchup=False,
 )
 
-# TODO: do we need to check AND NOT EXISTS? and when?
-# TODO: many concepts have the domain "SPEC ANATOMIC SITE", which should be added to the table "SPECIMEN" in a different way (OMOP field id is different)
-# TODO: ordering the temp standard concepts id before creating the mapping rules --> have the nice order match with the UI
-# TODO: add dest field name to the UI??
-# TODO: should we add `value` column in MAPPINGRULE model? in order to filter the mapping rule based on the SR value?
-# TODO: add the source_concept_id to the UI
-# TODO: improve naming of columns
-# TODO: add docstrings to the functions
+# TODO: clean up
 
 # Start the workflow
 start = EmptyOperator(task_id="start", dag=dag)
 
-
-create_temp_reusing_concepts_table_task = PythonOperator(
-    task_id="create_temp_reusing_concepts_table",
-    python_callable=create_temp_reusing_concepts_table,
-    provide_context=True,
-    dag=dag,
-)
-
-# find_eligible_objects_task = PythonOperator(
-#     task_id="find_eligible_objects",
-#     python_callable=find_eligible_objects,
-#     provide_context=True,
-#     dag=dag,
-# )
-
-find_reusing_value_task = PythonOperator(
-    task_id="find_reusing_value",
-    python_callable=find_reusing_value,
-    provide_context=True,
-    dag=dag,
-)
+tasks = [
+    create_task("validate_params_R_concepts", validate_params_R_concepts, dag),
+    create_task(
+        "create_temp_reusing_concepts_table", create_temp_reusing_concepts_table, dag
+    ),
+    create_task("find_matching_value", find_matching_value, dag),
+]
 
 
 # End the workflow
 end = EmptyOperator(task_id="end", dag=dag)
 
-(start >> create_temp_reusing_concepts_table_task >> find_reusing_value_task >> end)
+# Execute the tasks
+curr = start
+for task in tasks:
+    curr >> task
+    curr = task
+curr >> end
