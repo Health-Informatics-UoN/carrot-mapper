@@ -8,6 +8,8 @@ services:
       - 5432:5432
     environment:
       - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres
     volumes:
       - db_data:/var/lib/postgresql/data
 
@@ -62,18 +64,19 @@ services:
       - DB_USER=postgres
       - DB_PASSWORD=postgres
       - DEBUG=True
-      - WORKERS_UPLOAD_NAME=uploadreports-local
+      - RULES_QUEUE_NAME=rules-queue
+      - WORKERS_UPLOAD_NAME=upload-reports-queue
       - SECRET_KEY=secret
       - WORKERS_URL=http://workers:80
       - WORKERS_RULES_NAME=RulesOrchestrator
       - WORKERS_RULES_KEY=rules_key
-      - WORKERS_RULES_EXPORT_NAME=rules-exports-local
+      - WORKERS_RULES_EXPORT_NAME=rules-exports-queue
       - STORAGE_CONN_STRING=DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;TableEndpoint=http://azurite:10002/devstoreaccount1;
       - SIGNING_KEY=secret
-      - STORAGE_TYPE=minio
+      - STORAGE_TYPE=${STORAGE_TYPE:-azure}
       - MINIO_ENDPOINT=minio:9000
       - MINIO_ACCESS_KEY=minioadmin
-      - MINIO_SECRET_KEY=minioadmin 
+      - MINIO_SECRET_KEY=minioadmin
     volumes:
       - ./app/api:/api
       - ./app/shared:/shared
@@ -98,9 +101,9 @@ services:
       - STORAGE_CONN_STRING=DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;TableEndpoint=http://azurite:10002/devstoreaccount1;
       - APP_URL=http://api:8000/
       # Three queues below need adding to Azure local storage
-      - WORKERS_UPLOAD_NAME=uploadreports-local
-      - RULES_QUEUE_NAME=rules-local
-      - RULES_FILE_QUEUE_NAME=rules-exports-local
+      - WORKERS_UPLOAD_NAME=upload-reports-queue
+      - RULES_QUEUE_NAME=rules-queue
+      - RULES_FILE_QUEUE_NAME=rules-exports-queue
       # The address that can be used to reach the function app from outside
       - WEBSITE_HOSTNAME=localhost:7071
       # Database setup
@@ -111,7 +114,7 @@ services:
       - DB_USER=postgres
       - DB_PASSWORD=postgres
       - PYTHONPATH=/home/site/wwwroot:/home/site/wwwroot/shared
-      - STORAGE_TYPE=minio
+      - STORAGE_TYPE=${STORAGE_TYPE:-azure}
       - MINIO_ENDPOINT=minio:9000
       - MINIO_ACCESS_KEY=minioadmin
       - MINIO_SECRET_KEY=minioadmin
@@ -123,7 +126,6 @@ services:
     depends_on:
       - api
       - azurite
-      - minio 
 
   azurite:
     image: mcr.microsoft.com/azure-storage/azurite
@@ -137,8 +139,8 @@ services:
     environment:
       - AZURITE_ACCOUNTS=devstoreaccount1:Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==
 
-  
   minio:
+    profiles: ["minio"]
     image: minio/minio
     container_name: minio
     restart: always
@@ -158,6 +160,55 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  airflow-webserver:
+    build:
+      context: app/airflow
+      dockerfile: Dockerfile.webserver
+    depends_on:
+      - db
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      # Update this connection string to point to your remote PostgreSQL
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://postgres:postgres@db:5432/postgres?options=-csearch_path%3Dairflow
+      AIRFLOW__DATABASE__SQL_ALCHEMY_SCHEMA: airflow
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__WEBSERVER__WEB_SERVER_PORT: 8081
+      AIRFLOW__WEBSERVER__SECRET_KEY: "test"
+      AIRFLOW__API__AUTH_BACKENDS: airflow.api.auth.backend.basic_auth
+      AIRFLOW_CONN_POSTGRES_DB_CONN: postgresql+psycopg2://postgres:postgres@db:5432/postgres
+      AIRFLOW_CONN_MINIO_CONN: aws://minioadmin:minioadmin@/?endpoint_url=http://minio:9000
+      AIRFLOW_CONN_WASB__CONN: wasb://DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;TableEndpoint=http://azurite:10002/devstoreaccount1;
+      # TODO: enable CORS on production
+    volumes:
+      - ./app/airflow/dags:/opt/airflow/dags
+      # TODO: decide which method to set Airflow config, if using the below, set it in the Dockerfile
+      # - ./app/airflow/config/airflow.cfg:/opt/airflow/airflow.cfg
+    ports:
+      # normal port is 8080 but to avoid the conflict with workers, use 8081
+      - "8081:8081"
+
+  scheduler:
+    build:
+      context: app/airflow
+      dockerfile: Dockerfile.scheduler
+    depends_on:
+      - airflow-webserver
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      # Update this connection string to point to your remote PostgreSQL
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://postgres:postgres@db:5432/postgres?options=-csearch_path%3Dairflow
+      AIRFLOW__DATABASE__SQL_ALCHEMY_SCHEMA: airflow
+      AIRFLOW__WEBSERVER__SECRET_KEY: "test"
+      AIRFLOW__API__AUTH_BACKENDS: airflow.api.auth.backend.basic_auth
+      AIRFLOW_CONN_POSTGRES_DB_CONN: postgresql+psycopg2://postgres:postgres@db:5432/postgres
+      AIRFLOW_CONN_MINIO_CONN: aws://minioadmin:minioadmin@/?endpoint_url=http://minio:9000
+      AIRFLOW_CONN_WASB__CONN: wasb://DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;TableEndpoint=http://azurite:10002/devstoreaccount1;
+      # TODO: enable CORS on production
+    volumes:
+      - ./app/airflow/dags:/opt/airflow/dags
+      # TODO: decide which method to set Airflow config, if using the below, set it in the Dockerfile
+      # - ./app/airflow/config/airflow.cfg:/opt/airflow/airflow.cfg
 
 volumes:
   db_data:

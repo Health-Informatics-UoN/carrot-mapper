@@ -169,6 +169,9 @@ def get_mapping_rules_list(
         concept_name = rule_id_to_concept_name_map[rule.id]
 
         # work out if we need term_mapping or not
+        # Two TODOs below is for the issue #1006
+        # TODO: add field source_concept_id to the model SCANREPORTCONCEPT (can be null because of uncoded concepts)
+        # TODO: Having a separate logic for <domain>_source_concept_id
         term_mapping = None
         if "concept_id" in destination_field.field:
             if scan_report_concept.id in scan_report_concepts_with_values:

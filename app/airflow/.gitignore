@@ -1,0 +1,12 @@
+.venv
+.ruff_cache
+__pycache__
+*.env
+**/pgdata/**
+*.DS_Store
+*.sqlite3
+.python-version
+.mypy_cache
+dags/data
+dags/sql
+test_output

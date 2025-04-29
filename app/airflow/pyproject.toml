@@ -1,0 +1,11 @@
+[project]
+name = "carrot-airflow"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "apache-airflow>=2.10.5",
+    "apache-airflow-providers-postgres>=6.1.1",
+    "types-psycopg2>=2.9.21.20250318",
+]

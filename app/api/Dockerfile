@@ -35,22 +35,17 @@ ENV PATH=/home/django/.local/bin:$PATH
 
 # Copy pyproject.toml
 COPY ./api/pyproject.toml ./api/pyproject.toml
-COPY ./api/poetry.lock ./api/poetry.lock
+COPY ./api/uv.lock ./api/uv.lock
 
 # Copy shared package
 COPY ./shared /shared
 
-# Install Poetry and Export Poetry Plugin
-RUN pip install poetry
-RUN pip install poetry-plugin-export
-
-# Export requirements from pyproject.toml and install them
-RUN poetry config virtualenvs.create false \
-    && poetry export --format requirements.txt --output /api/requirements.txt --without-hashes \
-    && pip install --no-cache-dir -r /api/requirements.txt
+USER root
+RUN pip install uv
+RUN uv pip compile pyproject.toml --output-file requirements.txt && \
+    uv pip install --no-cache-dir -r requirements.txt --system
 
 # Copy entrypoint as root, elevate it to executable, then give it over to django user
-USER root
 COPY ./api/entrypoint.sh /entrypoint.sh
 RUN chmod u+x /entrypoint.sh
 RUN chown -R django:django /entrypoint.sh
