@@ -1,13 +1,19 @@
 from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.operators.empty import EmptyOperator
-from libs.core_reuse_concepts import (
+from libs.reuse_concepts.find_concepts_to_reuse import (
     create_temp_reusing_concepts_table,
     find_matching_field,
     find_matching_value,
     find_object_id,
     create_reusing_concepts,
     find_sr_concept_id,
+)
+from libs.reuse_concepts.prep_for_rules_creation import (
+    find_dest_table_and_person_field_id,
+    find_date_fields,
+    find_concept_fields,
+    find_additional_fields,
 )
 from libs.utils import create_task, validate_params_R_concepts
 
@@ -29,6 +35,9 @@ Workflow steps:
 """
 #  TODO: for now the creation of mapping rules will use the source_concept_id of temp_reuse_concepts table.
 # When we can distinguish between standard and non-standard concepts, we will use them accordingly in the create_mapping_rules function of reuse.
+# TODO: for death table, only reuse when the source table is death table as well
+# TODO: update file names
+
 
 default_args = {
     "owner": "airflow",
@@ -66,6 +75,11 @@ tasks = [
     create_task("find_object_id", find_object_id, dag),
     create_task("create_reusing_concepts", create_reusing_concepts, dag),
     create_task("find_sr_concept_id", find_sr_concept_id, dag),
+    create_task(
+        "find_dest_table_and_person_field_id", find_dest_table_and_person_field_id, dag
+    ),
+    create_task("find_date_fields", find_date_fields, dag),
+    create_task("find_concept_fields", find_concept_fields, dag),
 ]
 
 
