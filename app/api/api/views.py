@@ -217,7 +217,9 @@ class ScanReportIndexV2(GenericAPIView, ListModelMixin, CreateModelMixin):
         try:
             in_progress_status = UploadStatus.objects.get(value="IN_PROGRESS")
         except UploadStatus.DoesNotExist:
-            in_progress_status = UploadStatus.objects.create(value="IN_PROGRESS", display_name="In Progress")
+            in_progress_status = UploadStatus.objects.create(
+                value="IN_PROGRESS", display_name="In Progress"
+            )
 
 
         # Create an entry in ScanReport for the uploaded Scan Report
