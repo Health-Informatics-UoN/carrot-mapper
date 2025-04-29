@@ -4,7 +4,7 @@ import json
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from enum import Enum
 from airflow.operators.python import PythonOperator
-from typing import TypedDict, List
+from typing import TypedDict, List, Optional
 
 
 # PostgreSQL connection hook
@@ -25,6 +25,8 @@ class ValidatedParams(TypedDict):
     person_id_field: int
     date_event_field: int
     field_vocab_pairs: List[FieldVocabPair]
+    parent_dataset_id: Optional[int]
+    has_data_dictionary: Optional[bool]
 
 
 class StageStatusType(Enum):
@@ -96,7 +98,10 @@ def create_task(task_id, python_callable, dag, provide_context=True):
 
 
 def _validate_params(
-    context, int_params: list, require_field_vocab_pairs: bool = False
+    context,
+    int_params: list,
+    require_field_vocab_pairs: bool = False,
+    require_has_data_dictionary: bool = False,
 ) -> dict:
     """
     Generic parameter validation for DAG tasks.
@@ -108,7 +113,8 @@ def _validate_params(
     # Validate and convert integer parameters
     for param in int_params:
         value = conf.get(param)
-        if not value:
+        print(f"value: {value}")
+        if value is None:
             errors.append(f"Missing required parameter: {param}")
             continue
         try:
@@ -124,6 +130,27 @@ def _validate_params(
         else:
             validated_params["field_vocab_pairs"] = _process_field_vocab_pairs(
                 field_vocab_pairs
+            )
+
+    # Optionally validate has_data_dictionary as boolean
+    if require_has_data_dictionary:
+        has_data_dictionary = conf.get("has_data_dictionary")
+        if has_data_dictionary is None:
+            errors.append("Missing required parameter: has_data_dictionary")
+        elif isinstance(has_data_dictionary, str):
+            if has_data_dictionary.lower() in ["true", "false"]:
+                validated_params["has_data_dictionary"] = bool(
+                    has_data_dictionary.lower()
+                )
+            else:
+                errors.append(
+                    f"Invalid has_data_dictionary: {has_data_dictionary}. Must be a boolean (true/false)."
+                )
+        elif isinstance(has_data_dictionary, bool):
+            validated_params["has_data_dictionary"] = has_data_dictionary
+        else:
+            errors.append(
+                f"Invalid has_data_dictionary: {has_data_dictionary}. Must be a boolean."
             )
 
     if errors:
@@ -158,6 +185,7 @@ def validate_params_R_concepts(**context):
             "parent_dataset_id",
         ],
         require_field_vocab_pairs=False,
+        require_has_data_dictionary=True,
     )
 
 
