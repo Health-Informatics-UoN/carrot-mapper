@@ -11,121 +11,6 @@ import logging
 pg_hook = PostgresHook(postgres_conn_id="postgres_db_conn")
 
 
-def find_eligible_objects(**kwargs):
-    """
-    Find eligible objects for reuse concepts.
-    """
-    try:
-        scan_report_id = kwargs.get("dag_run", {}).conf.get("scan_report_id")
-        parent_dataset_id = kwargs.get("dag_run", {}).conf.get("parent_dataset_id")
-        table_id = kwargs.get("dag_run", {}).conf.get("table_id")
-
-        # Insert data for each field-vocabulary pair
-        find_eligible_objects_query = f"""
-        INSERT INTO temp_reuse_concepts_{table_id} (source_concept_id, source_object_id, content_type_id, source_scanreport_id)
-        SELECT 
-            sr_concept.concept_id,
-            sr_concept.object_id,
-            sr_concept.content_type_id,
-            scan_report.id
-        FROM 
-            mapping_scanreportconcept AS sr_concept
-        JOIN 
-            mapping_scanreport AS scan_report ON 
-                -- This join depends on the content_type
-                CASE 
-                    WHEN sr_concept.content_type_id = 23 THEN  -- For ScanReportValue
-                        EXISTS (
-                            SELECT 1 FROM mapping_scanreportvalue AS sr_value
-                            JOIN mapping_scanreportfield AS sr_field ON sr_value.scan_report_field_id = sr_field.id
-                            JOIN mapping_scanreporttable AS sr_table ON sr_field.scan_report_table_id = sr_table.id
-                            WHERE sr_value.id = sr_concept.object_id AND sr_table.scan_report_id = scan_report.id
-                        )
-                    WHEN sr_concept.content_type_id = 22 THEN  -- For ScanReportField
-                        EXISTS (
-                            SELECT 1 FROM mapping_scanreportfield AS sr_field
-                            JOIN mapping_scanreporttable AS sr_table ON sr_field.scan_report_table_id = sr_table.id
-                            WHERE sr_field.id = sr_concept.object_id AND sr_table.scan_report_id = scan_report.id
-                        )
-                    ELSE FALSE
-                END
-        JOIN 
-            mapping_dataset AS dataset ON scan_report.parent_dataset_id = dataset.id
-        JOIN 
-            mapping_mappingstatus AS mapping_status ON scan_report.mapping_status_id = mapping_status.id
-        WHERE 
-            dataset.id = {parent_dataset_id}
-            AND dataset.visibility = 'PUBLIC'
-            AND scan_report.visibility = 'PUBLIC'
-            AND mapping_status.value = 'COMPLETE'
-            AND sr_concept.creation_type != 'R'
-        ORDER BY 
-            sr_concept.id;
-
-        UPDATE temp_reuse_concepts_{table_id} temp_reuse_concepts
-        SET matching_name = 
-            CASE 
-                WHEN temp_reuse_concepts.content_type_id = 22 THEN  -- For ScanReportField
-                    (SELECT sr_field.name 
-                    FROM mapping_scanreportfield AS sr_field 
-                    WHERE sr_field.id = temp_reuse_concepts.source_object_id)
-                WHEN temp_reuse_concepts.content_type_id = 23 THEN  -- For ScanReportValue
-                    (SELECT sr_value.value 
-                    FROM mapping_scanreportvalue AS sr_value 
-                    WHERE sr_value.id = temp_reuse_concepts.source_object_id)
-                ELSE NULL
-            END
-        WHERE temp_reuse_concepts.source_object_id IS NOT NULL;
-        
-
-
-        UPDATE temp_reuse_concepts_{table_id} temp_reuse_concepts
-        SET object_id = 
-            CASE 
-                WHEN temp_reuse_concepts.content_type_id = 22 THEN  -- For ScanReportField
-                    (SELECT sr_field.id 
-                    FROM mapping_scanreportfield AS sr_field 
-                    JOIN mapping_scanreporttable AS sr_table ON sr_field.scan_report_table_id = sr_table.id
-                    WHERE sr_table.scan_report_id = {scan_report_id} AND sr_table.id = {table_id}
-                    AND sr_field.name = temp_reuse_concepts.matching_name
-                    LIMIT 1)
-                WHEN temp_reuse_concepts.content_type_id = 23 THEN  -- For ScanReportValue
-                    (SELECT sr_value.id 
-                    FROM mapping_scanreportvalue AS sr_value
-                    JOIN mapping_scanreportfield AS sr_field ON sr_value.scan_report_field_id = sr_field.id
-                    JOIN mapping_scanreporttable AS sr_table ON sr_field.scan_report_table_id = sr_table.id
-                    WHERE sr_table.scan_report_id = {scan_report_id} AND sr_table.id = {table_id}
-                    AND sr_value.value = temp_reuse_concepts.matching_name
-                    LIMIT 1)
-                ELSE NULL
-            END
-        WHERE temp_reuse_concepts.matching_name IS NOT NULL;
-
-        DELETE FROM temp_reuse_concepts_{table_id}
-        WHERE object_id IS NULL;
-        """
-        try:
-            pg_hook.run(find_eligible_objects_query)
-            logging.info(
-                f"Successfully inserted eligible objects for table ID {table_id}"
-            )
-        except Exception as e:
-            logging.error(
-                f"Failed to insert eligible objects for table ID {table_id}: {str(e)}"
-            )
-            # update_job_status(
-            #     scan_report_id=scan_report_id,
-            #     table_id=table_id,
-            #     stage=JobStageType.REUSE_CONCEPTS,
-            #     status=StageStatusType.FAILED,
-            #     details=f"Error in find_eligible_objects_query: {str(e)}",
-            # )
-            raise
-    except Exception as e:
-        logging.error(f"Error in find_eligible_objects: {str(e)}")
-        raise
-
-
 def create_temp_reusing_concepts_table(**kwargs):
     """
     Create the temporary table for reusing concepts.
@@ -140,12 +25,12 @@ def create_temp_reusing_concepts_table(**kwargs):
     CREATE TABLE temp_reuse_concepts_{table_id} (
         object_id INTEGER,
         matching_name TEXT,
-        source_object_id INTEGER,
         source_scanreport_id INTEGER,
         content_type_id INTEGER,
         source_concept_id INTEGER,
         standard_concept_id INTEGER,
-        source_field_id INTEGER,
+        -- TODO: find a better name for this column. This is the field id for the reused concepts in the new SR 
+        target_source_field_id INTEGER,
         sr_concept_id INTEGER,
         dest_table_id INTEGER,
         dest_person_field_id INTEGER,
@@ -188,12 +73,11 @@ def find_matching_value(**kwargs):
 
     find_reusing_value_query = f"""
     INSERT INTO temp_reuse_concepts_{table_id} (
-        matching_name, content_type_id, source_object_id, source_concept_id, source_scanreport_id
+        matching_name, content_type_id, source_concept_id, source_scanreport_id
     )
     SELECT DISTINCT 
         sr_value.value, 
         23,
-        eligible_sr_value.id,
         eligible_sr_concept.concept_id,
         -- TODO: add eligible_sr_concept.standard_concept_id here
         eligible_scan_report.id
@@ -239,11 +123,83 @@ def find_matching_value(**kwargs):
     WHERE
         temp_table.matching_name = temp_table_duplicate.matching_name
         AND temp_table.source_concept_id = temp_table_duplicate.source_concept_id
+        AND temp_table.content_type_id = 23
         AND temp_table.source_scanreport_id > temp_table_duplicate.source_scanreport_id;
     """
     try:
         pg_hook.run(find_reusing_value_query)
         logging.info(f"Successfully found reusing concepts at the value level")
+    except Exception as e:
+        logging.error(f"Failed to find reusing concepts at the value level: {str(e)}")
+        raise
+
+
+def find_matching_field(**kwargs):
+    """
+    Find matching fields for reusing concepts.
+    """
+    # Get validated parameters from XCom
+    validated_params = pull_validated_params(kwargs, "validate_params_R_concepts")
+
+    parent_dataset_id = validated_params["parent_dataset_id"]
+    table_id = validated_params["table_id"]
+
+    # When a data dictionary is provided, we won't reuse V concepts,
+    # because that is the job of V concepts DAG
+    has_data_dictionary = validated_params["has_data_dictionary"]
+    exclude_v_concepts_condition = (
+        "AND eligible_sr_concept.creation_type != 'V'" if has_data_dictionary else ""
+    )
+
+    find_reusing_field_query = f"""
+    INSERT INTO temp_reuse_concepts_{table_id} (
+        matching_name, content_type_id, source_concept_id, source_scanreport_id
+    )
+    SELECT DISTINCT 
+        sr_field.name, 
+        22,
+        eligible_sr_concept.concept_id,
+        -- TODO: add eligible_sr_concept.standard_concept_id here
+        eligible_scan_report.id
+    FROM mapping_scanreportfield AS sr_field
+    JOIN mapping_scanreporttable AS sr_table 
+        ON sr_field.scan_report_table_id = {table_id}
+
+    -- Join to eligible values in other eligible scan reports
+    JOIN mapping_scanreportfield AS eligible_sr_field 
+        ON eligible_sr_field.name = sr_field.name        -- Matching field name
+    JOIN mapping_scanreporttable AS eligible_sr_table 
+        ON eligible_sr_field.scan_report_table_id = eligible_sr_table.id
+    JOIN mapping_scanreport AS eligible_scan_report 
+        ON eligible_sr_table.scan_report_id = eligible_scan_report.id
+    JOIN mapping_dataset AS dataset 
+        ON eligible_scan_report.parent_dataset_id = dataset.id
+    JOIN mapping_mappingstatus AS map_status 
+        ON eligible_scan_report.mapping_status_id = map_status.id
+    JOIN mapping_scanreportconcept AS eligible_sr_concept
+        ON eligible_sr_concept.object_id = eligible_sr_field.id
+        AND eligible_sr_concept.content_type_id = 22     -- Field level concepts
+        AND eligible_sr_concept.creation_type != 'R'     -- We don't want to reuse R concepts
+        {exclude_v_concepts_condition}
+
+    WHERE dataset.id = {parent_dataset_id}        -- Other conditions
+    AND dataset.hidden = FALSE
+    AND eligible_scan_report.hidden = FALSE
+    AND map_status.value = 'COMPLETE';
+
+    -- After finding eligible matching name, we need to delete (matching_name, source_concept_id) duplicates, 
+    --only get the occurence with the lowest source_scanreport_id
+    DELETE FROM temp_reuse_concepts_{table_id} AS temp_table
+    USING temp_reuse_concepts_{table_id} AS temp_table_duplicate
+    WHERE
+        temp_table.matching_name = temp_table_duplicate.matching_name
+        AND temp_table.source_concept_id = temp_table_duplicate.source_concept_id
+        AND temp_table.content_type_id = 22
+        AND temp_table.source_scanreport_id > temp_table_duplicate.source_scanreport_id;
+    """
+    try:
+        pg_hook.run(find_reusing_field_query)
+        logging.info(f"Successfully found reusing concepts at the field level")
     except Exception as e:
         logging.error(f"Failed to find reusing concepts at the value level: {str(e)}")
         raise

@@ -3,6 +3,7 @@ from airflow import DAG
 from airflow.operators.empty import EmptyOperator
 from libs.core_reuse_concepts import (
     create_temp_reusing_concepts_table,
+    find_matching_field,
     find_matching_value,
 )
 from libs.utils import create_task, validate_params_R_concepts
@@ -56,6 +57,7 @@ tasks = [
     create_task(
         "create_temp_reusing_concepts_table", create_temp_reusing_concepts_table, dag
     ),
+    create_task("find_matching_field", find_matching_field, dag),
     create_task("find_matching_value", find_matching_value, dag),
 ]
 
