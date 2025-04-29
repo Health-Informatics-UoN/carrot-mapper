@@ -31,6 +31,7 @@ def create_temp_reusing_concepts_table(**kwargs):
         standard_concept_id INTEGER,
         -- TODO: find a better name for this column. This is the field id for the reused concepts in the new SR 
         target_source_field_id INTEGER,
+        target_source_field_data_type TEXT,
         sr_concept_id INTEGER,
         dest_table_id INTEGER,
         dest_person_field_id INTEGER,
@@ -293,18 +294,27 @@ def create_reusing_concepts(**kwargs):
 
         # This is the source field for concepts-related mapping rules created in the next step
         find_target_source_field_id_query = f"""
+            -- First set the target_source_field_id
             UPDATE temp_reuse_concepts_{table_id} AS temp_table
-            SET 
-                target_source_field_id =
-                    CASE
-                        WHEN temp_table.content_type_id = 22 THEN temp_table.object_id
-                        WHEN temp_table.content_type_id = 23 THEN (
-                            SELECT sr_value.scan_report_field_id
-                            FROM mapping_scanreportvalue AS sr_value
-                            WHERE sr_value.id = temp_table.object_id
-                        )
-                        ELSE NULL
-                    END;
+            SET target_source_field_id =
+                CASE
+                    WHEN temp_table.content_type_id = 22 THEN temp_table.object_id
+                    WHEN temp_table.content_type_id = 23 THEN (
+                        SELECT sr_value.scan_report_field_id
+                        FROM mapping_scanreportvalue AS sr_value
+                        WHERE sr_value.id = temp_table.object_id
+                    )
+                    ELSE NULL
+                END;
+
+            -- Then use the now-set target_source_field_id to set data type
+            UPDATE temp_reuse_concepts_{table_id} AS temp_table
+            SET target_source_field_data_type = (
+                SELECT sr_field.type_column
+                FROM mapping_scanreportfield AS sr_field
+                WHERE sr_field.id = temp_table.target_source_field_id
+            )
+            WHERE temp_table.target_source_field_id IS NOT NULL;
             """
         try:
             pg_hook.run(create_concept_query + find_target_source_field_id_query)
