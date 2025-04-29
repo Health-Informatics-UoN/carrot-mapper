@@ -1,11 +1,10 @@
 import csv
 from collections import Counter
 from io import BytesIO, StringIO
-Process-Data-Dictionary-for-Airflow-Rules-Generation-Activity
+
 from typing import List, Dict
 from collections import defaultdict
 from api.logger import logger
-master
 
 import openpyxl  # type: ignore
 from datasets.serializers import DatasetSerializer
@@ -202,13 +201,12 @@ class ScanReportFilesSerializer(DynamicFieldsMixin, serializers.ModelSerializer)
                 "Please upload a .csv file."
             )
 
-Process-Data-Dictionary-for-Airflow-Rules-Generation-Activity
+
         # Read the file once
         decoded = data_dictionary.read().decode("utf-8-sig")
         csv_reader = csv.reader(StringIO(decoded))
 
         csv_reader = csv.reader(StringIO(data_dictionary.read().decode("utf-8-sig")))
-master
         errors = []
 
         csv_file_names = set()
@@ -284,7 +282,6 @@ master
         if errors:
             raise ParseError(errors)
 
-Process-Data-Dictionary-for-Airflow-Rules-Generation-Activity
         # Validates the structure and content of an uploaded data dictionary CSV file,
         # raising errors if it does not meet expected format and consistency rules.
         dd_reader = csv.DictReader(StringIO(decoded))
@@ -293,7 +290,7 @@ Process-Data-Dictionary-for-Airflow-Rules-Generation-Activity
 
         logger.info("Data dictionary file is valid and ready for upload.")
         data_dictionary.seek(0)
- master
+
         return data_dictionary
 
     def _validate_data_dictionary(self, data_dictionary: List[Dict]) -> None:
