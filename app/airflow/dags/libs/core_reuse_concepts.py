@@ -179,6 +179,13 @@ def find_matching_value(**kwargs):
     parent_dataset_id = validated_params["parent_dataset_id"]
     table_id = validated_params["table_id"]
 
+    # When a data dictionary is provided, we won't reuse V concepts,
+    # because that is the job of V concepts DAG
+    has_data_dictionary = validated_params["has_data_dictionary"]
+    exclude_v_concepts_condition = (
+        "AND eligible_sr_concept.creation_type != 'V'" if has_data_dictionary else ""
+    )
+
     find_reusing_value_query = f"""
     INSERT INTO temp_reuse_concepts_{table_id} (
         matching_name, content_type_id, source_object_id, source_concept_id, source_scanreport_id
@@ -188,6 +195,7 @@ def find_matching_value(**kwargs):
         23,
         eligible_sr_value.id,
         eligible_sr_concept.concept_id,
+        -- TODO: add eligible_sr_concept.standard_concept_id here
         eligible_scan_report.id
     FROM mapping_scanreportvalue AS sr_value
     JOIN mapping_scanreportfield AS sr_field 
@@ -197,9 +205,14 @@ def find_matching_value(**kwargs):
 
     -- Join to eligible values in other eligible scan reports
     JOIN mapping_scanreportvalue AS eligible_sr_value 
-        ON sr_value.value = eligible_sr_value.value
+        ON sr_value.value = eligible_sr_value.value       -- Matching value's name
+        AND (
+            sr_value.value_description = eligible_sr_value.value_description
+            OR (sr_value.value_description IS NULL AND eligible_sr_value.value_description IS NULL)
+        )                                                 -- Matching value's description.
     JOIN mapping_scanreportfield AS eligible_sr_field 
         ON eligible_sr_value.scan_report_field_id = eligible_sr_field.id
+        AND eligible_sr_field.name = sr_field.name        -- Matching value's field name
     JOIN mapping_scanreporttable AS eligible_sr_table 
         ON eligible_sr_field.scan_report_table_id = eligible_sr_table.id
     JOIN mapping_scanreport AS eligible_scan_report 
@@ -210,24 +223,24 @@ def find_matching_value(**kwargs):
         ON eligible_scan_report.mapping_status_id = map_status.id
     JOIN mapping_scanreportconcept AS eligible_sr_concept
         ON eligible_sr_concept.object_id = eligible_sr_value.id
-        AND eligible_sr_concept.content_type_id = 23
-        AND eligible_sr_concept.creation_type != 'R'
+        AND eligible_sr_concept.content_type_id = 23     -- Value level concepts
+        AND eligible_sr_concept.creation_type != 'R'     -- We don't want to reuse R concepts
+        {exclude_v_concepts_condition}
 
-    WHERE dataset.id = {parent_dataset_id}
+    WHERE dataset.id = {parent_dataset_id}        -- Other conditions
     AND dataset.hidden = FALSE
     AND eligible_scan_report.hidden = FALSE
     AND map_status.value = 'COMPLETE';
+
+    -- After finding eligible matching name, we need to delete (matching_name, source_concept_id) duplicates, 
+    --only get the occurence with the lowest source_scanreport_id
+    DELETE FROM temp_reuse_concepts_{table_id} AS temp_table
+    USING temp_reuse_concepts_{table_id} AS temp_table_duplicate
+    WHERE
+        temp_table.matching_name = temp_table_duplicate.matching_name
+        AND temp_table.source_concept_id = temp_table_duplicate.source_concept_id
+        AND temp_table.source_scanreport_id > temp_table_duplicate.source_scanreport_id;
     """
-
-    # TODO: find a way to drop duplicated pair (object - source_concept_id - standard_concept_id)
-    #    DELETE FROM temp_reuse_concepts_{table_id}
-    # WHERE matching_name IN (
-    #     SELECT matching_name FROM temp_reuse_concepts_{table_id}
-    #     GROUP BY matching_name, source_concept_id
-    #     HAVING COUNT(*) > 1
-    # );
-    # TODO: add field name vanf value description mathicng as well
-
     try:
         pg_hook.run(find_reusing_value_query)
         logging.info(f"Successfully found reusing concepts at the value level")
