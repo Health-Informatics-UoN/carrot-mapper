@@ -67,14 +67,6 @@ def create_mapping_rules(**kwargs) -> None:
             details="Creating mapping rules...",
         )
 
-        if not scan_report_id or not field_vocab_pairs:
-            logging.warning(
-                "No scan_report_id or field-vocabulary pairs provided in create_concepts_rules"
-            )
-            raise AirflowException(
-                "Either scan_report_id or field-vocabulary pairs are required for creating mapping rules"
-            )
-
         for pair in field_vocab_pairs:
             sr_field_id = pair["sr_field_id"]
 
