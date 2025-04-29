@@ -309,12 +309,26 @@ def create_reusing_concepts(**kwargs):
 
             -- Then use the now-set target_source_field_id to set data type
             UPDATE temp_reuse_concepts_{table_id} AS temp_table
-            SET target_source_field_data_type = (
-                SELECT sr_field.type_column
-                FROM mapping_scanreportfield AS sr_field
-                WHERE sr_field.id = temp_table.target_source_field_id
-            )
-            WHERE temp_table.target_source_field_id IS NOT NULL;
+            SET target_source_field_data_type = 
+                CASE
+                    WHEN sr_field.type_column = 'INT' OR
+                        sr_field.type_column = 'REAL' OR
+                        sr_field.type_column = 'FLOAT' OR
+                        sr_field.type_column = 'NUMERIC' OR
+                        sr_field.type_column = 'DECIMAL' OR
+                        sr_field.type_column = 'DOUBLE'
+                    THEN 'numeric'
+                    WHEN sr_field.type_column = 'VARCHAR' OR
+                        sr_field.type_column = 'NVARCHAR' OR
+                        sr_field.type_column = 'TEXT' OR
+                        sr_field.type_column = 'STRING' OR
+                        sr_field.type_column = 'CHAR'
+                    THEN 'string'
+                    ELSE sr_field.type_column
+                END
+            FROM mapping_scanreportfield AS sr_field
+            WHERE sr_field.id = temp_table.target_source_field_id
+            AND temp_table.target_source_field_id IS NOT NULL;
             """
         try:
             pg_hook.run(create_concept_query + find_target_source_field_id_query)

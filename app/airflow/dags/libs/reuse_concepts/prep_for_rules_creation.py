@@ -245,111 +245,90 @@ def find_concept_fields(**kwargs) -> None:
 def find_additional_fields(**kwargs) -> None:
     """
     Add additional field IDs to the temporary concepts table based on data types.
-    Handles measurement domain and observation domain concepts.
+    Handles measurement domain and observation domain concepts using the
+    target_source_field_data_type from the temp_reuse_concepts table.
 
     Validated params needed are:
     - table_id (int): The ID of the scan report table to process
-    - field_vocab_pairs (list): List of dictionaries containing field-vocab pairs
     """
     try:
         # Get validated parameters from XCom
         validated_params = pull_validated_params(kwargs, "validate_params_R_concepts")
-
         table_id = validated_params["table_id"]
-        field_vocab_pairs = validated_params["field_vocab_pairs"]
 
-        for pair in field_vocab_pairs:
-            field_data_type = pair["field_data_type"].lower()
-            numeric_types = ["int", "real", "float", "numeric", "decimal", "double"]
-            string_types = ["varchar", "nvarchar", "text", "string", "char"]
-            is_string = (
-                any(t in field_data_type for t in string_types)
-                if field_data_type
-                else False
+        # Always add value_as_number to Measurement domain concepts, but ONLY if they're in the measurement table
+        measurement_query = f"""
+        -- Update value_as_number_field_id for measurement domain concepts ONLY
+        UPDATE temp_reuse_concepts_{table_id} temp_reuse_concepts
+        SET value_as_number_field_id = omop_field.id
+        FROM mapping_omopfield omop_field, omop.concept std_concept, mapping_omoptable omop_table
+        WHERE 
+            std_concept.concept_id = COALESCE(temp_reuse_concepts.standard_concept_id, temp_reuse_concepts.source_concept_id) AND
+            std_concept.domain_id = 'Measurement' AND
+            omop_field.table_id = temp_reuse_concepts.dest_table_id AND
+            omop_field.field = 'value_as_number' AND
+            omop_table.id = temp_reuse_concepts.dest_table_id AND
+            omop_table.table = 'measurement';
+        """
+
+        try:
+            pg_hook.run(measurement_query)
+            logging.info(
+                "Successfully added value_as_number for Measurement domain concepts"
             )
-            is_numeric = (
-                any(t in field_data_type for t in numeric_types)
-                if field_data_type
-                else False
+        except Exception as e:
+            logging.error(f"Database error in measurement_query: {str(e)}")
+            raise
+
+        # Add value_as_number to Observation domain concepts with numeric data types
+        observation_number_query = f"""
+        -- Update value_as_number_field_id for Observation domain concepts with numeric data types
+        UPDATE temp_reuse_concepts_{table_id} temp_reuse_concepts
+        SET value_as_number_field_id = omop_field.id
+        FROM mapping_omopfield omop_field, omop.concept std_concept, mapping_omoptable omop_table
+        WHERE 
+            std_concept.concept_id = COALESCE(temp_reuse_concepts.standard_concept_id, temp_reuse_concepts.source_concept_id) AND
+            std_concept.domain_id = 'Observation' AND
+            omop_field.table_id = temp_reuse_concepts.dest_table_id AND
+            omop_field.field = 'value_as_number' AND
+            omop_table.id = temp_reuse_concepts.dest_table_id AND
+            omop_table.table = 'observation' AND
+            temp_reuse_concepts.target_source_field_data_type = 'numeric';
+        """
+
+        try:
+            pg_hook.run(observation_number_query)
+            logging.info(
+                "Successfully added value_as_number for Observation domain concepts"
             )
+        except Exception as e:
+            logging.error(f"Database error in observation_number_query: {str(e)}")
+            raise
 
-            # Always add value_as_number to Measurement domain concepts, but ONLY if they're in the measurement table
-            measurement_query = f"""
-            -- Update value_as_number_field_id for measurement domain concepts ONLY
-            UPDATE temp_standard_concepts_{table_id}
-            SET value_as_number_field_id = omop_field.id
-            FROM mapping_omopfield omop_field, omop.concept std_concept, mapping_omoptable omop_table
-            WHERE 
-                std_concept.concept_id = temp_standard_concepts_{table_id}.standard_concept_id AND
-                std_concept.domain_id = 'Measurement' AND
-                omop_field.table_id = temp_standard_concepts_{table_id}.dest_table_id AND
-                omop_field.field = 'value_as_number' AND
-                omop_table.id = temp_standard_concepts_{table_id}.dest_table_id AND
-                omop_table.table = 'measurement';
-            """
+        # Add value_as_string to Observation domain concepts with string data types
+        observation_string_query = f"""
+        -- Update value_as_string_field_id for Observation domain concepts with string data types
+        UPDATE temp_reuse_concepts_{table_id} temp_reuse_concepts
+        SET value_as_string_field_id = omop_field.id
+        FROM mapping_omopfield omop_field, omop.concept std_concept, mapping_omoptable omop_table
+        WHERE 
+            std_concept.concept_id = COALESCE(temp_reuse_concepts.standard_concept_id, temp_reuse_concepts.source_concept_id) AND
+            std_concept.domain_id = 'Observation' AND
+            omop_field.table_id = temp_reuse_concepts.dest_table_id AND
+            omop_field.field = 'value_as_string' AND
+            omop_table.id = temp_reuse_concepts.dest_table_id AND
+            omop_table.table = 'observation' AND
+            temp_reuse_concepts.target_source_field_data_type = 'string';
+        """
 
-            try:
-                pg_hook.run(measurement_query)
-                logging.info(
-                    "Successfully added value_as_number for Measurement domain concepts"
-                )
-            except Exception as e:
-                logging.error(f"Database error in measurement_query: {str(e)}")
-                raise
-
-            # Only add value_as_number to Observation domain concepts with numeric data types
-            if is_numeric:
-                observation_number_query = f"""
-                -- Update value_as_number_field_id for Observation domain concepts with numeric data types
-                UPDATE temp_standard_concepts_{table_id}
-                SET value_as_number_field_id = omop_field.id
-                FROM mapping_omopfield omop_field, omop.concept std_concept, mapping_omoptable omop_table
-                WHERE 
-                    std_concept.concept_id = temp_standard_concepts_{table_id}.standard_concept_id AND
-                    std_concept.domain_id = 'Observation' AND
-                    omop_field.table_id = temp_standard_concepts_{table_id}.dest_table_id AND
-                    omop_field.field = 'value_as_number' AND
-                    omop_table.id = temp_standard_concepts_{table_id}.dest_table_id AND
-                    omop_table.table = 'observation';
-                """
-
-                try:
-                    pg_hook.run(observation_number_query)
-                    logging.info(
-                        "Successfully added value_as_number for Observation domain concepts"
-                    )
-                except Exception as e:
-                    logging.error(
-                        f"Database error in observation_number_query: {str(e)}"
-                    )
-                    raise
-
-            # Only add value_as_string to Observation domain concepts with string data types
-            if is_string:
-                observation_string_query = f"""
-                -- Update value_as_string_field_id for Observation domain concepts with string data types
-                UPDATE temp_standard_concepts_{table_id}
-                SET value_as_string_field_id = omop_field.id
-                FROM mapping_omopfield omop_field, omop.concept std_concept, mapping_omoptable omop_table
-                WHERE 
-                    std_concept.concept_id = temp_standard_concepts_{table_id}.standard_concept_id AND
-                    std_concept.domain_id = 'Observation' AND
-                    omop_field.table_id = temp_standard_concepts_{table_id}.dest_table_id AND
-                    omop_field.field = 'value_as_string' AND
-                    omop_table.id = temp_standard_concepts_{table_id}.dest_table_id AND
-                    omop_table.table = 'observation';
-                """
-
-                try:
-                    pg_hook.run(observation_string_query)
-                    logging.info(
-                        "Successfully added value_as_string for Observation domain concepts"
-                    )
-                except Exception as e:
-                    logging.error(
-                        f"Database error in observation_string_query: {str(e)}"
-                    )
-                    raise
+        try:
+            pg_hook.run(observation_string_query)
+            logging.info(
+                "Successfully added value_as_string for Observation domain concepts"
+            )
+        except Exception as e:
+            logging.error(f"Database error in observation_string_query: {str(e)}")
+            raise
 
     except Exception as e:
         logging.error(f"Error in find_additional_fields: {str(e)}")

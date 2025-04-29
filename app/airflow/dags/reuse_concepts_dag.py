@@ -36,7 +36,8 @@ Workflow steps:
 #  TODO: for now the creation of mapping rules will use the source_concept_id of temp_reuse_concepts table.
 # When we can distinguish between standard and non-standard concepts, we will use them accordingly in the create_mapping_rules function of reuse.
 # TODO: for death table, only reuse when the source table is death table as well
-# TODO: update file names
+# TODO: update file names --> refactor DAGs structure
+# TODO: compare the R and V logic related to prep_for_rules_creation
 
 
 default_args = {
@@ -80,6 +81,7 @@ tasks = [
     ),
     create_task("find_date_fields", find_date_fields, dag),
     create_task("find_concept_fields", find_concept_fields, dag),
+    create_task("find_additional_fields", find_additional_fields, dag),
 ]
 
 
