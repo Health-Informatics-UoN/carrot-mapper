@@ -5,6 +5,7 @@ from libs.core_reuse_concepts import (
     create_temp_reusing_concepts_table,
     find_matching_field,
     find_matching_value,
+    find_object_id,
 )
 from libs.utils import create_task, validate_params_R_concepts
 
@@ -59,6 +60,7 @@ tasks = [
     ),
     create_task("find_matching_field", find_matching_field, dag),
     create_task("find_matching_value", find_matching_value, dag),
+    create_task("find_object_id", find_object_id, dag),
 ]
 
 

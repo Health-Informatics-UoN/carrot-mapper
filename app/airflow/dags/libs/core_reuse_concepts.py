@@ -205,6 +205,50 @@ def find_matching_field(**kwargs):
         raise
 
 
+def find_object_id(**kwargs):
+    """
+    Find object ids for reusing concepts.
+    """
+    # Get validated parameters from XCom
+    validated_params = pull_validated_params(kwargs, "validate_params_R_concepts")
+
+    scan_report_id = validated_params["scan_report_id"]
+    table_id = validated_params["table_id"]
+
+    find_object_id_query = f"""
+    UPDATE temp_reuse_concepts_{table_id} AS temp_table
+        SET object_id = 
+            CASE 
+                WHEN temp_table.content_type_id = 22 THEN  -- For ScanReportField
+                    (SELECT sr_field.id 
+                    FROM mapping_scanreportfield AS sr_field 
+                    JOIN mapping_scanreporttable AS sr_table ON sr_field.scan_report_table_id = sr_table.id
+                    WHERE sr_table.scan_report_id = {scan_report_id} AND sr_table.id = {table_id}
+                    AND sr_field.name = temp_table.matching_name
+                    LIMIT 1)
+                WHEN temp_table.content_type_id = 23 THEN  -- For ScanReportValue
+                    (SELECT sr_value.id 
+                    FROM mapping_scanreportvalue AS sr_value
+                    JOIN mapping_scanreportfield AS sr_field ON sr_value.scan_report_field_id = sr_field.id
+                    JOIN mapping_scanreporttable AS sr_table ON sr_field.scan_report_table_id = sr_table.id
+                    WHERE sr_table.scan_report_id = {scan_report_id} AND sr_table.id = {table_id}
+                    AND sr_value.value = temp_table.matching_name
+                    LIMIT 1)
+                ELSE NULL
+            END
+        WHERE temp_table.matching_name IS NOT NULL;
+
+        DELETE FROM temp_reuse_concepts_{table_id}
+        WHERE object_id IS NULL;
+    """
+    try:
+        pg_hook.run(find_object_id_query)
+        logging.info(f"Successfully found object ids for reusing concepts")
+    except Exception as e:
+        logging.error(f"Failed to find object ids for reusing concepts: {str(e)}")
+        raise
+
+
 def create_reusing_concepts(**kwargs):
     """
     Create standard concepts for field values in the mapping_scanreportconcept table.
