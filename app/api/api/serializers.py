@@ -1,6 +1,8 @@
 import csv
 from collections import Counter
 from io import BytesIO, StringIO
+from typing import List, Dict
+from collections import defaultdict
 
 import openpyxl  # type: ignore
 from datasets.serializers import DatasetSerializer
@@ -123,7 +125,9 @@ class ScanReportFilesSerializer(DynamicFieldsMixin, serializers.ModelSerializer)
                 "Please upload a .csv file."
             )
 
-        csv_reader = csv.reader(StringIO(data_dictionary.read().decode("utf-8-sig")))
+        # Read the file once
+        decoded = data_dictionary.read().decode("utf-8-sig")
+        csv_reader = csv.reader(StringIO(decoded))
 
         errors = []
 
@@ -171,7 +175,62 @@ class ScanReportFilesSerializer(DynamicFieldsMixin, serializers.ModelSerializer)
         if errors:
             raise ParseError(errors)
 
+        # Validates the structure and content of an uploaded data dictionary CSV file,
+        # raising errors if it does not meet expected format and consistency rules.
+        dd_reader = csv.DictReader(StringIO(decoded))
+        processed_dd = list(dd_reader)
+        self._validate_data_dictionary(processed_dd)
+
         return data_dictionary
+
+    def _validate_data_dictionary(self, data_dictionary: List[Dict]) -> None:
+        """
+        Validate the data dictionary for multiple empty 'value' mappings.
+
+        This function checks if there are multiple records in the
+        data dictionary with the same 'csv_file_name' and
+        'field_name' but empty 'value'.
+
+        If so, it raises an InvalidDataDictionaryError
+        because one field in one table can only
+        receive one vocabulary ID.
+
+        Args:
+            data_dictionary (List[Dict]): A list of dictionaries
+            representing the data dictionary.
+
+        Raises:
+            InvalidDataDictionaryError: If multiple records have
+            the same 'csv_file_name' and 'field_name'
+            with empty 'value'.
+
+        Returns:
+            None
+        """
+        # STEP 1: Group records by (csv_file_name, field_name)
+        field_groups = defaultdict(list)
+
+        # STEP 2: Iterate through the data dictionary and group records
+        for record in data_dictionary:
+            key = (record["csv_file_name"], record["field_name"])
+            field_groups[key].append(record)
+
+        # STEP 3:  Validate each group
+        for (csv_file, field_name), records in field_groups.items():
+
+            # Only check groups with >1 record
+            if len(records) > 1:
+
+                # Count records with empty 'value' (None or "")
+                empty_value_count = sum(1 for record in records if not record["value"])
+
+                # If >1 empty 'value' in the same group → ERROR
+                if empty_value_count > 1:
+                    raise InvalidDataDictionaryError(
+                        f"Found {empty_value_count} empty 'value' mappings for "
+                        f"field '{field_name}' in file '{csv_file}'. "
+                        "One field in one table can only receive one vocab ID."
+                    )
 
     def run_fast_consistency_checks(self, wb: Workbook):
         """
@@ -632,3 +691,9 @@ class GetRulesAnalysis(DynamicFieldsMixin, serializers.ModelSerializer):
 
     def to_representation(self, scan_report):
         return analyse_concepts(scan_report.id)
+
+
+class InvalidDataDictionaryError(Exception):
+    """Custom exception for invalid data dictionary errors."""
+
+    pass
