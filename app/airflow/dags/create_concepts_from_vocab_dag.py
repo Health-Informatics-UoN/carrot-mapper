@@ -24,13 +24,14 @@ from libs.utils import create_task, validate_params_V_concepts
 This DAG automates the process of creating standard concepts and mapping rules from vocabulary dictionaries.
 
 Workflow steps:
-1. Find standard concepts using vocabulary IDs from data dictionaries
-2. Create standard concepts in the database
-3. Find scan report concept IDs
-4. Find destination tables and person field IDs
-5. Identify date fields, concept fields, and additional fields
-6. Delete existing mapping rules
-7. Create new mapping rules for each scan report field
+1. Validate parameters
+2. Find standard concepts using vocabulary IDs from data dictionaries
+3. Create standard concepts in the database
+4. Find scan report concept IDs
+5. Find destination tables and person field IDs
+6. Identify date fields, concept fields, and additional fields
+7. Delete existing mapping rules
+8. Create new mapping rules for each scan report field
 
 """
 
