@@ -63,6 +63,7 @@ from shared.mapping.models import (
     ScanReportField,
     ScanReportTable,
     ScanReportValue,
+    UploadStatus,
 )
 from shared.mapping.permissions import get_user_permissions_on_scan_report
 from shared.services.azurequeue import add_message
@@ -212,12 +213,20 @@ class ScanReportIndexV2(GenericAPIView, ListModelMixin, CreateModelMixin):
         rand = "".join(random.choices(string.ascii_lowercase + string.digits, k=8))
         dt = "{:%Y%m%d-%H%M%S}".format(datetime.datetime.now())
 
+        # 1. Get or create the "IN_PROGRESS" UploadStatus for the scan report upload
+        try:
+            in_progress_status = UploadStatus.objects.get(value="IN_PROGRESS")
+        except UploadStatus.DoesNotExist:
+            in_progress_status = UploadStatus.objects.create(value="IN_PROGRESS", display_name="In Progress")
+
+
         # Create an entry in ScanReport for the uploaded Scan Report
         scan_report = ScanReport.objects.create(
             dataset=valid_dataset,
             parent_dataset=valid_parent_dataset,
             name=storage_service.modify_filename(valid_scan_report_file, dt, rand),
             visibility=valid_visibility,
+            upload_status=in_progress_status,
         )
 
         scan_report.author = self.request.user

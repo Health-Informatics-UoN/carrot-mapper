@@ -2,6 +2,7 @@ import {
   getScanReportPermissions,
   getJobs,
   getScanReportTables,
+  getScanReport,
 } from "@/api/scanreports";
 import { objToQuery } from "@/lib/client-utils";
 import { FilterParameters } from "@/types/filter";
@@ -28,6 +29,7 @@ export default async function ScanReportsTable({
   const permissions = await getScanReportPermissions(id);
   // Get data about jobs then inject it to the SR table data
   const jobs = await getJobs(id);
+  const scanReport = await getScanReport(id);
   const scanReportsResult = scanReportsTables.results.map((table) => {
     table.permissions = permissions.permissions;
     if (jobs) {
@@ -36,6 +38,9 @@ export default async function ScanReportsTable({
 
     return table;
   });
+  if (!scanReport) {
+    return <div>Scan Report not found</div>;
+  }
 
   return (
     <div>
@@ -45,6 +50,7 @@ export default async function ScanReportsTable({
           Filter={filter}
           initialScanReportsResult={scanReportsResult}
           count={scanReportsTables.count}
+          uploadStatus={scanReport.upload_status}
         />
       </div>
     </div>

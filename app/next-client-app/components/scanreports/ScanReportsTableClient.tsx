@@ -11,11 +11,13 @@ export default function ScanReportsTableClient({
   scanReportId,
   Filter,
   count,
+  uploadStatus,
 }: {
   initialScanReportsResult: ScanReportTable[];
   scanReportId: string;
   Filter: JSX.Element;
   count: number;
+  uploadStatus?: ScanReport["upload_status"];
 }) {
   const [scanReportsResult, setScanReportsResult] = useState(
     initialScanReportsResult
@@ -49,6 +51,7 @@ export default function ScanReportsTableClient({
         }
         linkPrefix="tables/"
         Filter={Filter}
+        uploadStatus={uploadStatus}
       />
     </div>
   );

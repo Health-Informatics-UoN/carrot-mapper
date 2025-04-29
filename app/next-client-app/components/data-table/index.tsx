@@ -28,7 +28,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { DataTablePagination } from "./DataTablePagination";
-import { Columns3 } from "lucide-react";
+import { Columns3, Loader2 } from "lucide-react";
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -41,6 +41,7 @@ interface DataTableProps<TData, TValue> {
   overflow?: boolean;
   RefreshButton?: JSX.Element;
   defaultPageSize?: 10 | 20 | 30 | 40 | 50;
+  uploadStatus?: ScanReport["upload_status"];
 }
 
 function UrlBuilder(id: string, prefix: string = "") {
@@ -58,6 +59,7 @@ export function DataTable<TData, TValue>({
   overflow = true,
   RefreshButton,
   defaultPageSize,
+  uploadStatus,
 }: DataTableProps<TData, TValue>) {
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({});
@@ -175,11 +177,17 @@ export function DataTable<TData, TValue>({
               ))
             ) : (
               <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="h-24 text-center"
-                >
-                  No results.
+                <TableCell colSpan={columns.length} className="h-24 text-center">
+                  {uploadStatus?.value === "IN_PROGRESS" ? (
+                    <div className="flex items-center justify-center space-x-2">
+                      <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
+                      <span className="text-gray-500 text-sm">
+                        Upload is in progress and scan report data will be available soon.
+                      </span>
+                    </div>
+                  ) : (
+                    "No results."
+                  )}
                 </TableCell>
               </TableRow>
             )}
