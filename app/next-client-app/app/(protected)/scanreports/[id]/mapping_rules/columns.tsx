@@ -90,6 +90,18 @@ export const columns: ColumnDef<MappingRule>[] = [
     },
   },
   {
+    id: "Destination Field",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Destination Field" />
+    ),
+    enableHiding: true,
+    enableSorting: false,
+    cell: ({ row }) => {
+      const { destination_field } = row.original;
+      return destination_field.name;
+    },
+  },
+  {
     id: "Destination Table",
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Destination Table" />

@@ -1,8 +1,39 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.operators.empty import EmptyOperator
-from airflow.operators.python import PythonOperator
-from libs.core import find_and_create_standard_concepts
+from libs.core_concepts_creation import (
+    find_standard_concepts,
+    create_standard_concepts,
+    find_sr_concept_id,
+)
+
+from libs.core_prep_rules_creation import (
+    find_dest_table_and_person_field_id,
+    find_date_fields,
+    find_concept_fields,
+    find_additional_fields,
+)
+
+from libs.core_rules_creation import (
+    delete_mapping_rules,
+    create_mapping_rules,
+)
+from libs.utils import create_task, validate_params_V_concepts
+
+"""
+This DAG automates the process of creating standard concepts and mapping rules from vocabulary dictionaries.
+
+Workflow steps:
+1. Find standard concepts using vocabulary IDs from data dictionaries
+2. Create standard concepts in the database
+3. Find scan report concept IDs
+4. Find destination tables and person field IDs
+5. Identify date fields, concept fields, and additional fields
+6. Delete existing mapping rules
+7. Create new mapping rules for each scan report field
+
+"""
+
 
 default_args = {
     "owner": "airflow",
@@ -17,27 +48,49 @@ default_args = {
 dag = DAG(
     "create_concepts_from_vocab_dict",
     default_args=default_args,
-    description="Create standard concepts using vocabulary id from data dictionary for each scan report field",
-    tags=["V-concepts"],
+    description="""Create standard concepts using vocabulary id from data dictionary for each scan report field. 
+    After that, find the dest. table and OMOP field ids for each concept. 
+    Eventually, create mapping rules for each scan report field.""",
+    tags=["V-concepts", "mapping_rules_creation"],
     schedule_interval=None,
     catchup=False,
 )
 
+# TODO: orchestrator to be deleted because users will trigger this DAG directly. Similar for reuse DAG
+# TODO: many concepts have the domain "SPEC ANATOMIC SITE", which should be added to the table "SPECIMEN" in a different way (OMOP field id is different)
+# TODO: ordering the temp standard concepts id before creating the mapping rules --> have the nice order match with the UI
+# TODO: add dest field name to the UI??
+# TODO: should we add `value` column in MAPPINGRULE model? in order to filter the mapping rule based on the SR value?
+# TODO: add the source_concept_id to the UI
+# TODO: improve naming of columns
+# TODO: add docstrings to the functions
 
 # Start the workflow
 start = EmptyOperator(task_id="start", dag=dag)
 
 
-core_task = PythonOperator(
-    task_id="find_and_create_standard_concepts",
-    python_callable=find_and_create_standard_concepts,
-    provide_context=True,
-    dag=dag,
-)
-# TODO: add tasks to do error handling and update status
-# TODO: create workflow - deploy MVP - testing
+tasks = [
+    create_task("validate_params_V_concepts", validate_params_V_concepts, dag),
+    create_task("find_standard_concepts", find_standard_concepts, dag),
+    create_task("create_standard_concepts", create_standard_concepts, dag),
+    create_task("find_sr_concept_id", find_sr_concept_id, dag),
+    create_task(
+        "find_dest_table_and_person_field_id", find_dest_table_and_person_field_id, dag
+    ),
+    create_task("find_date_fields", find_date_fields, dag),
+    create_task("find_concept_fields", find_concept_fields, dag),
+    create_task("find_additional_fields", find_additional_fields, dag),
+    create_task("delete_mapping_rules", delete_mapping_rules, dag),
+    create_task("create_mapping_rules", create_mapping_rules, dag),
+]
+
 
 # End the workflow
 end = EmptyOperator(task_id="end", dag=dag)
 
-(start >> core_task >> end)
+# Execute the tasks
+curr = start
+for task in tasks:
+    curr >> task
+    curr = task
+curr >> end
