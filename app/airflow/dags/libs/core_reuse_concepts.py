@@ -255,11 +255,10 @@ def create_reusing_concepts(**kwargs):
     Only inserts concepts that don't already exist.
     """
     try:
-        scan_report_id = kwargs.get("dag_run", {}).conf.get("scan_report_id")
-        table_id = kwargs.get("dag_run", {}).conf.get("table_id")
+        validated_params = pull_validated_params(kwargs, "validate_params_R_concepts")
+        table_id = validated_params["table_id"]
+        scan_report_id = validated_params["scan_report_id"]
 
-        if not table_id:
-            logging.warning("No table_id provided in create_standard_concepts")
         # TODO: when source_concept_id is added to the model SCANREPORTCONCEPT, we need to update the query belowto solve the issue #1006
         create_concept_query = f"""
             -- Insert standard concepts for field values (only if they don't already exist)
@@ -268,44 +267,64 @@ def create_reusing_concepts(**kwargs):
                 updated_at,
                 object_id,
                 creation_type,
+                -- TODO: Will have the standard_concept_id (nullable) here
                 concept_id,
                 content_type_id
             )
             SELECT
                 NOW(),
                 NOW(),
-                temp_reuse_concepts.sr_value_id,
+                temp_reuse_concepts.object_id,
                 'R',       -- Creation type: Reused
-                temp_reuse_concepts.standard_concept_id,
+                -- TODO: if standard_concept_id is null then we need to use the source_concept_id
+                -- TODO: add standard_concept_id here for the newly creted SR concepts
+                temp_reuse_concepts.source_concept_id,
                 temp_reuse_concepts.content_type_id -- content_type_id for scanreportvalue
             FROM temp_reuse_concepts_{table_id} AS temp_reuse_concepts
             WHERE NOT EXISTS (
                 -- Check if the concept already exists
                 SELECT 1 FROM mapping_scanreportconcept AS sr_concept
-                WHERE sr_concept.object_id = temp_reuse_concepts.sr_value_id
-                AND sr_concept.concept_id = temp_reuse_concepts.standard_concept_id
+                WHERE sr_concept.object_id = temp_reuse_concepts.object_id
+                -- TODO: if standard_concept_id is null then we need to use the source_concept_id
+                AND sr_concept.concept_id = temp_reuse_concepts.source_concept_id
                 AND sr_concept.content_type_id = temp_reuse_concepts.content_type_id
             );
             """
+
+        # This is the source field for concepts-related mapping rules created in the next step
+        find_target_source_field_id_query = f"""
+            UPDATE temp_reuse_concepts_{table_id} AS temp_table
+            SET 
+                target_source_field_id =
+                    CASE
+                        WHEN temp_table.content_type_id = 22 THEN temp_table.object_id
+                        WHEN temp_table.content_type_id = 23 THEN (
+                            SELECT sr_value.scan_report_field_id
+                            FROM mapping_scanreportvalue AS sr_value
+                            WHERE sr_value.id = temp_table.object_id
+                        )
+                        ELSE NULL
+                    END;
+            """
         try:
-            pg_hook.run(create_concept_query)
+            pg_hook.run(create_concept_query + find_target_source_field_id_query)
             logging.info("Successfully created standard concepts")
-            update_job_status(
-                scan_report_id=scan_report_id,
-                table_id=table_id,
-                stage=JobStageType.BUILD_CONCEPTS_FROM_DICT,
-                status=StageStatusType.COMPLETE,
-                details="Successfully created standard concepts",
-            )
+            # update_job_status(
+            #     scan_report=scan_report_id,
+            #     scan_report_table=table_id,
+            #     stage=JobStageType.REUSE_CONCEPTS,
+            #     status=StageStatusType.IN_PROGRESS,
+            #     details="Successfully created standard concepts",
+            # )
         except Exception as e:
             logging.error(f"Database error in create_standard_concepts: {str(e)}")
-            update_job_status(
-                scan_report_id=scan_report_id,
-                table_id=table_id,
-                stage=JobStageType.BUILD_CONCEPTS_FROM_DICT,
-                status=StageStatusType.FAILED,
-                details=f"Error in create_standard_concepts: {str(e)}",
-            )
+            # update_job_status(
+            #     scan_report=scan_report_id,
+            #     scan_report_table=table_id,
+            #     stage=JobStageType.REUSE_CONCEPTS,
+            #     status=StageStatusType.FAILED,
+            #     details=f"Error in create_standard_concepts: {str(e)}",
+            # )
     except Exception as e:
         logging.error(f"Error in create_standard_concepts: {str(e)}")
         raise
@@ -318,25 +337,24 @@ def find_sr_concept_id(**kwargs):
     This will help the next steps to be shorter.
     """
     try:
-        table_id = kwargs.get("dag_run", {}).conf.get("table_id")
-
-        if not table_id:
-            logging.warning("No table_id provided in find_sr_concept_id")
+        validated_params = pull_validated_params(kwargs, "validate_params_R_concepts")
+        table_id = validated_params["table_id"]
 
         update_query = f"""        
         -- Update sr_concept_id with the mapping_scanreportconcept ID
-        UPDATE temp_standard_concepts_{table_id} temp_reuse_concepts
+        UPDATE temp_reuse_concepts_{table_id} temp_reuse_concepts
         SET sr_concept_id = sr_concept.id
-        FROM mapping_scanreportconcept sr_concept
-        WHERE sr_concept.object_id = temp_reuse_concepts.sr_value_id
-        AND sr_concept.concept_id = temp_reuse_concepts.standard_concept_id
-        AND sr_concept.content_type_id = 23;
+        FROM mapping_scanreportconcept AS sr_concept
+        WHERE sr_concept.object_id = temp_reuse_concepts.object_id
+        -- TODO: add standard_concept_id here for the newly creted SR concepts
+        AND sr_concept.concept_id = temp_reuse_concepts.source_concept_id
+        AND sr_concept.content_type_id = temp_reuse_concepts.content_type_id;
         """
 
         try:
             pg_hook.run(update_query)
             logging.info(
-                f"Successfully added sr_concept_id to temp_standard_concepts_{table_id} table"
+                f"Successfully added sr_concept_id to temp_reuse_concepts_{table_id} table"
             )
         except Exception as e:
             logging.error(f"Database error in find_sr_concept_id: {str(e)}")

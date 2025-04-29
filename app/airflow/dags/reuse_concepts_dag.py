@@ -6,6 +6,8 @@ from libs.core_reuse_concepts import (
     find_matching_field,
     find_matching_value,
     find_object_id,
+    create_reusing_concepts,
+    find_sr_concept_id,
 )
 from libs.utils import create_task, validate_params_R_concepts
 
@@ -25,7 +27,8 @@ Workflow steps:
 10. Create new mapping rules for each scan report field
 
 """
-
+#  TODO: for now the creation of mapping rules will use the source_concept_id of temp_reuse_concepts table.
+# When we can distinguish between standard and non-standard concepts, we will use them accordingly in the create_mapping_rules function of reuse.
 
 default_args = {
     "owner": "airflow",
@@ -61,6 +64,8 @@ tasks = [
     create_task("find_matching_field", find_matching_field, dag),
     create_task("find_matching_value", find_matching_value, dag),
     create_task("find_object_id", find_object_id, dag),
+    create_task("create_reusing_concepts", create_reusing_concepts, dag),
+    create_task("find_sr_concept_id", find_sr_concept_id, dag),
 ]
 
 
