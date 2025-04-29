@@ -7,6 +7,24 @@ from libs.core_reuse_concepts import (
 )
 from libs.utils import create_task, validate_params_R_concepts
 
+"""
+This DAG automates the process of creating reusing concepts from other scan reports and then creating mapping rules accordingly.
+
+Workflow steps:
+1. Validate parameters
+2. Find eligible objects for reuse concepts
+3. Create temporary table to store reusing concepts
+4. Find matching values for reusing concepts
+5. Create reusing concepts in the database
+6. Find scan report concept IDs
+7. Find destination tables and person field IDs
+8. Identify date fields, concept fields, and additional fields
+9. Delete existing mapping rules
+10. Create new mapping rules for each scan report field
+
+"""
+
+
 default_args = {
     "owner": "airflow",
     "depends_on_past": False,
