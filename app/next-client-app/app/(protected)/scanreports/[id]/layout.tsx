@@ -111,11 +111,6 @@ export default async function ScanReportLayout({
             statusOptions={UploadStatusOptions}
             status={scanreport.upload_status || { value: "IN_PROGRESS" }}
           />
-          {/* {(!scanreport.upload_status || scanreport.upload_status.value === "IN_PROGRESS") && (
-            <span className="text-gray-500 text-sm">
-              Upload is in progress and scan report data will be available soon.
-            </span>
-          )} */}
         </div>
         <div className="py-1 md:py-0 md:px-3 h-5">
           <MappingStatus
