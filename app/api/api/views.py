@@ -221,7 +221,6 @@ class ScanReportIndexV2(GenericAPIView, ListModelMixin, CreateModelMixin):
                 value="IN_PROGRESS", display_name="In Progress"
             )
 
-
         # Create an entry in ScanReport for the uploaded Scan Report
         scan_report = ScanReport.objects.create(
             dataset=valid_dataset,
