@@ -201,7 +201,6 @@ class ScanReportFilesSerializer(DynamicFieldsMixin, serializers.ModelSerializer)
                 "Please upload a .csv file."
             )
 
-
         # Read the file once
         decoded = data_dictionary.read().decode("utf-8-sig")
         csv_reader = csv.reader(StringIO(decoded))
