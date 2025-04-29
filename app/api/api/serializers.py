@@ -4,7 +4,6 @@ from io import BytesIO, StringIO
 Process-Data-Dictionary-for-Airflow-Rules-Generation-Activity
 from typing import List, Dict
 from collections import defaultdict
-=======
 from api.logger import logger
 master
 
@@ -208,7 +207,6 @@ Process-Data-Dictionary-for-Airflow-Rules-Generation-Activity
         decoded = data_dictionary.read().decode("utf-8-sig")
         csv_reader = csv.reader(StringIO(decoded))
 
-=======
         csv_reader = csv.reader(StringIO(data_dictionary.read().decode("utf-8-sig")))
 master
         errors = []
@@ -293,7 +291,6 @@ Process-Data-Dictionary-for-Airflow-Rules-Generation-Activity
         processed_dd = list(dd_reader)
         self._validate_data_dictionary(processed_dd)
 
-=======
         logger.info("Data dictionary file is valid and ready for upload.")
         data_dictionary.seek(0)
  master
