@@ -95,7 +95,7 @@ export function Sidebar({ userName }: { userName?: string }) {
                               icon={Settings}
                               className="w-full"
                             >
-                              Change Password
+                              Reset Password
                             </SidebarButton>
                           </a>
                           <a href={"/accounts/logout/"}>

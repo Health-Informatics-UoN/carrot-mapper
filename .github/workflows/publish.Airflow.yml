@@ -1,8 +1,11 @@
 name: Publish release images to Github Registry
 
 on:
-  release:
-    types: [released]
+  push:
+    branches:
+      - master
+    paths:
+      - app/airflow/**
 
 env:
   app-name: carrot
@@ -34,62 +37,44 @@ jobs:
       - name: Set timestamp env var
         run: echo "RUN_TIMESTAMP=$(TZ="Etc/UTC" date +'%Y%m%d%H%M%S')" >> $GITHUB_ENV
 
-      # Tag and build frontend
-      - name: Extract frontend Docker metadata
-        id: frontend_meta
+      # Tag and build webserver of airflow
+      - name: Extract webserver Docker metadata
+        id: webserver_meta
         uses: docker/metadata-action@v5.5.1
         with:
-          images: ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/frontend
+          images: ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/airflow-webserver
           tags: |
             ${{ github.event.release.tag_name }}
             ${{ github.sha }}
             ${{ env.RUN_TIMESTAMP }}
+            "latest"
 
-      - name: Build and push frontend image
+      - name: Build and push webserver image
         uses: docker/build-push-action@v5.3.0
         with:
-          context: ./app/next-client-app
-          file: ./app/next-client-app/Dockerfile
+          context: ./app/airflow
+          file: ./app/airflow/Dockerfile.webserver
           push: true
           platforms: linux/amd64,linux/arm64
-          tags: ${{ steps.frontend_meta.outputs.tags }}
+          tags: ${{ steps.webserver_meta.outputs.tags }}
 
-      # Tag and build backend
-      - name: Extract backend Docker metadata
-        id: backend_meta
+      # Tag and build scheduler of airflow
+      - name: Extract scheduler Docker metadata
+        id: scheduler_meta
         uses: docker/metadata-action@v5.5.1
         with:
-          images: ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/backend
+          images: ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/airflow-scheduler
           tags: |
             ${{ github.event.release.tag_name }}
             ${{ github.sha }}
             ${{ env.RUN_TIMESTAMP }}
+            "latest"
 
-      - name: Build and push backend image
+      - name: Build and push scheduler image
         uses: docker/build-push-action@v5.3.0
         with:
-          context: ./app
-          file: ./app/api/Dockerfile
+          context: ./app/airflow
+          file: ./app/airflow/Dockerfile.scheduler
           push: true
           platforms: linux/amd64,linux/arm64
-          tags: ${{ steps.backend_meta.outputs.tags }}
-
-      # Tag and build workers
-      - name: Extract workers Docker metadata
-        id: workers_meta
-        uses: docker/metadata-action@v5.5.1
-        with:
-          images: ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/workers
-          tags: |
-            ${{ github.event.release.tag_name }}
-            ${{ github.sha }}
-            ${{ env.RUN_TIMESTAMP }}
-
-      - name: Build and push workers image
-        uses: docker/build-push-action@v5.3.0
-        with:
-          context: ./app
-          file: ./app/workers/Dockerfile
-          push: true
-          platforms: linux/amd64,linux/arm64
-          tags: ${{ steps.workers_meta.outputs.tags }}
+          tags: ${{ steps.scheduler_meta.outputs.tags }}

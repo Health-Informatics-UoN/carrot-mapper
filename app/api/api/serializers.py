@@ -1,8 +1,12 @@
 import csv
 from collections import Counter
 from io import BytesIO, StringIO
+Process-Data-Dictionary-for-Airflow-Rules-Generation-Activity
 from typing import List, Dict
 from collections import defaultdict
+=======
+from api.logger import logger
+master
 
 import openpyxl  # type: ignore
 from datasets.serializers import DatasetSerializer
@@ -30,23 +34,66 @@ from config.settings import DATA_UPLOAD_MAX_MEMORY_SIZE
 
 class ConceptSerializerV2(serializers.ModelSerializer):
     class Meta:
+        """
+        Serializer for the Concept model.
+
+        Serializes the concept_id, concept_name, and
+        concept_code fields.
+
+        Args:
+            model (Concept): The model to be serialized.
+
+            fields (list): The fields to be included in
+            the serialized output.
+        """
+
         model = Concept
         fields = ["concept_id", "concept_name", "concept_code"]
 
 
 class UserSerializer(serializers.ModelSerializer):
+    """
+    Serializer for the User model.
+
+    Serializes the id and username fields.
+
+    Args:
+        model (User): The model to be serialized.
+
+        fields (list): The fields to be included in
+        the serialized output.
+    """
+
     class Meta:
         model = User
         fields = ("id", "username")
 
 
 class UploadStatusSerializer(serializers.ModelSerializer):
+    """
+    Serializer for the UploadStatus model.
+
+    Serializes the value field.
+    """
+
     class Meta:
         model = UploadStatus
         fields = ["value"]
 
 
 class MappingStatusSerializer(serializers.ModelSerializer):
+    """
+    Serializer for the MappingStatus model.
+
+    Serializes the value field.
+
+    Args:
+        model (MappingStatus): The model to be serialized.
+
+        fields (list): The fields to be included in
+        the serialized output.
+    """
+
     class Meta:
         model = MappingStatus
         fields = ["value"]
@@ -99,6 +146,27 @@ class ScanReportViewSerializerV2(DynamicFieldsMixin, serializers.ModelSerializer
 
 
 class ScanReportFilesSerializer(DynamicFieldsMixin, serializers.ModelSerializer):
+    """
+    Serializer for handling file uploads related to ScanReports.
+
+    Validates the scan report and data dictionary files.
+
+    Args:
+        scan_report_file (FileField): The scan report file to be uploaded.
+        data_dictionary_file (FileField): The data dictionary file to be uploaded.
+
+    Raises:
+        ParseError: If the file formats are incorrect or if the data dictionary
+                    does not meet the required specifications.
+
+        PermissionDenied: If the user does not have the required permissions.
+
+        NotFound: If the parent dataset is not found.
+
+    Returns:
+        scan_report_file (FileField): The validated scan report file.
+        data_dictionary_file (FileField): The validated data dictionary file.
+    """
 
     scan_report_file = serializers.FileField(write_only=True)
     data_dictionary_file = serializers.FileField(
@@ -113,6 +181,16 @@ class ScanReportFilesSerializer(DynamicFieldsMixin, serializers.ModelSerializer)
         )
 
     def validate_data_dictionary_file(self, value):
+        """
+        Validates the data dictionary file to ensure it is
+        in CSV format and performs consistency checks.
+
+        Args:
+            value: The uploaded data dictionary file.
+
+        Returns:
+            The validated data dictionary file.
+        """
         data_dictionary = value
 
         if str(data_dictionary) == "undefined":
@@ -125,11 +203,18 @@ class ScanReportFilesSerializer(DynamicFieldsMixin, serializers.ModelSerializer)
                 "Please upload a .csv file."
             )
 
+Process-Data-Dictionary-for-Airflow-Rules-Generation-Activity
         # Read the file once
         decoded = data_dictionary.read().decode("utf-8-sig")
         csv_reader = csv.reader(StringIO(decoded))
 
+=======
+        csv_reader = csv.reader(StringIO(data_dictionary.read().decode("utf-8-sig")))
+master
         errors = []
+
+        csv_file_names = set()
+        logger.info("Collecting CSV file names from the data dictionary...")
 
         # Check first line for correct headers to columns
         header_line = next(csv_reader)
@@ -172,15 +257,46 @@ class ScanReportFilesSerializer(DynamicFieldsMixin, serializers.ModelSerializer)
                         )
                     )
 
+            # Collect csv_file_name if line exists
+            if line and len(line) > 0:
+                csv_file_names.add(line[0].strip())
+
+        # Checking for mismatches between csv_file_name entries and expected table names:
+        logger.info("Checking for matching table names of DD and SR.")
+
+        if not hasattr(self, "sr_table_names") or not csv_file_names:
+            missing = (
+                "Scan Report table names"
+                if not hasattr(self, "sr_table_names")
+                else "CSV file names"
+            )
+            logger.error(f"{missing} are missing for validation.")
+            raise ValueError(f"{missing} are required for validation.")
+
+        # Validate each csv_name against sr_table_names
+        for csv_name in csv_file_names:
+            if csv_name not in self.sr_table_names:
+                errors.append(
+                    ParseError(
+                        f"'{csv_name}' in the column 'csv_file_name' in the Data Dictionary does not match any table name in the Scan Report. Hint: Make sure the extension '.csv' is included"
+                        f"Available table names/CSV file names: {', '.join(sorted(self.sr_table_names))}"
+                    )
+                )
+
         if errors:
             raise ParseError(errors)
 
+Process-Data-Dictionary-for-Airflow-Rules-Generation-Activity
         # Validates the structure and content of an uploaded data dictionary CSV file,
         # raising errors if it does not meet expected format and consistency rules.
         dd_reader = csv.DictReader(StringIO(decoded))
         processed_dd = list(dd_reader)
         self._validate_data_dictionary(processed_dd)
 
+=======
+        logger.info("Data dictionary file is valid and ready for upload.")
+        data_dictionary.seek(0)
+ master
         return data_dictionary
 
     def _validate_data_dictionary(self, data_dictionary: List[Dict]) -> None:
@@ -234,11 +350,15 @@ class ScanReportFilesSerializer(DynamicFieldsMixin, serializers.ModelSerializer)
 
     def run_fast_consistency_checks(self, wb: Workbook):
         """
-        This function performs a series of consistency checks on the provided Excel workbook.
-        The checks are designed to quickly identify and provide feedback on common data issues,
-        enabling the user to correct them.
+        This function performs a series of consistency checks
+        on the provided Excel workbook.
 
-        If any of these checks fail, one or a list of ParseError will be raised with a message detailing the issue.
+        The checks are designed to quickly identify and provide
+        feedback on common data issues, enabling the
+        user to correct them.
+
+        If any of these checks fail, one or a list of ParseError
+        will be raised with a message detailing the issue.
 
         Args:
             wb (Workbook): The Excel workbook to check.
@@ -468,9 +588,23 @@ class ScanReportFilesSerializer(DynamicFieldsMixin, serializers.ModelSerializer)
         if errors:
             raise ParseError(errors)
 
-        return True
+        return True, table_names
 
     def validate_scan_report_file(self, value):
+        """
+        Validates the scan report file to ensure it is
+        in XLSX format and performs consistency checks.
+
+        Args:
+            value: The uploaded scan report file.
+
+        Returns:
+            The validated scan report file.
+
+        Raises:
+            ParseError: If the file is not in XLSX format
+            or if any consistency checks fail.
+        """
         scan_report = value
 
         if not str(scan_report).endswith(".xlsx"):
@@ -489,7 +623,9 @@ class ScanReportFilesSerializer(DynamicFieldsMixin, serializers.ModelSerializer)
         wb = openpyxl.load_workbook(filename=BytesIO(file_in_memory), data_only=True)
 
         try:
-            self.run_fast_consistency_checks(wb)
+            # Store table names in the serializer
+            logger.info("Collecting table names from the scan report...")
+            _, self.sr_table_names = self.run_fast_consistency_checks(wb)
         except ParseError as e:
             raise e
 
