@@ -193,3 +193,27 @@ def pull_validated_params(kwargs: dict, task_id: str) -> ValidatedParams:
     """Pull parameters from XCom for a given task"""
     task_instance = kwargs["ti"]
     return task_instance.xcom_pull(task_ids=task_id)
+
+
+def delete_mapping_rules(table_id: int, concept_type: str) -> None:
+    """
+    Delete all mapping rules for a given scan report table with the given creation type.
+    Validated param needed is:
+    - table_id (int): The ID of the scan report table to process
+    - concept_type (str): The creation type of the concepts to delete mapping rules for
+    """
+    try:
+        delete_query = f"""
+        DELETE FROM mapping_mappingrule
+        WHERE source_field_id IN (
+            SELECT id FROM mapping_scanreportfield
+            WHERE scan_report_table_id = {table_id}
+        ) AND concept_id IN (
+            SELECT id FROM mapping_scanreportconcept
+            WHERE creation_type = '{concept_type}'
+        );
+        """
+        pg_hook.run(delete_query)
+    except Exception as e:
+        logging.error(f"Error in delete_mapping_rules: {str(e)}")
+        raise ValueError(f"Error in delete_mapping_rules: {str(e)}")

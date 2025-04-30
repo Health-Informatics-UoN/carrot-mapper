@@ -6,15 +6,16 @@ from libs.utils import (
     JobStageType,
     StageStatusType,
     pull_validated_params,
+    delete_mapping_rules,
 )
 
 # PostgreSQL connection hook
 pg_hook = PostgresHook(postgres_conn_id="postgres_db_conn")
 
 
-def delete_mapping_rules(**kwargs) -> None:
+def delete_V_mapping_rules(**kwargs) -> None:
     """
-    Delete all mapping rules for a given scan report table.
+    Delete all mapping rules for a given scan report table with creation type 'V' (Built from Vocab).
     Validated param needed is:
     - table_id (int): The ID of the scan report table to process
     """
@@ -23,18 +24,11 @@ def delete_mapping_rules(**kwargs) -> None:
         validated_params = pull_validated_params(kwargs, "validate_params_V_concepts")
 
         table_id = validated_params["table_id"]
+        delete_mapping_rules(table_id, "V")
 
-        delete_query = f"""
-        DELETE FROM mapping_mappingrule
-        WHERE source_field_id IN (
-            SELECT id FROM mapping_scanreportfield
-            WHERE scan_report_table_id = {table_id}
-        );
-        """
-        pg_hook.run(delete_query)
     except Exception as e:
-        logging.error(f"Error in delete_mapping_rules: {str(e)}")
-        raise AirflowException(f"Error in delete_mapping_rules: {str(e)}")
+        logging.error(f"Error in delete_V_mapping_rules: {str(e)}")
+        raise AirflowException(f"Error in delete_V_mapping_rules: {str(e)}")
 
 
 def create_mapping_rules(**kwargs) -> None:

@@ -15,7 +15,7 @@ from libs.core_prep_rules_creation import (
 )
 
 from libs.core_rules_creation import (
-    delete_mapping_rules,
+    delete_V_mapping_rules,
     create_mapping_rules,
 )
 from libs.utils import create_task, validate_params_V_concepts
@@ -81,7 +81,7 @@ tasks = [
     create_task("find_date_fields", find_date_fields, dag),
     create_task("find_concept_fields", find_concept_fields, dag),
     create_task("find_additional_fields", find_additional_fields, dag),
-    create_task("delete_mapping_rules", delete_mapping_rules, dag),
+    create_task("delete_mapping_rules", delete_V_mapping_rules, dag),
     create_task("create_mapping_rules", create_mapping_rules, dag),
 ]
 

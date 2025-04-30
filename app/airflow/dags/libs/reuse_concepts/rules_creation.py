@@ -6,6 +6,7 @@ from libs.utils import (
     JobStageType,
     StageStatusType,
     pull_validated_params,
+    delete_mapping_rules,
 )
 
 # PostgreSQL connection hook
@@ -23,18 +24,8 @@ def delete_R_mapping_rules(**kwargs) -> None:
         validated_params = pull_validated_params(kwargs, "validate_params_R_concepts")
 
         table_id = validated_params["table_id"]
+        delete_mapping_rules(table_id, "R")
 
-        delete_query = f"""
-        DELETE FROM mapping_mappingrule
-        WHERE source_field_id IN (
-            SELECT id FROM mapping_scanreportfield
-            WHERE scan_report_table_id = {table_id}
-        ) AND concept_id IN (
-            SELECT id FROM mapping_scanreportconcept
-            WHERE creation_type = 'R'
-        );
-        """
-        pg_hook.run(delete_query)
     except Exception as e:
         logging.error(f"Error in delete_mapping_rules: {str(e)}")
         raise AirflowException(f"Error in delete_mapping_rules: {str(e)}")
