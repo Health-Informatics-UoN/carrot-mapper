@@ -199,8 +199,8 @@ REST_FRAMEWORK = {
 }
 
 SPECTACULAR_SETTINGS = {
-    "TITLE": "CARROT APIs",
-    "DESCRIPTION": "API documentation for CARROT",
+    "TITLE": "CARROT MAPPER APIs",
+    "DESCRIPTION": "API documentation for Carrot Mapper",
     "VERSION": "1.0.0",
     "SERVE_PERMISSIONS": ["rest_framework.permissions.AllowAny"],
 }
