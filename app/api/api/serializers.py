@@ -1,6 +1,8 @@
 import csv
 from collections import Counter
 from io import BytesIO, StringIO
+
+from collections import defaultdict
 from api.logger import logger
 
 import openpyxl  # type: ignore
@@ -198,7 +200,10 @@ class ScanReportFilesSerializer(DynamicFieldsMixin, serializers.ModelSerializer)
                 "Please upload a .csv file."
             )
 
-        csv_reader = csv.reader(StringIO(data_dictionary.read().decode("utf-8-sig")))
+        # Read the file once
+        decoded = data_dictionary.read().decode("utf-8-sig")
+        csv_reader = csv.reader(StringIO(decoded))
+
         errors = []
 
         csv_file_names = set()
@@ -271,11 +276,38 @@ class ScanReportFilesSerializer(DynamicFieldsMixin, serializers.ModelSerializer)
                     )
                 )
 
+        # Validates the structure and content of an uploaded data dictionary CSV file.
+        # This scripts checks if there are multiple records in the data dictionary with
+        # the same 'csv_file_name' and 'field_name' but empty 'value'.
+
+        if not errors:
+            dd_reader = csv.DictReader(StringIO(decoded))
+            field_groups = defaultdict(list)
+
+            for record in dd_reader:
+                key = (record["csv_file_name"], record["field_name"])
+                field_groups[key].append(record)
+
+            for (csv_file, field_name), records in field_groups.items():
+                if len(records) > 1:
+                    empty_value_count = sum(
+                        1 for record in records if not record["value"]
+                    )
+                    if empty_value_count > 1:
+                        errors.append(
+                            ParseError(
+                                f"Found {empty_value_count} empty 'value' mappings for "
+                                f"field '{field_name}' in file '{csv_file}'. "
+                                "One field in one table can only receive one vocab ID."
+                            )
+                        )
+
         if errors:
             raise ParseError(errors)
 
         logger.info("Data dictionary file is valid and ready for upload.")
         data_dictionary.seek(0)
+
         return data_dictionary
 
     def run_fast_consistency_checks(self, wb: Workbook):
