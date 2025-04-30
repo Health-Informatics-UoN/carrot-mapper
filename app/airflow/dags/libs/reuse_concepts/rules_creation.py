@@ -13,24 +13,6 @@ from libs.utils import (
 pg_hook = PostgresHook(postgres_conn_id="postgres_db_conn")
 
 
-def delete_R_mapping_rules(**kwargs) -> None:
-    """
-    Delete all mapping rules for a given scan report table with creation type 'R' (Reused).
-    Validated param needed is:
-    - table_id (int): The ID of the scan report table to process
-    """
-    try:
-        # Get validated parameters from XCom
-        validated_params = pull_validated_params(kwargs, "validate_params_R_concepts")
-
-        table_id = validated_params["table_id"]
-        delete_mapping_rules(table_id, "R")
-
-    except Exception as e:
-        logging.error(f"Error in delete_mapping_rules: {str(e)}")
-        raise AirflowException(f"Error in delete_mapping_rules: {str(e)}")
-
-
 def create_mapping_rules(**kwargs) -> None:
     """
     Create mapping rules in the mapping_mappingrule table for each record in temp_reusing_concepts.
@@ -80,12 +62,6 @@ def create_mapping_rules(**kwargs) -> None:
                 (value_as_number_field_id, temp_table.target_source_field_id)
         ) AS field_mapping(field_id, source_id)
         WHERE field_id IS NOT NULL
-        AND NOT EXISTS (
-            SELECT 1 FROM mapping_mappingrule exited_mapping_rule
-            WHERE exited_mapping_rule.omop_field_id = field_mapping.field_id
-            AND exited_mapping_rule.source_field_id = field_mapping.source_id
-            AND exited_mapping_rule.scan_report_id = {scan_report_id}
-        )
         ORDER BY object_id;
         """
 

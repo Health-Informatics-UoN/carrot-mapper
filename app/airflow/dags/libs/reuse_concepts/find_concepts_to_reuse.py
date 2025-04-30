@@ -3,12 +3,53 @@ from libs.utils import (
     JobStageType,
     StageStatusType,
     pull_validated_params,
+    delete_mapping_rules,
 )
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 import logging
 
 # PostgreSQL connection hook
 pg_hook = PostgresHook(postgres_conn_id="postgres_db_conn")
+
+
+def delete_R_concepts_and_mapping_rules(**kwargs) -> None:
+    """
+    Delete all mapping rules and reused concepts for a given scan report table with creation type 'R' (Reused).
+    Validated param needed is:
+    - table_id (int): The ID of the scan report table to process
+    """
+    try:
+        # Get validated parameters from XCom
+        validated_params = pull_validated_params(kwargs, "validate_params_R_concepts")
+
+        table_id = validated_params["table_id"]
+        delete_mapping_rules(table_id, "R")
+
+        delete_reused_concepts = f"""
+            DELETE FROM mapping_scanreportconcept
+            WHERE creation_type = 'R' 
+            AND (
+                -- Delete concepts for fields in this table
+                (content_type_id = 22 AND object_id IN (
+                    SELECT srf.id 
+                    FROM mapping_scanreportfield AS srf
+                    WHERE srf.scan_report_table_id = {table_id}
+                ))
+                OR 
+                -- Delete concepts for values in this table
+                (content_type_id = 23 AND object_id IN (
+                    SELECT srv.id
+                    FROM mapping_scanreportvalue AS srv
+                    JOIN mapping_scanreportfield AS srf ON srv.scan_report_field_id = srf.id
+                    WHERE srf.scan_report_table_id = {table_id}
+                ))
+            );
+        """
+        pg_hook.run(delete_reused_concepts)
+
+    except Exception as e:
+        logging.error(f"Error in delete_mapping_rules: {str(e)}")
+        raise
 
 
 def create_temp_reusing_concepts_table(**kwargs):
@@ -281,15 +322,7 @@ def create_reusing_concepts(**kwargs):
                 -- TODO: add standard_concept_id here for the newly creted SR concepts
                 temp_reuse_concepts.source_concept_id,
                 temp_reuse_concepts.content_type_id -- content_type_id for scanreportvalue
-            FROM temp_reuse_concepts_{table_id} AS temp_reuse_concepts
-            WHERE NOT EXISTS (
-                -- Check if the concept already exists
-                SELECT 1 FROM mapping_scanreportconcept AS sr_concept
-                WHERE sr_concept.object_id = temp_reuse_concepts.object_id
-                -- TODO: if standard_concept_id is null then we need to use the source_concept_id
-                AND sr_concept.concept_id = temp_reuse_concepts.source_concept_id
-                AND sr_concept.content_type_id = temp_reuse_concepts.content_type_id
-            );
+            FROM temp_reuse_concepts_{table_id} AS temp_reuse_concepts;
             """
 
         # This is the source field for concepts-related mapping rules created in the next step

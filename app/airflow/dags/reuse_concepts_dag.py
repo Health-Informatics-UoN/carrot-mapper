@@ -8,6 +8,7 @@ from libs.reuse_concepts.find_concepts_to_reuse import (
     find_object_id,
     create_reusing_concepts,
     find_sr_concept_id,
+    delete_R_concepts_and_mapping_rules,
 )
 from libs.reuse_concepts.prep_for_rules_creation import (
     find_dest_table_and_person_field_id,
@@ -16,7 +17,6 @@ from libs.reuse_concepts.prep_for_rules_creation import (
     find_additional_fields,
 )
 from libs.reuse_concepts.rules_creation import (
-    delete_R_mapping_rules,
     create_mapping_rules,
 )
 from libs.utils import create_task, validate_params_R_concepts
@@ -75,6 +75,9 @@ start = EmptyOperator(task_id="start", dag=dag)
 tasks = [
     create_task("validate_params_R_concepts", validate_params_R_concepts, dag),
     create_task(
+        "delete_R_concepts_and_mapping_rules", delete_R_concepts_and_mapping_rules, dag
+    ),
+    create_task(
         "create_temp_reusing_concepts_table", create_temp_reusing_concepts_table, dag
     ),
     create_task("find_matching_field", find_matching_field, dag),
@@ -88,7 +91,6 @@ tasks = [
     create_task("find_date_fields", find_date_fields, dag),
     create_task("find_concept_fields", find_concept_fields, dag),
     create_task("find_additional_fields", find_additional_fields, dag),
-    create_task("delete_R_mapping_rules", delete_R_mapping_rules, dag),
     create_task("create_mapping_rules", create_mapping_rules, dag),
 ]
 
