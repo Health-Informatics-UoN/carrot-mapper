@@ -259,6 +259,7 @@ def find_additional_fields(**kwargs) -> None:
 
         for pair in field_vocab_pairs:
             field_data_type = pair["field_data_type"].lower()
+            field_id = pair["sr_field_id"]
             numeric_types = ["int", "real", "float", "numeric", "decimal", "double"]
             string_types = ["varchar", "nvarchar", "text", "string", "char"]
             is_string = (
@@ -277,9 +278,11 @@ def find_additional_fields(**kwargs) -> None:
             -- Update value_as_number_field_id for measurement domain concepts ONLY
             UPDATE temp_standard_concepts_{table_id}
             SET value_as_number_field_id = omop_field.id
-            FROM mapping_omopfield omop_field, omop.concept std_concept, mapping_omoptable omop_table
+            FROM mapping_omopfield omop_field, omop.concept std_concept, mapping_omoptable omop_table, mapping_scanreportvalue sr_value
             WHERE 
                 std_concept.concept_id = temp_standard_concepts_{table_id}.standard_concept_id AND
+                sr_value.id = temp_standard_concepts_{table_id}.sr_value_id AND
+                sr_value.scan_report_field_id = {field_id} AND
                 std_concept.domain_id = 'Measurement' AND
                 omop_field.table_id = temp_standard_concepts_{table_id}.dest_table_id AND
                 omop_field.field = 'value_as_number' AND
@@ -302,9 +305,11 @@ def find_additional_fields(**kwargs) -> None:
                 -- Update value_as_number_field_id for Observation domain concepts with numeric data types
                 UPDATE temp_standard_concepts_{table_id}
                 SET value_as_number_field_id = omop_field.id
-                FROM mapping_omopfield omop_field, omop.concept std_concept, mapping_omoptable omop_table
+                FROM mapping_omopfield omop_field, omop.concept std_concept, mapping_omoptable omop_table, mapping_scanreportvalue sr_value
                 WHERE 
                     std_concept.concept_id = temp_standard_concepts_{table_id}.standard_concept_id AND
+                    sr_value.id = temp_standard_concepts_{table_id}.sr_value_id AND
+                    sr_value.scan_report_field_id = {field_id} AND
                     std_concept.domain_id = 'Observation' AND
                     omop_field.table_id = temp_standard_concepts_{table_id}.dest_table_id AND
                     omop_field.field = 'value_as_number' AND
@@ -329,9 +334,11 @@ def find_additional_fields(**kwargs) -> None:
                 -- Update value_as_string_field_id for Observation domain concepts with string data types
                 UPDATE temp_standard_concepts_{table_id}
                 SET value_as_string_field_id = omop_field.id
-                FROM mapping_omopfield omop_field, omop.concept std_concept, mapping_omoptable omop_table
+                FROM mapping_omopfield omop_field, omop.concept std_concept, mapping_omoptable omop_table, mapping_scanreportvalue sr_value
                 WHERE 
                     std_concept.concept_id = temp_standard_concepts_{table_id}.standard_concept_id AND
+                    sr_value.id = temp_standard_concepts_{table_id}.sr_value_id AND
+                    sr_value.scan_report_field_id = {field_id} AND
                     std_concept.domain_id = 'Observation' AND
                     omop_field.table_id = temp_standard_concepts_{table_id}.dest_table_id AND
                     omop_field.field = 'value_as_string' AND
