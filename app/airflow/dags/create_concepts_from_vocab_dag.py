@@ -1,20 +1,20 @@
 from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.operators.empty import EmptyOperator
-from libs.core_concepts_creation import (
+from libs.vocab_concepts.find_standard_concepts import (
     find_standard_concepts,
     create_standard_concepts,
     find_sr_concept_id,
 )
 
-from libs.core_prep_rules_creation import (
+from libs.vocab_concepts.prep_for_rules_creation import (
     find_dest_table_and_person_field_id,
     find_date_fields,
     find_concept_fields,
     find_additional_fields,
 )
 
-from libs.core_rules_creation import (
+from libs.vocab_concepts.rules_creation import (
     delete_V_mapping_rules,
     create_mapping_rules,
 )
@@ -60,7 +60,6 @@ dag = DAG(
 # TODO: orchestrator to be deleted because users will trigger this DAG directly. Similar for reuse DAG
 # TODO: many concepts have the domain "SPEC ANATOMIC SITE", which should be added to the table "SPECIMEN" in a different way (OMOP field id is different)
 # TODO: ordering the temp standard concepts id before creating the mapping rules --> have the nice order match with the UI
-# TODO: add dest field name to the UI??
 # TODO: should we add `value` column in MAPPINGRULE model? in order to filter the mapping rule based on the SR value?
 # TODO: add the source_concept_id to the UI
 # TODO: improve naming of columns

@@ -56,9 +56,9 @@ def create_mapping_rules(**kwargs) -> None:
         update_job_status(
             scan_report=scan_report_id,
             scan_report_table=table_id,
-            stage=JobStageType.GENERATE_RULES,
+            stage=JobStageType.BUILD_CONCEPTS_FROM_DICT,
             status=StageStatusType.IN_PROGRESS,
-            details="Creating mapping rules...",
+            details="Creating mapping rules for V concepts...",
         )
 
         for pair in field_vocab_pairs:
@@ -102,9 +102,9 @@ def create_mapping_rules(**kwargs) -> None:
                 update_job_status(
                     scan_report=scan_report_id,
                     scan_report_table=table_id,
-                    stage=JobStageType.GENERATE_RULES,
+                    stage=JobStageType.BUILD_CONCEPTS_FROM_DICT,
                     status=StageStatusType.COMPLETE,
-                    details="Successfully created mapping rules",
+                    details="Successfully created mapping rules for V concepts",
                 )
                 return result
             except Exception as e:
@@ -117,8 +117,8 @@ def create_mapping_rules(**kwargs) -> None:
         update_job_status(
             scan_report=scan_report_id,
             scan_report_table=table_id,
-            stage=JobStageType.GENERATE_RULES,
+            stage=JobStageType.BUILD_CONCEPTS_FROM_DICT,
             status=StageStatusType.FAILED,
-            details=f"Error in create_mapping_rules: {str(e)}",
+            details=f"Error when creating mapping rules for V concepts",
         )
         raise AirflowException(f"Error in create_mapping_rules: {str(e)}")

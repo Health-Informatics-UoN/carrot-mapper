@@ -38,9 +38,9 @@ def find_dest_table_and_person_field_id(**kwargs) -> None:
         update_job_status(
             scan_report=scan_report_id,
             scan_report_table=table_id,
-            stage=JobStageType.GENERATE_RULES,
+            stage=JobStageType.BUILD_CONCEPTS_FROM_DICT,
             status=StageStatusType.IN_PROGRESS,
-            details="Finding destination table and field IDs...",
+            details="Finding destination table and destination OMOP field IDs...",
         )
         core_query = f"""
         -- Update destination table ID

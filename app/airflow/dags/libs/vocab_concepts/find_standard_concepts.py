@@ -118,7 +118,7 @@ def find_standard_concepts(**kwargs) -> None:
                     scan_report_table=table_id,
                     stage=JobStageType.BUILD_CONCEPTS_FROM_DICT,
                     status=StageStatusType.FAILED,
-                    details=f"Error in find_standard_concepts_query: {str(e)}",
+                    details=f"Error in finding standard concepts for field ID {sr_field_id}",
                 )
                 raise
     except Exception as e:
@@ -175,8 +175,8 @@ def create_standard_concepts(**kwargs) -> None:
                 scan_report=scan_report_id,
                 scan_report_table=table_id,
                 stage=JobStageType.BUILD_CONCEPTS_FROM_DICT,
-                status=StageStatusType.COMPLETE,
-                details="Successfully created standard concepts",
+                status=StageStatusType.IN_PROGRESS,
+                details="Standard concepts created",
             )
         except Exception as e:
             logging.error(f"Database error in create_standard_concepts: {str(e)}")
@@ -185,7 +185,7 @@ def create_standard_concepts(**kwargs) -> None:
                 scan_report_table=table_id,
                 stage=JobStageType.BUILD_CONCEPTS_FROM_DICT,
                 status=StageStatusType.FAILED,
-                details=f"Error in create_standard_concepts: {str(e)}",
+                details=f"Error when creating standard concepts",
             )
     except Exception as e:
         logging.error(f"Error in create_standard_concepts: {str(e)}")
