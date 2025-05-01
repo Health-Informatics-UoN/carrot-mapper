@@ -14,7 +14,8 @@ pg_hook = PostgresHook(postgres_conn_id="postgres_db_conn")
 
 def delete_R_concepts_and_mapping_rules(**kwargs) -> None:
     """
-    Delete all mapping rules and reused concepts for a given scan report table with creation type 'R' (Reused).
+    To make sure the eligble concepts for reusing is up-to-date, we will refresh the R concepts
+    by deleting all mapping rules and reused concepts for a given scan report table with creation type 'R' (Reused).
     Validated param needed is:
     - table_id (int): The ID of the scan report table to process
     """
@@ -105,6 +106,15 @@ def find_matching_value(**kwargs):
 
     parent_dataset_id = validated_params["parent_dataset_id"]
     table_id = validated_params["table_id"]
+    scan_report_id = validated_params["scan_report_id"]
+
+    update_job_status(
+        scan_report=scan_report_id,
+        scan_report_table=table_id,
+        stage=JobStageType.REUSE_CONCEPTS,
+        status=StageStatusType.IN_PROGRESS,
+        details=f"Finding eligible concepts for reuse at the value level",
+    )
 
     # When a data dictionary is provided, we won't reuse V concepts,
     # because that is the job of V concepts DAG
@@ -173,6 +183,13 @@ def find_matching_value(**kwargs):
         logging.info(f"Successfully found reusing concepts at the value level")
     except Exception as e:
         logging.error(f"Failed to find reusing concepts at the value level: {str(e)}")
+        update_job_status(
+            scan_report=scan_report_id,
+            scan_report_table=table_id,
+            stage=JobStageType.REUSE_CONCEPTS,
+            status=StageStatusType.FAILED,
+            details=f"Error when finding eligible concepts for reuse at the value level",
+        )
         raise
 
 
@@ -185,6 +202,15 @@ def find_matching_field(**kwargs):
 
     parent_dataset_id = validated_params["parent_dataset_id"]
     table_id = validated_params["table_id"]
+    scan_report_id = validated_params["scan_report_id"]
+
+    update_job_status(
+        scan_report=scan_report_id,
+        scan_report_table=table_id,
+        stage=JobStageType.REUSE_CONCEPTS,
+        status=StageStatusType.IN_PROGRESS,
+        details=f"Finding eligible concepts for reuse at the field level",
+    )
 
     # When a data dictionary is provided, we won't reuse V concepts,
     # because that is the job of V concepts DAG
@@ -244,6 +270,13 @@ def find_matching_field(**kwargs):
         logging.info(f"Successfully found reusing concepts at the field level")
     except Exception as e:
         logging.error(f"Failed to find reusing concepts at the value level: {str(e)}")
+        update_job_status(
+            scan_report=scan_report_id,
+            scan_report_table=table_id,
+            stage=JobStageType.REUSE_CONCEPTS,
+            status=StageStatusType.FAILED,
+            details=f"Error when finding eligible concepts for reuse at the field level",
+        )
         raise
 
 
@@ -296,94 +329,92 @@ def create_reusing_concepts(**kwargs):
     Create standard concepts for field values in the mapping_scanreportconcept table.
     Only inserts concepts that don't already exist.
     """
+
+    validated_params = pull_validated_params(kwargs, "validate_params_R_concepts")
+    table_id = validated_params["table_id"]
+    scan_report_id = validated_params["scan_report_id"]
+
+    # TODO: when source_concept_id is added to the model SCANREPORTCONCEPT, we need to update the query belowto solve the issue #1006
+    create_concept_query = f"""
+        -- Insert standard concepts for field values (only if they don't already exist)
+        INSERT INTO mapping_scanreportconcept (
+            created_at,
+            updated_at,
+            object_id,
+            creation_type,
+            -- TODO: Will have the standard_concept_id (nullable) here
+            concept_id,
+            content_type_id
+        )
+        SELECT
+            NOW(),
+            NOW(),
+            temp_reuse_concepts.object_id,
+            'R',       -- Creation type: Reused
+            -- TODO: if standard_concept_id is null then we need to use the source_concept_id
+            -- TODO: add standard_concept_id here for the newly creted SR concepts
+            temp_reuse_concepts.source_concept_id,
+            temp_reuse_concepts.content_type_id -- content_type_id for scanreportvalue
+        FROM temp_reuse_concepts_{table_id} AS temp_reuse_concepts;
+        """
+
+    # This is the source field for concepts-related mapping rules created in the next step
+    find_target_source_field_id_query = f"""
+        -- First set the target_source_field_id
+        UPDATE temp_reuse_concepts_{table_id} AS temp_table
+        SET target_source_field_id =
+            CASE
+                WHEN temp_table.content_type_id = 22 THEN temp_table.object_id
+                WHEN temp_table.content_type_id = 23 THEN (
+                    SELECT sr_value.scan_report_field_id
+                    FROM mapping_scanreportvalue AS sr_value
+                    WHERE sr_value.id = temp_table.object_id
+                )
+                ELSE NULL
+            END;
+
+        -- Then use the now-set target_source_field_id to set data type
+        UPDATE temp_reuse_concepts_{table_id} AS temp_table
+        SET target_source_field_data_type = 
+            CASE
+                WHEN sr_field.type_column = 'INT' OR
+                    sr_field.type_column = 'REAL' OR
+                    sr_field.type_column = 'FLOAT' OR
+                    sr_field.type_column = 'NUMERIC' OR
+                    sr_field.type_column = 'DECIMAL' OR
+                    sr_field.type_column = 'DOUBLE'
+                THEN 'numeric'
+                WHEN sr_field.type_column = 'VARCHAR' OR
+                    sr_field.type_column = 'NVARCHAR' OR
+                    sr_field.type_column = 'TEXT' OR
+                    sr_field.type_column = 'STRING' OR
+                    sr_field.type_column = 'CHAR'
+                THEN 'string'
+                ELSE sr_field.type_column
+            END
+        FROM mapping_scanreportfield AS sr_field
+        WHERE sr_field.id = temp_table.target_source_field_id
+        AND temp_table.target_source_field_id IS NOT NULL;
+        """
     try:
-        validated_params = pull_validated_params(kwargs, "validate_params_R_concepts")
-        table_id = validated_params["table_id"]
-        scan_report_id = validated_params["scan_report_id"]
-
-        # TODO: when source_concept_id is added to the model SCANREPORTCONCEPT, we need to update the query belowto solve the issue #1006
-        create_concept_query = f"""
-            -- Insert standard concepts for field values (only if they don't already exist)
-            INSERT INTO mapping_scanreportconcept (
-                created_at,
-                updated_at,
-                object_id,
-                creation_type,
-                -- TODO: Will have the standard_concept_id (nullable) here
-                concept_id,
-                content_type_id
-            )
-            SELECT
-                NOW(),
-                NOW(),
-                temp_reuse_concepts.object_id,
-                'R',       -- Creation type: Reused
-                -- TODO: if standard_concept_id is null then we need to use the source_concept_id
-                -- TODO: add standard_concept_id here for the newly creted SR concepts
-                temp_reuse_concepts.source_concept_id,
-                temp_reuse_concepts.content_type_id -- content_type_id for scanreportvalue
-            FROM temp_reuse_concepts_{table_id} AS temp_reuse_concepts;
-            """
-
-        # This is the source field for concepts-related mapping rules created in the next step
-        find_target_source_field_id_query = f"""
-            -- First set the target_source_field_id
-            UPDATE temp_reuse_concepts_{table_id} AS temp_table
-            SET target_source_field_id =
-                CASE
-                    WHEN temp_table.content_type_id = 22 THEN temp_table.object_id
-                    WHEN temp_table.content_type_id = 23 THEN (
-                        SELECT sr_value.scan_report_field_id
-                        FROM mapping_scanreportvalue AS sr_value
-                        WHERE sr_value.id = temp_table.object_id
-                    )
-                    ELSE NULL
-                END;
-
-            -- Then use the now-set target_source_field_id to set data type
-            UPDATE temp_reuse_concepts_{table_id} AS temp_table
-            SET target_source_field_data_type = 
-                CASE
-                    WHEN sr_field.type_column = 'INT' OR
-                        sr_field.type_column = 'REAL' OR
-                        sr_field.type_column = 'FLOAT' OR
-                        sr_field.type_column = 'NUMERIC' OR
-                        sr_field.type_column = 'DECIMAL' OR
-                        sr_field.type_column = 'DOUBLE'
-                    THEN 'numeric'
-                    WHEN sr_field.type_column = 'VARCHAR' OR
-                        sr_field.type_column = 'NVARCHAR' OR
-                        sr_field.type_column = 'TEXT' OR
-                        sr_field.type_column = 'STRING' OR
-                        sr_field.type_column = 'CHAR'
-                    THEN 'string'
-                    ELSE sr_field.type_column
-                END
-            FROM mapping_scanreportfield AS sr_field
-            WHERE sr_field.id = temp_table.target_source_field_id
-            AND temp_table.target_source_field_id IS NOT NULL;
-            """
-        try:
-            pg_hook.run(create_concept_query + find_target_source_field_id_query)
-            logging.info("Successfully created standard concepts")
-            # update_job_status(
-            #     scan_report=scan_report_id,
-            #     scan_report_table=table_id,
-            #     stage=JobStageType.REUSE_CONCEPTS,
-            #     status=StageStatusType.IN_PROGRESS,
-            #     details="Successfully created standard concepts",
-            # )
-        except Exception as e:
-            logging.error(f"Database error in create_standard_concepts: {str(e)}")
-            # update_job_status(
-            #     scan_report=scan_report_id,
-            #     scan_report_table=table_id,
-            #     stage=JobStageType.REUSE_CONCEPTS,
-            #     status=StageStatusType.FAILED,
-            #     details=f"Error in create_standard_concepts: {str(e)}",
-            # )
+        pg_hook.run(create_concept_query + find_target_source_field_id_query)
+        logging.info("Successfully created standard concepts")
+        update_job_status(
+            scan_report=scan_report_id,
+            scan_report_table=table_id,
+            stage=JobStageType.REUSE_CONCEPTS,
+            status=StageStatusType.IN_PROGRESS,
+            details="R (Reused) concepts created",
+        )
     except Exception as e:
-        logging.error(f"Error in create_standard_concepts: {str(e)}")
+        logging.error(f"Database error in create_standard_concepts: {str(e)}")
+        update_job_status(
+            scan_report=scan_report_id,
+            scan_report_table=table_id,
+            stage=JobStageType.REUSE_CONCEPTS,
+            status=StageStatusType.FAILED,
+            details=f"Error when creating R (Reused) concepts",
+        )
         raise
 
 

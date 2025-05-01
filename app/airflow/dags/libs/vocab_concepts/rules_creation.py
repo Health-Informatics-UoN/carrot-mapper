@@ -43,82 +43,78 @@ def create_mapping_rules(**kwargs) -> None:
     - date_event_field (int): The ID of the date event field
     - person_id_field (int): The ID of the person ID field
     """
-    try:
-        # Get validated parameters from XCom
-        validated_params = pull_validated_params(kwargs, "validate_params_V_concepts")
 
-        scan_report_id = validated_params["scan_report_id"]
-        table_id = validated_params["table_id"]
-        field_vocab_pairs = validated_params["field_vocab_pairs"]
-        date_field_id = validated_params["date_event_field"]
-        person_id_field = validated_params["person_id_field"]
+    # Get validated parameters from XCom
+    validated_params = pull_validated_params(kwargs, "validate_params_V_concepts")
 
-        update_job_status(
-            scan_report=scan_report_id,
-            scan_report_table=table_id,
-            stage=JobStageType.BUILD_CONCEPTS_FROM_DICT,
-            status=StageStatusType.IN_PROGRESS,
-            details="Creating mapping rules for V concepts...",
+    scan_report_id = validated_params["scan_report_id"]
+    table_id = validated_params["table_id"]
+    field_vocab_pairs = validated_params["field_vocab_pairs"]
+    date_field_id = validated_params["date_event_field"]
+    person_id_field = validated_params["person_id_field"]
+
+    update_job_status(
+        scan_report=scan_report_id,
+        scan_report_table=table_id,
+        stage=JobStageType.BUILD_CONCEPTS_FROM_DICT,
+        status=StageStatusType.IN_PROGRESS,
+        details="Creating mapping rules for V concepts...",
+    )
+
+    for pair in field_vocab_pairs:
+        sr_field_id = pair["sr_field_id"]
+
+        # Create comprehensive single mapping rule query to handle all rules at once
+        mapping_rule_query = f"""
+        INSERT INTO mapping_mappingrule (
+            created_at, updated_at, omop_field_id, source_field_id, concept_id, scan_report_id, approved
         )
-
-        for pair in field_vocab_pairs:
-            sr_field_id = pair["sr_field_id"]
-
-            # Create comprehensive single mapping rule query to handle all rules at once
-            mapping_rule_query = f"""
-            INSERT INTO mapping_mappingrule (
-                created_at, updated_at, omop_field_id, source_field_id, concept_id, scan_report_id, approved
-            )
-            SELECT 
-                NOW(), NOW(), field_id, source_id, sr_concept_id, {scan_report_id}, TRUE
-            FROM temp_standard_concepts_{table_id}
-            CROSS JOIN LATERAL (
-                VALUES 
-                    (dest_person_field_id, {person_id_field}),
-                    (dest_date_field_id, {date_field_id}),
-                    (dest_start_date_field_id, {date_field_id}),
-                    (dest_end_date_field_id, {date_field_id}),
-                    (source_concept_field_id, {sr_field_id}),
-                    (dest_concept_field_id, {sr_field_id}),
-                    (source_value_field_id, {sr_field_id}),
-                    (value_as_string_field_id, {sr_field_id}),
-                    (value_as_number_field_id, {sr_field_id})
-            ) AS field_mapping(field_id, source_id)
-            WHERE field_id IS NOT NULL
-            AND NOT EXISTS (
-                SELECT 1 FROM mapping_mappingrule exited_mapping_rule
-                WHERE exited_mapping_rule.omop_field_id = field_mapping.field_id
-                AND exited_mapping_rule.source_field_id = field_mapping.source_id
-                AND exited_mapping_rule.scan_report_id = {scan_report_id}
-            )
-            ORDER BY sr_value_id;
-            """
-
-            try:
-                result = pg_hook.run(mapping_rule_query)
-                logging.info(
-                    "Successfully created all mapping rules for each standard concept"
-                )
-                update_job_status(
-                    scan_report=scan_report_id,
-                    scan_report_table=table_id,
-                    stage=JobStageType.BUILD_CONCEPTS_FROM_DICT,
-                    status=StageStatusType.COMPLETE,
-                    details="Successfully created mapping rules for V concepts",
-                )
-                return result
-            except Exception as e:
-                logging.error(f"Database error in create_mapping_rules: {str(e)}")
-                raise AirflowException(
-                    f"Database error in create_mapping_rules: {str(e)}"
-                )
-    except Exception as e:
-        logging.error(f"Error in create_mapping_rules: {str(e)}")
-        update_job_status(
-            scan_report=scan_report_id,
-            scan_report_table=table_id,
-            stage=JobStageType.BUILD_CONCEPTS_FROM_DICT,
-            status=StageStatusType.FAILED,
-            details=f"Error when creating mapping rules for V concepts",
+        SELECT 
+            NOW(), NOW(), field_id, source_id, sr_concept_id, {scan_report_id}, TRUE
+        FROM temp_standard_concepts_{table_id}
+        CROSS JOIN LATERAL (
+            VALUES 
+                (dest_person_field_id, {person_id_field}),
+                (dest_date_field_id, {date_field_id}),
+                (dest_start_date_field_id, {date_field_id}),
+                (dest_end_date_field_id, {date_field_id}),
+                (source_concept_field_id, {sr_field_id}),
+                (dest_concept_field_id, {sr_field_id}),
+                (source_value_field_id, {sr_field_id}),
+                (value_as_string_field_id, {sr_field_id}),
+                (value_as_number_field_id, {sr_field_id})
+        ) AS field_mapping(field_id, source_id)
+        WHERE field_id IS NOT NULL
+        -- Because we are using a loop here, we need to check if the mapping rule already exists
+        AND NOT EXISTS (
+            SELECT 1 FROM mapping_mappingrule exited_mapping_rule
+            WHERE exited_mapping_rule.omop_field_id = field_mapping.field_id
+            AND exited_mapping_rule.source_field_id = field_mapping.source_id
+            AND exited_mapping_rule.scan_report_id = {scan_report_id}
         )
-        raise AirflowException(f"Error in create_mapping_rules: {str(e)}")
+        ORDER BY sr_value_id;
+        """
+
+        try:
+            result = pg_hook.run(mapping_rule_query)
+            logging.info(
+                "Successfully created all mapping rules for each standard concept"
+            )
+            update_job_status(
+                scan_report=scan_report_id,
+                scan_report_table=table_id,
+                stage=JobStageType.BUILD_CONCEPTS_FROM_DICT,
+                status=StageStatusType.COMPLETE,
+                details="Successfully created mapping rules for V concepts",
+            )
+            return result
+        except Exception as e:
+            logging.error(f"Database error in create_mapping_rules: {str(e)}")
+            update_job_status(
+                scan_report=scan_report_id,
+                scan_report_table=table_id,
+                stage=JobStageType.BUILD_CONCEPTS_FROM_DICT,
+                status=StageStatusType.FAILED,
+                details=f"Error when creating mapping rules for V concepts",
+            )
+            raise AirflowException(f"Database error in create_mapping_rules: {str(e)}")

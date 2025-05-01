@@ -84,7 +84,11 @@ def update_job_status(
             LIMIT 1
         )
     """
-    pg_hook.run(update_query)
+    try:
+        pg_hook.run(update_query)
+    except Exception as e:
+        logging.error(f"Error in update_job_status: {str(e)}")
+        raise ValueError(f"Error in update_job_status: {str(e)}")
 
 
 def create_task(task_id, python_callable, dag, provide_context=True):
