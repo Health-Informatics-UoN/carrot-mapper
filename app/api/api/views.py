@@ -3,10 +3,9 @@ import logging
 import os
 import random
 import string
-from typing import Any
+from typing import Any, Optional
 from urllib.parse import urljoin
 
-import requests
 from api.filters import ScanReportAccessFilter
 from api.mixins import ScanReportPermissionMixin
 from api.paginations import CustomPagination
@@ -77,6 +76,7 @@ from shared.services.rules_export import (
     make_dag,
 )
 from shared.services.storage_service import StorageService
+from shared.services.function_service import FunctionService
 
 storage_service = StorageService()
 
@@ -387,31 +387,20 @@ class ScanReportTableDetailV2(
         Returns:
             Response: The response object.
         """
-        instance = self.get_object()
+        instance: ScanReportTable = self.get_object()
         partial = kwargs.pop("partial", True)
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
 
-        # Delete the current mapping rules
-        delete_mapping_rules(instance.id)
-
         # Map the table
-        scan_report_instance = instance.scan_report
-        data_dictionary_name = (
+        scan_report_instance: ScanReport = instance.scan_report
+        data_dictionary_name: Optional[str] = (
             scan_report_instance.data_dictionary.name
             if scan_report_instance.data_dictionary
             else None
         )
 
-        # Send to functions
-        msg = {
-            "scan_report_id": scan_report_instance.id,
-            "table_id": instance.id,
-            "data_dictionary_blob": data_dictionary_name,
-        }
-        base_url = f"{settings.WORKERS_URL}"
-        trigger = f"/api/orchestrators/{settings.WORKERS_RULES_NAME}?code={settings.WORKERS_RULES_KEY}"
         # Prevent double-updating from backend
         if Job.objects.filter(
             scan_report_table=instance,
@@ -423,31 +412,28 @@ class ScanReportTableDetailV2(
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
-
-        try:
-            # Create Job records
-            # For the first stage, default status is IN_PROGRESS
+        # Create Job records
+        # For the first stage, default status is IN_PROGRESS
+        Job.objects.create(
+            scan_report=scan_report_instance,
+            scan_report_table=instance,
+            stage=JobStage.objects.get(value="BUILD_CONCEPTS_FROM_DICT"),
+            status=StageStatus.objects.get(value="IN_PROGRESS"),
+        )
+        for stage in [
+            "REUSE_CONCEPTS",
+            "GENERATE_RULES",
+        ]:
             Job.objects.create(
                 scan_report=scan_report_instance,
                 scan_report_table=instance,
-                stage=JobStage.objects.get(value="BUILD_CONCEPTS_FROM_DICT"),
-                status=StageStatus.objects.get(value="IN_PROGRESS"),
+                stage=JobStage.objects.get(value=stage),
             )
-            for stage in [
-                "REUSE_CONCEPTS",
-                "GENERATE_RULES",
-            ]:
-                Job.objects.create(
-                    scan_report=scan_report_instance,
-                    scan_report_table=instance,
-                    stage=JobStage.objects.get(value=stage),
-                )
-            # Then send the request to workers, in case there is error, the Job record was created already
-            response = requests.post(urljoin(base_url, trigger), json=msg)
-            response.raise_for_status()
-
-        except request.exceptions.HTTPError as e:
-            logging.error(f"HTTP Trigger failed: {e}")
+        FunctionService().trigger_auto_mapping(
+            scan_report=scan_report_instance,
+            table=instance,
+            data_dictionary_name=data_dictionary_name,
+        )
 
         # TODO: The worker_id can be used for status, but we need to save it somewhere.
         # resp_json = response.json()
