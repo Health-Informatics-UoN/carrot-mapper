@@ -1,26 +1,35 @@
-[tool.poetry]
+[project]
 name = "carrot-mapper"
 version = "2.2.13"
 description = ""
-authors = ["Sam Cox <sam.cox@nottingham.ac.uk>", "Philip Quinlan <philip.quinlan@nottingham.ac.uk>"]
-license = "MIT"
+authors = [
+    { name = "Sam Cox", email = "sam.cox@nottingham.ac.uk" },
+    { name = "Philip Quinlan", email = "philip.quinlan@nottingham.ac.uk" },
+]
+requires-python = "~=3.9"
 readme = "README.md"
+license = "MIT"
 
-[tool.poetry.dependencies]
-python = "^3.9"
+[dependency-groups]
+test = [
+    "pytest>=7.4.0,<8",
+    "pytest-cov>=4.1.0,<5",
+    "coverage>=7.3.0,<8",
+]
+dev = [
+    "pre-commit>=3.6.1,<4",
+    "isort>=5.13.2,<6",
+    "black>=24.2.0,<25",
+    "mypy>=1.8.0,<2",
+    "flake8>=7.0.0,<8",
+]
 
-[tool.poetry.group.test.dependencies]
-pytest = "^7.4.0"
-pytest-cov = "^4.1.0"
-coverage = "^7.3.0"
-
-[tool.poetry.group.dev.dependencies]
-pre-commit = "^3.6.1"
-isort = "^5.13.2"
-black = "^24.2.0"
-mypy = "^1.8.0"
-flake8 = "^7.0.0"
+[tool.uv]
+default-groups = [
+    "test",
+    "dev",
+]
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"

@@ -1,42 +1,68 @@
-[tool.poetry]
+[project]
 name = "workers"
 version = "0.1.0"
-description = "Workers for CaRROT Mapper"
-authors = ["Sam Cox <sam.cox@nottingham.ac.uk>", "Philip Quinlan <philip.quinlan@nottingham.ac.uk>"]
+description = "Workers for Carrot Mapper"
+authors = [
+    { name = "Sam Cox", email = "sam.cox@nottingham.ac.uk" },
+    { name = "Philip Quinlan", email = "philip.quinlan@nottingham.ac.uk" },
+]
+requires-python = "~=3.11"
 license = "MIT"
+dependencies = [
+    "azure-common>=1.1.28,<2",
+    "azure-functions==1.20",
+    "azure-storage-blob==12.20.0",
+    "requests==2.32.3",
+    "openpyxl==3.1.3",
+    "Resource>=0.2.1,<0.3",
+    "httpx==0.27",
+    "shared",
+    "python-dotenv>=1.0.1,<2",
+    "azure-functions-durable>=1.2.9,<2",
+    "minio>=7.2.15,<8",
+]
 
-[tool.poetry.dependencies]
-python = "^3.11"
-azure-common = "^1.1.28"
-azure-functions = "1.20"
-azure-storage-blob = "12.20.0"
-requests = "2.32.3"
-openpyxl = "3.1.3"
-Resource = "^0.2.1"
-httpx = "0.27"
-shared = {path = "../shared"}
-python-dotenv = "^1.0.1"
-azure-functions-durable = "^1.2.9"
-minio = "^7.2.15"
+[dependency-groups]
+dev = [
+    "memory-profiler>=0.61.0,<0.62",
+    "psycopg2>=2.9.9,<3",
+    "mypy>=1.10.0,<2",
+    "django-stubs>=5.0.0,<6",
+    "types-openpyxl>=3.1.0.20240428,<4",
+    "types-requests>=2.31.0.20240406,<3",
+    "shared",
+]
+test = [
+    "pytest>=8.0.2,<9",
+    "pytest-cov>=4.1.0,<5",
+    "coverage>=7.4.3,<8",
+]
 
-[tool.poetry.group.dev.dependencies]
-memory-profiler = "^0.61.0"
-psycopg2 = "^2.9.9"
-mypy = "^1.10.0"
-django-stubs = "^5.0.0"
-types-openpyxl = "^3.1.0.20240428"
-types-requests = "^2.31.0.20240406"
-shared = {path = "../shared", develop = true}
+[tool.uv]
+default-groups = [
+    "dev",
+    "test",
+]
 
-
-[tool.poetry.group.test.dependencies]
-pytest = "^8.0.2"
-pytest-cov = "^4.1.0"
-coverage = "^7.4.3"
+[tool.uv.sources]
+shared = { path = "../shared" }
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["setuptools>=64.0.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = [
+    "RulesQueue",
+    "UploadQueue",
+    "shared_code",
+    "WorkerStatus",
+    "RulesTrigger",
+    "RulesFileQueue",
+    "RulesOrchestrator",
+    "RulesConceptsActivity",
+    "RulesGenerationActivity"
+]
 
 [tool.pytest.ini_options]
 minversion = "6.0"
