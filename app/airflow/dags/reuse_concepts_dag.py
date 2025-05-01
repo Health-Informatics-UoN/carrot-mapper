@@ -42,8 +42,7 @@ Workflow steps:
 # TODO: for death table, only reuse when the source table is death table as well
 # TODO: update file names --> refactor DAGs structure
 # TODO: compare the R and V logic related to prep_for_rules_creation
-# TODO: what happen if users run the reuse many time? will I need to delete the current R concepts? then find and create a new ones?
-# TODO:how about delete mapping rules for each run??
+# TODO: do we want to reuse R concepts?
 
 
 default_args = {
