@@ -62,6 +62,7 @@ class FunctionService:
             # TODO: make sub functions for each step
             # TODO: make auth configurable for airflow
             # TODO: what if I don't have DD but want to update the person ID and date event?
+            # TODO: refresh the mapping rules for manual mapping or for the table without field-vocab pairs or for a SR doesn't have reuse demand
             base_url = f"{os.getenv('AIRFLOW_URL')}"
             # Send to functions
             if data_dictionary_name or get_field_vocab_mappings(
