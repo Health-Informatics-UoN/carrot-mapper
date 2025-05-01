@@ -6,7 +6,7 @@ interface ScanReport {
   mapping_status: {
     value: string;
   };
-  upload_status: {
+  upload_status?: {
     value: string;
   };
   created_at: Date;
