@@ -26,21 +26,18 @@ This DAG automates the process of creating reusing concepts from other scan repo
 
 Workflow steps:
 1. Validate parameters
-2. Find eligible objects for reuse concepts
+2. Delete existing R concepts and mapping rules
 3. Create temporary table to store reusing concepts
-4. Find matching values for reusing concepts
+4. Find matching values and fields for reusing concepts
 5. Create reusing concepts in the database
 6. Find scan report concept IDs
 7. Find destination tables and person field IDs
 8. Identify date fields, concept fields, and additional fields
-9. Delete existing mapping rules
-10. Create new mapping rules for each scan report field
-
+9. Create mapping rules for each R concept
 """
 #  TODO: for now the creation of mapping rules will use the source_concept_id of temp_reuse_concepts table.
 # When we can distinguish between standard and non-standard concepts, we will use them accordingly in the create_mapping_rules function of reuse.
 # TODO: for death table, only reuse when the source table is death table as well
-# TODO: update file names --> refactor DAGs structure
 # TODO: compare the R and V logic related to prep_for_rules_creation
 # TODO: do we want to reuse R concepts?
 

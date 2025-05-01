@@ -56,6 +56,9 @@ def delete_R_concepts_and_mapping_rules(**kwargs) -> None:
 def create_temp_reusing_concepts_table(**kwargs):
     """
     Create the temporary table for reusing concepts.
+    This table will store the concepts that are eligible for reuse.
+    Validated param needed is:
+    - table_id (int): The ID of the scan report table to process
     """
     # Get validated parameters from XCom
     validated_params = pull_validated_params(kwargs, "validate_params_R_concepts")
@@ -100,6 +103,10 @@ def create_temp_reusing_concepts_table(**kwargs):
 def find_matching_value(**kwargs):
     """
     Find matching values for reusing concepts.
+    Validated param needed is:
+    - table_id (int): The ID of the scan report table to process
+    - parent_dataset_id (int): The ID of the parent dataset to process
+    - scan_report_id (int): The ID of the scan report to process
     """
     # Get validated parameters from XCom
     validated_params = pull_validated_params(kwargs, "validate_params_R_concepts")
@@ -196,6 +203,10 @@ def find_matching_value(**kwargs):
 def find_matching_field(**kwargs):
     """
     Find matching fields for reusing concepts.
+    Validated param needed is:
+    - table_id (int): The ID of the scan report table to process
+    - parent_dataset_id (int): The ID of the parent dataset to process
+    - scan_report_id (int): The ID of the scan report to process
     """
     # Get validated parameters from XCom
     validated_params = pull_validated_params(kwargs, "validate_params_R_concepts")
@@ -283,6 +294,9 @@ def find_matching_field(**kwargs):
 def find_object_id(**kwargs):
     """
     Find object ids for reusing concepts.
+    Validated param needed is:
+    - table_id (int): The ID of the scan report table to process
+    - scan_report_id (int): The ID of the scan report to process
     """
     # Get validated parameters from XCom
     validated_params = pull_validated_params(kwargs, "validate_params_R_concepts")
@@ -328,6 +342,9 @@ def create_reusing_concepts(**kwargs):
     """
     Create standard concepts for field values in the mapping_scanreportconcept table.
     Only inserts concepts that don't already exist.
+    Validated param needed is:
+    - table_id (int): The ID of the scan report table to process
+    - scan_report_id (int): The ID of the scan report to process
     """
 
     validated_params = pull_validated_params(kwargs, "validate_params_R_concepts")
@@ -423,6 +440,8 @@ def find_sr_concept_id(**kwargs):
     Update temp_standard_concepts table with sr_concept_id column
     containing the IDs of standard concepts added to mapping_scanreportconcept.
     This will help the next steps to be shorter.
+    Validated param needed is:
+    - table_id (int): The ID of the scan report table to process
     """
     try:
         validated_params = pull_validated_params(kwargs, "validate_params_R_concepts")
