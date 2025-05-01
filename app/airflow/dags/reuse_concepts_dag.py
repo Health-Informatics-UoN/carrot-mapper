@@ -40,6 +40,7 @@ Workflow steps:
 # TODO: for death table, only reuse when the source table is death table as well
 # TODO: compare the R and V logic related to prep_for_rules_creation
 # TODO: do we want to reuse R concepts?
+# NOTE: when the DB is huge, the performance of the DAG will be affected by refreshing the existing R concepts. --> consider to only refresh the R Mapping rules
 
 
 default_args = {
