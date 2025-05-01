@@ -102,11 +102,30 @@ def create_temp_reusing_concepts_table(**kwargs):
 
 def find_matching_value(**kwargs):
     """
-    Find matching values for reusing concepts.
-    Validated param needed is:
-    - table_id (int): The ID of the scan report table to process
-    - parent_dataset_id (int): The ID of the parent dataset to process
-    - scan_report_id (int): The ID of the scan report to process
+    Identifies and extracts field values from completed scan reports that can be reused for concept mapping.
+
+    This function locates field values in the current table that match values in previously mapped scan reports
+    within the same parent dataset. The matching process requires:
+    1. Exact value text matching
+    2. Matching value descriptions (or both NULL)
+    3. Values must belong to fields with the same name
+
+    The SQL procedure:
+    1. Starts with values in the current scan report table
+    2. Joins to values in other scan reports based on value name, description, and field name
+    3. Finds values with associated concepts in completed scan reports
+    4. Filters to values from the specified parent dataset and only from completed scan reports
+    5. Excludes already reused concepts (creation_type != 'R')
+    6. Optionally excludes concepts from vocabulary matching (creation_type != 'V') if a data dictionary exists
+    7. Removes duplicate matches, keeping only the match from the oldest scan report
+
+    Results are stored in a temporary table (temp_reuse_concepts_{table_id}) for further processing.
+
+    Required parameters (pulled from XCom):
+        - table_id (int): ID of the scan report table being processed
+        - parent_dataset_id (int): ID of the parent dataset to search within
+        - scan_report_id (int): ID of the current scan report
+        - has_data_dictionary (bool): If True, V-type concepts will be excluded from reuse
     """
     # Get validated parameters from XCom
     validated_params = pull_validated_params(kwargs, "validate_params_R_concepts")
@@ -202,11 +221,19 @@ def find_matching_value(**kwargs):
 
 def find_matching_field(**kwargs):
     """
-    Find matching fields for reusing concepts.
-    Validated param needed is:
-    - table_id (int): The ID of the scan report table to process
-    - parent_dataset_id (int): The ID of the parent dataset to process
-    - scan_report_id (int): The ID of the scan report to process
+    Finds matching fields in previously completed scan reports that can be reused for concept mapping.
+
+    This function identifies fields in the current table that match fields in other scan reports
+    which already have concepts assigned. It identifies matching fields by name and inserts them
+    into the temporary reuse concepts table for later processing.
+
+    The function prioritizes concepts from the oldest scan report when duplicates are found.
+
+    Required parameters (pulled from XCom):
+        - table_id (int): ID of the scan report table being processed
+        - parent_dataset_id (int): ID of the parent dataset to search within
+        - scan_report_id (int): ID of the current scan report
+        - has_data_dictionary (bool): If True, V-type concepts will be excluded from reuse
     """
     # Get validated parameters from XCom
     validated_params = pull_validated_params(kwargs, "validate_params_R_concepts")
