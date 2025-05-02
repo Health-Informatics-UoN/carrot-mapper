@@ -26,7 +26,6 @@ class ValidatedParams(TypedDict):
     date_event_field: int
     field_vocab_pairs: List[FieldVocabPair]
     parent_dataset_id: Optional[int]
-    has_data_dictionary: Optional[bool]
 
 
 class StageStatusType(Enum):
@@ -193,31 +192,54 @@ def validate_params_R_concepts(**context):
     )
 
 
+def validate_params(**context):
+    """
+    Unified parameter validation for DAG tasks.
+    Validates all required parameters and returns a dictionary of validated values.
+
+    Empty field_vocab_pairs is allowed but will generate a warning.
+    """
+    conf = context["dag_run"].conf
+    errors = []
+    validated_params = {}
+
+    # Validate and convert integer parameters
+    int_params = [
+        "scan_report_id",
+        "table_id",
+        "person_id_field",
+        "date_event_field",
+        "parent_dataset_id",
+    ]
+    for param in int_params:
+        value = conf.get(param)
+        if value is None:
+            errors.append(f"Missing required parameter: {param}")
+            continue
+        try:
+            validated_params[param] = int(value)
+        except (ValueError, TypeError):
+            errors.append(f"Invalid {param}: {value}. Must be an integer.")
+
+    # Validate field_vocab_pairs
+    field_vocab_pairs = conf.get("field_vocab_pairs")
+    if not field_vocab_pairs:
+        validated_params["field_vocab_pairs"] = []
+    else:
+        validated_params["field_vocab_pairs"] = _process_field_vocab_pairs(
+            field_vocab_pairs
+        )
+
+    # Raise error if any validation failed
+    if errors:
+        error_message = "Parameter validation failed: " + "; ".join(errors)
+        logging.error(error_message)
+        raise ValueError(error_message)
+
+    return validated_params
+
+
 def pull_validated_params(kwargs: dict, task_id: str) -> ValidatedParams:
     """Pull parameters from XCom for a given task"""
     task_instance = kwargs["ti"]
     return task_instance.xcom_pull(task_ids=task_id)
-
-
-def delete_mapping_rules(table_id: int, concept_type: str) -> None:
-    """
-    Delete all mapping rules for a given scan report table with the given creation type.
-    Validated param needed is:
-    - table_id (int): The ID of the scan report table to process
-    - concept_type (str): The creation type of the concepts to delete mapping rules for
-    """
-    try:
-        delete_query = f"""
-        DELETE FROM mapping_mappingrule
-        WHERE source_field_id IN (
-            SELECT id FROM mapping_scanreportfield
-            WHERE scan_report_table_id = {table_id}
-        ) AND concept_id IN (
-            SELECT id FROM mapping_scanreportconcept
-            WHERE creation_type = '{concept_type}'
-        );
-        """
-        pg_hook.run(delete_query)
-    except Exception as e:
-        logging.error(f"Error in delete_mapping_rules: {str(e)}")
-        raise ValueError(f"Error in delete_mapping_rules: {str(e)}")

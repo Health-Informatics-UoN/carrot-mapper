@@ -26,13 +26,14 @@ def find_standard_concepts(**kwargs) -> None:
         "field_vocab_pairs": [
             {
                 "sr_field_id": "437",
+                "field_data_type": "VARCHAR",
                 "vocabulary_id": "ICD10"
             }
         ]
     """
 
     # Get validated parameters from XCom
-    validated_params = pull_validated_params(kwargs, "validate_params_V_concepts")
+    validated_params = pull_validated_params(kwargs, "validate_params")
 
     scan_report_id = validated_params["scan_report_id"]
     table_id = validated_params["table_id"]
@@ -43,18 +44,7 @@ def find_standard_concepts(**kwargs) -> None:
     CREATE TABLE temp_standard_concepts_{table_id} (
         sr_value_id INTEGER,
         source_concept_id INTEGER,
-        standard_concept_id INTEGER,
-        sr_concept_id INTEGER,
-        dest_table_id INTEGER,
-        dest_person_field_id INTEGER,
-        dest_date_field_id INTEGER,
-        dest_start_date_field_id INTEGER,
-        dest_end_date_field_id INTEGER,
-        source_concept_field_id INTEGER,
-        source_value_field_id INTEGER,
-        dest_concept_field_id INTEGER,
-        value_as_number_field_id INTEGER,
-        value_as_string_field_id INTEGER
+        standard_concept_id INTEGER
     );
     """
     try:
@@ -130,7 +120,7 @@ def create_standard_concepts(**kwargs) -> None:
     - table_id (int): The ID of the scan report table to process
     """
     # Get validated parameters from XCom
-    validated_params = pull_validated_params(kwargs, "validate_params_V_concepts")
+    validated_params = pull_validated_params(kwargs, "validate_params")
 
     scan_report_id = validated_params["scan_report_id"]
     table_id = validated_params["table_id"]
@@ -143,6 +133,8 @@ def create_standard_concepts(**kwargs) -> None:
             updated_at,
             object_id,
             creation_type,
+            -- TODO: when we can distinguish between source and standard concepts, we can add value to this column
+            -- source_concept_id,
             concept_id,
             content_type_id
         )
@@ -151,6 +143,8 @@ def create_standard_concepts(**kwargs) -> None:
             NOW(),
             temp_std_concepts.sr_value_id,
             'V',           -- Creation type: Built from Vocab dict
+            -- TODO: when we can distinguish between source and standard concepts, we can add value to this column
+            -- temp_std_concepts.source_concept_id,
             temp_std_concepts.standard_concept_id,
             23             -- content_type_id for scanreportvalue
         FROM temp_standard_concepts_{table_id} AS temp_std_concepts
@@ -181,37 +175,3 @@ def create_standard_concepts(**kwargs) -> None:
             status=StageStatusType.FAILED,
             details=f"Error when creating standard concepts",
         )
-
-
-def find_sr_concept_id(**kwargs) -> None:
-    """
-    Update temp_standard_concepts table with sr_concept_id column
-    containing the IDs of standard concepts added to mapping_scanreportconcept.
-    This will help the next steps to be shorter.
-    Validated params needed are:
-    - table_id (int): The ID of the scan report table to process
-    """
-
-    # Get validated parameters from XCom
-    validated_params = pull_validated_params(kwargs, "validate_params_V_concepts")
-
-    table_id = validated_params["table_id"]
-
-    update_query = f"""        
-    -- Update sr_concept_id with the mapping_scanreportconcept ID
-    UPDATE temp_standard_concepts_{table_id} AS temp_std_concepts
-    SET sr_concept_id = sr_concept.id
-    FROM mapping_scanreportconcept AS sr_concept
-    WHERE sr_concept.object_id = temp_std_concepts.sr_value_id
-    AND sr_concept.concept_id = temp_std_concepts.standard_concept_id
-    AND sr_concept.content_type_id = 23;
-    """
-
-    try:
-        pg_hook.run(update_query)
-        logging.info(
-            f"Successfully added sr_concept_id to temp_standard_concepts_{table_id} table"
-        )
-    except Exception as e:
-        logging.error(f"Database error in find_sr_concept_id: {str(e)}")
-        raise

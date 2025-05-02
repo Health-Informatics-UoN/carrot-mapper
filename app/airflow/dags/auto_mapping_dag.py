@@ -1,0 +1,113 @@
+from datetime import datetime, timedelta
+from airflow import DAG
+from airflow.operators.empty import EmptyOperator
+from libs.reuse_concepts.find_concepts_to_reuse import (
+    find_matching_field,
+    find_matching_value,
+    find_object_id,
+    create_reusing_concepts,
+    delete_R_concepts,
+)
+
+from libs.vocab_concepts.find_standard_concepts import (
+    find_standard_concepts,
+    create_standard_concepts,
+)
+
+from libs.core_get_existing_concepts import (
+    delete_mapping_rules,
+    create_temp_existing_concepts_table,
+    find_existing_concepts,
+)
+from libs.core_prep_rules_creation import (
+    find_dest_table_and_person_field_id,
+    find_date_fields,
+    find_concept_fields,
+    find_additional_fields,
+)
+from libs.core_rules_creation import create_mapping_rules
+from libs.utils import create_task, validate_params
+
+"""
+This DAG automates the process of creating reusing concepts from other scan reports and then creating mapping rules accordingly.
+
+Workflow steps:
+1. Validate parameters
+2. Delete existing R concepts and mapping rules
+3. Create temporary table to store reusing concepts
+4. Find matching values and fields for reusing concepts
+5. Create reusing concepts in the database
+6. Find scan report concept IDs
+7. Find destination tables and person field IDs
+8. Identify date fields, concept fields, and additional fields
+9. Create mapping rules for each R concept
+"""
+#  TODO: for now the creation of mapping rules will use the source_concept_id of temp_reuse_concepts table.
+# When we can distinguish between standard and non-standard concepts, we will use them accordingly in the create_mapping_rules function of reuse.
+# TODO: for death table, only reuse when the source table is death table as well
+# TODO: compare the R and V logic related to prep_for_rules_creation
+# TODO: do we want to reuse R concepts?
+# NOTE: when the DB is huge, the performance of the DAG will be affected by refreshing the existing R concepts. --> consider to only refresh the R Mapping rules
+
+
+default_args = {
+    "owner": "airflow",
+    "depends_on_past": False,
+    "start_date": datetime(2025, 3, 25),
+    "email_on_failure": False,
+    "email_on_retry": False,
+    # TODO: modify these settings about retries
+    "retries": 0,
+}
+
+dag = DAG(
+    "auto_mapping",
+    default_args=default_args,
+    description="""Find and create V and R concepts. Then get all the existing concepts, 
+    and find the dest. table and OMOP field ids for each concept.
+    After that, create mapping rules for each concept.""",
+    tags=["V-concepts", "R-concepts", "mapping_rules_creation"],
+    schedule_interval=None,
+    catchup=False,
+)
+
+# TODO: clean up
+
+# Start the workflow
+start = EmptyOperator(task_id="start", dag=dag)
+
+tasks = [
+    create_task("validate_params", validate_params, dag),
+    create_task("delete_mapping_rules", delete_mapping_rules, dag),
+    create_task("find_standard_concepts", find_standard_concepts, dag),
+    create_task("create_standard_concepts", create_standard_concepts, dag),
+    create_task("delete_R_concepts", delete_R_concepts, dag),
+    create_task("find_matching_value", find_matching_value, dag),
+    create_task("find_matching_field", find_matching_field, dag),
+    create_task("find_object_id", find_object_id, dag),
+    create_task("create_reusing_concepts", create_reusing_concepts, dag),
+    create_task(
+        "create_temp_existing_concepts_table", create_temp_existing_concepts_table, dag
+    ),
+    create_task("find_existing_concepts", find_existing_concepts, dag),
+    create_task(
+        "find_dest_table_and_person_field_id",
+        find_dest_table_and_person_field_id,
+        dag,
+    ),
+    create_task("find_date_fields", find_date_fields, dag),
+    create_task("find_concept_fields", find_concept_fields, dag),
+    create_task("find_additional_fields", find_additional_fields, dag),
+    create_task("create_mapping_rules", create_mapping_rules, dag),
+]
+
+
+# End the workflow
+end = EmptyOperator(task_id="end", dag=dag)
+
+# Execute the tasks
+curr = start
+for task in tasks:
+    curr >> task
+    curr = task
+curr >> end

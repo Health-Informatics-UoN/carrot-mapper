@@ -3,7 +3,6 @@ from libs.utils import (
     JobStageType,
     StageStatusType,
     pull_validated_params,
-    delete_mapping_rules,
 )
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 import logging
@@ -12,19 +11,17 @@ import logging
 pg_hook = PostgresHook(postgres_conn_id="postgres_db_conn")
 
 
-def delete_R_concepts_and_mapping_rules(**kwargs) -> None:
+def delete_R_concepts(**kwargs) -> None:
     """
     To make sure the eligble concepts for reusing is up-to-date, we will refresh the R concepts
-    by deleting all mapping rules and reused concepts for a given scan report table with creation type 'R' (Reused).
+    by deleting all reused concepts for a given scan report table with creation type 'R' (Reused).
     Validated param needed is:
     - table_id (int): The ID of the scan report table to process
     """
     try:
         # Get validated parameters from XCom
-        validated_params = pull_validated_params(kwargs, "validate_params_R_concepts")
-
+        validated_params = pull_validated_params(kwargs, "validate_params")
         table_id = validated_params["table_id"]
-        delete_mapping_rules(table_id, "R")
 
         delete_reused_concepts = f"""
             DELETE FROM mapping_scanreportconcept
@@ -50,53 +47,6 @@ def delete_R_concepts_and_mapping_rules(**kwargs) -> None:
 
     except Exception as e:
         logging.error(f"Error in delete_mapping_rules: {str(e)}")
-        raise
-
-
-def create_temp_reusing_concepts_table(**kwargs):
-    """
-    Create the temporary table for reusing concepts.
-    This table will store the concepts that are eligible for reuse.
-    Validated param needed is:
-    - table_id (int): The ID of the scan report table to process
-    """
-    # Get validated parameters from XCom
-    validated_params = pull_validated_params(kwargs, "validate_params_R_concepts")
-    table_id = validated_params["table_id"]
-
-    # Create the temporary table once, outside the loop, with all the columns needed
-    create_table_query = f"""
-    DROP TABLE IF EXISTS temp_reuse_concepts_{table_id};
-    CREATE TABLE temp_reuse_concepts_{table_id} (
-        object_id INTEGER,
-        matching_name TEXT,
-        source_scanreport_id INTEGER,
-        content_type_id INTEGER,
-        source_concept_id INTEGER,
-        standard_concept_id INTEGER,
-        -- TODO: find a better name for this column. This is the field id for the reused concepts in the new SR 
-        target_source_field_id INTEGER,
-        target_source_field_data_type TEXT,
-        sr_concept_id INTEGER,
-        dest_table_id INTEGER,
-        dest_person_field_id INTEGER,
-        dest_date_field_id INTEGER,
-        dest_start_date_field_id INTEGER,
-        dest_end_date_field_id INTEGER,
-        source_concept_field_id INTEGER,
-        source_value_field_id INTEGER,
-        dest_concept_field_id INTEGER,
-        value_as_number_field_id INTEGER,
-        value_as_string_field_id INTEGER
-    );
-    """
-    try:
-        pg_hook.run(create_table_query)
-        logging.info(f"Successfully created temp_standard_concepts_{table_id} table")
-    except Exception as e:
-        logging.error(
-            f"Failed to create temp_standard_concepts_{table_id} table: {str(e)}"
-        )
         raise
 
 
@@ -128,7 +78,7 @@ def find_matching_value(**kwargs):
         - has_data_dictionary (bool): If True, V-type concepts will be excluded from reuse
     """
     # Get validated parameters from XCom
-    validated_params = pull_validated_params(kwargs, "validate_params_R_concepts")
+    validated_params = pull_validated_params(kwargs, "validate_params")
 
     parent_dataset_id = validated_params["parent_dataset_id"]
     table_id = validated_params["table_id"]
@@ -142,11 +92,33 @@ def find_matching_value(**kwargs):
         details=f"Finding eligible concepts for reuse at the value level",
     )
 
-    # When a data dictionary is provided, we won't reuse V concepts,
+    # Create temp table for reuse concepts
+    create_table_query = f"""
+    DROP TABLE IF EXISTS temp_reuse_concepts_{table_id};
+    CREATE TABLE temp_reuse_concepts_{table_id} (
+        object_id INTEGER,
+        matching_name TEXT,
+        -- TODO: we need to add source_scanreport_id for the model SCANREPORTCONCEPT as well for R concepts
+        source_scanreport_id INTEGER,
+        content_type_id INTEGER,
+        source_concept_id INTEGER,
+        standard_concept_id INTEGER
+    );
+    """
+    try:
+        pg_hook.run(create_table_query)
+        logging.info(f"Successfully created temp_standard_concepts_{table_id} table")
+    except Exception as e:
+        logging.error(
+            f"Failed to create temp_standard_concepts_{table_id} table: {str(e)}"
+        )
+        raise
+
+    # When a data dictionary (or field_vocab_pairs) for a table is provided, we won't reuse V concepts,
     # because that is the job of V concepts DAG
-    has_data_dictionary = validated_params["has_data_dictionary"]
+    field_vocab_pairs = validated_params["field_vocab_pairs"]
     exclude_v_concepts_condition = (
-        "AND eligible_sr_concept.creation_type != 'V'" if has_data_dictionary else ""
+        "AND eligible_sr_concept.creation_type != 'V'" if field_vocab_pairs else ""
     )
 
     find_reusing_value_query = f"""
@@ -236,7 +208,7 @@ def find_matching_field(**kwargs):
         - has_data_dictionary (bool): If True, V-type concepts will be excluded from reuse
     """
     # Get validated parameters from XCom
-    validated_params = pull_validated_params(kwargs, "validate_params_R_concepts")
+    validated_params = pull_validated_params(kwargs, "validate_params")
 
     parent_dataset_id = validated_params["parent_dataset_id"]
     table_id = validated_params["table_id"]
@@ -248,13 +220,6 @@ def find_matching_field(**kwargs):
         stage=JobStageType.REUSE_CONCEPTS,
         status=StageStatusType.IN_PROGRESS,
         details=f"Finding eligible concepts for reuse at the field level",
-    )
-
-    # When a data dictionary is provided, we won't reuse V concepts,
-    # because that is the job of V concepts DAG
-    has_data_dictionary = validated_params["has_data_dictionary"]
-    exclude_v_concepts_condition = (
-        "AND eligible_sr_concept.creation_type != 'V'" if has_data_dictionary else ""
     )
 
     find_reusing_field_query = f"""
@@ -286,7 +251,6 @@ def find_matching_field(**kwargs):
         ON eligible_sr_concept.object_id = eligible_sr_field.id
         AND eligible_sr_concept.content_type_id = 22     -- Field level concepts
         AND eligible_sr_concept.creation_type != 'R'     -- We don't want to reuse R concepts
-        {exclude_v_concepts_condition}
 
     WHERE dataset.id = {parent_dataset_id}        -- Other conditions
     AND dataset.hidden = FALSE
@@ -326,7 +290,7 @@ def find_object_id(**kwargs):
     - scan_report_id (int): The ID of the scan report to process
     """
     # Get validated parameters from XCom
-    validated_params = pull_validated_params(kwargs, "validate_params_R_concepts")
+    validated_params = pull_validated_params(kwargs, "validate_params")
 
     scan_report_id = validated_params["scan_report_id"]
     table_id = validated_params["table_id"]
@@ -374,7 +338,7 @@ def create_reusing_concepts(**kwargs):
     - scan_report_id (int): The ID of the scan report to process
     """
 
-    validated_params = pull_validated_params(kwargs, "validate_params_R_concepts")
+    validated_params = pull_validated_params(kwargs, "validate_params")
     table_id = validated_params["table_id"]
     scan_report_id = validated_params["scan_report_id"]
 
@@ -402,46 +366,8 @@ def create_reusing_concepts(**kwargs):
         FROM temp_reuse_concepts_{table_id} AS temp_reuse_concepts;
         """
 
-    # This is the source field for concepts-related mapping rules created in the next step
-    find_target_source_field_id_query = f"""
-        -- First set the target_source_field_id
-        UPDATE temp_reuse_concepts_{table_id} AS temp_table
-        SET target_source_field_id =
-            CASE
-                WHEN temp_table.content_type_id = 22 THEN temp_table.object_id
-                WHEN temp_table.content_type_id = 23 THEN (
-                    SELECT sr_value.scan_report_field_id
-                    FROM mapping_scanreportvalue AS sr_value
-                    WHERE sr_value.id = temp_table.object_id
-                )
-                ELSE NULL
-            END;
-
-        -- Then use the now-set target_source_field_id to set data type
-        UPDATE temp_reuse_concepts_{table_id} AS temp_table
-        SET target_source_field_data_type = 
-            CASE
-                WHEN sr_field.type_column = 'INT' OR
-                    sr_field.type_column = 'REAL' OR
-                    sr_field.type_column = 'FLOAT' OR
-                    sr_field.type_column = 'NUMERIC' OR
-                    sr_field.type_column = 'DECIMAL' OR
-                    sr_field.type_column = 'DOUBLE'
-                THEN 'numeric'
-                WHEN sr_field.type_column = 'VARCHAR' OR
-                    sr_field.type_column = 'NVARCHAR' OR
-                    sr_field.type_column = 'TEXT' OR
-                    sr_field.type_column = 'STRING' OR
-                    sr_field.type_column = 'CHAR'
-                THEN 'string'
-                ELSE sr_field.type_column
-            END
-        FROM mapping_scanreportfield AS sr_field
-        WHERE sr_field.id = temp_table.target_source_field_id
-        AND temp_table.target_source_field_id IS NOT NULL;
-        """
     try:
-        pg_hook.run(create_concept_query + find_target_source_field_id_query)
+        pg_hook.run(create_concept_query)
         logging.info("Successfully created standard concepts")
         update_job_status(
             scan_report=scan_report_id,
@@ -459,40 +385,4 @@ def create_reusing_concepts(**kwargs):
             status=StageStatusType.FAILED,
             details=f"Error when creating R (Reused) concepts",
         )
-        raise
-
-
-def find_sr_concept_id(**kwargs):
-    """
-    Update temp_standard_concepts table with sr_concept_id column
-    containing the IDs of standard concepts added to mapping_scanreportconcept.
-    This will help the next steps to be shorter.
-    Validated param needed is:
-    - table_id (int): The ID of the scan report table to process
-    """
-    try:
-        validated_params = pull_validated_params(kwargs, "validate_params_R_concepts")
-        table_id = validated_params["table_id"]
-
-        update_query = f"""        
-        -- Update sr_concept_id with the mapping_scanreportconcept ID
-        UPDATE temp_reuse_concepts_{table_id} temp_reuse_concepts
-        SET sr_concept_id = sr_concept.id
-        FROM mapping_scanreportconcept AS sr_concept
-        WHERE sr_concept.object_id = temp_reuse_concepts.object_id
-        -- TODO: add standard_concept_id here for the newly creted SR concepts
-        AND sr_concept.concept_id = temp_reuse_concepts.source_concept_id
-        AND sr_concept.content_type_id = temp_reuse_concepts.content_type_id;
-        """
-
-        try:
-            pg_hook.run(update_query)
-            logging.info(
-                f"Successfully added sr_concept_id to temp_reuse_concepts_{table_id} table"
-            )
-        except Exception as e:
-            logging.error(f"Database error in find_sr_concept_id: {str(e)}")
-            raise
-    except Exception as e:
-        logging.error(f"Error in find_sr_concept_id: {str(e)}")
         raise
