@@ -331,8 +331,7 @@ def find_object_id(**kwargs):
 
 def create_reusing_concepts(**kwargs):
     """
-    Create standard concepts for field values in the mapping_scanreportconcept table.
-    Only inserts concepts that don't already exist.
+    Create R concepts for a given scan report table.
     Validated param needed is:
     - table_id (int): The ID of the scan report table to process
     - scan_report_id (int): The ID of the scan report to process

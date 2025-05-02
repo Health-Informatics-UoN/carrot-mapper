@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.operators.empty import EmptyOperator
-from libs.reuse_concepts.find_concepts_to_reuse import (
+from libs.find_concepts_to_reuse import (
     find_matching_field,
     find_matching_value,
     find_object_id,
@@ -9,7 +9,7 @@ from libs.reuse_concepts.find_concepts_to_reuse import (
     delete_R_concepts,
 )
 
-from libs.vocab_concepts.find_standard_concepts import (
+from libs.find_standard_concepts import (
     find_standard_concepts,
     create_standard_concepts,
 )
@@ -48,7 +48,10 @@ Workflow steps:
 # TODO: compare the R and V logic related to prep_for_rules_creation
 # TODO: do we want to reuse R concepts?
 # NOTE: when the DB is huge, the performance of the DAG will be affected by refreshing the existing R concepts. --> consider to only refresh the R Mapping rules
-
+# TODO: many concepts have the domain "SPEC ANATOMIC SITE", which should be added to the table "SPECIMEN" in a different way (OMOP field id is different)
+# TODO: should we add `value` column in MAPPINGRULE model? in order to filter the mapping rule based on the SR value?
+# TODO: add the source_concept_id to the UI
+# TODO: improve naming of columns
 
 default_args = {
     "owner": "airflow",
