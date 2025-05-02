@@ -9,9 +9,7 @@ authors = [
 requires-python = "~=3.9"
 readme = "README.md"
 license = "MIT"
-dependencies = [
-    "drf-spectacular",
-]
+dependencies = []
 
 [dependency-groups]
 test = [
