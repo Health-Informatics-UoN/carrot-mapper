@@ -59,6 +59,7 @@ mapping rules connecting source data to OMOP-compliant destination tables.
 # TODO: should we add `value` column in MAPPINGRULE model? in order to filter the mapping rule based on the SR value?
 # TODO: add the source_concept_id to the UI
 # TODO: improve naming of columns
+#  TODO: after testing passed, move the delete existing table to the end of the DAG
 
 default_args = {
     "owner": "airflow",
