@@ -40,7 +40,6 @@ def find_standard_concepts(**kwargs) -> None:
     field_vocab_pairs = validated_params["field_vocab_pairs"]
     # Create the temporary table once, outside the loop, with all the columns needed
     create_table_query = f"""
-    DROP TABLE IF EXISTS temp_standard_concepts_{table_id};
     CREATE TABLE temp_standard_concepts_{table_id} (
         sr_value_id INTEGER,
         source_concept_id INTEGER,
@@ -155,6 +154,9 @@ def create_standard_concepts(**kwargs) -> None:
             AND concept_id = temp_std_concepts.standard_concept_id
             AND content_type_id = 23
         );
+
+        -- Drop the temp table holding the temp standard concepts data after creating the V concepts
+        DROP TABLE IF EXISTS temp_standard_concepts_{table_id};
         """
     try:
         pg_hook.run(create_concept_query)
