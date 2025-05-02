@@ -367,13 +367,13 @@ def create_reusing_concepts(**kwargs):
 
     try:
         pg_hook.run(create_concept_query)
-        logging.info("Successfully created standard concepts")
+        logging.info("Successfully created R (Reused) concepts")
         update_job_status(
             scan_report=scan_report_id,
             scan_report_table=table_id,
             stage=JobStageType.REUSE_CONCEPTS,
-            status=StageStatusType.IN_PROGRESS,
-            details="R (Reused) concepts created",
+            status=StageStatusType.COMPLETE,
+            details="R (Reused) concepts successfully created from matching fields and values",
         )
     except Exception as e:
         logging.error(f"Database error in create_standard_concepts: {str(e)}")

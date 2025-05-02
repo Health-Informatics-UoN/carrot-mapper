@@ -14,7 +14,7 @@ pg_hook = PostgresHook(postgres_conn_id="postgres_db_conn")
 
 def create_mapping_rules(**kwargs) -> None:
     """
-    Create mapping rules in the mapping_mappingrule table for each record in temp_reusing_concepts.
+    Create mapping rules in the mapping_mappingrule table for each record in temp_existing_concepts.
     Each record can generate multiple mapping rules based on the provided rules criteria.
 
     Validated params needed are:
@@ -35,9 +35,9 @@ def create_mapping_rules(**kwargs) -> None:
     update_job_status(
         scan_report=scan_report_id,
         scan_report_table=table_id,
-        stage=JobStageType.REUSE_CONCEPTS,
+        stage=JobStageType.GENERATE_RULES,
         status=StageStatusType.IN_PROGRESS,
-        details="Creating mapping rules for R concepts...",
+        details="Creating mapping rules for existing concepts...",
     )
 
     # Create comprehensive single mapping rule query to handle all rules at once
@@ -70,9 +70,9 @@ def create_mapping_rules(**kwargs) -> None:
         update_job_status(
             scan_report=scan_report_id,
             scan_report_table=table_id,
-            stage=JobStageType.REUSE_CONCEPTS,
+            stage=JobStageType.GENERATE_RULES,
             status=StageStatusType.COMPLETE,
-            details="Successfully created mapping rules for R concepts",
+            details="Successfully (re-)created mapping rules for all existing concepts",
         )
         return result
     except Exception as e:
@@ -80,8 +80,8 @@ def create_mapping_rules(**kwargs) -> None:
         update_job_status(
             scan_report=scan_report_id,
             scan_report_table=table_id,
-            stage=JobStageType.REUSE_CONCEPTS,
+            stage=JobStageType.GENERATE_RULES,
             status=StageStatusType.FAILED,
-            details=f"Error when creating mapping rules for R concepts",
+            details=f"Error when creating mapping rules for existing concepts",
         )
         raise AirflowException(f"Database error in create_mapping_rules: {str(e)}")

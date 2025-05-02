@@ -37,7 +37,6 @@ def delete_mapping_rules(**kwargs) -> None:
 def create_temp_existing_concepts_table(**kwargs) -> None:
     """
     Create the temporary table for all existing concepts.
-    This table will store the concepts that are eligible for reuse.
     Validated param needed is:
     - table_id (int): The ID of the scan report table to process
     """
@@ -96,7 +95,7 @@ def find_existing_concepts(**kwargs) -> None:
         scan_report_table=table_id,
         stage=JobStageType.GENERATE_RULES,
         status=StageStatusType.IN_PROGRESS,
-        details=f"Finding existing concepts",
+        details=f"Retrieving all existing concepts in the scan report table",
     )
 
     find_existing_concepts_query = f"""

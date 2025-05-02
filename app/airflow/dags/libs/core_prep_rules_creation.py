@@ -37,7 +37,7 @@ def find_dest_table_and_person_field_id(**kwargs) -> None:
     update_job_status(
         scan_report=scan_report_id,
         scan_report_table=table_id,
-        stage=JobStageType.REUSE_CONCEPTS,
+        stage=JobStageType.GENERATE_RULES,
         status=StageStatusType.IN_PROGRESS,
         details="Finding destination table and destination OMOP field IDs...",
     )
@@ -61,7 +61,7 @@ def find_dest_table_and_person_field_id(**kwargs) -> None:
             WHEN 'Specimen' THEN 'specimen'
             ELSE LOWER(target_concept.domain_id)
         END = omop_table.table
-    -- Because concepts for reusing may or maynot have the standard_concept_id. And we prefer to use the standard_concept_id, if it exists.
+    -- Because concepts may or may not have the standard_concept_id, in general. And we prefer to use the standard_concept_id, if it exists.
     WHERE target_concept.concept_id = COALESCE(temp_existing_concepts.standard_concept_id, temp_existing_concepts.source_concept_id);
     
     -- Update person field ID

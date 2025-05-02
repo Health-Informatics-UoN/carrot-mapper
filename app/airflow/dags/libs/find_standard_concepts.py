@@ -163,8 +163,8 @@ def create_standard_concepts(**kwargs) -> None:
             scan_report=scan_report_id,
             scan_report_table=table_id,
             stage=JobStageType.BUILD_CONCEPTS_FROM_DICT,
-            status=StageStatusType.IN_PROGRESS,
-            details="Standard concepts created",
+            status=StageStatusType.COMPLETE,
+            details="Standard concepts successfully created from data dictionary",
         )
     except Exception as e:
         logging.error(f"Database error in create_standard_concepts: {str(e)}")
