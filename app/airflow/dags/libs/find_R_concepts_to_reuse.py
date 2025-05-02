@@ -94,7 +94,6 @@ def find_matching_value(**kwargs):
 
     # Create temp table for reuse concepts
     create_table_query = f"""
-    DROP TABLE IF EXISTS temp_reuse_concepts_{table_id};
     CREATE TABLE temp_reuse_concepts_{table_id} (
         object_id INTEGER,
         matching_value_name TEXT,
@@ -371,6 +370,9 @@ def create_reusing_concepts(**kwargs):
             temp_reuse_concepts.source_concept_id,
             temp_reuse_concepts.content_type_id -- content_type_id for scanreportvalue
         FROM temp_reuse_concepts_{table_id} AS temp_reuse_concepts;
+
+        -- Drop the temp table holding the temp reusing concepts data after creating the R concepts
+        DROP TABLE IF EXISTS temp_reuse_concepts_{table_id};
         """
 
     try:
