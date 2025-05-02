@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.operators.empty import EmptyOperator
-from libs.find_concepts_to_reuse import (
+from libs.find_R_concepts_to_reuse import (
     find_matching_field,
     find_matching_value,
     find_object_id,
@@ -9,7 +9,7 @@ from libs.find_concepts_to_reuse import (
     delete_R_concepts,
 )
 
-from libs.find_standard_concepts import (
+from libs.find_standard_V_concepts import (
     find_standard_concepts,
     create_standard_concepts,
 )
