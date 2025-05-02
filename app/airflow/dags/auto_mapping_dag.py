@@ -29,18 +29,25 @@ from libs.core_rules_creation import create_mapping_rules
 from libs.utils import create_task, validate_params
 
 """
-This DAG automates the process of creating reusing concepts from other scan reports and then creating mapping rules accordingly.
+This DAG automates the process of creating and reusing concepts from scan reports and generating mapping rules.
 
 Workflow steps:
-1. Validate parameters
-2. Delete existing R concepts and mapping rules
-3. Create temporary table to store reusing concepts
-4. Find matching values and fields for reusing concepts
-5. Create reusing concepts in the database
-6. Find scan report concept IDs
-7. Find destination tables and person field IDs
-8. Identify date fields, concept fields, and additional fields
-9. Create mapping rules for each R concept
+1. Validate input parameters
+2. Delete existing mapping rules
+3. Find and create standard concepts (V-concepts)
+4. Delete existing reusable concepts (R-concepts)
+5. Find matching values, fields, and object IDs for reuse
+6. Create reusable concepts based on matches
+7. Create temporary tables of existing concepts
+8. Collect all existing concepts
+9. Identify destination tables and person field IDs
+10. Find date fields for each concept
+11. Find concept fields for mapping
+12. Find additional fields needed for mapping
+13. Create mapping rules based on all collected information
+
+This pipeline enables efficient concept reuse across scan reports and automates the creation of
+mapping rules connecting source data to OMOP-compliant destination tables.
 """
 #  TODO: for now the creation of mapping rules will use the source_concept_id of temp_reuse_concepts table.
 # When we can distinguish between standard and non-standard concepts, we will use them accordingly in the create_mapping_rules function of reuse.
