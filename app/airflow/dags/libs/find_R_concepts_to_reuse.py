@@ -99,6 +99,7 @@ def find_matching_value(**kwargs):
         object_id INTEGER,
         matching_value_name TEXT,
         matching_field_name TEXT,
+        matching_table_name TEXT,
         -- TODO: we need to add source_scanreport_id for the model SCANREPORTCONCEPT as well for R concepts
         source_scanreport_id INTEGER,
         content_type_id INTEGER,
@@ -226,23 +227,24 @@ def find_matching_field(**kwargs):
 
     find_reusing_field_query = f"""
     INSERT INTO temp_reuse_concepts_{table_id} (
-        matching_field_name, content_type_id, source_concept_id, source_scanreport_id
+        matching_field_name, matching_table_name, content_type_id, source_concept_id, source_scanreport_id
     )
     SELECT DISTINCT 
         sr_field.name, 
+        sr_table.name,
         22,
         eligible_sr_concept.concept_id,
-        -- TODO: add eligible_sr_concept.standard_concept_id here
         eligible_scan_report.id
     FROM mapping_scanreportfield AS sr_field
     JOIN mapping_scanreporttable AS sr_table 
         ON sr_field.scan_report_table_id = {table_id}
 
-    -- Join to eligible values in other eligible scan reports
+    -- Join to eligible fields in other eligible scan reports
     JOIN mapping_scanreportfield AS eligible_sr_field 
         ON eligible_sr_field.name = sr_field.name        -- Matching field name
     JOIN mapping_scanreporttable AS eligible_sr_table 
         ON eligible_sr_field.scan_report_table_id = eligible_sr_table.id
+        AND eligible_sr_table.name = sr_table.name       -- Matching table name
     JOIN mapping_scanreport AS eligible_scan_report 
         ON eligible_sr_table.scan_report_id = eligible_scan_report.id
     JOIN mapping_dataset AS dataset 
@@ -265,6 +267,7 @@ def find_matching_field(**kwargs):
     USING temp_reuse_concepts_{table_id} AS temp_table_duplicate
     WHERE
         temp_table.matching_field_name = temp_table_duplicate.matching_field_name
+        AND temp_table.matching_table_name = temp_table_duplicate.matching_table_name
         AND temp_table.source_concept_id = temp_table_duplicate.source_concept_id
         AND temp_table.content_type_id = 22
         AND temp_table.source_scanreport_id > temp_table_duplicate.source_scanreport_id;
@@ -307,6 +310,7 @@ def find_object_id(**kwargs):
                         JOIN mapping_scanreporttable AS sr_table ON sr_field.scan_report_table_id = sr_table.id
                         WHERE sr_table.scan_report_id = {scan_report_id} AND sr_table.id = {table_id}
                         AND sr_field.name = temp_table.matching_field_name
+                        AND sr_table.name = temp_table.matching_table_name
                         LIMIT 1)
                     WHEN temp_table.content_type_id = 23 THEN  -- For ScanReportValue
                         (SELECT sr_value.id 
