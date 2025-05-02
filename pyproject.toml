@@ -9,7 +9,6 @@ authors = [
 requires-python = "~=3.9"
 readme = "README.md"
 license = "MIT"
-dependencies = []
 
 [dependency-groups]
 test = [
