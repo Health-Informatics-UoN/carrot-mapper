@@ -94,9 +94,11 @@ def find_matching_value(**kwargs):
 
     # Create temp table for reuse concepts
     create_table_query = f"""
+    DROP TABLE IF EXISTS temp_reuse_concepts_{table_id};
     CREATE TABLE temp_reuse_concepts_{table_id} (
         object_id INTEGER,
-        matching_name TEXT,
+        matching_value_name TEXT,
+        matching_field_name TEXT,
         -- TODO: we need to add source_scanreport_id for the model SCANREPORTCONCEPT as well for R concepts
         source_scanreport_id INTEGER,
         content_type_id INTEGER,
@@ -122,10 +124,11 @@ def find_matching_value(**kwargs):
 
     find_reusing_value_query = f"""
     INSERT INTO temp_reuse_concepts_{table_id} (
-        matching_name, content_type_id, source_concept_id, source_scanreport_id
+        matching_value_name, matching_field_name, content_type_id, source_concept_id, source_scanreport_id
     )
     SELECT DISTINCT 
         sr_value.value, 
+        sr_field.name,
         23,
         eligible_sr_concept.concept_id,
         -- TODO: add eligible_sr_concept.standard_concept_id here
@@ -165,12 +168,12 @@ def find_matching_value(**kwargs):
     AND eligible_scan_report.hidden = FALSE
     AND map_status.value = 'COMPLETE';
 
-    -- After finding eligible matching name, we need to delete (matching_name, source_concept_id) duplicates, 
+    -- After finding eligible matching value, we need to delete (matching_value_name, source_concept_id) duplicates, 
     --only get the occurence with the lowest source_scanreport_id
     DELETE FROM temp_reuse_concepts_{table_id} AS temp_table
     USING temp_reuse_concepts_{table_id} AS temp_table_duplicate
     WHERE
-        temp_table.matching_name = temp_table_duplicate.matching_name
+        temp_table.matching_value_name = temp_table_duplicate.matching_value_name
         AND temp_table.source_concept_id = temp_table_duplicate.source_concept_id
         AND temp_table.content_type_id = 23
         AND temp_table.source_scanreport_id > temp_table_duplicate.source_scanreport_id;
@@ -223,7 +226,7 @@ def find_matching_field(**kwargs):
 
     find_reusing_field_query = f"""
     INSERT INTO temp_reuse_concepts_{table_id} (
-        matching_name, content_type_id, source_concept_id, source_scanreport_id
+        matching_field_name, content_type_id, source_concept_id, source_scanreport_id
     )
     SELECT DISTINCT 
         sr_field.name, 
@@ -256,12 +259,12 @@ def find_matching_field(**kwargs):
     AND eligible_scan_report.hidden = FALSE
     AND map_status.value = 'COMPLETE';
 
-    -- After finding eligible matching name, we need to delete (matching_name, source_concept_id) duplicates, 
+    -- After finding eligible matching field, we need to delete (matching_field_name, source_concept_id) duplicates, 
     --only get the occurence with the lowest source_scanreport_id
     DELETE FROM temp_reuse_concepts_{table_id} AS temp_table
     USING temp_reuse_concepts_{table_id} AS temp_table_duplicate
     WHERE
-        temp_table.matching_name = temp_table_duplicate.matching_name
+        temp_table.matching_field_name = temp_table_duplicate.matching_field_name
         AND temp_table.source_concept_id = temp_table_duplicate.source_concept_id
         AND temp_table.content_type_id = 22
         AND temp_table.source_scanreport_id > temp_table_duplicate.source_scanreport_id;
@@ -295,27 +298,29 @@ def find_object_id(**kwargs):
     table_id = validated_params["table_id"]
 
     find_object_id_query = f"""
-    UPDATE temp_reuse_concepts_{table_id} AS temp_table
-        SET object_id = 
-            CASE 
-                WHEN temp_table.content_type_id = 22 THEN  -- For ScanReportField
-                    (SELECT sr_field.id 
-                    FROM mapping_scanreportfield AS sr_field 
-                    JOIN mapping_scanreporttable AS sr_table ON sr_field.scan_report_table_id = sr_table.id
-                    WHERE sr_table.scan_report_id = {scan_report_id} AND sr_table.id = {table_id}
-                    AND sr_field.name = temp_table.matching_name
-                    LIMIT 1)
-                WHEN temp_table.content_type_id = 23 THEN  -- For ScanReportValue
-                    (SELECT sr_value.id 
-                    FROM mapping_scanreportvalue AS sr_value
-                    JOIN mapping_scanreportfield AS sr_field ON sr_value.scan_report_field_id = sr_field.id
-                    JOIN mapping_scanreporttable AS sr_table ON sr_field.scan_report_table_id = sr_table.id
-                    WHERE sr_table.scan_report_id = {scan_report_id} AND sr_table.id = {table_id}
-                    AND sr_value.value = temp_table.matching_name
-                    LIMIT 1)
-                ELSE NULL
-            END
-        WHERE temp_table.matching_name IS NOT NULL;
+        UPDATE temp_reuse_concepts_{table_id} AS temp_table
+            SET object_id = 
+                CASE 
+                    WHEN temp_table.content_type_id = 22 THEN  -- For ScanReportField
+                        (SELECT sr_field.id 
+                        FROM mapping_scanreportfield AS sr_field 
+                        JOIN mapping_scanreporttable AS sr_table ON sr_field.scan_report_table_id = sr_table.id
+                        WHERE sr_table.scan_report_id = {scan_report_id} AND sr_table.id = {table_id}
+                        AND sr_field.name = temp_table.matching_field_name
+                        LIMIT 1)
+                    WHEN temp_table.content_type_id = 23 THEN  -- For ScanReportValue
+                        (SELECT sr_value.id 
+                        FROM mapping_scanreportvalue AS sr_value
+                        JOIN mapping_scanreportfield AS sr_field ON sr_value.scan_report_field_id = sr_field.id
+                        JOIN mapping_scanreporttable AS sr_table ON sr_field.scan_report_table_id = sr_table.id
+                        WHERE sr_table.scan_report_id = {scan_report_id} AND sr_table.id = {table_id}
+                        AND sr_value.value = temp_table.matching_value_name
+                        AND sr_field.name = temp_table.matching_field_name
+                        LIMIT 1)
+                    ELSE NULL
+                END
+            WHERE (temp_table.content_type_id = 22 AND temp_table.matching_field_name IS NOT NULL)
+            OR (temp_table.content_type_id = 23 AND temp_table.matching_value_name IS NOT NULL);
 
         DELETE FROM temp_reuse_concepts_{table_id}
         WHERE object_id IS NULL;
@@ -362,9 +367,6 @@ def create_reusing_concepts(**kwargs):
             temp_reuse_concepts.source_concept_id,
             temp_reuse_concepts.content_type_id -- content_type_id for scanreportvalue
         FROM temp_reuse_concepts_{table_id} AS temp_reuse_concepts;
-
-        -- Drop the temp table holding the temp reusing concepts data after creating the R concepts
-        DROP TABLE IF EXISTS temp_reuse_concepts_{table_id};
         """
 
     try:
