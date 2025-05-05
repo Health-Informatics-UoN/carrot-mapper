@@ -48,9 +48,18 @@ $AIRFLOW_EXEC db check || { echo "Database check failed"; exit 1; }
 # Initialize/upgrade the database
 $AIRFLOW_EXEC db migrate || { echo "Database migrate failed"; exit 1; }
 
-# Set default values for environment variables if not provided
-AIRFLOW_ADMIN_USERNAME=${AIRFLOW_ADMIN_USERNAME:-admin}
-AIRFLOW_ADMIN_PASSWORD=${AIRFLOW_ADMIN_PASSWORD:-admin}
+# Check if required admin credentials are provided
+if [ -z "$AIRFLOW_ADMIN_USERNAME" ]; then
+  echo "ERROR: AIRFLOW_ADMIN_USERNAME environment variable is required but not set"
+  exit 1
+fi
+
+if [ -z "$AIRFLOW_ADMIN_PASSWORD" ]; then
+  echo "ERROR: AIRFLOW_ADMIN_PASSWORD environment variable is required but not set"
+  exit 1
+fi
+
+# Set default values for optional environment variables
 AIRFLOW_ADMIN_FIRSTNAME=${AIRFLOW_ADMIN_FIRSTNAME:-Air}
 AIRFLOW_ADMIN_LASTNAME=${AIRFLOW_ADMIN_LASTNAME:-Flow}
 AIRFLOW_ADMIN_EMAIL=${AIRFLOW_ADMIN_EMAIL:-admin@example.com}
