@@ -42,23 +42,28 @@ if [ -z "$AIRFLOW_EXEC" ]; then
   exit 1
 fi
 
-
 # Wait for the database to be ready
 $AIRFLOW_EXEC db check || { echo "Database check failed"; exit 1; }
 
 # Initialize/upgrade the database
-$AIRFLOW_EXEC db init || { echo "Database init failed"; exit 1; }
 $AIRFLOW_EXEC db migrate || { echo "Database migrate failed"; exit 1; }
 
+# Set default values for environment variables if not provided
+AIRFLOW_ADMIN_USERNAME=${AIRFLOW_ADMIN_USERNAME:-admin}
+AIRFLOW_ADMIN_PASSWORD=${AIRFLOW_ADMIN_PASSWORD:-admin}
+AIRFLOW_ADMIN_FIRSTNAME=${AIRFLOW_ADMIN_FIRSTNAME:-Air}
+AIRFLOW_ADMIN_LASTNAME=${AIRFLOW_ADMIN_LASTNAME:-Flow}
+AIRFLOW_ADMIN_EMAIL=${AIRFLOW_ADMIN_EMAIL:-admin@example.com}
+AIRFLOW_ADMIN_ROLE=${AIRFLOW_ADMIN_ROLE:-Admin}
 
-# Create admin user
+# Create admin user with correct command syntax
 $AIRFLOW_EXEC users create \
-  --username admin \
-  --password admin \
-  --firstname Air \
-  --lastname Flow \
-  --role Admin \
-  --email admin@example.com
+  --username "$AIRFLOW_ADMIN_USERNAME" \
+  --password "$AIRFLOW_ADMIN_PASSWORD" \
+  --firstname "$AIRFLOW_ADMIN_FIRSTNAME" \
+  --lastname "$AIRFLOW_ADMIN_LASTNAME" \
+  --role "$AIRFLOW_ADMIN_ROLE" \
+  --email "$AIRFLOW_ADMIN_EMAIL"
 
 # Start the webserver
 $AIRFLOW_EXEC webserver
