@@ -94,7 +94,7 @@ MIDDLEWARE = [
     "whitenoise.middleware.WhiteNoiseMiddleware",
 ]
 
-CORS_ALLOWED_CREDENTIALS = os.getenv("CORS_ALLOW_CREDENTIALS", str(False)).lower() in (
+CORS_ALLOW_CREDENTIALS = os.getenv("CORS_ALLOW_CREDENTIALS", "False").lower() in (
     "true",
     "1",
 )
