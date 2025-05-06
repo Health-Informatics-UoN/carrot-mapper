@@ -168,13 +168,14 @@ def find_matching_value(**kwargs):
     AND eligible_scan_report.hidden = FALSE
     AND map_status.value = 'COMPLETE';
 
-    -- After finding eligible matching value, we need to delete (matching_value_name, source_concept_id) duplicates, 
+    -- After finding eligible matching value, we need to delete (matching_value_name, standard_concept_id (future) , source_concept_id) duplicates, 
     --only get the occurence with the lowest source_scanreport_id
     DELETE FROM temp_reuse_concepts_{table_id} AS temp_table
     USING temp_reuse_concepts_{table_id} AS temp_table_duplicate
     WHERE
         temp_table.matching_value_name = temp_table_duplicate.matching_value_name
         AND temp_table.source_concept_id = temp_table_duplicate.source_concept_id
+        -- TODO: add standard_concept_id matching check (future) here
         AND temp_table.content_type_id = 23
         AND temp_table.source_scanreport_id > temp_table_duplicate.source_scanreport_id;
     """
@@ -260,7 +261,7 @@ def find_matching_field(**kwargs):
     AND eligible_scan_report.hidden = FALSE
     AND map_status.value = 'COMPLETE';
 
-    -- After finding eligible matching field, we need to delete (matching_field_name, source_concept_id) duplicates, 
+    -- After finding eligible matching field, we need to delete (matching_field_name, standard_concept_id (future) , source_concept_id) duplicates, 
     --only get the occurence with the lowest source_scanreport_id
     DELETE FROM temp_reuse_concepts_{table_id} AS temp_table
     USING temp_reuse_concepts_{table_id} AS temp_table_duplicate
@@ -268,6 +269,7 @@ def find_matching_field(**kwargs):
         temp_table.matching_field_name = temp_table_duplicate.matching_field_name
         AND temp_table.matching_table_name = temp_table_duplicate.matching_table_name
         AND temp_table.source_concept_id = temp_table_duplicate.source_concept_id
+        -- TODO: add standard_concept_id matching check (future) here
         AND temp_table.content_type_id = 22
         AND temp_table.source_scanreport_id > temp_table_duplicate.source_scanreport_id;
     """
