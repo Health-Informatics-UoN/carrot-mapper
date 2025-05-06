@@ -78,7 +78,7 @@ class FunctionService:
             }
             base_url = settings.WORKERS_URL
             trigger = f"/api/orchestrators/{settings.WORKERS_RULES_NAME}?code={settings.WORKERS_RULES_KEY}"
-
+            # TODO: make the method to add_message here to solve the issue #996
             try:
                 response = requests.post(urljoin(base_url, trigger), json=msg)
                 response.raise_for_status()
@@ -98,10 +98,7 @@ class FunctionService:
                 "trigger_reuse_concepts": trigger_reuse_concepts,
             }
 
-            try:
-                self._trigger_airflow_dag(settings.AIRFLOW_AUTO_MAPPING_DAG_ID, payload)
-            except requests.exceptions.HTTPError:
-                pass
+            self._trigger_airflow_dag(settings.AIRFLOW_AUTO_MAPPING_DAG_ID, payload)
 
     def trigger_scan_report_processing(self, message_body: Dict[str, Any]):
         """
@@ -113,12 +110,9 @@ class FunctionService:
             add_message(settings.WORKERS_UPLOAD_NAME, message_body)
 
         elif self._function_type == FUNCTION_TYPE.AIRFLOW:
-            try:
-                self._trigger_airflow_dag(
-                    settings.AIRFLOW_SCAN_REPORT_PROCESSING_DAG_ID, message_body
-                )
-            except requests.exceptions.HTTPError:
-                pass
+            self._trigger_airflow_dag(
+                settings.AIRFLOW_SCAN_REPORT_PROCESSING_DAG_ID, message_body
+            )
 
     def trigger_rules_export(self, message_body: Dict[str, Any]):
         """
@@ -130,9 +124,6 @@ class FunctionService:
             add_message(settings.WORKERS_RULES_EXPORT_NAME, message_body)
 
         elif self._function_type == FUNCTION_TYPE.AIRFLOW:
-            try:
-                self._trigger_airflow_dag(
-                    settings.AIRFLOW_RULES_EXPORT_DAG_ID, message_body
-                )
-            except requests.exceptions.HTTPError:
-                pass
+            self._trigger_airflow_dag(
+                settings.AIRFLOW_RULES_EXPORT_DAG_ID, message_body
+            )
