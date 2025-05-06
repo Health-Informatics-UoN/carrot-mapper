@@ -28,6 +28,7 @@ class FunctionService:
         Service for triggering functions.
         """
         self._function_type = settings.FUNCTION_TYPE
+        self._airflow_base_url = settings.AIRFLOW_URL
 
     def trigger_auto_mapping(
         self,
@@ -61,11 +62,11 @@ class FunctionService:
                 logging.error(f"HTTP Trigger failed: {e}")
 
         elif self._function_type == FUNCTION_TYPE.AIRFLOW:
-            base_url = f"{settings.AIRFLOW_URL}"
-            # Send to Airflow workflow
+            # choose the correct trigger for the auto mapping workflow
             auto_mapping_trigger = (
-                f"/api/v1/dags/{settings.AIRFLOW_AUTO_MAPPING_DAG_ID}/dagRuns"
+                f"dags/{settings.AIRFLOW_AUTO_MAPPING_DAG_ID}/dagRuns"
             )
+            # form the body for POST request
             body = {
                 "conf": {
                     "parent_dataset_id": scan_report.parent_dataset.pk,
@@ -82,7 +83,7 @@ class FunctionService:
             try:
                 # Then send the request to workers, in case there is error, the Job record was created already
                 response = requests.post(
-                    urljoin(base_url, auto_mapping_trigger),
+                    urljoin(self._airflow_base_url, auto_mapping_trigger),
                     json=body,
                     auth=HTTPBasicAuth(
                         settings.AIRFLOW_ADMIN_USERNAME, settings.AIRFLOW_ADMIN_PASSWORD
