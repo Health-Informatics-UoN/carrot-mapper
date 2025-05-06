@@ -107,14 +107,14 @@ urlpatterns = [
         views.ConceptFilterViewSetV2.as_view(),
         name="v2conceptsfilter",
     ),
-    path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
+    path("v2/schema/", SpectacularAPIView.as_view(), name="schema"),
     path(
-        "api/schema/swagger-ui/",
+        "v2/schema/swagger-ui/",
         SpectacularSwaggerView.as_view(url_name="schema"),
         name="schema-swagger-ui",
     ),
     path(
-        "api/schema/redoc/",
+        "v2/schema/redoc/",
         SpectacularRedocView.as_view(url_name="schema"),
         name="schema-redoc",
     ),
