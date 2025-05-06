@@ -48,31 +48,46 @@ $AIRFLOW_EXEC db check || { echo "Database check failed"; exit 1; }
 # Initialize/upgrade the database
 $AIRFLOW_EXEC db migrate || { echo "Database migrate failed"; exit 1; }
 
-# Check if required admin credentials are provided
-if [ -z "$AIRFLOW_ADMIN_USERNAME" ]; then
-  echo "ERROR: AIRFLOW_ADMIN_USERNAME environment variable is required but not set"
-  exit 1
+# Check if there are any users with Admin role
+echo "Checking for existing admin users..."
+ADMIN_USERS=$($AIRFLOW_EXEC users list | grep -i "Admin" | wc -l)
+
+if [ "$ADMIN_USERS" -gt 0 ]; then
+  echo "Admin user(s) already exist, skipping user creation"
+else
+  echo "No admin users found, creating admin user..."
+  
+  # Check if required admin credentials are provided
+  if [ -z "$AIRFLOW_ADMIN_USERNAME" ]; then
+    echo "ERROR: AIRFLOW_ADMIN_USERNAME environment variable is required but not set"
+    exit 1
+  fi
+
+  if [ -z "$AIRFLOW_ADMIN_PASSWORD" ]; then
+    echo "ERROR: AIRFLOW_ADMIN_PASSWORD environment variable is required but not set"
+    exit 1
+  fi
+
+  # Set default values for optional environment variables
+  AIRFLOW_ADMIN_FIRSTNAME=${AIRFLOW_ADMIN_FIRSTNAME:-Air}
+  AIRFLOW_ADMIN_LASTNAME=${AIRFLOW_ADMIN_LASTNAME:-Flow}
+  AIRFLOW_ADMIN_EMAIL=${AIRFLOW_ADMIN_EMAIL:-admin@example.com}
+  AIRFLOW_ADMIN_ROLE=${AIRFLOW_ADMIN_ROLE:-Admin}
+
+  # Create admin user with correct command syntax
+  $AIRFLOW_EXEC users create \
+    --username "$AIRFLOW_ADMIN_USERNAME" \
+    --password "$AIRFLOW_ADMIN_PASSWORD" \
+    --firstname "$AIRFLOW_ADMIN_FIRSTNAME" \
+    --lastname "$AIRFLOW_ADMIN_LASTNAME" \
+    --role "$AIRFLOW_ADMIN_ROLE" \
+    --email "$AIRFLOW_ADMIN_EMAIL" || {
+      echo "Failed to create admin user"
+      exit 1
+    }
+  
+  echo "Admin user created successfully"
 fi
-
-if [ -z "$AIRFLOW_ADMIN_PASSWORD" ]; then
-  echo "ERROR: AIRFLOW_ADMIN_PASSWORD environment variable is required but not set"
-  exit 1
-fi
-
-# Set default values for optional environment variables
-AIRFLOW_ADMIN_FIRSTNAME=${AIRFLOW_ADMIN_FIRSTNAME:-Air}
-AIRFLOW_ADMIN_LASTNAME=${AIRFLOW_ADMIN_LASTNAME:-Flow}
-AIRFLOW_ADMIN_EMAIL=${AIRFLOW_ADMIN_EMAIL:-admin@example.com}
-AIRFLOW_ADMIN_ROLE=${AIRFLOW_ADMIN_ROLE:-Admin}
-
-# Create admin user with correct command syntax
-$AIRFLOW_EXEC users create \
-  --username "$AIRFLOW_ADMIN_USERNAME" \
-  --password "$AIRFLOW_ADMIN_PASSWORD" \
-  --firstname "$AIRFLOW_ADMIN_FIRSTNAME" \
-  --lastname "$AIRFLOW_ADMIN_LASTNAME" \
-  --role "$AIRFLOW_ADMIN_ROLE" \
-  --email "$AIRFLOW_ADMIN_EMAIL"
 
 # Start the webserver
 $AIRFLOW_EXEC webserver

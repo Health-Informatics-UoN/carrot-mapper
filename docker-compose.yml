@@ -184,10 +184,7 @@ services:
       # Admin user configuration
       AIRFLOW_ADMIN_USERNAME: admin
       AIRFLOW_ADMIN_PASSWORD: admin
-      AIRFLOW_ADMIN_FIRSTNAME: Air
-      AIRFLOW_ADMIN_LASTNAME: Flow
-      AIRFLOW_ADMIN_EMAIL: admin@example.com
-      AIRFLOW_ADMIN_ROLE: Admin
+      # TODO: add optional admin user configuration in the docs
       # TODO: enable CORS on production
     volumes:
       - ./app/airflow/dags:/opt/airflow/dags
