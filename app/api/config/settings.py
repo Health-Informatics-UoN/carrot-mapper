@@ -202,6 +202,7 @@ SPECTACULAR_SETTINGS = {
     "DESCRIPTION": "API documentation for Carrot Mapper. All APIs are read-only.",
     "VERSION": "1.0.0",
     "SERVE_PERMISSIONS": ["rest_framework.permissions.AllowAny"],
+    "DISABLE_ERRORS_AND_WARNINGS": True,
 }
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.1/howto/static-files/
