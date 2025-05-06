@@ -172,31 +172,12 @@ class UserViewSet(GenericAPIView, ListModelMixin):
 
 class UserFilterViewSet(GenericAPIView, ListModelMixin):
     """
-    UserFilterViewSet is a viewset that provides a filtered list of
-    User objects.
+    A viewset for filtering and listing User objects.
 
-    This viewset supports filtering based on the `id` and `is_active`
-    fields of the User model. The `id` field can be filtered using the
-    "in" and "exact" lookup expressions, while the `is_active` field
-    supports the "exact" lookup expression.
-
-    Inherits:
-        GenericAPIView: Provides the base functionality for API views.
-        ListModelMixin: Adds list functionality to the view.
-
-    Attributes:
-        queryset (QuerySet): The base queryset for retrieving User objects.
-        serializer_class (Serializer): The serializer class used for
-            serializing User objects.
-        filter_backends (list): A list of filter backends to apply to
-            the queryset.
-        filterset_fields (dict): A dictionary defining the fields and
-            lookup expressions available for filtering.
+    Supports filtering by `id` (exact, in) and `is_active` (exact).
 
     Methods:
-        get(request, *args, **kwargs):
-            Handles GET requests and returns a filtered list of User
-            objects.
+        get(request, *args, **kwargs): Returns a filtered list of users.
     """
 
     queryset = User.objects.all()
