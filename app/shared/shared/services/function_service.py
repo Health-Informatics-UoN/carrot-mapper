@@ -17,15 +17,36 @@ class FUNCTION_TYPE(StrEnum):
 
 
 class FunctionService:
+    """
+    Service for triggering background processing functions in different environments.
+
+    This service abstracts the implementation details of triggering data processing
+    workflows in either Azure Functions or Apache Airflow environments. It provides
+    a consistent interface for initiating common operations like auto-mapping,
+    scan report processing, and rules export regardless of the underlying execution platform.
+
+    The service determines which platform to use based on the FUNCTION_TYPE setting
+    and handles the appropriate API calls or message queue operations accordingly.
+    """
+
     def __init__(self):
         """
-        Service for triggering functions.
+        Initialize the FunctionService with configuration from Django settings.
+
+        Sets up the service with the configured function type (Azure or Airflow)
+        and the base URL for Airflow API calls if applicable.
         """
         self._function_type = settings.FUNCTION_TYPE
         self._airflow_base_url = settings.AIRFLOW_URL
 
     def _validate_function_type(self):
-        """Validate that function type is supported."""
+        """
+        Validate that the configured function type is supported.
+
+        Raises:
+            ValueError: If the function type is not one of the supported types
+                       (currently Azure or Airflow).
+        """
         if self._function_type not in (FUNCTION_TYPE.AZURE, FUNCTION_TYPE.AIRFLOW):
             raise ValueError(
                 "Function type not supported. Only Airflow or Azure Function is supported."
@@ -34,7 +55,19 @@ class FunctionService:
     def _trigger_airflow_dag(
         self, dag_id: str, payload: Dict[str, Any]
     ) -> requests.Response:
-        """Common method to trigger Airflow DAGs."""
+        """
+        Common method to trigger Airflow DAGs through the Airflow REST API.
+
+        Args:
+            dag_id: The ID of the DAG to trigger in Airflow.
+            payload: The configuration data to pass to the DAG run.
+
+        Returns:
+            requests.Response: The HTTP response object from the Airflow API call.
+
+        Raises:
+            requests.exceptions.HTTPError: If the HTTP request to Airflow fails.
+        """
         endpoint = f"dags/{dag_id}/dagRuns"
         body = {"conf": payload}
 
@@ -62,7 +95,22 @@ class FunctionService:
         # TODO: add death_table config here
     ):
         """
-        Trigger the automapping process.
+        Trigger the automated mapping process for a scan report table.
+
+        This function initiates the process that automatically maps table fields
+        to standardized concepts based on the available metadata and configurations.
+
+        Args:
+            scan_report: The ScanReport object containing the table to be mapped.
+            table: The specific ScanReportTable to be mapped.
+            data_dictionary_name: Optional name of a data dictionary blob to use
+                                 for field vocabulary mappings.
+            trigger_reuse_concepts: Flag to enable/disable the reuse of previously
+                                   mapped concepts (default: True).
+
+        Raises:
+            ValueError: If the configured function type is not supported.
+            HTTPError: If the HTTP request to trigger the process fails.
         """
         self._validate_function_type()
 
@@ -102,7 +150,16 @@ class FunctionService:
 
     def trigger_scan_report_processing(self, message_body: Dict[str, Any]):
         """
-        Trigger the scan report processing process.
+        Trigger the processing of a scan report.
+
+        This function initiates the processing workflow for a scan report,
+        which typically involves parsing, validation, and initial data preparation.
+
+        Args:
+            message_body: A dictionary containing all necessary parameters for
+                         processing the scan report, such as file locations,
+                         processing options, and identifiers.
+
         """
         self._validate_function_type()
 
@@ -116,7 +173,17 @@ class FunctionService:
 
     def trigger_rules_export(self, message_body: Dict[str, Any]):
         """
-        Trigger the rules export process.
+        Trigger the export of mapping rules.
+
+        This function initiates the process to export mapping rules, which
+        typically involves generating standardized output files that define
+        how source data fields map to target concepts or structures.
+
+        Args:
+            message_body: A dictionary containing all necessary parameters for
+                         the export process, such as identifiers for the rules
+                         to export and output format specifications.
+
         """
         self._validate_function_type()
 
