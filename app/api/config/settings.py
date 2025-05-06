@@ -39,9 +39,11 @@ SECRET_KEY = os.environ.get("SECRET_KEY")
 DEBUG = os.getenv("DEBUG", "False") in ["True", 1]
 
 # Here we need to manipulate a string containing a Python list into a list of strings
-ALLOWED_HOSTS = [
-    x.strip()[1:-1] for x in os.environ.get("ALLOWED_HOSTS")[1:-1].split(",")
-]
+ALLOWED_HOSTS = []
+allowed_hosts = os.environ.get("ALLOWED_HOSTS")
+if allowed_hosts:
+    ALLOWED_HOSTS = [x.strip()[1:-1] for x in allowed_hosts[1:-1].split(",")]
+
 # We need this for Azure App Service
 if not DEBUG:
     SECURE_SSL_REDIRECT = True
