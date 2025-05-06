@@ -81,6 +81,8 @@ services:
       # TODO: update to API v2 when updating Airflow to 3.0.0
       - AIRFLOW_URL=http://airflow-webserver:8081/api/v1/
       - AIRFLOW_AUTO_MAPPING_DAG_ID=auto_mapping
+      - AIRFLOW_SCAN_REPORT_PROCESSING_DAG_ID=scan_report_processing
+      - AIRFLOW_RULES_EXPORT_DAG_ID=rules_export
       - AIRFLOW_ADMIN_USERNAME=admin
       - AIRFLOW_ADMIN_PASSWORD=admin
     volumes:

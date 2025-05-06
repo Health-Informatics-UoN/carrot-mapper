@@ -13,11 +13,13 @@ from shared.jobs.models import Job, JobStage, StageStatus
 from shared.mapping.models import ScanReport
 from shared.services.azurequeue import add_message
 from shared.services.storage_service import StorageService
+from shared.services.function_service import FunctionService
 
 from .models import FileDownload
 from .serializers import FileDownloadSerializer
 
 storage_service = StorageService()
+function_service = FunctionService()
 
 
 class FileDownloadView(GenericAPIView, ListModelMixin, RetrieveModelMixin):
@@ -64,7 +66,7 @@ class FileDownloadView(GenericAPIView, ListModelMixin, RetrieveModelMixin):
                 "file_type": file_type,
             }
 
-            add_message(settings.WORKERS_RULES_EXPORT_NAME, msg)
+            function_service.trigger_rules_export(msg)
             # Create job record for downloading file
             Job.objects.create(
                 scan_report=ScanReport.objects.get(id=scan_report_id),

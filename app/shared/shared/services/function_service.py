@@ -1,6 +1,5 @@
 from requests.auth import HTTPBasicAuth
 import logging
-import os
 from urllib.parse import urljoin
 import requests
 from enum import StrEnum
@@ -12,6 +11,8 @@ from shared.services.rules import (
     delete_mapping_rules,
 )
 from django.conf import settings
+from typing import Dict, Any
+from shared.services.azurequeue import add_message
 
 
 class FUNCTION_TYPE(StrEnum):
@@ -84,6 +85,76 @@ class FunctionService:
                 # Then send the request to workers, in case there is error, the Job record was created already
                 response = requests.post(
                     urljoin(self._airflow_base_url, auto_mapping_trigger),
+                    json=body,
+                    auth=HTTPBasicAuth(
+                        settings.AIRFLOW_ADMIN_USERNAME, settings.AIRFLOW_ADMIN_PASSWORD
+                    ),
+                )
+                response.raise_for_status()
+            except requests.exceptions.HTTPError as e:
+                logging.error(f"HTTP Trigger failed: {e}")
+
+        else:
+            raise ValueError(
+                "Function type not supported. Only Airflow or Azure Function is supported."
+            )
+
+    def trigger_scan_report_processing(
+        self,
+        message_body: Dict[str, Any],
+    ):
+        """
+        Trigger the scan report processing process.
+        """
+        if self._function_type == FUNCTION_TYPE.AZURE:
+            add_message(settings.WORKERS_UPLOAD_NAME, message_body)
+
+        elif self._function_type == FUNCTION_TYPE.AIRFLOW:
+            # choose the correct trigger for the auto mapping workflow
+            scan_report_processing_trigger = (
+                f"dags/{settings.AIRFLOW_SCAN_REPORT_PROCESSING_DAG_ID}/dagRuns"
+            )
+            # form the body for POST request
+            body = {"conf": message_body}
+            try:
+                # Then send the request to workers, in case there is error, the Job record was created already
+                response = requests.post(
+                    urljoin(self._airflow_base_url, scan_report_processing_trigger),
+                    json=body,
+                    auth=HTTPBasicAuth(
+                        settings.AIRFLOW_ADMIN_USERNAME, settings.AIRFLOW_ADMIN_PASSWORD
+                    ),
+                )
+                response.raise_for_status()
+            except requests.exceptions.HTTPError as e:
+                logging.error(f"HTTP Trigger failed: {e}")
+
+        else:
+            raise ValueError(
+                "Function type not supported. Only Airflow or Azure Function is supported."
+            )
+
+    def trigger_rules_export(
+        self,
+        message_body: Dict[str, Any],
+    ):
+        """
+        Trigger the rules export process.
+        """
+        if self._function_type == FUNCTION_TYPE.AZURE:
+            add_message(settings.WORKERS_RULES_EXPORT_NAME, message_body)
+
+        elif self._function_type == FUNCTION_TYPE.AIRFLOW:
+            # choose the correct trigger for the auto mapping workflow
+            rules_export_trigger = (
+                f"dags/{settings.AIRFLOW_RULES_EXPORT_DAG_ID}/dagRuns"
+            )
+            # form the body for POST request
+            body = {"conf": message_body}
+            try:
+                # Then send the request to workers, in case there is error, the Job record was created already
+                response = requests.post(
+                    urljoin(self._airflow_base_url, rules_export_trigger),
                     json=body,
                     auth=HTTPBasicAuth(
                         settings.AIRFLOW_ADMIN_USERNAME, settings.AIRFLOW_ADMIN_PASSWORD

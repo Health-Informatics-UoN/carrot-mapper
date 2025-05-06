@@ -1,11 +1,8 @@
 import datetime
-import logging
 import os
 import random
 import string
 from typing import Any, Optional
-from urllib.parse import urljoin
-
 from api.filters import ScanReportAccessFilter
 from api.mixins import ScanReportPermissionMixin
 from api.paginations import CustomPagination
@@ -24,7 +21,6 @@ from api.serializers import (
     ScanReportViewSerializerV2,
     UserSerializer,
 )
-from config import settings
 from datasets.serializers import DataPartnerSerializer
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
@@ -68,7 +64,6 @@ from shared.services.azurequeue import add_message
 from shared.services.rules import (
     _find_destination_table,
     save_mapping_rules,
-    delete_mapping_rules,
 )
 from shared.services.rules_export import (
     get_mapping_rules_json,
@@ -79,6 +74,7 @@ from shared.services.storage_service import StorageService
 from shared.services.function_service import FunctionService
 
 storage_service = StorageService()
+function_service = FunctionService()
 
 
 class DataPartnerViewSet(GenericAPIView, ListModelMixin):
@@ -283,8 +279,8 @@ class ScanReportIndexV2(GenericAPIView, ListModelMixin, CreateModelMixin):
                 use_read_method=False,
             )
 
-        # send to the upload queue
-        add_message(os.environ.get("WORKERS_UPLOAD_NAME"), azure_dict)
+        # send to the workers service
+        function_service.trigger_scan_report_processing(azure_dict)
 
 
 class ScanReportDetailV2(
@@ -429,7 +425,7 @@ class ScanReportTableDetailV2(
                 scan_report_table=instance,
                 stage=JobStage.objects.get(value=stage),
             )
-        FunctionService().trigger_auto_mapping(
+        function_service.trigger_auto_mapping(
             scan_report=scan_report_instance,
             table=instance,
             data_dictionary_name=data_dictionary_name,
