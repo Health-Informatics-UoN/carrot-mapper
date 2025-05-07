@@ -48,7 +48,7 @@ def delete_R_concepts(**kwargs) -> None:
                 ))
             );
         """
-        pg_hook.run(delete_reused_concepts % {"table_id": table_id})
+        pg_hook.run(delete_reused_concepts, parameters={"table_id": table_id})
 
     except Exception as e:
         logging.error(f"Error in delete_mapping_rules: {str(e)}")
@@ -112,7 +112,7 @@ def find_matching_value(**kwargs):
     );
     """
     try:
-        pg_hook.run(create_table_query % {"table_id": table_id})
+        pg_hook.run(create_table_query, parameters={"table_id": table_id})
         logging.info(f"Successfully created temp_standard_concepts_{table_id} table")
     except Exception as e:
         logging.error(
@@ -128,6 +128,7 @@ def find_matching_value(**kwargs):
     )
 
     try:
+        # NOTE: parameterizing the query is not working for the exclude_v_concepts_condition, so we are using string interpolation instead
         pg_hook.run(
             find_reusing_value_query
             % {
@@ -182,11 +183,11 @@ def find_matching_field(**kwargs):
 
     try:
         pg_hook.run(
-            find_reusing_field_query
-            % {
+            find_reusing_field_query,
+            parameters={
                 "table_id": table_id,
                 "parent_dataset_id": parent_dataset_id,
-            }
+            },
         )
         logging.info(f"Successfully found reusing concepts at the field level")
     except Exception as e:
@@ -216,8 +217,8 @@ def find_object_id(**kwargs):
 
     try:
         pg_hook.run(
-            find_object_id_query
-            % {"table_id": table_id, "scan_report_id": scan_report_id}
+            find_object_id_query,
+            parameters={"table_id": table_id, "scan_report_id": scan_report_id},
         )
         logging.info(f"Successfully found object ids for reusing concepts")
     except Exception as e:
@@ -265,7 +266,7 @@ def create_reusing_concepts(**kwargs):
         """
 
     try:
-        pg_hook.run(create_concept_query % {"table_id": table_id})
+        pg_hook.run(create_concept_query, parameters={"table_id": table_id})
         logging.info("Successfully created R (Reused) concepts")
         update_job_status(
             scan_report=scan_report_id,
