@@ -65,26 +65,38 @@ def update_job_status(
 ) -> None:
     """Update the status of a job in the database"""
     # TODO: for upload SR, this fuction will update the SR record in mapping_scanreport, not the job record
-    update_query = f"""
+    status_value = status.name
+    stage_value = stage.name
+
+    update_query = """
         UPDATE jobs_job
         SET status_id = (
-            SELECT id FROM jobs_stagestatus WHERE value = '{status.name}'
+            SELECT id FROM jobs_stagestatus WHERE value = %(status_value)s
         ),
-        details = '{details}', 
+        details = %(details)s, 
         updated_at = NOW()
         WHERE id = (
             SELECT id FROM jobs_job
-            WHERE scan_report_id = {scan_report}
-            AND scan_report_table_id = {scan_report_table}
+            WHERE scan_report_id = %(scan_report)s
+            AND scan_report_table_id = %(scan_report_table)s
             AND stage_id IN (
-                SELECT id FROM jobs_jobstage WHERE value = '{stage.name}'
+                SELECT id FROM jobs_jobstage WHERE value = %(stage_value)s
             )
             ORDER BY updated_at DESC
             LIMIT 1
         )
     """
     try:
-        pg_hook.run(update_query)
+        pg_hook.run(
+            update_query,
+            parameters={
+                "scan_report": scan_report,
+                "scan_report_table": scan_report_table,
+                "status_value": status_value,
+                "details": details,
+                "stage_value": stage_value,
+            },
+        )
     except Exception as e:
         logging.error(f"Error in update_job_status: {str(e)}")
         raise ValueError(f"Error in update_job_status: {str(e)}")

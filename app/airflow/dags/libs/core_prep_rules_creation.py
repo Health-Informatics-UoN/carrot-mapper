@@ -48,7 +48,10 @@ def find_dest_table_and_person_field_id(**kwargs) -> None:
     )
 
     try:
-        pg_hook.run(find_dest_table_and_person_field_id_query % {"table_id": table_id})
+        pg_hook.run(
+            find_dest_table_and_person_field_id_query,
+            parameters={"table_id": table_id},
+        )
         logging.info("Successfully added destination table and person field IDs")
     except Exception as e:
         logging.error(
@@ -83,7 +86,7 @@ def find_date_fields(**kwargs) -> None:
     table_id = validated_params["table_id"]
 
     try:
-        pg_hook.run(find_dates_fields_query % {"table_id": table_id})
+        pg_hook.run(find_dates_fields_query, parameters={"table_id": table_id})
         logging.info("Successfully added date field IDs based on the date field mapper")
     except Exception as e:
         logging.error(f"Database error in find_date_fields: {str(e)}")
@@ -106,7 +109,7 @@ def find_concept_fields(**kwargs) -> None:
     table_id = validated_params["table_id"]
 
     try:
-        pg_hook.run(find_concept_fields_query % {"table_id": table_id})
+        pg_hook.run(find_concept_fields_query, parameters={"table_id": table_id})
         logging.info("Successfully added concept field IDs")
     except Exception as e:
         logging.error(f"Database error in find_concept_fields: {str(e)}")
@@ -142,7 +145,7 @@ def find_additional_fields(**kwargs) -> None:
     """
 
     try:
-        pg_hook.run(measurement_query % {"table_id": table_id})
+        pg_hook.run(measurement_query, parameters={"table_id": table_id})
         logging.info(
             "Successfully added value_as_number for Measurement domain concepts"
         )
@@ -167,7 +170,7 @@ def find_additional_fields(**kwargs) -> None:
     """
 
     try:
-        pg_hook.run(observation_number_query % {"table_id": table_id})
+        pg_hook.run(observation_number_query, parameters={"table_id": table_id})
         logging.info(
             "Successfully added value_as_number for Observation domain concepts"
         )
@@ -192,7 +195,7 @@ def find_additional_fields(**kwargs) -> None:
     """
 
     try:
-        pg_hook.run(observation_string_query % {"table_id": table_id})
+        pg_hook.run(observation_string_query, parameters={"table_id": table_id})
         logging.info(
             "Successfully added value_as_string for Observation domain concepts"
         )

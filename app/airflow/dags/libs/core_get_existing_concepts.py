@@ -50,7 +50,9 @@ def create_temp_existing_concepts_table(**kwargs) -> None:
     table_id = validated_params["table_id"]
 
     try:
-        pg_hook.run(create_existing_concepts_table_query % {"table_id": table_id})
+        pg_hook.run(
+            create_existing_concepts_table_query, parameters={"table_id": table_id}
+        )
         logging.info(f"Successfully created temp_existing_concepts_{table_id} table")
     except Exception as e:
         logging.error(

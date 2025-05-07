@@ -66,13 +66,13 @@ def create_mapping_rules(**kwargs) -> None:
 
     try:
         result = pg_hook.run(
-            mapping_rule_query
-            % {
+            mapping_rule_query,
+            parameters={
                 "table_id": table_id,
                 "scan_report_id": scan_report_id,
                 "date_field_id": date_field_id,
                 "person_id_field": person_id_field,
-            }
+            },
         )
         update_job_status(
             scan_report=scan_report_id,
