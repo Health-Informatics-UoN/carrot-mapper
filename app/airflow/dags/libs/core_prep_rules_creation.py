@@ -6,6 +6,11 @@ from libs.utils import (
 )
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 import logging
+from libs.queries import (
+    find_dest_table_and_person_field_id_query,
+    find_dates_fields_query,
+    find_concept_fields_query,
+)
 
 # PostgreSQL connection hook
 pg_hook = PostgresHook(postgres_conn_id="postgres_db_conn")
@@ -41,38 +46,9 @@ def find_dest_table_and_person_field_id(**kwargs) -> None:
         status=StageStatusType.IN_PROGRESS,
         details="Finding destination table and destination OMOP field IDs...",
     )
-    core_query = f"""
-    -- Update destination table ID
-    UPDATE temp_existing_concepts_{table_id} temp_existing_concepts
-    SET dest_table_id = omop_table.id
-    -- Target concept can be source or standard concept from the temp_existing_concepts table
-    FROM omop.concept AS target_concept
-    LEFT JOIN mapping_omoptable AS omop_table ON
-        CASE target_concept.domain_id
-            WHEN 'Race' THEN 'person'
-            WHEN 'Gender' THEN 'person'
-            WHEN 'Ethnicity' THEN 'person'
-            WHEN 'Observation' THEN 'observation'
-            WHEN 'Condition' THEN 'condition_occurrence'
-            WHEN 'Device' THEN 'device_exposure'
-            WHEN 'Measurement' THEN 'measurement'
-            WHEN 'Drug' THEN 'drug_exposure'
-            WHEN 'Procedure' THEN 'procedure_occurrence'
-            WHEN 'Specimen' THEN 'specimen'
-            ELSE LOWER(target_concept.domain_id)
-        END = omop_table.table
-    -- Because concepts may or may not have the standard_concept_id, in general. And we prefer to use the standard_concept_id, if it exists.
-    WHERE target_concept.concept_id = COALESCE(temp_existing_concepts.standard_concept_id, temp_existing_concepts.source_concept_id);
-    
-    -- Update person field ID
-    UPDATE temp_existing_concepts_{table_id} temp_existing_concepts
-    SET dest_person_field_id = omop_field.id
-    FROM mapping_omopfield omop_field
-    WHERE omop_field.table_id = temp_existing_concepts.dest_table_id
-    AND omop_field.field = 'person_id';
-    """
+
     try:
-        pg_hook.run(core_query)
+        pg_hook.run(find_dest_table_and_person_field_id_query % {"table_id": table_id})
         logging.info("Successfully added destination table and person field IDs")
     except Exception as e:
         logging.error(
@@ -104,58 +80,10 @@ def find_date_fields(**kwargs) -> None:
 
     # Get validated parameters from XCom
     validated_params = pull_validated_params(kwargs, "validate_params")
-
     table_id = validated_params["table_id"]
 
-    # Optimized SQL with better structure and reduced redundancy
-    dates_query = f"""
-    -- Single consolidated update using CASE expressions for better performance
-    UPDATE temp_existing_concepts_{table_id} temp_existing_concepts
-    SET 
-        dest_date_field_id = (
-            SELECT omop_field.id
-            FROM mapping_omopfield AS omop_field
-            JOIN mapping_omoptable AS omop_table ON omop_table.id = omop_field.table_id
-            WHERE omop_field.table_id = temp_existing_concepts.dest_table_id
-            AND (
-                (omop_table.table = 'person' AND omop_field.field = 'birth_datetime') OR
-                (omop_table.table = 'measurement' AND omop_field.field = 'measurement_datetime') OR
-                (omop_table.table = 'observation' AND omop_field.field = 'observation_datetime') OR
-                (omop_table.table = 'procedure_occurrence' AND omop_field.field = 'procedure_datetime') OR
-                (omop_table.table = 'specimen' AND omop_field.field = 'specimen_datetime')
-            )
-            LIMIT 1
-        ),
-        
-        dest_start_date_field_id = (
-            SELECT omop_field.id
-            FROM mapping_omopfield AS omop_field
-            JOIN mapping_omoptable AS omop_table ON omop_table.id = omop_field.table_id
-            WHERE omop_field.table_id = temp_existing_concepts.dest_table_id
-            AND (
-                (omop_table.table = 'condition_occurrence' AND omop_field.field = 'condition_start_datetime') OR
-                (omop_table.table = 'drug_exposure' AND omop_field.field = 'drug_exposure_start_datetime') OR
-                (omop_table.table = 'device_exposure' AND omop_field.field = 'device_exposure_start_datetime')
-            )
-            LIMIT 1
-        ),
-        
-        dest_end_date_field_id = (
-            SELECT omop_field.id
-            FROM mapping_omopfield AS omop_field
-            JOIN mapping_omoptable AS omop_table ON omop_table.id = omop_field.table_id
-            WHERE omop_field.table_id = temp_existing_concepts.dest_table_id
-            AND (
-                (omop_table.table = 'condition_occurrence' AND omop_field.field = 'condition_end_datetime') OR
-                (omop_table.table = 'drug_exposure' AND omop_field.field = 'drug_exposure_end_datetime') OR
-                (omop_table.table = 'device_exposure' AND omop_field.field = 'device_exposure_end_datetime')
-            )
-            LIMIT 1
-        );
-    """
-
     try:
-        pg_hook.run(dates_query)
+        pg_hook.run(find_dates_fields_query % {"table_id": table_id})
         logging.info("Successfully added date field IDs based on the date field mapper")
     except Exception as e:
         logging.error(f"Database error in find_date_fields: {str(e)}")
@@ -177,54 +105,8 @@ def find_concept_fields(**kwargs) -> None:
 
     table_id = validated_params["table_id"]
 
-    # Create a staging table with computed field values
-    stage_query = f"""
-    -- Create a staging table with the correct field IDs for each record
-    CREATE TABLE temp_concept_fields_staging_{table_id} AS
-    SELECT 
-        temp_existing_concepts.object_id,
-        target_concept.domain_id,
-        target_concept.concept_id AS concept_id,
-        -- Use domain-specific source_concept_field_id
-        (SELECT omop_field.id 
-        FROM mapping_omopfield AS omop_field 
-        WHERE omop_field.table_id = temp_existing_concepts.dest_table_id 
-        AND omop_field.field = LOWER(target_concept.domain_id) || '_source_concept_id'
-        LIMIT 1) AS source_concept_field_id,
-
-        -- Use domain-specific source_value_field_id
-        (SELECT omop_field.id 
-        FROM mapping_omopfield AS omop_field 
-        WHERE omop_field.table_id = temp_existing_concepts.dest_table_id 
-        AND omop_field.field = LOWER(target_concept.domain_id) || '_source_value'
-        LIMIT 1) AS source_value_field_id,
-
-        -- Use domain-specific dest_concept_field_id
-        (SELECT omop_field.id 
-        FROM mapping_omopfield AS omop_field 
-        WHERE omop_field.table_id = temp_existing_concepts.dest_table_id 
-        AND omop_field.field = LOWER(target_concept.domain_id) || '_concept_id'
-        LIMIT 1) AS dest_concept_field_id
-
-    FROM temp_existing_concepts_{table_id} temp_existing_concepts
-    JOIN omop.concept AS target_concept ON target_concept.concept_id = COALESCE(temp_existing_concepts.standard_concept_id, temp_existing_concepts.source_concept_id);
-    
-    -- Then update the main table from the staging table
-    UPDATE temp_existing_concepts_{table_id} temp_existing_concepts
-    SET 
-        omop_source_concept_field_id = temp_staging_table.source_concept_field_id,
-        omop_source_value_field_id = temp_staging_table.source_value_field_id,
-        dest_concept_field_id = temp_staging_table.dest_concept_field_id
-    FROM temp_concept_fields_staging_{table_id} temp_staging_table
-    WHERE temp_staging_table.object_id = temp_existing_concepts.object_id
-    AND temp_staging_table.concept_id = COALESCE(temp_existing_concepts.standard_concept_id, temp_existing_concepts.source_concept_id);
-    
-    -- Clean up
-    DROP TABLE IF EXISTS temp_concept_fields_staging_{table_id};
-    """
-
     try:
-        pg_hook.run(stage_query)
+        pg_hook.run(find_concept_fields_query % {"table_id": table_id})
         logging.info("Successfully added concept field IDs")
     except Exception as e:
         logging.error(f"Database error in find_concept_fields: {str(e)}")
@@ -245,9 +127,9 @@ def find_additional_fields(**kwargs) -> None:
     table_id = validated_params["table_id"]
 
     # Always add value_as_number to Measurement domain concepts, but ONLY if they're in the measurement table
-    measurement_query = f"""
+    measurement_query = """
     -- Update value_as_number_field_id for measurement domain concepts ONLY
-    UPDATE temp_existing_concepts_{table_id} temp_existing_concepts
+    UPDATE temp_existing_concepts_%(table_id)s temp_existing_concepts
     SET value_as_number_field_id = omop_field.id
     FROM mapping_omopfield omop_field, omop.concept target_concept, mapping_omoptable omop_table
     WHERE 
@@ -260,7 +142,7 @@ def find_additional_fields(**kwargs) -> None:
     """
 
     try:
-        pg_hook.run(measurement_query)
+        pg_hook.run(measurement_query % {"table_id": table_id})
         logging.info(
             "Successfully added value_as_number for Measurement domain concepts"
         )
@@ -269,9 +151,9 @@ def find_additional_fields(**kwargs) -> None:
         raise
 
     # Add value_as_number to Observation domain concepts with numeric data types
-    observation_number_query = f"""
+    observation_number_query = """
     -- Update value_as_number_field_id for Observation domain concepts with numeric data types
-    UPDATE temp_existing_concepts_{table_id} temp_existing_concepts
+    UPDATE temp_existing_concepts_%(table_id)s temp_existing_concepts
     SET value_as_number_field_id = omop_field.id
     FROM mapping_omopfield omop_field, omop.concept target_concept, mapping_omoptable omop_table
     WHERE 
@@ -285,7 +167,7 @@ def find_additional_fields(**kwargs) -> None:
     """
 
     try:
-        pg_hook.run(observation_number_query)
+        pg_hook.run(observation_number_query % {"table_id": table_id})
         logging.info(
             "Successfully added value_as_number for Observation domain concepts"
         )
@@ -294,9 +176,9 @@ def find_additional_fields(**kwargs) -> None:
         raise
 
     # Add value_as_string to Observation domain concepts with string data types
-    observation_string_query = f"""
+    observation_string_query = """
     -- Update value_as_string_field_id for Observation domain concepts with string data types
-    UPDATE temp_existing_concepts_{table_id} temp_existing_concepts
+    UPDATE temp_existing_concepts_%(table_id)s temp_existing_concepts
     SET value_as_string_field_id = omop_field.id
     FROM mapping_omopfield omop_field, omop.concept target_concept, mapping_omoptable omop_table
     WHERE 
@@ -310,7 +192,7 @@ def find_additional_fields(**kwargs) -> None:
     """
 
     try:
-        pg_hook.run(observation_string_query)
+        pg_hook.run(observation_string_query % {"table_id": table_id})
         logging.info(
             "Successfully added value_as_string for Observation domain concepts"
         )

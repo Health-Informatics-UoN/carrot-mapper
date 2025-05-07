@@ -41,19 +41,19 @@ def create_mapping_rules(**kwargs) -> None:
     )
 
     # Create comprehensive single mapping rule query to handle all rules at once
-    mapping_rule_query = f"""
+    mapping_rule_query = """
     INSERT INTO mapping_mappingrule (
         created_at, updated_at, omop_field_id, source_field_id, concept_id, scan_report_id, approved
     )
     SELECT 
-        NOW(), NOW(), field_id, source_id, sr_concept_id, {scan_report_id}, TRUE
-    FROM temp_existing_concepts_{table_id} AS temp_table
+        NOW(), NOW(), field_id, source_id, sr_concept_id, %(scan_report_id)s, TRUE
+    FROM temp_existing_concepts_%(table_id)s AS temp_table
     CROSS JOIN LATERAL (
         VALUES 
-            (dest_person_field_id, {person_id_field}),
-            (dest_date_field_id, {date_field_id}),
-            (dest_start_date_field_id, {date_field_id}),
-            (dest_end_date_field_id, {date_field_id}),
+            (dest_person_field_id, %(person_id_field)s),
+            (dest_date_field_id, %(date_field_id)s),
+            (dest_start_date_field_id, %(date_field_id)s),
+            (dest_end_date_field_id, %(date_field_id)s),
             (dest_concept_field_id, source_field_id),
             (omop_source_concept_field_id, source_field_id),
             (omop_source_value_field_id, source_field_id),
@@ -65,8 +65,15 @@ def create_mapping_rules(**kwargs) -> None:
     """
 
     try:
-        result = pg_hook.run(mapping_rule_query)
-        logging.info("Successfully created all mapping rules for each standard concept")
+        result = pg_hook.run(
+            mapping_rule_query
+            % {
+                "table_id": table_id,
+                "scan_report_id": scan_report_id,
+                "date_field_id": date_field_id,
+                "person_id_field": person_id_field,
+            }
+        )
         update_job_status(
             scan_report=scan_report_id,
             scan_report_table=table_id,
