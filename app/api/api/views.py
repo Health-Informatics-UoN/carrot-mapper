@@ -64,6 +64,9 @@ from shared.mapping.models import (
     ScanReportTable,
     ScanReportValue,
 )
+from drf_spectacular.utils import extend_schema
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiParameter
 from shared.mapping.permissions import get_user_permissions_on_scan_report
 from shared.services.azurequeue import add_message
 from shared.services.rules import (
@@ -210,6 +213,14 @@ class UserDetailView(APIView):
     """
 
     permission_classes = [IsAuthenticated]
+    @extend_schema(
+        request=OpenApiTypes.OBJECT,
+        responses={
+            200: OpenApiTypes.OBJECT,
+            401: OpenApiTypes.OBJECT,
+        },
+        description="Retrieve the details of the authenticated user.",
+    )
 
     def get(self, request, *args, **kwargs):
         serializer = UserSerializer(request.user)
@@ -266,6 +277,7 @@ class ScanReportIndexV2(GenericAPIView, ListModelMixin, CreateModelMixin):
     ]
     pagination_class = CustomPagination
     ordering = "-created_at"
+    @extend_schema(responses=ScanReportViewSerializerV2)
 
     def get(self, request, *args, **kwargs):
         return self.list(request, *args, **kwargs)
@@ -514,6 +526,7 @@ class ScanReportTableIndexV2(ScanReportPermissionMixin, GenericAPIView, ListMode
     ordering = "-created_at"
     serializer_class = ScanReportTableListSerializerV2
 
+    @extend_schema(responses=ScanReportTableListSerializerV2)
     def get(self, request, *args, **kwargs):
         return self.list(request, *args, **kwargs)
 
@@ -736,6 +749,7 @@ class ScanReportFieldIndexV2(ScanReportPermissionMixin, GenericAPIView, ListMode
     ordering_fields = ["name", "description_column", "type_column"]
     pagination_class = CustomPagination
 
+    @extend_schema(responses=ScanReportFieldListSerializerV2)
     def get(self, request, *args, **kwargs):
         self.table = get_object_or_404(ScanReportTable, pk=kwargs["table_pk"])
 
@@ -861,6 +875,7 @@ class ScanReportValueListV2(ScanReportPermissionMixin, GenericAPIView, ListModel
     pagination_class = CustomPagination
     serializer_class = ScanReportValueViewSerializerV2
 
+    @extend_schema(responses=ScanReportValueViewSerializerV2)
     def get(self, request, *args, **kwargs):
         self.field = get_object_or_404(ScanReportField, pk=kwargs["field_pk"])
 
@@ -1082,7 +1097,15 @@ class ScanReportConceptDetailV2(GenericAPIView, DestroyModelMixin):
     def delete(self, request, *args, **kwargs):
         return self.destroy(request, *args, **kwargs)
 
-
+@extend_schema(
+    request=OpenApiTypes.OBJECT,
+    responses={
+        200: OpenApiTypes.OBJECT,
+        400: OpenApiTypes.OBJECT,
+    },
+    description="API view for handling mapping rules.",
+    tags=["Mapping Rules"],
+)
 class MappingRulesList(APIView):
     """
     API View to handle operations related to mapping rules.
@@ -1125,7 +1148,16 @@ class MappingRulesList(APIView):
                   ordered by concept, OMOP table, OMOP field, source
                   table, and source field.
     """
-
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="get_svg",
+                type=OpenApiTypes.BOOL,
+                description="Set to true to get an SVG of the mapping rules DAG."
+            )
+        ],
+        responses={200: OpenApiTypes.OBJECT, 400: OpenApiTypes.OBJECT},
+    )
     def post(self, request, *args, **kwargs):
         try:
             body = request.data
@@ -1194,7 +1226,21 @@ class RulesListV2(ScanReportPermissionMixin, GenericAPIView, ListModelMixin):
     pagination_class = CustomPagination
     filter_backends = [DjangoFilterBackend]
     http_method_names = ["get"]
-
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="p",
+                type=OpenApiTypes.INT,
+                description="Page number for pagination.",
+            ),
+            OpenApiParameter(
+                name="page_size",
+                type=OpenApiTypes.INT,
+                description="Number of items per page.",
+            ),
+        ],
+        responses={200: OpenApiTypes.OBJECT},
+    )
     def get_queryset(self):
         _id = self.kwargs["pk"]
         queryset = self.queryset
@@ -1287,7 +1333,21 @@ class SummaryRulesListV2(RulesListV2):
             include additional details about related fields (e.g.,
             destination_table, source_field).
     """
-
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="p",
+                type=OpenApiTypes.INT,
+                description="Page number for pagination.",
+            ),
+            OpenApiParameter(
+                name="page_size",
+                type=OpenApiTypes.INT,
+                description="Number of items per page.",
+            ),
+        ],
+        responses={200: OpenApiTypes.OBJECT},
+    )
     def list(self, request, *args, **kwargs):
         # Get p and page_size from query_params
         p = self.request.query_params.get("p", 1)
@@ -1383,7 +1443,14 @@ class DownloadScanReportViewSet(viewsets.ViewSet):
             Raises:
                 ScanReport.DoesNotExist: If no scan report is found with the given primary key.
     """
-
+    @extend_schema(
+        request=OpenApiTypes.OBJECT,
+        responses={
+            200: OpenApiTypes.OBJECT,
+            404: OpenApiTypes.OBJECT,
+        },
+        description="Download a specific scan report.",
+    )
     def list(self, request, pk):
         # TODO: This should not be a list view...
         scan_report = ScanReport.objects.get(id=pk)
@@ -1419,7 +1486,14 @@ class ScanReportPermissionView(APIView):
         Response: A JSON response containing the user's permissions on
             the scan report, with an HTTP status code of 200 (OK).
     """
-
+    @extend_schema(
+        request=OpenApiTypes.OBJECT,
+        responses={
+            200: OpenApiTypes.OBJECT,
+            404: OpenApiTypes.OBJECT,
+        },
+        description="Retrieve user permissions on a specific scan report.",
+    )
     def get(self, request, pk):
         permissions = get_user_permissions_on_scan_report(request, pk)
 

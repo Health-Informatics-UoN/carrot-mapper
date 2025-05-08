@@ -12,6 +12,7 @@ from shared.files.paginations import CustomPagination
 from shared.jobs.models import Job, JobStage, StageStatus
 from shared.mapping.models import ScanReport
 from shared.services.azurequeue import add_message
+from drf_spectacular.utils import extend_schema
 from shared.services.storage_service import StorageService
 
 from .models import FileDownload
@@ -49,6 +50,7 @@ class FileDownloadView(GenericAPIView, ListModelMixin, RetrieveModelMixin):
     permission_classes = [IsAuthenticated]
     ordering = "-created_at"
 
+    @extend_schema(responses=FileDownloadSerializer)
     def get_queryset(self):
         scan_report_id = self.kwargs["scanreport_pk"]
         scan_report = get_object_or_404(ScanReport, pk=scan_report_id)

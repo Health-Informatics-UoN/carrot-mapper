@@ -24,6 +24,7 @@ from shared.mapping.models import (
     UploadStatus,
     MappingStatus,
 )
+from shared.users.serializers import UserSerializer
 from shared.mapping.permissions import has_editorship, is_admin, is_az_function_user
 from shared.services.rules_export import analyse_concepts
 from config.settings import DATA_UPLOAD_MAX_MEMORY_SIZE
@@ -47,23 +48,6 @@ class ConceptSerializerV2(serializers.ModelSerializer):
         model = Concept
         fields = ["concept_id", "concept_name", "concept_code"]
 
-
-class UserSerializer(serializers.ModelSerializer):
-    """
-    Serializer for the User model.
-
-    Serializes the id and username fields.
-
-    Args:
-        model (User): The model to be serialized.
-
-        fields (list): The fields to be included in
-        the serialized output.
-    """
-
-    class Meta:
-        model = User
-        fields = ("id", "username")
 
 
 class UploadStatusSerializer(serializers.ModelSerializer):

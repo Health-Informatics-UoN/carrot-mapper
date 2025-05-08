@@ -21,6 +21,8 @@ from rest_framework.mixins import (
 )
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from drf_spectacular.utils import extend_schema
+from drf_spectacular.types import OpenApiTypes
 from shared.mapping.models import Dataset, VisibilityChoices
 from shared.mapping.permissions import (
     CanAdmin,
@@ -279,7 +281,13 @@ class DatasetPermissionView(APIView):
             Handles GET requests to retrieve the user's permissions for
             the dataset identified by the primary key (pk).
     """
-
+    @extend_schema(
+        responses={
+            200: OpenApiTypes.OBJECT,
+            403: OpenApiTypes.OBJECT,
+        },
+        description="Get the permissions for a dataset.",
+    )
     def get(self, request, pk):
         permissions = get_user_permissions_on_dataset(request, pk)
 
