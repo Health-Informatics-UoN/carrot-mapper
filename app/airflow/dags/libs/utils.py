@@ -26,6 +26,7 @@ class ValidatedParams(TypedDict):
     date_event_field: int
     field_vocab_pairs: List[FieldVocabPair]
     parent_dataset_id: Optional[int]
+    trigger_reuse_concepts: bool
 
 
 class StageStatusType(Enum):
@@ -112,43 +113,78 @@ def create_task(task_id, python_callable, dag, provide_context=True):
     )
 
 
-def validate_params(**context):
+def _validate_dag_params(
+    int_params=None,
+    string_params=None,
+    bool_params=None,
+    has_field_vocab_pairs=False,
+    **context,
+):
     """
     Unified parameter validation for DAG tasks.
-    Validates all required parameters and returns a dictionary of validated values.
 
-    Empty field_vocab_pairs is allowed but will generate a warning.
+    Args:
+        int_params: List of integer parameter names to validate
+        string_params: List of string parameter names to validate
+        bool_params: List of boolean parameter names to validate
+        field_vocab_pairs: Whether to validate field_vocab_pairs parameter
+        context: Airflow context dictionary
+
+    Returns:
+        Dictionary of validated parameters
     """
     conf = context["dag_run"].conf
     errors = []
     validated_params = {}
 
     # Validate and convert integer parameters
-    int_params = [
-        "scan_report_id",
-        "table_id",
-        "person_id_field",
-        "date_event_field",
-        "parent_dataset_id",
-    ]
-    for param in int_params:
-        value = conf.get(param)
-        if value is None:
-            errors.append(f"Missing required parameter: {param}")
-            continue
-        try:
-            validated_params[param] = int(value)
-        except (ValueError, TypeError):
-            errors.append(f"Invalid {param}: {value}. Must be an integer.")
+    if int_params:
+        for param in int_params:
+            value = conf.get(param)
+            if value is None:
+                errors.append(f"Missing required parameter: {param}")
+                continue
+            try:
+                validated_params[param] = int(value)
+            except (ValueError, TypeError):
+                errors.append(f"Invalid {param}: {value}. Must be an integer.")
+
+    # Validate and convert string parameters
+    if string_params:
+        for param in string_params:
+            value = conf.get(param)
+            if value is None or value.strip() == "":
+                errors.append(f"Missing required parameter: {param}")
+                continue
+            validated_params[param] = value
+
+    # Validate boolean parameters
+    if bool_params:
+        for param in bool_params:
+            value = conf.get(param)
+            if value is None:
+                errors.append(f"Missing required parameter: {param}")
+            elif isinstance(value, str):
+                if value.lower() in ["true", "false"]:
+                    validated_params[param] = bool(value.lower())
+                else:
+                    errors.append(
+                        f"Invalid {param}: {value}. Must be a boolean (true/false)."
+                    )
+            elif isinstance(value, bool):
+                validated_params[param] = value
+            else:
+                errors.append(f"Invalid {param}: {value}. Must be a boolean.")
 
     # Validate field_vocab_pairs
-    field_vocab_pairs = conf.get("field_vocab_pairs")
-    if not field_vocab_pairs:
-        validated_params["field_vocab_pairs"] = []
-    else:
-        validated_params["field_vocab_pairs"] = _process_field_vocab_pairs(
-            field_vocab_pairs
-        )
+    if has_field_vocab_pairs:
+        field_vocab_pairs = conf.get("field_vocab_pairs")
+        if not field_vocab_pairs:
+            validated_params["field_vocab_pairs"] = []
+        else:
+            validated_params["field_vocab_pairs"] = _process_field_vocab_pairs(
+                field_vocab_pairs
+            )
 
     # Raise error if any validation failed
     if errors:
@@ -157,6 +193,34 @@ def validate_params(**context):
         raise ValueError(error_message)
 
     return validated_params
+
+
+# Define convenience functions for specific validation scenarios
+def validate_params_auto_mapping(**context):
+    """Validates parameters required for auto mapping DAG tasks."""
+    int_params = [
+        "scan_report_id",
+        "table_id",
+        "person_id_field",
+        "date_event_field",
+        "parent_dataset_id",
+    ]
+    bool_params = ["trigger_reuse_concepts"]
+    return _validate_dag_params(
+        int_params=int_params,
+        bool_params=bool_params,
+        has_field_vocab_pairs=True,
+        **context,
+    )
+
+
+def validate_params_SR_processing(**context):
+    """Validates parameters required for scan report processing DAG tasks."""
+    int_params = ["scan_report_id"]
+    string_params = ["scan_report_blob", "data_dictionary_blob"]
+    return _validate_dag_params(
+        int_params=int_params, string_params=string_params, **context
+    )
 
 
 def pull_validated_params(kwargs: dict, task_id: str) -> ValidatedParams:
