@@ -1,47 +1,30 @@
 # ----------------------------
 # Stage 1: Builder
 # ----------------------------
-FROM python:3.11-slim AS builder
-
-# --- Install OS packages & uv
-RUN apt-get update && \
-    apt-get install -y \
-        binutils \
-        gettext \
-        libpq-dev \
-        gcc \
-        graphviz && \
-    pip install --no-cache-dir uv 
-
-# --- Install rustup (needed for some cryptography packages)
-RUN curl -y --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+FROM ghcr.io/astral-sh/uv:python3.11-bookworm-slim AS builder
 
 # --- Create 'django' user and set up app directory 
 RUN addgroup -q django && \
     adduser --quiet --ingroup django --disabled-password django
 
-COPY ./api /api
+COPY --chown=django:django ./api /api
 WORKDIR /api
-RUN chown -R django:django /api
 
 USER django
 ENV PATH=/home/django/.local/bin:$PATH
 
 # --- Copy files needed for compilation and shared resources
-COPY ./api/pyproject.toml ./api/uv.lock /api/
 COPY ./shared /shared
 
-# --- Compile dependencies using UV and install them 
+# ---- Install Dependencies using UV & Remove caches & tooling artefacts
 USER root
-RUN uv pip compile pyproject.toml --output-file requirements.txt && \
-    uv pip install --no-cache-dir -r requirements.txt --system && \
+RUN uv pip install --no-cache-dir --system . && \
     rm -rf /root/.cargo /root/.rustup
 
 # ----------------------------
 # Stage 2: Runtime
 # ----------------------------
 FROM python:3.11-slim
-LABEL authors="Roberto Santos"
 
 ENV PYTHONUNBUFFERED 1
 EXPOSE 8000
@@ -49,8 +32,8 @@ WORKDIR /api
 
 RUN  apt-get update && apt-get install -y --no-install-recommends\
     wait-for-it \
-    libpq5 \
-&& apt-get clean && rm -rf /var/lib/apt/lists/*
+    graphviz \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # --- Copy required dirs from builder (includes libs, user info, and code)
 
