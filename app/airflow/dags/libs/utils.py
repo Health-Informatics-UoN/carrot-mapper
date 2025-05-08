@@ -113,37 +113,80 @@ def create_task(task_id, python_callable, dag, provide_context=True):
     )
 
 
-def validate_params_V_concepts(**context) -> ValidatedParams:
+def _validate_dag_params(
+    int_params=None,
+    string_params=None,
+    bool_params=None,
+    has_field_vocab_pairs=False,
+    **context,
+):
     """
-    Validate and convert input parameters to the correct types.
-    This centralizes input validation to avoid repetitive validation in downstream tasks.
+    Unified parameter validation for DAG tasks.
+
+    Args:
+        int_params: List of integer parameter names to validate
+        string_params: List of string parameter names to validate
+        bool_params: List of boolean parameter names to validate
+        field_vocab_pairs: Whether to validate field_vocab_pairs parameter
+        context: Airflow context dictionary
+
+    Returns:
+        Dictionary of validated parameters
     """
     conf = context["dag_run"].conf
     errors = []
     validated_params = {}
 
     # Validate and convert integer parameters
-    for param in int_params:
-        value = conf.get(param)
-        if not value:
-            errors.append(f"Missing required parameter: {param}")
-            continue
+    if int_params:
+        for param in int_params:
+            value = conf.get(param)
+            if value is None:
+                errors.append(f"Missing required parameter: {param}")
+                continue
+            try:
+                validated_params[param] = int(value)
+            except (ValueError, TypeError):
+                errors.append(f"Invalid {param}: {value}. Must be an integer.")
 
-        try:
-            validated_params[param] = int(value)
-        except (ValueError, TypeError):
-            errors.append(f"Invalid {param}: {value}. Must be an integer.")
+    # Validate and convert string parameters
+    if string_params:
+        for param in string_params:
+            value = conf.get(param)
+            if value is None or value.strip() == "":
+                errors.append(f"Missing required parameter: {param}")
+                continue
+            validated_params[param] = value
 
-    # Validate field_vocab_pairs (mandatory)
-    field_vocab_pairs = conf.get("field_vocab_pairs")
-    if not field_vocab_pairs:
-        errors.append("Missing required parameter: field_vocab_pairs")
-    else:
-        validated_params["field_vocab_pairs"] = _process_field_vocab_pairs(
-            field_vocab_pairs
-        )
+    # Validate boolean parameters
+    if bool_params:
+        for param in bool_params:
+            value = conf.get(param)
+            if value is None:
+                errors.append(f"Missing required parameter: {param}")
+            elif isinstance(value, str):
+                if value.lower() in ["true", "false"]:
+                    validated_params[param] = bool(value.lower())
+                else:
+                    errors.append(
+                        f"Invalid {param}: {value}. Must be a boolean (true/false)."
+                    )
+            elif isinstance(value, bool):
+                validated_params[param] = value
+            else:
+                errors.append(f"Invalid {param}: {value}. Must be a boolean.")
 
-    # If any errors, raise exception with details
+    # Validate field_vocab_pairs
+    if has_field_vocab_pairs:
+        field_vocab_pairs = conf.get("field_vocab_pairs")
+        if not field_vocab_pairs:
+            validated_params["field_vocab_pairs"] = []
+        else:
+            validated_params["field_vocab_pairs"] = _process_field_vocab_pairs(
+                field_vocab_pairs
+            )
+
+    # Raise error if any validation failed
     if errors:
         error_message = "Parameter validation failed: " + "; ".join(errors)
         logging.error(error_message)
