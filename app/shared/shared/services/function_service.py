@@ -37,7 +37,7 @@ class FunctionService:
         and the base URL for Airflow API calls if applicable.
         """
         self._function_type = settings.FUNCTION_TYPE
-        self._airflow_base_url = settings.AIRFLOW_URL
+        self._airflow_base_url = settings.AIRFLOW_BASE_URL
 
     def _validate_function_type(self):
         """
