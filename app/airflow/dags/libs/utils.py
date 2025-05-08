@@ -4,7 +4,7 @@ import json
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from enum import Enum
 from airflow.operators.python import PythonOperator
-from typing import TypedDict, List
+from typing import TypedDict, List, Optional
 
 
 # PostgreSQL connection hook
@@ -25,6 +25,7 @@ class ValidatedParams(TypedDict):
     person_id_field: int
     date_event_field: int
     field_vocab_pairs: List[FieldVocabPair]
+    parent_dataset_id: Optional[int]
 
 
 class StageStatusType(Enum):
@@ -64,25 +65,41 @@ def update_job_status(
 ) -> None:
     """Update the status of a job in the database"""
     # TODO: for upload SR, this fuction will update the SR record in mapping_scanreport, not the job record
-    update_query = f"""
+    status_value = status.name
+    stage_value = stage.name
+
+    update_query = """
         UPDATE jobs_job
         SET status_id = (
-            SELECT id FROM jobs_stagestatus WHERE value = '{status.name}'
+            SELECT id FROM jobs_stagestatus WHERE value = %(status_value)s
         ),
-        details = '{details}', 
+        details = %(details)s, 
         updated_at = NOW()
         WHERE id = (
             SELECT id FROM jobs_job
-            WHERE scan_report_id = {scan_report}
-            AND scan_report_table_id = {scan_report_table}
+            WHERE scan_report_id = %(scan_report)s
+            AND scan_report_table_id = %(scan_report_table)s
             AND stage_id IN (
-                SELECT id FROM jobs_jobstage WHERE value = '{stage.name}'
+                SELECT id FROM jobs_jobstage WHERE value = %(stage_value)s
             )
             ORDER BY updated_at DESC
             LIMIT 1
         )
     """
-    pg_hook.run(update_query)
+    try:
+        pg_hook.run(
+            update_query,
+            parameters={
+                "scan_report": scan_report,
+                "scan_report_table": scan_report_table,
+                "status_value": status_value,
+                "details": details,
+                "stage_value": stage_value,
+            },
+        )
+    except Exception as e:
+        logging.error(f"Error in update_job_status: {str(e)}")
+        raise ValueError(f"Error in update_job_status: {str(e)}")
 
 
 def create_task(task_id, python_callable, dag, provide_context=True):
@@ -95,47 +112,51 @@ def create_task(task_id, python_callable, dag, provide_context=True):
     )
 
 
-def validate_params_V_concepts(**context) -> ValidatedParams:
+def validate_params(**context):
     """
-    Validate and convert input parameters to the correct types.
-    This centralizes input validation to avoid repetitive validation in downstream tasks.
+    Unified parameter validation for DAG tasks.
+    Validates all required parameters and returns a dictionary of validated values.
+
+    Empty field_vocab_pairs is allowed but will generate a warning.
     """
     conf = context["dag_run"].conf
     errors = []
-
-    # Required integer parameters
-    int_params = ["table_id", "person_id_field", "date_event_field", "scan_report_id"]
     validated_params = {}
 
     # Validate and convert integer parameters
+    int_params = [
+        "scan_report_id",
+        "table_id",
+        "person_id_field",
+        "date_event_field",
+        "parent_dataset_id",
+    ]
     for param in int_params:
         value = conf.get(param)
-        if not value:
+        if value is None:
             errors.append(f"Missing required parameter: {param}")
             continue
-
         try:
             validated_params[param] = int(value)
         except (ValueError, TypeError):
             errors.append(f"Invalid {param}: {value}. Must be an integer.")
 
-    # Validate field_vocab_pairs (mandatory)
+    # Validate field_vocab_pairs
     field_vocab_pairs = conf.get("field_vocab_pairs")
     if not field_vocab_pairs:
-        errors.append("Missing required parameter: field_vocab_pairs")
+        validated_params["field_vocab_pairs"] = []
     else:
         validated_params["field_vocab_pairs"] = _process_field_vocab_pairs(
             field_vocab_pairs
         )
 
-    # If any errors, raise exception with details
+    # Raise error if any validation failed
     if errors:
         error_message = "Parameter validation failed: " + "; ".join(errors)
         logging.error(error_message)
         raise ValueError(error_message)
 
-    # Store validated parameters in XCom for downstream tasks
-    return validated_params  # type: ignore
+    return validated_params
 
 
 def pull_validated_params(kwargs: dict, task_id: str) -> ValidatedParams:
