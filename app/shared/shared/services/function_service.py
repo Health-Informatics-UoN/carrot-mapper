@@ -140,8 +140,10 @@ class FunctionService:
                 "table_id": table.pk,
                 "person_id_field": table.person_id.pk,
                 "date_event_field": table.date_event.pk,
-                "field_vocab_pairs": get_field_vocab_mappings(
-                    data_dictionary_name, table
+                "field_vocab_pairs": (
+                    get_field_vocab_mappings(data_dictionary_name, table)
+                    if data_dictionary_name
+                    else []
                 ),
                 "trigger_reuse_concepts": trigger_reuse_concepts,
             }
