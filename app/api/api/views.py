@@ -408,7 +408,17 @@ class ScanReportTableDetailV2(
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        # Create Job records
+
+        # Trigger auto mapping
+        function_service.trigger_auto_mapping(
+            scan_report=scan_report_instance,
+            table=instance,
+            data_dictionary_name=data_dictionary_name,
+            # always trigger reuse concepts for now
+            trigger_reuse_concepts=True,
+        )
+
+        # Create Job records if no errors
         # For the first stage, default status is IN_PROGRESS
         Job.objects.create(
             scan_report=scan_report_instance,
@@ -425,12 +435,6 @@ class ScanReportTableDetailV2(
                 scan_report_table=instance,
                 stage=JobStage.objects.get(value=stage),
             )
-        function_service.trigger_auto_mapping(
-            scan_report=scan_report_instance,
-            table=instance,
-            data_dictionary_name=data_dictionary_name,
-        )
-
         # TODO: The worker_id can be used for status, but we need to save it somewhere.
         # resp_json = response.json()
         # worker_id = resp_json.get("instanceId")
