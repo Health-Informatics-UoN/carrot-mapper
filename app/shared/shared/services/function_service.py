@@ -167,9 +167,11 @@ class FunctionService:
             add_message(settings.WORKERS_UPLOAD_NAME, message_body)
 
         elif self._function_type == FUNCTION_TYPE.AIRFLOW:
-            self._trigger_airflow_dag(
-                settings.AIRFLOW_SCAN_REPORT_PROCESSING_DAG_ID, message_body
-            )
+            # Use the same message body for both Azure and Airflow for now, until the function in Airlfow is implemented
+            add_message(settings.WORKERS_UPLOAD_NAME, message_body)
+            # self._trigger_airflow_dag(
+            #     settings.AIRFLOW_SCAN_REPORT_PROCESSING_DAG_ID, message_body
+            # )
 
     def trigger_rules_export(self, message_body: Dict[str, Any]):
         """
@@ -191,6 +193,8 @@ class FunctionService:
             add_message(settings.WORKERS_RULES_EXPORT_NAME, message_body)
 
         elif self._function_type == FUNCTION_TYPE.AIRFLOW:
-            self._trigger_airflow_dag(
-                settings.AIRFLOW_RULES_EXPORT_DAG_ID, message_body
-            )
+            # Use the same message body for both Azure and Airflow for now, until the function in Airlfow is implemented
+            add_message(settings.WORKERS_RULES_EXPORT_NAME, message_body)
+            # self._trigger_airflow_dag(
+            #     settings.AIRFLOW_RULES_EXPORT_DAG_ID, message_body
+            # )
