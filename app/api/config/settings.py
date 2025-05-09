@@ -81,6 +81,7 @@ INSTALLED_APPS = [
     "shared",
     "shared.files",
     "shared.jobs",
+    "drf_spectacular",
 ]
 
 MIDDLEWARE = [
@@ -199,6 +200,13 @@ REST_FRAMEWORK = {
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+}
+SPECTACULAR_SETTINGS = {
+    "TITLE": "CARROT MAPPER APIs",
+    "DESCRIPTION": "API documentation for Carrot Mapper. All APIs are read-only.",
+    "VERSION": "1.0.0",
+    "SERVE_PERMISSIONS": ["rest_framework.permissions.AllowAny"],
 }
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.1/howto/static-files/

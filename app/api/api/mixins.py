@@ -29,8 +29,8 @@ class ScanReportPermissionMixin:
     def get_permissions(self):
         """
         Returns the list of permissions that the current action requires.
+        Handles cases where self.scan_report is not set (e.g., during schema generation).
         """
-
         method = self.request.method
         self.permission_classes = self.permission_classes_by_method.get(
             method, [CanView]
@@ -38,6 +38,11 @@ class ScanReportPermissionMixin:
 
         permissions = [permission() for permission in self.permission_classes]
 
+        # Skip object-level permission checks if self.scan_report is not set
+        if not hasattr(self, "scan_report") or self.scan_report is None:
+            return permissions
+
+        # Perform object-level permission checks
         for permission in permissions:
             if not permission.has_object_permission(
                 self.request, self, self.scan_report

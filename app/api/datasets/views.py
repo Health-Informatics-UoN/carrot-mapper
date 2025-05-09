@@ -21,6 +21,8 @@ from rest_framework.mixins import (
 )
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from drf_spectacular.utils import extend_schema
+from drf_spectacular.types import OpenApiTypes
 from shared.mapping.models import Dataset, VisibilityChoices
 from shared.mapping.permissions import (
     CanAdmin,
@@ -32,7 +34,24 @@ from shared.mapping.permissions import (
 
 class DatasetIndex(GenericAPIView, ListModelMixin, CreateModelMixin):
     """
-    API view to show all datasets.
+    API view to list all datasets with support for filtering and pagination.
+
+    This view allows users to retrieve a list of datasets based on specific
+    filter criteria such as dataset ID, data partner, and visibility status.
+    It also supports pagination to handle large datasets efficiently.
+
+    - If the request method is POST, the `DatasetCreateSerializerV2` is used
+      to handle dataset creation.
+    - For GET requests, the `DatasetViewSerializerV2` is used to serialize
+      the dataset data.
+
+    Filtering options:
+    - `id`: Filter datasets by their IDs.
+    - `data_partner`: Filter datasets by their associated data partner.
+    - `hidden`: Filter datasets based on their hidden status.
+
+    The queryset returned depends on the user's permissions and visibility
+    settings of the datasets.
     """
 
     serializer_class = DatasetViewSerializerV2
@@ -96,7 +115,38 @@ class DatasetIndex(GenericAPIView, ListModelMixin, CreateModelMixin):
 
 class DatasetAndDataPartnerListView(GenericAPIView, ListModelMixin):
     """
-    API view to show all datasets.
+    API view to list all datasets with filtering, ordering, and
+    pagination support.
+
+    This view provides a list of datasets based on the user's access
+    level and membership in projects. It supports filtering by various
+    fields, ordering by specific attributes, and paginated responses.
+
+    Attributes:
+        serializer_class (DatasetAndDataPartnerViewSerializer): The
+            serializer used to format the dataset data.
+        pagination_class (CustomPagination): The pagination class used
+            to paginate the dataset list.
+        filter_backends (list): A list of filter backends used for
+            filtering and ordering the dataset list.
+        ordering_fields (list): Fields that can be used for ordering
+            the dataset list.
+        filterset_fields (dict): Fields that can be used for filtering
+            the dataset list.
+        ordering (str): Default ordering for the dataset list.
+
+    Methods:
+        get(request, *args, **kwargs):
+            Handles GET requests to retrieve the list of datasets.
+
+        get_queryset():
+            Returns the queryset of datasets based on the user's access
+            level:
+            - If the user is the `AZ_FUNCTION_USER`, all datasets are
+              returned.
+            - Otherwise, only datasets that are public, restricted
+              datasets the user has access to, or datasets in projects
+              the user is a member of are returned.
     """
 
     serializer_class = DatasetAndDataPartnerViewSerializer
@@ -152,9 +202,41 @@ class DatasetDetail(
     GenericAPIView, RetrieveModelMixin, UpdateModelMixin, DestroyModelMixin
 ):
     """
-    Detail View for Datasets.
+    Dataset Detail View.
 
-    Allows for update and deleting.
+    This view provides detailed operations for a Dataset object,
+    including retrieving, updating, and deleting. The permissions and
+    serializers used are dynamically determined based on the HTTP
+    method of the request.
+
+    Inherits:
+        - GenericAPIView: Base class for all API views.
+        - RetrieveModelMixin: Adds retrieve functionality.
+        - UpdateModelMixin: Adds update functionality.
+        - DestroyModelMixin: Adds delete functionality.
+
+    Permissions:
+        - GET: Requires `CanView`, `CanAdmin`, or `CanEdit` permissions.
+        - POST, PATCH, PUT: Requires `CanView` and either `CanAdmin` or
+          `CanEdit` permissions.
+        - DELETE: Requires `CanView` and `CanAdmin` permissions.
+
+    Serializers:
+        - DatasetEditSerializer: Used for POST, PATCH, PUT, and DELETE
+          requests.
+        - DatasetViewSerializerV2: Used for GET requests.
+
+    Methods:
+        - initial: Dynamically sets permissions based on the request
+          method.
+        - get_queryset: Returns the queryset filtered by the primary
+          key (`pk`).
+        - get_serializer_class: Determines the serializer class based
+          on the request method.
+        - get_serializer_context: Provides additional context for the
+          serializer.
+        - get: Handles GET requests to retrieve a dataset.
+        - patch: Handles PATCH requests to partially update a dataset.
     """
 
     permission_classes = [CanView | CanAdmin | CanEdit]
@@ -187,9 +269,26 @@ class DatasetDetail(
 
 class DatasetPermissionView(APIView):
     """
-    API for permissions a user has on a specific dataset.
+    API for retrieving the permissions a user has on a specific dataset.
+
+    This view handles GET requests to fetch the permissions associated
+    with a dataset for the currently authenticated user. Permissions
+    are determined based on the user's role and access level for the
+    specified dataset.
+
+    Methods:
+        get(request, pk):
+            Handles GET requests to retrieve the user's permissions for
+            the dataset identified by the primary key (pk).
     """
 
+    @extend_schema(
+        responses={
+            200: OpenApiTypes.OBJECT,
+            403: OpenApiTypes.OBJECT,
+        },
+        description="Get the permissions for a dataset.",
+    )
     def get(self, request, pk):
         permissions = get_user_permissions_on_dataset(request, pk)
 
