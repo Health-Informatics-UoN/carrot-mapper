@@ -255,6 +255,7 @@ JOIN mapping_scanreporttable AS eligible_sr_table
     ON eligible_sr_field.scan_report_table_id = eligible_sr_table.id
 JOIN mapping_scanreport AS eligible_scan_report 
     ON eligible_sr_table.scan_report_id = eligible_scan_report.id
+    AND eligible_scan_report.id != %(scan_report_id)s -- Don't reuse concepts from the same scan report
 JOIN mapping_dataset AS dataset 
     ON eligible_scan_report.parent_dataset_id = dataset.id
 JOIN mapping_mappingstatus AS map_status 
@@ -305,6 +306,7 @@ JOIN mapping_scanreporttable AS eligible_sr_table
     AND eligible_sr_table.name = sr_table.name       -- Matching table name
 JOIN mapping_scanreport AS eligible_scan_report 
     ON eligible_sr_table.scan_report_id = eligible_scan_report.id
+    AND eligible_scan_report.id != %(scan_report_id)s  -- Don't reuse concepts from the same scan report
 JOIN mapping_dataset AS dataset 
     ON eligible_scan_report.parent_dataset_id = dataset.id
 JOIN mapping_mappingstatus AS map_status 
