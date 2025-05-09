@@ -47,13 +47,7 @@ def find_standard_concepts(**kwargs) -> None:
     ]
     # Flag to skip this check when necessary
     skip_domains_check = False
-    # Format the domains as a proper SQL IN clause
-    domains_list = "', '".join(allowed_domains)
-    checking_domains_condition = (
-        f"AND std_concept.domain_id IN ('{domains_list}')"
-        if not skip_domains_check
-        else ""
-    )
+
     # Get validated parameters from XCom
     validated_params = pull_validated_params(kwargs, "validate_params")
 
@@ -130,7 +124,10 @@ def find_standard_concepts(**kwargs) -> None:
             JOIN omop.concept AS std_concept ON
                 std_concept.concept_id = concept_relationship.concept_id_2
                 AND std_concept.standard_concept = 'S'
-                %(checking_domains_condition)s
+                AND (
+                    %(skip_domains_check)s = true 
+                    OR std_concept.domain_id = ANY(%(allowed_domains)s)
+                )
             WHERE sr_value.scan_report_field_id = %(sr_field_id)s;
             """
             try:
@@ -140,7 +137,8 @@ def find_standard_concepts(**kwargs) -> None:
                         "table_id": table_id,
                         "sr_field_id": sr_field_id,
                         "vocabulary_id": vocabulary_id,
-                        "checking_domains_condition": checking_domains_condition,
+                        "skip_domains_check": skip_domains_check,
+                        "allowed_domains": allowed_domains,
                     },
                 )
                 logging.info(
