@@ -35,6 +35,7 @@ dependencies = [
     "django-allauth==0.61.1",
     "dj-rest-auth[with-social]>=6.0.0,<7",
     "minio>=7.2.15,<8",
+    "drf-spectacular>=0.27.1,<1",
 ]
 
 [dependency-groups]

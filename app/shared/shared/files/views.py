@@ -12,6 +12,7 @@ from shared.files.paginations import CustomPagination
 from shared.jobs.models import Job, JobStage, StageStatus
 from shared.mapping.models import ScanReport
 from shared.services.azurequeue import add_message
+from drf_spectacular.utils import extend_schema
 from shared.services.storage_service import StorageService
 
 from .models import FileDownload
@@ -21,12 +22,35 @@ storage_service = StorageService()
 
 
 class FileDownloadView(GenericAPIView, ListModelMixin, RetrieveModelMixin):
+    """
+    A view for handling file downloads and file generation requests.
+    This view provides functionality to:
+    - Retrieve a list of downloadable files associated with a specific scan report.
+    - Download a specific file by its primary key.
+    - Request the generation of a file for download by sending a message to a queue.
+    Attributes:
+        serializer_class (Serializer): The serializer class used for file downloads.
+        filter_backends (list): The list of filter backends for filtering querysets.
+        pagination_class (Pagination): The pagination class for paginating results.
+        permission_classes (list): The list of permission classes for access control.
+        ordering (str): The default ordering for querysets.
+    Methods:
+        get_queryset():
+            Retrieves the queryset of FileDownload objects filtered by the scan report ID.
+        get(request, *args, **kwargs):
+            Handles GET requests. If a primary key is provided, it downloads the file.
+            Otherwise, it returns a paginated list of files.
+        post(request, *args, **kwargs):
+            Handles POST requests to request the generation of a file for download.
+    """
+
     serializer_class = FileDownloadSerializer
     filter_backends = [DjangoFilterBackend, OrderingFilter]
     pagination_class = CustomPagination
     permission_classes = [IsAuthenticated]
     ordering = "-created_at"
 
+    @extend_schema(responses=FileDownloadSerializer)
     def get_queryset(self):
         scan_report_id = self.kwargs["scanreport_pk"]
         scan_report = get_object_or_404(ScanReport, pk=scan_report_id)
@@ -46,7 +70,38 @@ class FileDownloadView(GenericAPIView, ListModelMixin, RetrieveModelMixin):
 
     def post(self, request, *args, **kwargs):
         """
-        Requests a file to be generated for download by sending a message to the Rules Export Queue.
+        Handles POST requests to initiate the generation of a downloadable
+        file by sending a message to the Rules Export Queue and creating a
+        corresponding job record.
+
+        This endpoint expects a JSON payload containing the following fields:
+            - scan_report_id (int): The ID of the scan report for which the
+            file is to be generated.
+            - file_type (str): The type of file to generate (e.g.,
+            'application/json' or 'text/csv').
+
+        Upon successful validation of the input, a message is sent to the
+        Rules Export Queue, and a job record is created in the database to
+        track the file generation process.
+
+        Returns:
+            - 202 Accepted: If the request is successfully processed and
+            the file generation is initiated.
+            - 400 Bad Request: If the required fields ('scan_report_id' or
+            'file_type') are missing or if the JSON payload is invalid.
+            - 500 Internal Server Error: If an unexpected error occurs
+            during processing.
+
+        Raises:
+            - json.JSONDecodeError: If the request body contains invalid
+            JSON.
+            - Exception: For any other unexpected errors.
+
+        Note:
+            - The `add_message` function is used to send the message to the
+            Rules Export Queue.
+            - A job record is created with the status set to "IN_PROGRESS"
+            and includes details about the file type being generated.
         """
         try:
             body = request.data

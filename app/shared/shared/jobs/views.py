@@ -8,10 +8,23 @@ from .serializers import JobSerializer
 
 class JobView(GenericAPIView, ListModelMixin):
     """
-    View for list of Jobs records of a specific object.
+    View for listing Job records associated with a specific object.
 
-    This view allows filtering Jobs record based on the scan_report_id or scan_report_table_id
-    passed as a URL parameter and the stage passed as a query parameter.
+    This view is designed to retrieve and filter Job records based on
+    the following criteria:
+    - `scan_report_id`: Passed as a URL parameter (`pk`), it identifies
+      the specific scan report to which the Job records are related.
+    - `stage`: Passed as a query parameter, it specifies the stage of
+      the Job records to filter. Supported stages include:
+        - `upload`: Filters Job records with stage value 1.
+        - `download`: Filters Job records with stage value 5.
+        - If no stage is provided, all Job records associated with the
+          given `scan_report_id` are returned.
+
+    The queryset is ordered by the `created_at` field in descending
+    order, ensuring the most recently created Job records appear first.
+
+    This view supports GET requests to list the filtered Job records.
     """
 
     queryset = Job.objects.all().order_by("-created_at")

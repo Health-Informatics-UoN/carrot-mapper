@@ -1,13 +1,7 @@
 from drf_dynamic_fields import DynamicFieldsMixin  # type: ignore
 from rest_framework import serializers
 from shared.mapping.models import Project
-from django.contrib.auth.models import User
-
-
-class UserSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = ("id", "username")
+from shared.users.serializers import UserSerializer
 
 
 class ProjectSerializer(DynamicFieldsMixin, serializers.ModelSerializer):
