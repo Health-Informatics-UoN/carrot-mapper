@@ -1,6 +1,8 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from drf_spectacular.utils import extend_schema
+from drf_spectacular.types import OpenApiTypes
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth.password_validation import validate_password
@@ -15,6 +17,11 @@ class PasswordResetView(APIView):
 
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(
+        request=OpenApiTypes.OBJECT,
+        responses={200: OpenApiTypes.STR, 400: OpenApiTypes.OBJECT},
+        description="Reset the authenticated user's password.",
+    )
     def post(self, request, *args, **kwargs):
         new_password = request.data.get("new_password")
         confirm_password = request.data.get("confirm_password")
