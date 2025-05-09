@@ -1140,6 +1140,7 @@ class MappingRulesList(APIView):
                   ordered by concept, OMOP table, OMOP field, source
                   table, and source field.
     """
+
     @extend_schema(
         parameters=[
             OpenApiParameter(
@@ -1438,6 +1439,7 @@ class DownloadScanReportViewSet(viewsets.ViewSet):
             Raises:
                 ScanReport.DoesNotExist: If no scan report is found with the given primary key.
     """
+
     @extend_schema(
         request=OpenApiTypes.OBJECT,
         responses={

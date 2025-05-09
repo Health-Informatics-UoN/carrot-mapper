@@ -49,7 +49,6 @@ class ConceptSerializerV2(serializers.ModelSerializer):
         fields = ["concept_id", "concept_name", "concept_code"]
 
 
-
 class UploadStatusSerializer(serializers.ModelSerializer):
     """
     Serializer for the UploadStatus model.

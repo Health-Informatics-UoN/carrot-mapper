@@ -281,6 +281,7 @@ class DatasetPermissionView(APIView):
             Handles GET requests to retrieve the user's permissions for
             the dataset identified by the primary key (pk).
     """
+
     @extend_schema(
         responses={
             200: OpenApiTypes.OBJECT,
