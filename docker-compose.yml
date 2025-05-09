@@ -188,7 +188,7 @@ services:
       AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "False"
       AIRFLOW_CONN_POSTGRES_DB_CONN: postgresql+psycopg2://postgres:postgres@db:5432/postgres
       AIRFLOW_CONN_MINIO_CONN: aws://minioadmin:minioadmin@/?endpoint_url=http://minio:9000
-      AIRFLOW_CONN_WASB__CONN: wasb://DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;TableEndpoint=http://azurite:10002/devstoreaccount1;
+      AIRFLOW_CONN_WASB_CONN: wasb://DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;TableEndpoint=http://azurite:10002/devstoreaccount1;
       # Admin user configuration
       # TODO: add optional admin user configuration in the docs
       AIRFLOW_ADMIN_USERNAME: admin
@@ -220,7 +220,7 @@ services:
       AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "False"
       AIRFLOW_CONN_POSTGRES_DB_CONN: postgresql+psycopg2://postgres:postgres@db:5432/postgres
       AIRFLOW_CONN_MINIO_CONN: aws://minioadmin:minioadmin@/?endpoint_url=http://minio:9000
-      AIRFLOW_CONN_WASB__CONN: wasb://DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;TableEndpoint=http://azurite:10002/devstoreaccount1;
+      AIRFLOW_CONN_WASB_CONN: wasb://DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;TableEndpoint=http://azurite:10002/devstoreaccount1;
       # TODO: enable CORS on production
     volumes:
       - ./app/airflow/dags:/opt/airflow/dags
