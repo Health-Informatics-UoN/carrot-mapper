@@ -1142,15 +1142,16 @@ class MappingRulesList(APIView):
     """
 
     @extend_schema(
-        parameters=[
-            OpenApiParameter(
-                name="get_svg",
-                type=OpenApiTypes.BOOL,
-                description="Set to true to get an SVG of the mapping rules DAG."
-            )
-        ],
-        responses={200: OpenApiTypes.OBJECT, 400: OpenApiTypes.OBJECT},
-    )
+    parameters=[
+        OpenApiParameter(
+            name="get_svg",
+            type=OpenApiTypes.BOOL,
+            description="Set to true to get an SVG of the mapping rules DAG.",
+        )
+    ],
+    responses={200: OpenApiTypes.OBJECT, 400: OpenApiTypes.OBJECT},
+)
+
     def post(self, request, *args, **kwargs):
         try:
             body = request.data

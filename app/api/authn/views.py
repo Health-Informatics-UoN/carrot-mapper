@@ -19,12 +19,10 @@ class PasswordResetView(APIView):
 
     @extend_schema(
         request=OpenApiTypes.OBJECT,
-        responses={
-            200: OpenApiTypes.STR,
-            400: OpenApiTypes.OBJECT
-        },
-        description="Reset the authenticated user's password."
+        responses={200: OpenApiTypes.STR, 400: OpenApiTypes.OBJECT},
+        description="Reset the authenticated user's password.",
     )
+
     def post(self, request, *args, **kwargs):
         new_password = request.data.get("new_password")
         confirm_password = request.data.get("confirm_password")
