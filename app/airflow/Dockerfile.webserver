@@ -1,10 +1,10 @@
-FROM apache/airflow:latest
+# TODO: Airflow has version 3.0.0 but this is a breaking change
+FROM apache/airflow:2.10.5
 # Install provider packages
 RUN pip install --no-cache-dir \
     apache-airflow-providers-microsoft-azure \
     apache-airflow-providers-postgres \
-    apache-airflow-providers-amazon \
-    apache-airflow-providers-http
+    apache-airflow-providers-amazon
 
 # Copy DAGs to the container
 COPY ./dags /opt/airflow/dags
@@ -22,5 +22,3 @@ RUN chmod +x /entrypoint-webserver.sh
 USER airflow
 
 ENTRYPOINT ["/entrypoint-webserver.sh"]
-
-

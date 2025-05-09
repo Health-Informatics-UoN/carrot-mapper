@@ -46,7 +46,6 @@ fi
 $AIRFLOW_EXEC db check || { echo "Database check failed"; exit 1; }
 
 # Initialize/upgrade the database
-$AIRFLOW_EXEC db init || { echo "Database init failed"; exit 1; }
 $AIRFLOW_EXEC db migrate || { echo "Database migrate failed"; exit 1; }
 
 # Start the scheduler
