@@ -190,10 +190,11 @@ services:
       AIRFLOW_CONN_MINIO_CONN: aws://minioadmin:minioadmin@/?endpoint_url=http://minio:9000
       AIRFLOW_CONN_WASB__CONN: wasb://DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;TableEndpoint=http://azurite:10002/devstoreaccount1;
       # Admin user configuration
+      # TODO: add optional admin user configuration in the docs
       AIRFLOW_ADMIN_USERNAME: admin
       AIRFLOW_ADMIN_PASSWORD: admin
-      # TODO: add optional admin user configuration in the docs
-      # TODO: enable CORS on production
+      # The blob storage where Airflow get/put necessary files
+      AIRFLOW_VAR_STORAGE_TYPE: azure
     volumes:
       - ./app/airflow/dags:/opt/airflow/dags
       # TODO: decide which method to set Airflow config, if using the below, set it in the Dockerfile
