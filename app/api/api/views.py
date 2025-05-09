@@ -213,6 +213,7 @@ class UserDetailView(APIView):
     """
 
     permission_classes = [IsAuthenticated]
+
     @extend_schema(
         request=OpenApiTypes.OBJECT,
         responses={
@@ -221,7 +222,6 @@ class UserDetailView(APIView):
         },
         description="Retrieve the details of the authenticated user.",
     )
-
     def get(self, request, *args, **kwargs):
         serializer = UserSerializer(request.user)
         return Response(serializer.data)
@@ -277,8 +277,8 @@ class ScanReportIndexV2(GenericAPIView, ListModelMixin, CreateModelMixin):
     ]
     pagination_class = CustomPagination
     ordering = "-created_at"
-    @extend_schema(responses=ScanReportViewSerializerV2)
 
+    @extend_schema(responses=ScanReportViewSerializerV2)
     def get(self, request, *args, **kwargs):
         return self.list(request, *args, **kwargs)
 
@@ -1097,15 +1097,7 @@ class ScanReportConceptDetailV2(GenericAPIView, DestroyModelMixin):
     def delete(self, request, *args, **kwargs):
         return self.destroy(request, *args, **kwargs)
 
-@extend_schema(
-    request=OpenApiTypes.OBJECT,
-    responses={
-        200: OpenApiTypes.OBJECT,
-        400: OpenApiTypes.OBJECT,
-    },
-    description="API view for handling mapping rules.",
-    tags=["Mapping Rules"],
-)
+
 class MappingRulesList(APIView):
     """
     API View to handle operations related to mapping rules.
@@ -1153,6 +1145,7 @@ class MappingRulesList(APIView):
             OpenApiParameter(
                 name="get_svg",
                 type=OpenApiTypes.BOOL,
+
                 description="Set to true to get an SVG of the mapping rules DAG."
             )
         ],
@@ -1226,6 +1219,7 @@ class RulesListV2(ScanReportPermissionMixin, GenericAPIView, ListModelMixin):
     pagination_class = CustomPagination
     filter_backends = [DjangoFilterBackend]
     http_method_names = ["get"]
+
     @extend_schema(
         parameters=[
             OpenApiParameter(
@@ -1333,6 +1327,7 @@ class SummaryRulesListV2(RulesListV2):
             include additional details about related fields (e.g.,
             destination_table, source_field).
     """
+
     @extend_schema(
         parameters=[
             OpenApiParameter(
@@ -1486,6 +1481,7 @@ class ScanReportPermissionView(APIView):
         Response: A JSON response containing the user's permissions on
             the scan report, with an HTTP status code of 200 (OK).
     """
+
     @extend_schema(
         request=OpenApiTypes.OBJECT,
         responses={
