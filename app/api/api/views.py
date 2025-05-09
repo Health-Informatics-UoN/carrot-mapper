@@ -1146,7 +1146,6 @@ class MappingRulesList(APIView):
             OpenApiParameter(
                 name="get_svg",
                 type=OpenApiTypes.BOOL,
-
                 description="Set to true to get an SVG of the mapping rules DAG."
             )
         ],

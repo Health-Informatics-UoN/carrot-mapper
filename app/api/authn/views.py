@@ -16,6 +16,7 @@ class PasswordResetView(APIView):
     """
 
     permission_classes = [IsAuthenticated]
+
     @extend_schema(
         request=OpenApiTypes.OBJECT,
         responses={
