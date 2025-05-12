@@ -8,7 +8,37 @@ from openpyxl.worksheet.worksheet import Worksheet
 from libs.utils import (
     pull_validated_params,
 )
+from airflow.models.connection import Connection
+from airflow.utils.session import create_session
+import os
 
+
+def create_wasb_connection():
+    with create_session() as session:
+        # Check if connection already exists
+        existing_conn = (
+            session.query(Connection).filter(Connection.conn_id == "wasb_conn").first()
+        )
+
+        if existing_conn is None:
+            # Only create if connection doesn't exist
+            conn = Connection(
+                conn_id="wasb_conn",
+                conn_type="wasb",
+                extra={
+                    "connection_string": os.getenv(
+                        "AIRFLOW_VAR_WASB_CONNECTION_STRING"
+                    ),
+                },
+            )
+            session.add(conn)
+            session.commit()
+            logger.info("Created new WASB connection")
+        else:
+            logger.debug("WASB connection already exists, skipping creation")
+
+
+create_wasb_connection()
 hook = WasbHook(wasb_conn_id="wasb_conn")
 logger = logging.getLogger(__name__)
 
@@ -23,6 +53,7 @@ def process_scan_report_task(**kwargs):
     Returns:
         Dict containing processing results and metadata
     """
+
     container_name = "scan-reports"
     validated_params = pull_validated_params(kwargs, "validate_params")
     scan_report_blob = validated_params["scan_report_blob"]
@@ -50,7 +81,7 @@ def process_scan_report_task(**kwargs):
 
         # Get headers from first row
         headers = [cell.value for cell in next(worksheet.rows)]
-
+        print(headers)
         # Process each row
         for row in worksheet.iter_rows(min_row=2):  # Skip header row
             row_data = {}
