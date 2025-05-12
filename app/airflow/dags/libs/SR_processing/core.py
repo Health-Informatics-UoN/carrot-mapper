@@ -12,6 +12,8 @@ from airflow.models.connection import Connection
 from airflow.utils.session import create_session
 import os
 
+logger = logging.getLogger(__name__)
+
 
 def create_wasb_connection():
     with create_session() as session:
@@ -40,7 +42,6 @@ def create_wasb_connection():
 
 create_wasb_connection()
 hook = WasbHook(wasb_conn_id="wasb_conn")
-logger = logging.getLogger(__name__)
 
 
 def process_scan_report_task(**kwargs):
@@ -57,7 +58,7 @@ def process_scan_report_task(**kwargs):
     container_name = "scan-reports"
     validated_params = pull_validated_params(kwargs, "validate_params")
     scan_report_blob = validated_params["scan_report_blob"]
-    local_file_path = Path("/tmp/scan_report_temp.xlsx")
+    local_file_path = Path(f"/tmp/{scan_report_blob}")
 
     try:
         # Download file
