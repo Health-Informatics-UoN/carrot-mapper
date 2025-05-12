@@ -21,38 +21,92 @@ from .reuse import reuse_existing_field_concepts, reuse_existing_value_concepts
 
 storage_service = StorageService()
 
+ALLOWED_DOMAINS = [
+    "gender",
+    "race",
+    "ethnicity",
+    "measurement",
+    "condition",
+    "observation",
+    "drug",
+    "procedure",
+    "specimen",
+    "device",
+]
+
 
 def _create_concepts(
     table_values: List[ScanReportValueDict],
 ) -> List[ScanReportConcept]:
     """
-    Generate Concept entries ready for creating from a list of values.
+    Generate Concept entries ready for creating from a
+    list of values.
+
+    Only creates concepts that are in the allowed domains list.
+
+    Workflow:
+
+        For each value in the table_values, checks if it is a
+        valid concept or not (Yes/No).
+
+        If Yes, check for the allowed domain and If Yes, add it
+        to the final list of concepts and create the concept.
+
+        If No for valid concept & not available in allowed
+        domains, skip the concept.
 
     Args:
-        - table_values (List[ScanReportValueDict]): List of values to create concepts from.
+        - table_values (List[ScanReportValueDict]): List of
+        values to create concepts from.
 
     Returns:
         - List[ScanReportConcept]: List of Scan Report Concepts.
     """
     concepts: List[ScanReportConcept] = []
-    for concept in table_values:
-        if concept["concept_id"] != -1:
-            if isinstance(concept["concept_id"], list):
-                for concept_id in concept["concept_id"]:
-                    concept_instance = db.create_concept(
-                        concept_id, concept["id"], ScanReportConceptContentType.VALUE
-                    )
-                    if concept_instance is not None:
-                        concepts.append(concept_instance)
-            else:
+    check_domains = True
+
+    # Skip invalid concepts (marked with -1)
+    for value in table_values:
+        if value["concept_id"] == -1:
+            continue
+
+        # Making all concept_ids as a list
+        concept_ids = (
+            value["concept_id"]
+            if isinstance(value["concept_id"], list)
+            else [value["concept_id"]]
+        )
+
+        # Track which concept IDs pass all validation checks
+        valid_concept_ids = []
+        for concept_id in concept_ids:
+            try:
+                # Verify the concept exists & in the allowed domain
+                concept_obj = Concept.objects.get(concept_id=concept_id)
                 if (
-                    concept_instance := db.create_concept(
-                        concept["concept_id"],
-                        concept["id"],
-                        ScanReportConceptContentType.VALUE,
-                    )
-                ) is not None:
-                    concepts.append(concept_instance)
+                    check_domains
+                    and concept_obj.domain_id.lower() not in ALLOWED_DOMAINS
+                ):
+                    continue
+
+                # The valid concept ID is added to the final list
+                valid_concept_ids.append(concept_id)
+            except Concept.DoesNotExist:
+                continue
+
+        if not valid_concept_ids:
+            continue
+
+        # Create the concept in the final list
+        for concept_id in valid_concept_ids:
+            if (
+                concept_instance := db.create_concept(
+                    concept_id,
+                    value["id"],
+                    ScanReportConceptContentType.VALUE,
+                )
+            ) is not None:
+                concepts.append(concept_instance)
 
     return concepts
 
