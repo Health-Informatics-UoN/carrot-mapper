@@ -12,6 +12,13 @@ from shared.services.azurequeue import add_message
 from abc import ABC, abstractmethod
 
 
+class WORKER_SERVICE_TYPE(StrEnum):
+    """Enum for worker service types."""
+
+    AZURE = "azure"
+    AIRFLOW = "airflow"
+
+
 class WorkerService(ABC):
     """Abstract base class for worker services."""
 
@@ -157,9 +164,9 @@ def create_worker_service() -> WorkerService:
     """Function to create the appropriate worker service."""
     worker_service_type = settings.WORKER_SERVICE_TYPE
 
-    if worker_service_type == "azure":
+    if worker_service_type == WORKER_SERVICE_TYPE.AZURE:
         return AzureWorkerService()
-    elif worker_service_type == "airflow":
+    elif worker_service_type == WORKER_SERVICE_TYPE.AIRFLOW:
         return AirflowWorkerService()
     else:
         raise ValueError(
