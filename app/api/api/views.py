@@ -74,10 +74,10 @@ from shared.services.rules_export import (
     make_dag,
 )
 from shared.services.storage_service import StorageService
-from shared.services.function_service import FunctionService
+from shared.services.worker_service import create_worker_service
 
 storage_service = StorageService()
-function_service = FunctionService()
+worker_service = create_worker_service()
 
 
 class DataPartnerViewSet(GenericAPIView, ListModelMixin):
@@ -396,7 +396,7 @@ class ScanReportIndexV2(GenericAPIView, ListModelMixin, CreateModelMixin):
             )
 
         # send to the workers service
-        function_service.trigger_scan_report_processing(message_body)
+        worker_service.trigger_scan_report_processing(message_body)
 
 
 class ScanReportDetailV2(
@@ -661,7 +661,7 @@ class ScanReportTableDetailV2(
             )
 
         # Trigger auto mapping
-        function_service.trigger_auto_mapping(
+        worker_service.trigger_auto_mapping(
             scan_report=scan_report_instance,
             table=instance,
             data_dictionary_name=data_dictionary_name,

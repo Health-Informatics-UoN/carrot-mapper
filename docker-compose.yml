@@ -78,7 +78,7 @@ services:
       - MINIO_ACCESS_KEY=minioadmin
       - MINIO_SECRET_KEY=minioadmin
       # Choose `airflow` for testing and development of Airflow.
-      - FUNCTION_TYPE=airflow
+      - WORKER_SERVICE_TYPE=airflow
       # TODO: update to API v2 when updating Airflow to 3.0.0
       - AIRFLOW_BASE_URL=http://airflow-webserver:8081/api/v1/
       - AIRFLOW_AUTO_MAPPING_DAG_ID=auto_mapping
