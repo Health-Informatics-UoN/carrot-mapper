@@ -226,11 +226,12 @@ DROP TABLE IF EXISTS temp_concept_fields_staging_%(table_id)s;
 
 find_reusing_value_query = """
 INSERT INTO temp_reuse_concepts_%(table_id)s (
-    matching_value_name, matching_field_name, content_type_id, source_concept_id, source_scanreport_id
+    matching_value_name, matching_field_name, matching_table_name, content_type_id, source_concept_id, source_scanreport_id
 )
 SELECT DISTINCT 
     sr_value.value, 
     sr_field.name,
+    sr_table.name,
     23,
     eligible_sr_concept.concept_id,
     -- TODO: add eligible_sr_concept.standard_concept_id here
@@ -253,6 +254,7 @@ JOIN mapping_scanreportfield AS eligible_sr_field
     AND eligible_sr_field.name = sr_field.name        -- Matching value's field name
 JOIN mapping_scanreporttable AS eligible_sr_table 
     ON eligible_sr_field.scan_report_table_id = eligible_sr_table.id
+    AND eligible_sr_table.name = sr_table.name        -- Matching table name
 JOIN mapping_scanreport AS eligible_scan_report 
     ON eligible_sr_table.scan_report_id = eligible_scan_report.id
     AND eligible_scan_report.id != %(scan_report_id)s -- Don't reuse concepts from the same scan report
@@ -345,7 +347,7 @@ find_object_id_query = """
                     JOIN mapping_scanreporttable AS sr_table ON sr_field.scan_report_table_id = sr_table.id
                     WHERE sr_table.scan_report_id = %(scan_report_id)s AND sr_table.id = %(table_id)s
                     AND sr_field.name = temp_table.matching_field_name
-                    AND sr_table.name = temp_table.matching_table_name
+                    AND sr_table.name = temp_table.matching_table_name    -- Matching table name
                     LIMIT 1)
                 WHEN temp_table.content_type_id = 23 THEN  -- For ScanReportValue
                     (SELECT sr_value.id 
@@ -354,7 +356,8 @@ find_object_id_query = """
                     JOIN mapping_scanreporttable AS sr_table ON sr_field.scan_report_table_id = sr_table.id
                     WHERE sr_table.scan_report_id = %(scan_report_id)s AND sr_table.id = %(table_id)s
                     AND sr_value.value = temp_table.matching_value_name
-                    AND sr_field.name = temp_table.matching_field_name
+                    AND sr_field.name = temp_table.matching_field_name    -- Matching field name
+                    AND sr_table.name = temp_table.matching_table_name    -- Matching table name
                     LIMIT 1)
                 ELSE NULL
             END
