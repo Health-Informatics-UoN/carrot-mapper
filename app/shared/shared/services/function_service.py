@@ -39,14 +39,7 @@ class FunctionService:
         self._function_type = settings.FUNCTION_TYPE
         self._airflow_base_url = settings.AIRFLOW_BASE_URL
 
-    def _validate_function_type(self):
-        """
-        Validate that the configured function type is supported.
-
-        Raises:
-            ValueError: If the function type is not one of the supported types
-                       (currently Azure or Airflow).
-        """
+        # Validate function type immediately
         if self._function_type not in (FUNCTION_TYPE.AZURE, FUNCTION_TYPE.AIRFLOW):
             raise ValueError(
                 "Function type not supported. Only Airflow or Azure Function is supported."
@@ -82,8 +75,10 @@ class FunctionService:
             response.raise_for_status()
             return response
         except requests.exceptions.HTTPError as e:
-            logging.error(f"HTTP Trigger failed: {e}")
-            raise
+            logging.error(f"HTTP Trigger failed when triggering DAG {dag_id}: {e}")
+            raise requests.exceptions.HTTPError(
+                f"Failed to trigger Airflow DAG {dag_id}: {str(e)}"
+            ) from e
 
     def trigger_auto_mapping(
         self,
@@ -112,8 +107,6 @@ class FunctionService:
             ValueError: If the configured function type is not supported.
             HTTPError: If the HTTP request to trigger the process fails.
         """
-        self._validate_function_type()
-
         if self._function_type == FUNCTION_TYPE.AZURE:
             # Delete the current mapping rules
             delete_mapping_rules(table.pk)
@@ -163,8 +156,6 @@ class FunctionService:
                          processing options, and identifiers.
 
         """
-        self._validate_function_type()
-
         if self._function_type == FUNCTION_TYPE.AZURE:
             add_message(settings.WORKERS_UPLOAD_NAME, message_body)
 
@@ -189,8 +180,6 @@ class FunctionService:
                          to export and output format specifications.
 
         """
-        self._validate_function_type()
-
         if self._function_type == FUNCTION_TYPE.AZURE:
             add_message(settings.WORKERS_RULES_EXPORT_NAME, message_body)
 
