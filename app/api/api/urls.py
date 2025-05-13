@@ -2,6 +2,11 @@ from api import views
 from django.urls import include, path
 from shared.files.views import FileDownloadView
 from shared.jobs.views import JobView
+from drf_spectacular.views import (
+    SpectacularAPIView,
+    SpectacularSwaggerView,
+    SpectacularRedocView,
+)
 
 urlpatterns = [
     path("v2/datasets/", include("datasets.urls")),
@@ -101,5 +106,16 @@ urlpatterns = [
         r"v2/omop/conceptsfilter/",
         views.ConceptFilterViewSetV2.as_view(),
         name="v2conceptsfilter",
+    ),
+    path("v2/schema/", SpectacularAPIView.as_view(), name="schema"),
+    path(
+        "v2/schema/swagger-ui/",
+        SpectacularSwaggerView.as_view(url_name="schema"),
+        name="schema-swagger-ui",
+    ),
+    path(
+        "v2/schema/redoc/",
+        SpectacularRedocView.as_view(url_name="schema"),
+        name="schema-redoc",
     ),
 ]
