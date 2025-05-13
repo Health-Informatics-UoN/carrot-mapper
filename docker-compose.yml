@@ -87,6 +87,10 @@ services:
       - AIRFLOW_ADMIN_USERNAME=admin
       - AIRFLOW_ADMIN_PASSWORD=admin
       - DATA_UPLOAD_MAX_MEMORY_SIZE=10485760
+      # Default superuser credentials for dev environment
+      - SUPERUSER_DEFAULT_PASSWORD=admin
+      - SUPERUSER_DEFAULT_EMAIL=admin@carrot.com
+      - SUPERUSER_DEFAULT_USERNAME=admin
     volumes:
       - ./app/api:/api
       - ./app/shared:/shared
@@ -178,7 +182,7 @@ services:
       - db
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
-      # Update this connection string to point to your remote PostgreSQL
+      # Database connection here needs to be in URI format. With real values, which have special characters, they need to be encoded using the ref. in https://www.w3schools.com/tags/ref_urlencode.ASP.
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://postgres:postgres@db:5432/postgres?options=-csearch_path%3Dairflow
       AIRFLOW__DATABASE__SQL_ALCHEMY_SCHEMA: airflow
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
@@ -187,15 +191,20 @@ services:
       AIRFLOW__API__AUTH_BACKENDS: airflow.api.auth.backend.basic_auth
       AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "False"
       AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "False"
+      # This connection can be in separate variables (then don't need to do URL encoding), but because it can re-use the same connection string with SQL_ALCHEMY_CONN
       AIRFLOW_CONN_POSTGRES_DB_CONN: postgresql+psycopg2://postgres:postgres@db:5432/postgres
-      AIRFLOW_CONN_MINIO_CONN: aws://minioadmin:minioadmin@/?endpoint_url=http://minio:9000
+      # The blob storage where Airflow get/put necessary files
+      AIRFLOW_VAR_STORAGE_TYPE: minio
+      # Minio connection variables (don't need to do URL encoding here)
+      AIRFLOW_VAR_MINIO_ENDPOINT: http://minio:9000
+      AIRFLOW_VAR_MINIO_ACCESS_KEY: minioadmin
+      AIRFLOW_VAR_MINIO_SECRET_KEY: minioadmin
+      # WASB connection string (don't need to do URL encoding here)
       AIRFLOW_VAR_WASB_CONNECTION_STRING: DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;TableEndpoint=http://azurite:10002/devstoreaccount1
-      # Admin user configuration
-      # TODO: add optional admin user configuration in the docs
+      # Admin user configuration to access the Airlfow API
       AIRFLOW_ADMIN_USERNAME: admin
       AIRFLOW_ADMIN_PASSWORD: admin
-      # The blob storage where Airflow get/put necessary files
-      AIRFLOW_VAR_STORAGE_TYPE: azure
+      # TODO: add optional admin user configuration in the docs
     volumes:
       - ./app/airflow/dags:/opt/airflow/dags
       # TODO: decide which method to set Airflow config, if using the below, set it in the Dockerfile
@@ -217,12 +226,12 @@ services:
       AIRFLOW__DATABASE__SQL_ALCHEMY_SCHEMA: airflow
       AIRFLOW__WEBSERVER__SECRET_KEY: "test"
       AIRFLOW__API__AUTH_BACKENDS: airflow.api.auth.backend.basic_auth
-      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "False"
-      AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "False"
       AIRFLOW_CONN_POSTGRES_DB_CONN: postgresql+psycopg2://postgres:postgres@db:5432/postgres
-      AIRFLOW_CONN_MINIO_CONN: aws://minioadmin:minioadmin@/?endpoint_url=http://minio:9000
-      AIRFLOW_VAR_WASB_CONNECTION_STRING: wasb://?connection_string=DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;TableEndpoint=http://azurite:10002/devstoreaccount1
-      # TODO: enable CORS on production
+      AIRFLOW_VAR_STORAGE_TYPE: minio
+      AIRFLOW_VAR_MINIO_ENDPOINT: http://minio:9000
+      AIRFLOW_VAR_MINIO_ACCESS_KEY: minioadmin
+      AIRFLOW_VAR_MINIO_SECRET_KEY: minioadmin
+      AIRFLOW_VAR_WASB_CONNECTION_STRING: DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;TableEndpoint=http://azurite:10002/devstoreaccount1
     volumes:
       - ./app/airflow/dags:/opt/airflow/dags
       # TODO: decide which method to set Airflow config, if using the below, set it in the Dockerfile
