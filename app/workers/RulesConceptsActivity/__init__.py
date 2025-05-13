@@ -70,7 +70,7 @@ def _create_concepts(
         if value["concept_id"] == -1:
             continue
 
-        # Making all concept_ids as a list
+        # Making all concept_ids as a lists
         concept_ids = (
             value["concept_id"]
             if isinstance(value["concept_id"], list)
