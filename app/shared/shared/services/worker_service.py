@@ -163,5 +163,5 @@ def create_worker_service() -> WorkerService:
         return AirflowWorkerService()
     else:
         raise ValueError(
-            "Worker service not supported. Only Airflow or Azure Function is supported."
+            "Worker service type not supported. Only `airflow` or `azure` is supported."
         )
