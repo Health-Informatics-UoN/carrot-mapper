@@ -25,7 +25,7 @@ class ValidatedParams(TypedDict):
     person_id_field: int
     date_event_field: int
     field_vocab_pairs: List[FieldVocabPair]
-    parent_dataset_id: Optional[int]
+    parent_dataset_id: int
     trigger_reuse_concepts: bool
 
 
