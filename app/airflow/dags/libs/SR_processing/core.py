@@ -56,7 +56,7 @@ def process_scan_report_task(**kwargs):
     """
 
     container_name = "scan-reports"
-    validated_params = pull_validated_params(kwargs, "validate_params")
+    validated_params = pull_validated_params(kwargs, "validate_params_SR_processing")
     scan_report_blob = validated_params["scan_report_blob"]
     local_file_path = Path(f"/tmp/{scan_report_blob}")
 

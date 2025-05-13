@@ -36,7 +36,7 @@ dag = DAG(
 start = EmptyOperator(task_id="start", dag=dag)
 
 tasks = [
-    create_task("validate_params", validate_params_SR_processing, dag),
+    create_task("validate_params_SR_processing", validate_params_SR_processing, dag),
     create_task("process_scan_report", process_scan_report_task, dag),
 ]
 
