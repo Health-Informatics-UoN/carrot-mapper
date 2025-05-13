@@ -351,7 +351,7 @@ class ScanReportIndexV2(GenericAPIView, ListModelMixin, CreateModelMixin):
         # If there's no data dictionary supplied, only upload the scan report
         # Set data_dictionary_blob in Azure message to None
         if str(valid_data_dictionary_file) == "None":
-            azure_dict = {
+            message_body = {
                 "scan_report_id": scan_report.id,
                 "scan_report_blob": scan_report.name,
                 "data_dictionary_blob": "None",
@@ -374,7 +374,7 @@ class ScanReportIndexV2(GenericAPIView, ListModelMixin, CreateModelMixin):
             scan_report.data_dictionary = data_dictionary
             scan_report.save()
 
-            azure_dict = {
+            message_body = {
                 "scan_report_id": scan_report.id,
                 "scan_report_blob": scan_report.name,
                 "data_dictionary_blob": data_dictionary.name,
@@ -396,7 +396,7 @@ class ScanReportIndexV2(GenericAPIView, ListModelMixin, CreateModelMixin):
             )
 
         # send to the workers service
-        function_service.trigger_scan_report_processing(azure_dict)
+        function_service.trigger_scan_report_processing(message_body)
 
 
 class ScanReportDetailV2(
