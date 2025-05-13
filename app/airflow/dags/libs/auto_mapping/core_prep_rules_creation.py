@@ -34,7 +34,7 @@ def find_dest_table_and_person_field_id(**kwargs) -> None:
     - table_id (int): The ID of the scan report table to process
     """
     # Get validated parameters from XCom
-    validated_params = pull_validated_params(kwargs, "validate_params")
+    validated_params = pull_validated_params(kwargs, "validate_params_auto_mapping")
 
     table_id = validated_params["table_id"]
     scan_report_id = validated_params["scan_report_id"]
@@ -82,7 +82,7 @@ def find_date_fields(**kwargs) -> None:
     """
 
     # Get validated parameters from XCom
-    validated_params = pull_validated_params(kwargs, "validate_params")
+    validated_params = pull_validated_params(kwargs, "validate_params_auto_mapping")
     table_id = validated_params["table_id"]
 
     try:
@@ -104,7 +104,7 @@ def find_concept_fields(**kwargs) -> None:
     """
 
     # Get validated parameters from XCom
-    validated_params = pull_validated_params(kwargs, "validate_params")
+    validated_params = pull_validated_params(kwargs, "validate_params_auto_mapping")
 
     table_id = validated_params["table_id"]
 
@@ -126,7 +126,7 @@ def find_additional_fields(**kwargs) -> None:
     - table_id (int): The ID of the scan report table to process
     """
     # Get validated parameters from XCom
-    validated_params = pull_validated_params(kwargs, "validate_params")
+    validated_params = pull_validated_params(kwargs, "validate_params_auto_mapping")
     table_id = validated_params["table_id"]
 
     # Always add value_as_number to Measurement domain concepts, but ONLY if they're in the measurement table

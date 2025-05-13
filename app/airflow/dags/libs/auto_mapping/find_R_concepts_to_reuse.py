@@ -24,7 +24,7 @@ def delete_R_concepts(**kwargs) -> None:
     - table_id (int): The ID of the scan report table to process
     """
     # Get validated parameters from XCom
-    validated_params = pull_validated_params(kwargs, "validate_params")
+    validated_params = pull_validated_params(kwargs, "validate_params_auto_mapping")
     trigger_reuse_concepts = validated_params["trigger_reuse_concepts"]
 
     if trigger_reuse_concepts:
@@ -88,7 +88,7 @@ def find_matching_value(**kwargs):
         - has_data_dictionary (bool): If True, V-type concepts will be excluded from reuse
     """
     # Get validated parameters from XCom
-    validated_params = pull_validated_params(kwargs, "validate_params")
+    validated_params = pull_validated_params(kwargs, "validate_params_auto_mapping")
     trigger_reuse_concepts = validated_params["trigger_reuse_concepts"]
 
     if trigger_reuse_concepts:
@@ -181,7 +181,7 @@ def find_matching_field(**kwargs):
         - has_data_dictionary (bool): If True, V-type concepts will be excluded from reuse
     """
     # Get validated parameters from XCom
-    validated_params = pull_validated_params(kwargs, "validate_params")
+    validated_params = pull_validated_params(kwargs, "validate_params_auto_mapping")
     trigger_reuse_concepts = validated_params["trigger_reuse_concepts"]
 
     if trigger_reuse_concepts:
@@ -231,7 +231,7 @@ def find_object_id(**kwargs):
     - scan_report_id (int): The ID of the scan report to process
     """
     # Get validated parameters from XCom
-    validated_params = pull_validated_params(kwargs, "validate_params")
+    validated_params = pull_validated_params(kwargs, "validate_params_auto_mapping")
     trigger_reuse_concepts = validated_params["trigger_reuse_concepts"]
 
     if trigger_reuse_concepts:
@@ -259,7 +259,7 @@ def create_reusing_concepts(**kwargs):
     - scan_report_id (int): The ID of the scan report to process
     """
 
-    validated_params = pull_validated_params(kwargs, "validate_params")
+    validated_params = pull_validated_params(kwargs, "validate_params_auto_mapping")
     trigger_reuse_concepts = validated_params["trigger_reuse_concepts"]
 
     if trigger_reuse_concepts:

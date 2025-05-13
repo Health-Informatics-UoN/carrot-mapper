@@ -34,7 +34,7 @@ def find_standard_concepts(**kwargs) -> None:
     """
 
     # Get validated parameters from XCom
-    validated_params = pull_validated_params(kwargs, "validate_params")
+    validated_params = pull_validated_params(kwargs, "validate_params_auto_mapping")
 
     field_vocab_pairs = validated_params["field_vocab_pairs"]
     if not field_vocab_pairs:
@@ -139,7 +139,7 @@ def create_standard_concepts(**kwargs) -> None:
     - table_id (int): The ID of the scan report table to process
     """
     # Get validated parameters from XCom
-    validated_params = pull_validated_params(kwargs, "validate_params")
+    validated_params = pull_validated_params(kwargs, "validate_params_auto_mapping")
     field_vocab_pairs = validated_params["field_vocab_pairs"]
     if not field_vocab_pairs:
         logging.info("Skipped, no field-vocab pairs provided")

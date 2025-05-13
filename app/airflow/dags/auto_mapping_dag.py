@@ -88,7 +88,7 @@ dag = DAG(
 start = EmptyOperator(task_id="start", dag=dag)
 
 tasks = [
-    create_task("validate_params", validate_params_auto_mapping, dag),
+    create_task("validate_params_auto_mapping", validate_params_auto_mapping, dag),
     create_task("delete_mapping_rules", delete_mapping_rules, dag),
     create_task("find_standard_concepts", find_standard_concepts, dag),
     create_task("create_standard_concepts", create_standard_concepts, dag),
