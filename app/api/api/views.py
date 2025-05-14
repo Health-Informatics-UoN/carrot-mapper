@@ -1,12 +1,8 @@
 import datetime
-import logging
 import os
 import random
 import string
-from typing import Any
-from urllib.parse import urljoin
-
-import requests
+from typing import Any, Optional
 from api.filters import ScanReportAccessFilter
 from api.mixins import ScanReportPermissionMixin
 from api.paginations import CustomPagination
@@ -25,7 +21,6 @@ from api.serializers import (
     ScanReportViewSerializerV2,
     UserSerializer,
 )
-from config import settings
 from datasets.serializers import DataPartnerSerializer
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
@@ -72,7 +67,6 @@ from shared.services.azurequeue import add_message
 from shared.services.rules import (
     _find_destination_table,
     save_mapping_rules,
-    delete_mapping_rules,
 )
 from shared.services.rules_export import (
     get_mapping_rules_json,
@@ -80,8 +74,10 @@ from shared.services.rules_export import (
     make_dag,
 )
 from shared.services.storage_service import StorageService
+from shared.services.worker_service import get_worker_service
 
 storage_service = StorageService()
+worker_service = get_worker_service()
 
 
 class DataPartnerViewSet(GenericAPIView, ListModelMixin):
@@ -355,7 +351,7 @@ class ScanReportIndexV2(GenericAPIView, ListModelMixin, CreateModelMixin):
         # If there's no data dictionary supplied, only upload the scan report
         # Set data_dictionary_blob in Azure message to None
         if str(valid_data_dictionary_file) == "None":
-            azure_dict = {
+            message_body = {
                 "scan_report_id": scan_report.id,
                 "scan_report_blob": scan_report.name,
                 "data_dictionary_blob": "None",
@@ -378,7 +374,7 @@ class ScanReportIndexV2(GenericAPIView, ListModelMixin, CreateModelMixin):
             scan_report.data_dictionary = data_dictionary
             scan_report.save()
 
-            azure_dict = {
+            message_body = {
                 "scan_report_id": scan_report.id,
                 "scan_report_blob": scan_report.name,
                 "data_dictionary_blob": data_dictionary.name,
@@ -399,8 +395,8 @@ class ScanReportIndexV2(GenericAPIView, ListModelMixin, CreateModelMixin):
                 use_read_method=False,
             )
 
-        # send to the upload queue
-        add_message(os.environ.get("WORKERS_UPLOAD_NAME"), azure_dict)
+        # send to the workers service
+        worker_service.trigger_scan_report_processing(message_body)
 
 
 class ScanReportDetailV2(
@@ -638,31 +634,20 @@ class ScanReportTableDetailV2(
               saved but can be utilized for tracking job status in the
               future.
         """
-        instance = self.get_object()
+        instance: ScanReportTable = self.get_object()
         partial = kwargs.pop("partial", True)
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
 
-        # Delete the current mapping rules
-        delete_mapping_rules(instance.id)
-
         # Map the table
-        scan_report_instance = instance.scan_report
-        data_dictionary_name = (
+        scan_report_instance: ScanReport = instance.scan_report
+        data_dictionary_name: Optional[str] = (
             scan_report_instance.data_dictionary.name
             if scan_report_instance.data_dictionary
             else None
         )
 
-        # Send to functions
-        msg = {
-            "scan_report_id": scan_report_instance.id,
-            "table_id": instance.id,
-            "data_dictionary_blob": data_dictionary_name,
-        }
-        base_url = f"{settings.WORKERS_URL}"
-        trigger = f"/api/orchestrators/{settings.WORKERS_RULES_NAME}?code={settings.WORKERS_RULES_KEY}"
         # Prevent double-updating from backend
         if Job.objects.filter(
             scan_report_table=instance,
@@ -675,31 +660,32 @@ class ScanReportTableDetailV2(
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        try:
-            # Create Job records
-            # For the first stage, default status is IN_PROGRESS
+        # Trigger auto mapping
+        worker_service.trigger_auto_mapping(
+            scan_report=scan_report_instance,
+            table=instance,
+            data_dictionary_name=data_dictionary_name,
+            # always trigger reuse concepts for now
+            trigger_reuse_concepts=True,
+        )
+
+        # Create Job records if no errors
+        # For the first stage, default status is IN_PROGRESS
+        Job.objects.create(
+            scan_report=scan_report_instance,
+            scan_report_table=instance,
+            stage=JobStage.objects.get(value="BUILD_CONCEPTS_FROM_DICT"),
+            status=StageStatus.objects.get(value="IN_PROGRESS"),
+        )
+        for stage in [
+            "REUSE_CONCEPTS",
+            "GENERATE_RULES",
+        ]:
             Job.objects.create(
                 scan_report=scan_report_instance,
                 scan_report_table=instance,
-                stage=JobStage.objects.get(value="BUILD_CONCEPTS_FROM_DICT"),
-                status=StageStatus.objects.get(value="IN_PROGRESS"),
+                stage=JobStage.objects.get(value=stage),
             )
-            for stage in [
-                "REUSE_CONCEPTS",
-                "GENERATE_RULES",
-            ]:
-                Job.objects.create(
-                    scan_report=scan_report_instance,
-                    scan_report_table=instance,
-                    stage=JobStage.objects.get(value=stage),
-                )
-            # Then send the request to workers, in case there is error, the Job record was created already
-            response = requests.post(urljoin(base_url, trigger), json=msg)
-            response.raise_for_status()
-
-        except request.exceptions.HTTPError as e:
-            logging.error(f"HTTP Trigger failed: {e}")
-
         # TODO: The worker_id can be used for status, but we need to save it somewhere.
         # resp_json = response.json()
         # worker_id = resp_json.get("instanceId")
