@@ -194,7 +194,7 @@ services:
       # This connection can be in separate variables (then don't need to do URL encoding), but because it can re-use the same connection string with SQL_ALCHEMY_CONN
       AIRFLOW_CONN_POSTGRES_DB_CONN: postgresql+psycopg2://postgres:postgres@db:5432/postgres
       # The blob storage where Airflow get/put necessary files
-      AIRFLOW_VAR_STORAGE_TYPE: minio
+      STORAGE_TYPE: ${STORAGE_TYPE:-azure}
       # Minio connection variables (don't need to do URL encoding here)
       AIRFLOW_VAR_MINIO_ENDPOINT: http://minio:9000
       AIRFLOW_VAR_MINIO_ACCESS_KEY: minioadmin
@@ -227,7 +227,7 @@ services:
       AIRFLOW__WEBSERVER__SECRET_KEY: "test"
       AIRFLOW__API__AUTH_BACKENDS: airflow.api.auth.backend.basic_auth
       AIRFLOW_CONN_POSTGRES_DB_CONN: postgresql+psycopg2://postgres:postgres@db:5432/postgres
-      AIRFLOW_VAR_STORAGE_TYPE: minio
+      STORAGE_TYPE: ${STORAGE_TYPE:-azure}
       AIRFLOW_VAR_MINIO_ENDPOINT: http://minio:9000
       AIRFLOW_VAR_MINIO_ACCESS_KEY: minioadmin
       AIRFLOW_VAR_MINIO_SECRET_KEY: minioadmin

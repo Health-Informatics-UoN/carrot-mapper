@@ -2,7 +2,8 @@ from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.operators.empty import EmptyOperator
 from libs.utils import create_task, validate_params_SR_processing
-from libs.SR_processing.core import process_scan_report_task, connect_to_storage
+from libs.SR_processing.core import process_scan_report_task
+from libs.utils import connect_to_storage
 
 """
 This DAG automates the process of ...
