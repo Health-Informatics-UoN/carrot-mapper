@@ -208,10 +208,8 @@ services:
       # TODO: add optional admin user configuration in the docs
     volumes:
       - ./app/airflow/dags:/opt/airflow/dags
-      # TODO: decide which method to set Airflow config, if using the below, set it in the Dockerfile
-      # - ./app/airflow/config/airflow.cfg:/opt/airflow/airflow.cfg
     ports:
-      # normal port is 8080 but to avoid the conflict with workers, use 8081
+      # to be solved in #1036: normal port is 8080 but to avoid the conflict with workers, use 8081, but this will be changed to 8080 in #1036
       - "8081:8081"
 
   scheduler:
@@ -222,7 +220,6 @@ services:
       - airflow-webserver
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
-      # Update this connection string to point to your remote PostgreSQL
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://postgres:postgres@db:5432/postgres?options=-csearch_path%3Dairflow
       AIRFLOW__DATABASE__SQL_ALCHEMY_SCHEMA: airflow
       AIRFLOW__WEBSERVER__SECRET_KEY: "test"
@@ -235,8 +232,6 @@ services:
       AIRFLOW_VAR_WASB_CONNECTION_STRING: DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;TableEndpoint=http://azurite:10002/devstoreaccount1
     volumes:
       - ./app/airflow/dags:/opt/airflow/dags
-      # TODO: decide which method to set Airflow config, if using the below, set it in the Dockerfile
-      # - ./app/airflow/config/airflow.cfg:/opt/airflow/airflow.cfg
 
 volumes:
   db_data:
