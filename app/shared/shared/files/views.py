@@ -1,6 +1,4 @@
 import json
-
-from django.conf import settings
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
@@ -11,16 +9,15 @@ from rest_framework.permissions import IsAuthenticated
 from shared.files.paginations import CustomPagination
 from shared.jobs.models import Job, JobStage, StageStatus
 from shared.mapping.models import ScanReport
-from shared.services.azurequeue import add_message
 from drf_spectacular.utils import extend_schema
 from shared.services.storage_service import StorageService
-from shared.services.function_service import FunctionService
+from shared.services.worker_service import get_worker_service
 
 from .models import FileDownload
 from .serializers import FileDownloadSerializer
 
 storage_service = StorageService()
-function_service = FunctionService()
+worker_service = get_worker_service()
 
 
 class FileDownloadView(GenericAPIView, ListModelMixin, RetrieveModelMixin):
@@ -121,7 +118,7 @@ class FileDownloadView(GenericAPIView, ListModelMixin, RetrieveModelMixin):
                 "file_type": file_type,
             }
 
-            function_service.trigger_rules_export(msg)
+            worker_service.trigger_rules_export(msg)
             # Create job record for downloading file
             Job.objects.create(
                 scan_report=ScanReport.objects.get(id=scan_report_id),

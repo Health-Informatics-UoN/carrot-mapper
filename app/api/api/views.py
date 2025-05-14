@@ -74,10 +74,10 @@ from shared.services.rules_export import (
     make_dag,
 )
 from shared.services.storage_service import StorageService
-from shared.services.function_service import FunctionService
+from shared.services.worker_service import get_worker_service
 
 storage_service = StorageService()
-function_service = FunctionService()
+worker_service = get_worker_service()
 
 
 class DataPartnerViewSet(GenericAPIView, ListModelMixin):
@@ -351,7 +351,7 @@ class ScanReportIndexV2(GenericAPIView, ListModelMixin, CreateModelMixin):
         # If there's no data dictionary supplied, only upload the scan report
         # Set data_dictionary_blob in Azure message to None
         if str(valid_data_dictionary_file) == "None":
-            azure_dict = {
+            message_body = {
                 "scan_report_id": scan_report.id,
                 "scan_report_blob": scan_report.name,
                 "data_dictionary_blob": "None",
@@ -374,7 +374,7 @@ class ScanReportIndexV2(GenericAPIView, ListModelMixin, CreateModelMixin):
             scan_report.data_dictionary = data_dictionary
             scan_report.save()
 
-            azure_dict = {
+            message_body = {
                 "scan_report_id": scan_report.id,
                 "scan_report_blob": scan_report.name,
                 "data_dictionary_blob": data_dictionary.name,
@@ -396,7 +396,7 @@ class ScanReportIndexV2(GenericAPIView, ListModelMixin, CreateModelMixin):
             )
 
         # send to the workers service
-        function_service.trigger_scan_report_processing(azure_dict)
+        worker_service.trigger_scan_report_processing(message_body)
 
 
 class ScanReportDetailV2(
@@ -661,7 +661,7 @@ class ScanReportTableDetailV2(
             )
 
         # Trigger auto mapping
-        function_service.trigger_auto_mapping(
+        worker_service.trigger_auto_mapping(
             scan_report=scan_report_instance,
             table=instance,
             data_dictionary_name=data_dictionary_name,

@@ -32,6 +32,21 @@ def find_standard_concepts(**kwargs) -> None:
             }
         ]
     """
+    # TODO: add allowed domains to the docs and UI
+    allowed_domains = [
+        "Condition",
+        "Drug",
+        "Procedure",
+        "Specimen",
+        "Device",
+        "Measurement",
+        "Observation",
+        "Gender",
+        "Race",
+        "Ethnicity",
+    ]
+    # Flag to skip this check when necessary
+    skip_domains_check = False
 
     # Get validated parameters from XCom
     validated_params = pull_validated_params(kwargs, "validate_params_auto_mapping")
@@ -65,6 +80,13 @@ def find_standard_concepts(**kwargs) -> None:
         except Exception as e:
             logging.error(
                 f"Failed to create temp_standard_concepts_{table_id} table: {str(e)}"
+            )
+            update_job_status(
+                scan_report=scan_report_id,
+                scan_report_table=table_id,
+                stage=JobStageType.BUILD_CONCEPTS_FROM_DICT,
+                status=StageStatusType.FAILED,
+                details=f"Error in creating temp_standard_concepts_{table_id} table",
             )
             raise
 
@@ -100,8 +122,12 @@ def find_standard_concepts(**kwargs) -> None:
                 concept_relationship.concept_id_1 = src_concept.concept_id AND
                 concept_relationship.relationship_id = 'Maps to'
             JOIN omop.concept AS std_concept ON
-                std_concept.concept_id = concept_relationship.concept_id_2 AND
-                std_concept.standard_concept = 'S'
+                std_concept.concept_id = concept_relationship.concept_id_2
+                AND std_concept.standard_concept = 'S'
+                AND (
+                    %(skip_domains_check)s = true 
+                    OR std_concept.domain_id = ANY(%(allowed_domains)s)
+                )
             WHERE sr_value.scan_report_field_id = %(sr_field_id)s;
             """
             try:
@@ -111,6 +137,8 @@ def find_standard_concepts(**kwargs) -> None:
                         "table_id": table_id,
                         "sr_field_id": sr_field_id,
                         "vocabulary_id": vocabulary_id,
+                        "skip_domains_check": skip_domains_check,
+                        "allowed_domains": allowed_domains,
                     },
                 )
                 logging.info(
