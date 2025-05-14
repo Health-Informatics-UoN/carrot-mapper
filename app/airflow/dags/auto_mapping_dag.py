@@ -26,7 +26,7 @@ from libs.core_prep_rules_creation import (
     find_additional_fields,
 )
 from libs.core_rules_creation import create_mapping_rules
-from libs.utils import create_task, validate_params
+from libs.utils import create_task, validate_params_auto_mapping
 
 """
 This DAG automates the process of creating and reusing concepts from scan reports and generating mapping rules.
@@ -88,7 +88,7 @@ dag = DAG(
 start = EmptyOperator(task_id="start", dag=dag)
 
 tasks = [
-    create_task("validate_params", validate_params, dag),
+    create_task("validate_params", validate_params_auto_mapping, dag),
     create_task("delete_mapping_rules", delete_mapping_rules, dag),
     create_task("find_standard_concepts", find_standard_concepts, dag),
     create_task("create_standard_concepts", create_standard_concepts, dag),

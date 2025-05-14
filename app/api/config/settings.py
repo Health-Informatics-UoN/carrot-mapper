@@ -12,8 +12,8 @@ https://docs.djangoproject.com/en/3.1/ref/settings/
 
 import os
 from datetime import timedelta
-
 from dotenv import load_dotenv
+from shared.enums import WorkerServiceType
 
 load_dotenv()
 
@@ -39,9 +39,11 @@ SECRET_KEY = os.environ.get("SECRET_KEY")
 DEBUG = os.getenv("DEBUG", "False") in ["True", 1]
 
 # Here we need to manipulate a string containing a Python list into a list of strings
-ALLOWED_HOSTS = [
-    x.strip()[1:-1] for x in os.environ.get("ALLOWED_HOSTS")[1:-1].split(",")
-]
+ALLOWED_HOSTS = []
+allowed_hosts = os.environ.get("ALLOWED_HOSTS")
+if allowed_hosts:
+    ALLOWED_HOSTS = [x.strip()[1:-1] for x in allowed_hosts[1:-1].split(",")]
+
 # We need this for Azure App Service
 if not DEBUG:
     SECURE_SSL_REDIRECT = True
@@ -264,6 +266,9 @@ SUPERUSER_DEFAULT_USERNAME = os.getenv("SUPERUSER_DEFAULT_USERNAME", None)
 # Storage Type Variable
 STORAGE_TYPE = os.getenv("STORAGE_TYPE", "minio")
 
+# Worker Service Type Variable
+WORKER_SERVICE_TYPE = os.getenv("WORKER_SERVICE_TYPE", WorkerServiceType.AZURE)
+
 # Azure Storage Connection String
 azure_storage_conn_string = "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;TableEndpoint=http://azurite:10002/devstoreaccount1;"
 
@@ -273,3 +278,13 @@ STORAGE_CONN_STRING = os.getenv("STORAGE_CONN_STRING", azure_storage_conn_string
 MINIO_ENDPOINT = os.environ.get("MINIO_ENDPOINT", "minio:9000")
 MINIO_ACCESS_KEY = os.environ.get("MINIO_ACCESS_KEY", "minioadmin")
 MINIO_SECRET_KEY = os.environ.get("MINIO_SECRET_KEY", "minioadmin")
+
+# Airflow Configuration
+AIRFLOW_BASE_URL = os.getenv("AIRFLOW_BASE_URL", "http://airflow-webserver:8081")
+AIRFLOW_AUTO_MAPPING_DAG_ID = os.getenv("AIRFLOW_AUTO_MAPPING_DAG_ID", "auto_mapping")
+AIRFLOW_SCAN_REPORT_PROCESSING_DAG_ID = os.getenv(
+    "AIRFLOW_SCAN_REPORT_PROCESSING_DAG_ID", "scan_report_processing"
+)
+AIRFLOW_RULES_EXPORT_DAG_ID = os.getenv("AIRFLOW_RULES_EXPORT_DAG_ID", "rules_export")
+AIRFLOW_ADMIN_USERNAME = os.getenv("AIRFLOW_ADMIN_USERNAME", "admin")
+AIRFLOW_ADMIN_PASSWORD = os.getenv("AIRFLOW_ADMIN_PASSWORD", "admin")

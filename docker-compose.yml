@@ -77,6 +77,17 @@ services:
       - MINIO_ENDPOINT=minio:9000
       - MINIO_ACCESS_KEY=minioadmin
       - MINIO_SECRET_KEY=minioadmin
+      # Choose `airflow` for testing and development of Airflow.
+      - WORKER_SERVICE_TYPE=airflow
+      # TODO: update to API v2 when updating Airflow to 3.0.0
+      - AIRFLOW_BASE_URL=http://airflow-webserver:8081/api/v1/
+      - AIRFLOW_AUTO_MAPPING_DAG_ID=auto_mapping
+      - AIRFLOW_SCAN_REPORT_PROCESSING_DAG_ID=scan_report_processing
+      - AIRFLOW_RULES_EXPORT_DAG_ID=rules_export
+      - AIRFLOW_ADMIN_USERNAME=admin
+      - AIRFLOW_ADMIN_PASSWORD=admin
+      # To match with the capacity of the production environment
+      - DATA_UPLOAD_MAX_MEMORY_SIZE=10485760
     volumes:
       - ./app/api:/api
       - ./app/shared:/shared
@@ -100,7 +111,6 @@ services:
       - FUNCTIONS_WORKER_RUNTIME=python
       - STORAGE_CONN_STRING=DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;TableEndpoint=http://azurite:10002/devstoreaccount1;
       - APP_URL=http://api:8000/
-      # Three queues below need adding to Azure local storage
       - WORKERS_UPLOAD_NAME=upload-reports-queue
       - RULES_QUEUE_NAME=rules-queue
       - RULES_FILE_QUEUE_NAME=rules-exports-queue

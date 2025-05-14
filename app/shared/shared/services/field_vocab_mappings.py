@@ -64,7 +64,7 @@ def get_field_vocab_mappings(
         ]
 
         logger.info(f"Vocabulary mappings output: {output_list}")
-        return output_list, vocab_dictionary
+        return output_list
 
     except Exception as e:
         logger.error(
