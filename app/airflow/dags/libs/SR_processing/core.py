@@ -17,7 +17,7 @@ storage_type = os.getenv("STORAGE_TYPE", StorageType.MINIO)
 hook = get_storage_hook()
 
 
-def process_scan_report_task(**kwargs):
+def get_scan_report(**kwargs):
     """
     Wrapper function for the scan report processing task using openpyxl
 
@@ -31,7 +31,7 @@ def process_scan_report_task(**kwargs):
     container_name = "scan-reports"
     validated_params = pull_validated_params(kwargs, "validate_params_SR_processing")
     scan_report_blob = validated_params["scan_report_blob"]
-    local_file_path = Path(f"/tmp/{scan_report_blob}")
+    local_SR_path = Path(f"/tmp/scan-reports/{scan_report_blob}")
 
     try:
         # Download file based on storage type
@@ -39,43 +39,57 @@ def process_scan_report_task(**kwargs):
 
         if storage_type == StorageType.AZURE:
             hook.get_file(
-                file_path=local_file_path,
+                file_path=local_SR_path,
                 container_name=container_name,
                 blob_name=scan_report_blob,
             )
         elif storage_type == StorageType.MINIO:
             s3_object = hook.get_key(key=scan_report_blob, bucket_name=container_name)
-            with open(local_file_path, "wb") as f:
+            with open(local_SR_path, "wb") as f:
                 s3_object.download_fileobj(f)
 
-        # Read and process the Excel file
-        logging.info(f"Reading file from {local_file_path}")
-        workbook = load_workbook(filename=local_file_path, read_only=True)
-        worksheet = workbook.active
-
-        processed_data = []
-        total_rows = 0
-
-        # Get headers from first row
-        headers = [cell.value for cell in next(worksheet.rows)]
-
-        # Process each row
-        for row in worksheet.iter_rows(min_row=2):  # Skip header row
-            row_data = {}
-            for header, cell in zip(headers, row):
-                row_data[header] = cell.value
-            processed_data.append(row_data)
-            total_rows += 1
-
-        workbook.close()
-        return processed_data
+        return local_SR_path
 
     except Exception as e:
         logging.error(f"Error processing scan report: {str(e)}")
         raise
-    finally:
-        # Clean up
-        if "workbook" in locals():
-            workbook.close()
-        if local_file_path.exists():
-            local_file_path.unlink()
+
+
+def get_data_dictionary(**kwargs):
+    """
+    Wrapper function for the data dictionary processing task using openpyxl
+
+    Args:
+        context: Airflow context containing task information
+
+    Returns:
+        Dict containing processing results and metadata
+    """
+
+    container_name = "data-dictionaries"
+    validated_params = pull_validated_params(kwargs, "validate_params_SR_processing")
+    data_dictionary_blob = validated_params["data_dictionary_blob"]
+    local_DD_path = Path(f"/tmp/data-dictionaries/{data_dictionary_blob}")
+
+    try:
+        # Download file based on storage type
+        logging.info(f"Downloading file from {container_name}/{data_dictionary_blob}")
+
+        if storage_type == StorageType.AZURE:
+            hook.get_file(
+                file_path=local_DD_path,
+                container_name=container_name,
+                blob_name=data_dictionary_blob,
+            )
+        elif storage_type == StorageType.MINIO:
+            s3_object = hook.get_key(
+                key=data_dictionary_blob, bucket_name=container_name
+            )
+            with open(local_DD_path, "wb") as f:
+                s3_object.download_fileobj(f)
+
+        return local_DD_path
+
+    except Exception as e:
+        logging.error(f"Error processing data dictionary: {str(e)}")
+        raise
