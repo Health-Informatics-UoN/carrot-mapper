@@ -2,7 +2,6 @@ from requests.auth import HTTPBasicAuth
 import logging
 from urllib.parse import urljoin
 import requests
-from enum import StrEnum
 from typing import Optional, Dict, Any
 from shared.mapping.models import ScanReport, ScanReportTable
 from shared.services.field_vocab_mappings import get_field_vocab_mappings
@@ -10,13 +9,7 @@ from shared.services.rules import delete_mapping_rules
 from django.conf import settings
 from shared.services.azurequeue import add_message
 from abc import ABC, abstractmethod
-
-
-class WORKER_SERVICE_TYPE(StrEnum):
-    """Enum for worker service types."""
-
-    AZURE = "azure"
-    AIRFLOW = "airflow"
+from shared.enums import WorkerServiceType
 
 
 class WorkerService(ABC):
@@ -160,13 +153,13 @@ class AirflowWorkerService(WorkerService):
 
 
 # Function to create the appropriate service based on configuration
-def create_worker_service() -> WorkerService:
+def get_worker_service() -> WorkerService:
     """Function to create the appropriate worker service."""
     worker_service_type = settings.WORKER_SERVICE_TYPE
 
-    if worker_service_type == WORKER_SERVICE_TYPE.AZURE:
+    if worker_service_type == WorkerServiceType.AZURE:
         return AzureWorkerService()
-    elif worker_service_type == WORKER_SERVICE_TYPE.AIRFLOW:
+    elif worker_service_type == WorkerServiceType.AIRFLOW:
         return AirflowWorkerService()
     else:
         raise ValueError(

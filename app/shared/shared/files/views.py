@@ -11,13 +11,13 @@ from shared.jobs.models import Job, JobStage, StageStatus
 from shared.mapping.models import ScanReport
 from drf_spectacular.utils import extend_schema
 from shared.services.storage_service import StorageService
-from shared.services.worker_service import create_worker_service
+from shared.services.worker_service import get_worker_service
 
 from .models import FileDownload
 from .serializers import FileDownloadSerializer
 
 storage_service = StorageService()
-worker_service = create_worker_service()
+worker_service = get_worker_service()
 
 
 class FileDownloadView(GenericAPIView, ListModelMixin, RetrieveModelMixin):

@@ -74,10 +74,10 @@ from shared.services.rules_export import (
     make_dag,
 )
 from shared.services.storage_service import StorageService
-from shared.services.worker_service import create_worker_service
+from shared.services.worker_service import get_worker_service
 
 storage_service = StorageService()
-worker_service = create_worker_service()
+worker_service = get_worker_service()
 
 
 class DataPartnerViewSet(GenericAPIView, ListModelMixin):
