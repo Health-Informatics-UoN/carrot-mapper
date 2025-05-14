@@ -192,7 +192,7 @@ services:
       AIRFLOW__API__AUTH_BACKENDS: airflow.api.auth.backend.basic_auth
       AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "False"
       AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "False"
-      # This connection can be in separate variables (then don't need to do URL encoding), but because it can re-use the same connection string with SQL_ALCHEMY_CONN
+      # This connection can be in separate variables (then don't need to do URL encoding), but it can reuse the same connection string with SQL_ALCHEMY_CONN (without extras)
       AIRFLOW_CONN_POSTGRES_DB_CONN: postgresql+psycopg2://postgres:postgres@db:5432/postgres
       # The blob storage where Airflow get/put necessary files
       STORAGE_TYPE: ${STORAGE_TYPE:-azure}
