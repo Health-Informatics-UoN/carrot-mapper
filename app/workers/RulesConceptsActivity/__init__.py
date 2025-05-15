@@ -56,7 +56,7 @@ def _create_concepts(
         domains, skip the concept.
 
         For non-standard concepts (standard_concept != "S"), skip
-        if they don't have standard concept mappings (concept_id == -1).
+        if they don't have `Maps to` relationship to a standard concept.
 
     Args:
         - table_values (List[ScanReportValueDict]): List of
