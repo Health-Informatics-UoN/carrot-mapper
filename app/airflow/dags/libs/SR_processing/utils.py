@@ -303,6 +303,37 @@ def _create_value_entries(
     """
     print(f"values_details: {values_details}")
     print(f"fields: {fields}")
+    try:
+        for field in fields:
+            scan_report_field_id = field[1]
+            for entry in values_details:
+                if entry["fieldname"] == field[0]:
+                    value = entry["full_value"]
+                    frequency = entry["frequency"]
+                    value_description = entry["val_desc"]
+                    # Prepare the SQL insert statement with RETURNING id to get the created field ID
+                    insert_sql = """
+                    INSERT INTO mapping_scanreportvalue (
+                        scan_report_field_id, value, frequency, value_description, "conceptID", created_at, updated_at
+                    )
+                    VALUES (
+                        %(scan_report_field_id)s, %(value)s, %(frequency)s, %(value_description)s, -1, NOW(), NOW()
+                    )
+                """
+                    # Execute the query and get the returned ID
+                    pg_hook.run(
+                        insert_sql,
+                        parameters={
+                            "scan_report_field_id": scan_report_field_id,
+                            "value": value,
+                            "frequency": frequency,
+                            "value_description": value_description,
+                        },
+                    )
+
+    except Exception as e:
+        logging.error(f"Error creating field entry: {str(e)}")
+        raise e
 
 
 def add_SRValues_and_value_descriptions(
