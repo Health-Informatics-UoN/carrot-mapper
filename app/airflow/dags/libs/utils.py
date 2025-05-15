@@ -4,13 +4,8 @@ import json
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from enum import Enum
 from airflow.operators.python import PythonOperator
-from typing import TypedDict, List, Optional, Any, Dict
-from airflow.providers.microsoft.azure.hooks.wasb import WasbHook
-from airflow.providers.amazon.aws.hooks.s3 import S3Hook
-from airflow.models.connection import Connection
-from airflow.utils.session import create_session
-from libs.enums import StorageType
-import os
+from typing import TypedDict, List, Optional
+from airflow.models.taskinstance import TaskInstance
 
 # PostgreSQL connection hook
 pg_hook = PostgresHook(postgres_conn_id="postgres_db_conn")
@@ -32,6 +27,8 @@ class ValidatedParams(TypedDict):
     field_vocab_pairs: List[FieldVocabPair]
     parent_dataset_id: int
     trigger_reuse_concepts: bool
+    scan_report_blob: str
+    data_dictionary_blob: Optional[str]
 
 
 class StageStatusType(Enum):
@@ -230,119 +227,5 @@ def validate_params_SR_processing(**context):
 
 def pull_validated_params(kwargs: dict, task_id: str) -> ValidatedParams:
     """Pull parameters from XCom for a given task"""
-    task_instance = kwargs["ti"]
+    task_instance: TaskInstance = kwargs["ti"]
     return task_instance.xcom_pull(task_ids=task_id)
-
-
-storage_type = os.getenv("STORAGE_TYPE", StorageType.MINIO)
-
-
-def connect_to_storage():
-    with create_session() as session:
-        if storage_type == StorageType.AZURE:
-            # Check if WASB connection exists
-            existing_conn = (
-                session.query(Connection)
-                .filter(Connection.conn_id == "wasb_conn")
-                .first()
-            )
-
-            if existing_conn is None:
-                conn = Connection(
-                    conn_id="wasb_conn",
-                    conn_type="wasb",
-                    extra={
-                        "connection_string": os.getenv(
-                            "AIRFLOW_VAR_WASB_CONNECTION_STRING"
-                        ),
-                    },
-                )
-                session.add(conn)
-                session.commit()
-                logging.info("Created new WASB connection")
-
-        elif storage_type == StorageType.MINIO:
-            # Check if MinIO connection exists
-            existing_conn = (
-                session.query(Connection)
-                .filter(Connection.conn_id == "minio_conn")
-                .first()
-            )
-
-            if existing_conn is None:
-                conn = Connection(
-                    conn_id="minio_conn",
-                    conn_type="aws",
-                    extra={
-                        "endpoint_url": os.getenv("AIRFLOW_VAR_MINIO_ENDPOINT"),
-                        "aws_access_key_id": os.getenv("AIRFLOW_VAR_MINIO_ACCESS_KEY"),
-                        "aws_secret_access_key": os.getenv(
-                            "AIRFLOW_VAR_MINIO_SECRET_KEY"
-                        ),
-                    },
-                )
-                session.add(conn)
-                session.commit()
-                logging.info("Created new MinIO connection")
-
-
-def get_storage_hook():
-    if storage_type == StorageType.AZURE:
-        return WasbHook(wasb_conn_id="wasb_conn")
-    elif storage_type == StorageType.MINIO:
-        return S3Hook(aws_conn_id="minio_conn")
-    else:
-        raise ValueError(f"Unsupported storage type: {storage_type}")
-
-
-def remove_BOM(intermediate: List[Dict[str, Any]]):
-    """
-    Given a list of dictionaries, remove any occurrences of the BOM in the keys.
-
-    Args:
-        intermediate (List[Dict[str, Any]]): List of dictionaries to remove from.
-
-    Returns:
-        The list of dictionaries with BOM removed from the keys.
-    """
-    return [
-        {key.replace("\ufeff", ""): value for key, value in d.items()}
-        for d in intermediate
-    ]
-
-
-def process_four_item_dict(four_item_data):
-    """
-    Converts a list of dictionaries (each with keys 'csv_file_name', 'field_name' and
-    'code' and 'value') to a nested dictionary with indices 'csv_file_name',
-    'field_name', 'code', and internal value 'value'.
-
-    [{'csv_file_name': 'table1', 'field_name': 'field1', 'value': 'value1', 'code':
-    'code1'},
-    {'csv_file_name': 'table1', 'field_name': 'field2', 'value': 'value2', 'code':
-    'code2'},
-    {'csv_file_name': 'table2', 'field_name': 'field2', 'value': 'value2', 'code':
-    'code2'},
-    {'csv_file_name': 'table2', 'field_name': 'field2', 'value': 'value3', 'code':
-    'code3'},
-    {'csv_file_name': 'table3', 'field_name': 'field3', 'value': 'value3', 'code':
-    'code3'}]
-    ->
-    {'table1': {'field1': {'value1': 'code1'}, 'field2': {'value2': 'code2'}},
-    'table2': {'field2': {'value2': 'code2', 'value3': 'code3'}},
-    'table3': {'field3': {'value3': 'code3'}}
-    }
-    """
-    csv_file_names = set(row["csv_file_name"] for row in four_item_data)
-
-    # Initialise the dictionary with the keys, and each value set to a blank dict()
-    new_data_dictionary = dict.fromkeys(csv_file_names, {})
-
-    for row in four_item_data:
-        if row["field_name"] not in new_data_dictionary[row["csv_file_name"]]:
-            new_data_dictionary[row["csv_file_name"]][row["field_name"]] = {}
-        new_data_dictionary[row["csv_file_name"]][row["field_name"]][row["code"]] = row[
-            "value"
-        ]
-
-    return new_data_dictionary

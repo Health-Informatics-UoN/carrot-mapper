@@ -2,8 +2,13 @@ from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.operators.empty import EmptyOperator
 from libs.utils import create_task, validate_params_SR_processing
-from libs.SR_processing.core import get_scan_report, get_data_dictionary
-from libs.utils import connect_to_storage
+from libs.SR_processing.core import (
+    get_scan_report,
+    get_data_dictionary,
+    create_scan_report_tables,
+    create_fields,
+)
+from libs.SR_processing.utils import connect_to_storage
 
 """
 This DAG automates the process of ...
@@ -41,6 +46,8 @@ tasks = [
     create_task("connect_to_storage", connect_to_storage, dag),
     create_task("get_scan_report", get_scan_report, dag),
     create_task("get_data_dictionary", get_data_dictionary, dag),
+    create_task("create_scan_report_tables", create_scan_report_tables, dag),
+    create_task("create_fields", create_fields, dag),
 ]
 
 
