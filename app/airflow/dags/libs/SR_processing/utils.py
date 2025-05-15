@@ -215,139 +215,134 @@ def transform_scan_report_sheet_table(sheet: Worksheet) -> defaultdict[Any, List
     return cleaned_dict
 
 
-# def _create_values_details(
-#     fieldname_value_freq: Dict[str, Tuple[str]],
-#     table_name: str,
-# ) -> List[Dict[str, Any]]:
-#     """
-#     Create value details for each fieldname-value pair.
+def _create_values_details(
+    fieldname_value_freq: Dict[str, Tuple[str]],
+    table_name: str,
+) -> List[Dict[str, Any]]:
+    """
+    Create value details for each fieldname-value pair.
 
-#     Args:
-#         fieldname_value_freq (Dict[str, Tuple[str]]): A dictionary mapping fieldnames to
-#             tuples of value-frequency pairs.
-#         table_name (str): The name of the table.
+    Args:
+        fieldname_value_freq (Dict[str, Tuple[str]]): A dictionary mapping fieldnames to
+            tuples of value-frequency pairs.
+        table_name (str): The name of the table.
 
-#     Returns:
-#         List[Dict[str, Any]]: A list of dictionaries containing the value details for each
-#             fieldname-value pair.
-#     """
-#     values_details = []
-#     for fieldname, value_freq_tuples in fieldname_value_freq.items():
-#         for full_value, frequency in value_freq_tuples:
-#             try:
-#                 frequency = int(frequency)
-#             except (ValueError, TypeError):
-#                 frequency = 0
-#             values_details.append(
-#                 {
-#                     "full_value": full_value,
-#                     "frequency": frequency,
-#                     "fieldname": fieldname,
-#                     "table": table_name,
-#                     "val_desc": None,
-#                 }
-#             )
-#     return values_details
-
-
-# def _assign_order(values_details: List[Dict[str, Any]]) -> None:
-#     """
-#     Add "order" field to each entry to enable correctly-ordered recombination at the end.
-
-#     Args:
-#         values_details (List[Dict[str, Any]]): List of value details to transform.
-
-#     Returns:
-#         None
-#     """
-#     for entry_number, entry in enumerate(values_details):
-#         entry["order"] = entry_number
+    Returns:
+        List[Dict[str, Any]]: A list of dictionaries containing the value details for each
+            fieldname-value pair.
+    """
+    values_details = []
+    for fieldname, value_freq_tuples in fieldname_value_freq.items():
+        for full_value, frequency in value_freq_tuples:
+            try:
+                frequency = int(frequency)
+            except (ValueError, TypeError):
+                frequency = 0
+            values_details.append(
+                {
+                    "full_value": full_value,
+                    "frequency": frequency,
+                    "fieldname": fieldname,
+                    "table": table_name,
+                    "val_desc": None,
+                }
+            )
+    return values_details
 
 
-# def _apply_data_dictionary(
-#     values_details: List[Dict[str, Any]], data_dictionary: Dict[Any, Dict]
-# ) -> None:
-#     """
-#     Apply data dictionary to update value descriptions in values_details from the data dict.
+def _assign_order(values_details: List[Dict[str, Any]]) -> None:
+    """
+    Add "order" field to each entry to enable correctly-ordered recombination at the end.
 
-#     Args:
-#         values_details (List[Dict[str, Any]]): A list of dictionaries with the value
-#             details for each fieldname-value pair.
-#         data_dictionary (Dict[Any, Dict]): A dictionary mapping table names to dictionaries
-#             containing fieldname-value mappings and their corresponding value descriptions.
+    Args:
+        values_details (List[Dict[str, Any]]): List of value details to transform.
 
-#     Returns:
-#         None
-#     """
-#     for entry in values_details:
-#         table_data = data_dictionary.get(str(entry["table"]))
-#         if table_data and table_data.get(str(entry["fieldname"])):
-#             entry["val_desc"] = table_data[str(entry["fieldname"])].get(
-#                 str(entry["full_value"])
-#             )
+    Returns:
+        None
+    """
+    for entry_number, entry in enumerate(values_details):
+        entry["order"] = entry_number
 
 
-# def _create_value_entries(values_details: List[Dict[str, Any]], fields: Tuple):
-#     """
-#     Create value entries based on values_details and fieldnames_to_ids_dict.
+def _apply_data_dictionary(
+    values_details: List[Dict[str, Any]], data_dictionary: Dict[Any, Dict]
+) -> None:
+    """
+    Apply data dictionary to update value descriptions in values_details from the data dict.
 
-#     Args:
-#         values_details (List[Dict[str, Any]]): A list of dictionaries of the value
-#             details for each fieldname-value pair.
-#         fields (List[ScanReportField]): A list of SCan Report Fields.
+    Args:
+        values_details (List[Dict[str, Any]]): A list of dictionaries with the value
+            details for each fieldname-value pair.
+        data_dictionary (Dict[Any, Dict]): A dictionary mapping table names to dictionaries
+            containing fieldname-value mappings and their corresponding value descriptions.
 
-#     Returns:
-#         List[ScanReportValue]: A list of ScanReportValues.
-#     """
-#     return [
-#         ScanReportValue(
-#             value=entry["full_value"][:127],
-#             frequency=int(entry["frequency"]),
-#             value_description=entry["val_desc"],
-#             scan_report_field=next(f for f in fields if f.name == entry["fieldname"]),
-#         )
-#         for entry in values_details
-#     ]
-
-
-# def add_SRValues_and_value_descriptions(
-#     fieldname_value_freq_dict: Dict[str, Tuple[str]],
-#     current_table_name: str,
-#     data_dictionary: Dict[Any, Dict],
-#     fields: list[ScanReportField],
-# ) -> None:
-#     """
-#     Add ScanReportValues and value descriptions to the values_details list.
-
-#     Args:
-#         fieldname_value_freq_dict: A dictionary containing field names as keys and
-#             value-frequency tuples as values.
-#         current_table_name: The name of the current table.
-#         data_dictionary: The data dictionary containing field-value descriptions.
-#         fields: A list of Scan Report Fields.
-
-#     Returns:
-#         The response content after posting the values.
-#     """
-#     values_details = _create_values_details(
-#         fieldname_value_freq_dict, current_table_name
-#     )
-#     logging.debug("Assign order")
-#     _assign_order(values_details)
-
-#     # --------------------------------------------------------------------------------
-#     # Update val_desc of each SRField entry if it has a value description from the
-#     # data dictionary
-#     if data_dictionary:
-#         logging.debug("apply data dictionary")
-#         _apply_data_dictionary(values_details, data_dictionary)
-
-#     # Convert basic information about SRValues into entries
-#     logging.debug("create value_entries_to_post")
-#     value_entries = _create_value_entries(values_details, fields)
+    Returns:
+        None
+    """
+    for entry in values_details:
+        table_data = data_dictionary.get(str(entry["table"]))
+        if table_data and table_data.get(str(entry["fieldname"])):
+            entry["val_desc"] = table_data[str(entry["fieldname"])].get(
+                str(entry["full_value"])
+            )
 
 
-def create_field_entry(row, scan_report_table_id):
+def _create_value_entries(
+    values_details: List[Dict[str, Any]], fields: List[Tuple[str, int]]
+):
+    """
+    Create value entries based on values_details and fieldnames_to_ids_dict.
+
+    Args:
+        values_details (List[Dict[str, Any]]): A list of dictionaries of the value
+            details for each fieldname-value pair.
+        fields (List[ScanReportField]): A list of SCan Report Fields.
+
+    Returns:
+        List[ScanReportValue]: A list of ScanReportValues.
+    """
+    print(f"values_details: {values_details}")
+    print(f"fields: {fields}")
+
+
+def add_SRValues_and_value_descriptions(
+    fieldname_value_freq_dict: Dict[str, Tuple[str]],
+    current_table_name: str,
+    data_dictionary: Dict[Any, Dict],
+    fields: List[Tuple[str, int]],
+) -> None:
+    """
+    Add ScanReportValues and value descriptions to the values_details list.
+
+    Args:
+        fieldname_value_freq_dict: A dictionary containing field names as keys and
+            value-frequency tuples as values.
+        current_table_name: The name of the current table.
+        data_dictionary: The data dictionary containing field-value descriptions.
+        fields: A list of Scan Report Fields.
+
+    Returns:
+        The response content after posting the values.
+    """
+    values_details = _create_values_details(
+        fieldname_value_freq_dict, current_table_name
+    )
+    logging.debug("Assign order")
+    _assign_order(values_details)
+
+    # --------------------------------------------------------------------------------
+    # Update val_desc of each SRField entry if it has a value description from the
+    # data dictionary
+    if data_dictionary:
+        logging.debug("apply data dictionary")
+        _apply_data_dictionary(values_details, data_dictionary)
+
+    # Convert basic information about SRValues into entries
+    logging.debug("create value_entries_to_post")
+    _create_value_entries(values_details, fields)
+
+
+def create_field_entry(row, scan_report_table) -> dict[str, Tuple[str, int]]:
     """
     Creates a field entry in the database for a scan report table.
 
@@ -393,7 +388,7 @@ def create_field_entry(row, scan_report_table_id):
         result = pg_hook.get_records(
             insert_sql,
             parameters={
-                "scan_report_table_id": scan_report_table_id,
+                "scan_report_table_id": scan_report_table[1],
                 "name": field_name,
                 "description_column": description,
                 "type_column": type_column,
@@ -410,8 +405,37 @@ def create_field_entry(row, scan_report_table_id):
         field_id = result[0][0]
         logging.info(f"Created field '{field_name}' with ID {field_id}")
 
-        return field_id
+        return {scan_report_table[0]: (field_name.replace("\ufeff", ""), field_id)}
 
     except Exception as e:
         logging.error(f"Error creating field entry: {str(e)}")
         raise e
+
+
+def handle_single_table(
+    current_table_name: str,
+    fields: list[Tuple[str, int]],
+    workbook: Workbook,
+    data_dictionary: Dict[Any, Dict],
+) -> None:
+    """
+    Handle creating a single table values.
+
+    Args:
+        field_entries (List[Dict[str, str]]): List of field entries to create.
+        scan_report_id (str): ID of the scan report to attach to.
+
+    Raises:
+        Exception: ValueError: Trying to access a sheet in the workbook that does not exist.
+    """
+
+    # Go to Table sheet to process all the values from the sheet
+    sheet = workbook[current_table_name]
+
+    fieldname_value_freq_dict = transform_scan_report_sheet_table(sheet)
+    add_SRValues_and_value_descriptions(
+        fieldname_value_freq_dict,
+        current_table_name,
+        data_dictionary,
+        fields,
+    )

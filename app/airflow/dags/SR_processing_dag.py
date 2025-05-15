@@ -7,6 +7,7 @@ from libs.SR_processing.core import (
     get_data_dictionary,
     create_scan_report_tables,
     create_fields,
+    create_values,
 )
 from libs.SR_processing.utils import connect_to_storage
 
@@ -48,6 +49,7 @@ tasks = [
     create_task("get_data_dictionary", get_data_dictionary, dag),
     create_task("create_scan_report_tables", create_scan_report_tables, dag),
     create_task("create_fields", create_fields, dag),
+    create_task("create_values", create_values, dag),
 ]
 
 
