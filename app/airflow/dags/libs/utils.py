@@ -120,6 +120,7 @@ def _validate_dag_params(
     string_params=None,
     bool_params=None,
     has_field_vocab_pairs=False,
+    check_data_dictionary_blob=False,
     **context,
 ):
     """
@@ -188,6 +189,14 @@ def _validate_dag_params(
                 field_vocab_pairs
             )
 
+    # Validate data_dictionary_blob
+    if check_data_dictionary_blob:
+        data_dictionary_blob = conf.get("data_dictionary_blob")
+        if data_dictionary_blob == "None":
+            validated_params["data_dictionary_blob"] = None
+        else:
+            validated_params["data_dictionary_blob"] = data_dictionary_blob
+
     # Raise error if any validation failed
     if errors:
         error_message = "Parameter validation failed: " + "; ".join(errors)
@@ -219,9 +228,12 @@ def validate_params_auto_mapping(**context):
 def validate_params_SR_processing(**context):
     """Validates parameters required for scan report processing DAG tasks."""
     int_params = ["scan_report_id"]
-    string_params = ["scan_report_blob", "data_dictionary_blob"]
+    string_params = ["scan_report_blob"]
     return _validate_dag_params(
-        int_params=int_params, string_params=string_params, **context
+        int_params=int_params,
+        string_params=string_params,
+        check_data_dictionary_blob=True,
+        **context,
     )
 
 

@@ -3,11 +3,8 @@ from airflow import DAG
 from airflow.operators.empty import EmptyOperator
 from libs.utils import create_task, validate_params_SR_processing
 from libs.SR_processing.core import (
-    get_scan_report,
-    get_data_dictionary,
+    process_data_dictionary,
     create_scan_report_tables,
-    create_fields,
-    create_values,
 )
 from libs.SR_processing.utils import connect_to_storage
 
@@ -38,16 +35,16 @@ dag = DAG(
 )
 
 # TODO: clean up
-
+# TODO: add validate for DD file size: DATA_UPLOAD_MAX_MEMORY_SIZE :(
 # Start the workflow
 start = EmptyOperator(task_id="start", dag=dag)
 
 tasks = [
     create_task("validate_params_SR_processing", validate_params_SR_processing, dag),
     create_task("connect_to_storage", connect_to_storage, dag),
-    create_task("get_scan_report", get_scan_report, dag),
-    create_task("get_data_dictionary", get_data_dictionary, dag),
+    create_task("process_data_dictionary", process_data_dictionary, dag),
     create_task("create_scan_report_tables", create_scan_report_tables, dag),
+    # TODO: add task to clean up temp files and tables
 ]
 
 

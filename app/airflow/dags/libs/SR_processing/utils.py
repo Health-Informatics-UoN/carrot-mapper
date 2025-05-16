@@ -10,9 +10,12 @@ from openpyxl.workbook.workbook import Workbook
 import logging
 from collections import defaultdict
 from airflow.providers.postgres.hooks.postgres import PostgresHook
+from pathlib import Path
 
 # PostgreSQL connection hook
 pg_hook = PostgresHook(postgres_conn_id="postgres_db_conn")
+# Storage type
+storage_type = os.getenv("STORAGE_TYPE", StorageType.MINIO)
 
 
 def get_unique_table_names(worksheet: Worksheet) -> List[str]:
@@ -504,3 +507,230 @@ def handle_single_table(
         data_dictionary,
         fields,
     )
+
+
+def create_data_dictionary_table(data_dictionary: Dict[Any, Dict], scan_report_id: int):
+    """
+    Creates a temporary table to store data dictionary information.
+
+    Args:
+        kwargs: Airflow context containing the data dictionary
+
+    Returns:
+        None
+    """
+
+    if not data_dictionary:
+        logging.info("No data dictionary available, skipping dictionary table creation")
+        return
+
+    try:
+        # Create temporary table for data dictionary
+        pg_hook.run(
+            """
+            DROP TABLE IF EXISTS temp_data_dictionary_%(scan_report_id)s;
+            CREATE TABLE temp_data_dictionary_%(scan_report_id)s (
+                table_name VARCHAR(255),
+                field_name VARCHAR(255),
+                value TEXT,
+                description TEXT
+            )
+        """,
+            parameters={"scan_report_id": scan_report_id},
+        )
+
+        # Prepare data for insertion
+        dictionary_records = []
+        for table_name, fields in data_dictionary.items():
+            for field_name, values in fields.items():
+                for value, description in values.items():
+                    dictionary_records.append(
+                        {
+                            "table_name": table_name,
+                            "field_name": field_name,
+                            "value": value,
+                            "description": description,
+                        }
+                    )
+
+        # Insert records into the temporary table
+        if dictionary_records:
+            pg_hook.insert_rows(
+                table=f"temp_data_dictionary_{scan_report_id}",
+                rows=[
+                    (d["table_name"], d["field_name"], d["value"], d["description"])
+                    for d in dictionary_records
+                ],
+                target_fields=["table_name", "field_name", "value", "description"],
+            )
+
+        logging.info(
+            f"Created temporary data dictionary table with {len(dictionary_records)} records"
+        )
+
+    except Exception as e:
+        logging.error(f"Error creating data dictionary table: {str(e)}")
+        raise e
+
+
+def create_field_values_table(
+    field_values_dict: defaultdict[Any, List], table_id: int, table_name: str
+):
+    """
+    Creates a temporary table to store data dictionary information.
+
+    Args:
+        kwargs: Airflow context containing the data dictionary
+
+    Returns:
+        None
+    """
+
+    if not field_values_dict:
+        logging.info("No field-values available, skipping field values table creation")
+        return
+
+    try:
+        # Create temp table to store field value frequencies
+        pg_hook.run(
+            """
+            DROP TABLE IF EXISTS temp_field_values_%(table_id)s;
+            CREATE TABLE IF NOT EXISTS temp_field_values_%(table_id)s (
+                table_name VARCHAR(255),
+                field_name VARCHAR(255),
+                description TEXT,
+                value TEXT,
+                frequency INTEGER
+            )
+        """,
+            parameters={"table_id": table_id},
+        )
+
+        # Insert field values data into temp table
+        field_values_data = []
+        for field_name, values in field_values_dict.items():
+            for value, frequency in values:
+                # TODO: confirm about frequency of "List truncated..."
+                # Convert empty strings or None to 0 for frequency
+                if frequency == "" or frequency is None:
+                    frequency = 0
+
+                # Ensure frequency is an integer
+                try:
+                    frequency = int(frequency)
+                except (ValueError, TypeError):
+                    frequency = 0
+
+                field_values_data.append(
+                    {
+                        "table_name": table_name,
+                        "field_name": field_name,
+                        "value": value,
+                        "frequency": frequency,
+                    }
+                )
+
+        if field_values_data:
+            pg_hook.insert_rows(
+                table=f"temp_field_values_{table_id}",
+                rows=[
+                    (
+                        d["table_name"],
+                        d["field_name"],
+                        d["value"],
+                        d["frequency"],
+                    )
+                    for d in field_values_data
+                ],
+                target_fields=[
+                    "table_name",
+                    "field_name",
+                    "value",
+                    "frequency",
+                ],
+            )
+
+    except Exception as e:
+        logging.error(f"Error creating data dictionary table: {str(e)}")
+        raise e
+
+
+# Storage hook
+storage_hook = get_storage_hook()
+
+
+def get_scan_report(scan_report_blob: str) -> Path:
+    """
+    Wrapper function for the scan report processing task using openpyxl
+
+    Args:
+        context: Airflow context containing task information
+
+    Returns:
+        Dict containing processing results and metadata
+    """
+
+    container_name = "scan-reports"
+    local_SR_path = Path(f"/tmp/{scan_report_blob}")
+    # TODO: double check temp file can be accessed by other tasks
+    # TODO: check if temp file is persistent, if yes then we can remove the file after processing
+    # https://stackoverflow.com/questions/69294934/where-is-tmp-folder-located-in-airflow
+    try:
+        # Download file based on storage type
+        logging.info(f"Downloading file from {container_name}/{scan_report_blob}")
+
+        if storage_type == StorageType.AZURE:
+            storage_hook.get_file(
+                file_path=local_SR_path,
+                container_name=container_name,
+                blob_name=scan_report_blob,
+            )
+        elif storage_type == StorageType.MINIO:
+            s3_object = storage_hook.get_key(
+                key=scan_report_blob, bucket_name=container_name
+            )
+            with open(local_SR_path, "wb") as f:
+                s3_object.download_fileobj(f)
+
+        return local_SR_path
+
+    except Exception as e:
+        logging.error(f"Error processing scan report: {str(e)}")
+        raise
+
+
+def get_data_dictionary(data_dictionary_blob: str) -> Path:
+    """
+    Wrapper function for the data dictionary processing task using openpyxl
+
+    Args:
+        context: Airflow context containing task information
+
+    Returns:
+        Dict containing processing results and metadata
+    """
+
+    container_name = "data-dictionaries"
+    local_DD_path = Path(f"/tmp/{data_dictionary_blob}")
+
+    try:
+        # Download file based on storage type
+        logging.info(f"Downloading file from {container_name}/{data_dictionary_blob}")
+        if storage_type == StorageType.AZURE:
+            storage_hook.get_file(
+                file_path=local_DD_path,
+                container_name=container_name,
+                blob_name=data_dictionary_blob,
+            )
+        elif storage_type == StorageType.MINIO:
+            s3_object = storage_hook.get_key(
+                key=data_dictionary_blob, bucket_name=container_name
+            )
+            with open(local_DD_path, "wb") as f:
+                s3_object.download_fileobj(f)
+
+        return local_DD_path
+
+    except Exception as e:
+        logging.error(f"Error processing data dictionary: {str(e)}")
+        raise
