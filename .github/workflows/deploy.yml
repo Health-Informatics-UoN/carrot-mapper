@@ -40,8 +40,7 @@ jobs:
         shell: bash
         run: |
           pushd './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
-          python -m pip install --upgrade pip
-          uv pip install -r requirements.txt --target=".python_packages/lib/site-packages"
+          uv pip install --system -r requirements.txt --target=".python_packages/lib/site-packages"
           popd
 
       - name: Upload artifact for deployment job
