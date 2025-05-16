@@ -1,5 +1,5 @@
 [project]
-name = "shared"
+name = "carrot-shared"
 version = "0.3.2"
 description = "Carrot shared library"
 authors = [
@@ -36,6 +36,7 @@ default-groups = [
 
 [tool.setuptools]
 packages = ["shared"]
+package-dir = {"shared" = "shared"} 
 
 [tool.setuptools.package-data]
 shared = ["py.typed"]
