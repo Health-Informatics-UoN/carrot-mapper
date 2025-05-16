@@ -373,7 +373,9 @@ def add_SRValues_and_value_descriptions(
     _create_value_entries(values_details, fields)
 
 
-def create_field_entry(row, scan_report_table) -> dict[str, Tuple[str, int]]:
+def create_field_entry(
+    worksheet: Worksheet, tables: List[Tuple[str, int]]
+) -> Dict[str, List[Tuple[str, int]]]:
     """
     Creates a field entry in the database for a scan report table.
 
@@ -385,58 +387,90 @@ def create_field_entry(row, scan_report_table) -> dict[str, Tuple[str, int]]:
         The ID of the newly created field
     """
     try:
-        # Prepare the SQL insert statement with RETURNING id to get the created field ID
-        insert_sql = """
-            INSERT INTO mapping_scanreportfield (
-                scan_report_table_id, name, description_column, type_column,
-                max_length, nrows, nrows_checked, fraction_empty,
-                nunique_values, fraction_unique, created_at, updated_at,
-                is_patient_id, is_ignore, pass_from_source
-            )
-            VALUES (
-                %(scan_report_table_id)s, %(name)s, %(description_column)s, %(type_column)s,
-                %(max_length)s, %(nrows)s, %(nrows_checked)s, %(fraction_empty)s,
-                %(nunique_values)s, %(fraction_unique)s, NOW(), NOW(), False, False,
-                True
-            )
-            RETURNING id
-        """
+        # Initialize dictionary to group fields by table name
+        fields_by_table: Dict[str, List[Tuple[str, int]]] = {}
 
-        # Extract values from the row, handling possible None values
-        field_name = str(row[1].value) if row[1].value is not None else ""
-        description = str(row[2].value) if row[2].value is not None else ""
-        type_column = str(row[3].value) if row[3].value is not None else ""
-        max_length = row[4].value
-        nrows = row[5].value
-        nrows_checked = row[6].value
+        previous_row_value = None
+        for row in worksheet.iter_rows(min_row=2, max_row=worksheet.max_row + 2):
+            # Guard against unnecessary rows beyond the last true row with contents
+            if (previous_row_value is None or previous_row_value == "") and (
+                row[0].value is None or row[0].value == ""
+            ):
+                break
+            previous_row_value = row[0].value
 
-        # Calculate fractions with default values
-        fraction_empty = round(float(row[7].value or 0), 2)
-        nunique_values = row[8].value
-        fraction_unique = round(float(row[9].value or 0), 2)
+            # If the row is not empty, then it is a field in a table
+            if row[0].value != "" and row[0].value is not None:
+                current_table_name = row[0].value
+                table = next(t for t in tables if t[0] == current_table_name)
 
-        # Execute the query and get the returned ID
-        result = pg_hook.get_records(
-            insert_sql,
-            parameters={
-                "scan_report_table_id": scan_report_table[1],
-                "name": field_name,
-                "description_column": description,
-                "type_column": type_column,
-                "max_length": max_length,
-                "nrows": nrows,
-                "nrows_checked": nrows_checked,
-                "fraction_empty": fraction_empty,
-                "nunique_values": nunique_values,
-                "fraction_unique": fraction_unique,
-            },
-        )
+                # Prepare the SQL insert statement with RETURNING id to get the created field ID
+                insert_sql = """
+                    INSERT INTO mapping_scanreportfield (
+                        scan_report_table_id, name, description_column, type_column,
+                        max_length, nrows, nrows_checked, fraction_empty,
+                        nunique_values, fraction_unique, created_at, updated_at,
+                        is_patient_id, is_ignore, pass_from_source
+                    )
+                    VALUES (
+                        %(scan_report_table_id)s, %(name)s, %(description_column)s, %(type_column)s,
+                        %(max_length)s, %(nrows)s, %(nrows_checked)s, %(fraction_empty)s,
+                        %(nunique_values)s, %(fraction_unique)s, NOW(), NOW(), False, False,
+                        True
+                    )
+                    RETURNING id
+                """
 
-        # Extract the ID from the result
-        field_id = result[0][0]
-        logging.info(f"Created field '{field_name}' with ID {field_id}")
+                # Extract values from the row, handling possible None values
+                field_name = str(row[1].value) if row[1].value is not None else ""
+                description = str(row[2].value) if row[2].value is not None else ""
+                type_column = str(row[3].value) if row[3].value is not None else ""
+                max_length = row[4].value
+                nrows = row[5].value
+                nrows_checked = row[6].value
 
-        return {scan_report_table[0]: (field_name.replace("\ufeff", ""), field_id)}
+                # Calculate fractions with default values
+                fraction_empty = round(float(row[7].value or 0), 2)
+                nunique_values = row[8].value
+                fraction_unique = round(float(row[9].value or 0), 2)
+
+                # Execute the query and get the returned ID
+                result = pg_hook.get_records(
+                    insert_sql,
+                    parameters={
+                        "scan_report_table_id": table[1],
+                        "name": field_name,
+                        "description_column": description,
+                        "type_column": type_column,
+                        "max_length": max_length,
+                        "nrows": nrows,
+                        "nrows_checked": nrows_checked,
+                        "fraction_empty": fraction_empty,
+                        "nunique_values": nunique_values,
+                        "fraction_unique": fraction_unique,
+                    },
+                )
+
+                # Extract the ID from the result
+                field_id = result[0][0]
+
+                # Remove BOM from field name if present
+                clean_field_name = field_name.replace("\ufeff", "")
+
+                # Initialize the list for this table if it's the first field
+                if str(current_table_name) not in fields_by_table:
+                    fields_by_table[str(current_table_name)] = []
+
+                # Add the field to the appropriate table group
+                fields_by_table[str(current_table_name)].append(
+                    (clean_field_name, field_id)
+                )
+
+                logging.info(
+                    f"Created field '{clean_field_name}' with ID {field_id} for table '{current_table_name}'"
+                )
+
+        return fields_by_table
 
     except Exception as e:
         logging.error(f"Error creating field entry: {str(e)}")
