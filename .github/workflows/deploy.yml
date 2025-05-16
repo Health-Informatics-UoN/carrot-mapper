@@ -36,6 +36,15 @@ jobs:
           popd
         shell: bash
 
+      - name: "Resolve Project Dependencies Including Shared"
+        shell: bash
+        run: |
+          pushd './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
+          uv pip compile pyproject.toml --output-file requirements.txt
+          uv pip compile ../shared/pyproject.toml --output-file shared-requirements.txt
+          cat shared-requirements.txt >> requirements.txt
+          popd
+
       - name: "Install Dependencies Using Pip"
         shell: bash
         run: |
