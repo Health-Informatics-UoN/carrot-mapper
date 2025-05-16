@@ -35,7 +35,15 @@ default-groups = [
 ]
 
 [tool.setuptools]
-packages = ["shared"]
+packages = [
+    "shared",
+    "shared.data",
+    "shared.files",
+    "shared.jobs",
+    "shared.mapping",
+    "shared.services",
+    "shared.users"
+]
 
 [tool.setuptools.package-data]
 shared = ["py.typed"]
