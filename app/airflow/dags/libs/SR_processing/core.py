@@ -108,9 +108,10 @@ def create_scan_report_tables(**kwargs) -> None:
                 )
 
                 create_field_values_table(field_values_dict, table_id, table_name)
-            logging.info(
-                f"Added {len(new_tables)} tables to scan report {scan_report_id}."
-            )
+
+                logging.info(
+                    f"Added scan report values for table {table_name} (ID: {table_id})"
+                )
 
         except Exception as e:
             logging.error(
@@ -124,4 +125,46 @@ def create_scan_report_tables(**kwargs) -> None:
 
         except Exception as e:
             logging.error(f"Error creating fields grouped by table: {str(e)}")
+            raise e
+
+        try:
+            for table_name, table_id in table_pairs:
+                # Insert scan report values using data from temporary tables
+                sql_query = f"""
+                    INSERT INTO mapping_scanreportvalue (
+                        scan_report_field_id, 
+                        value, 
+                        frequency, 
+                        value_description, 
+                        created_at, 
+                        updated_at, 
+                        "conceptID"
+                    )
+                    SELECT 
+                        field.id, 
+                        field_values.value, 
+                        field_values.frequency, 
+                        data_dictionary.value_description, 
+                        NOW(), 
+                        NOW(), 
+                        -1
+                    FROM 
+                        temp_field_values_{table_id} field_values
+                    JOIN 
+                        mapping_scanreportfield field 
+                        ON field.scan_report_table_id = {table_id} 
+                        AND field.name = field_values.field_name
+                    LEFT JOIN 
+                        temp_data_dictionary_{scan_report_id} data_dictionary
+                        ON data_dictionary.table_name = field_values.table_name
+                        AND data_dictionary.field_name = field_values.field_name
+                        AND data_dictionary.value = field_values.value
+                    ORDER BY
+                        field_values.ctid
+                """
+
+                # Execute the query
+                pg_hook.run(sql_query)
+        except Exception as e:
+            logging.error(f"Error creating scan report values: {str(e)}")
             raise e
