@@ -32,8 +32,7 @@ jobs:
       - name: "Resolve Project Dependencies Using UV"
         run: |
           pushd './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
-          uv pip install -r requirements.txt --target=".python_packages/lib/site-packages"
-          popd
+          uv pip compile pyproject.toml --output-file requirements.txt
         shell: bash
 
       - name: "Install Dependencies Using Pip"
