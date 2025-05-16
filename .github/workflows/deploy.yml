@@ -43,6 +43,12 @@ jobs:
           uv pip install --system -r requirements.txt --target=".python_packages/lib/site-packages"
           popd
 
+      - name: "Copy Shared Module Complete Structure"
+        shell: bash
+        run: |
+          mkdir -p ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/.python_packages/lib/site-packages/shared
+          cp -r ./app/shared/* ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/.python_packages/lib/site-packages/shared/
+
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
