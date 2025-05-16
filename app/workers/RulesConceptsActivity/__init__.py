@@ -12,7 +12,7 @@ import django
 
 django.setup()
 
-from shared.data.models import Concept
+from shared.data.models import Concept, ConceptRelationship
 from shared.mapping.models import ScanReportConcept, ScanReportTable
 from shared_code import db
 from shared_code.db import JobStageType, StageStatusType, update_job
@@ -42,10 +42,10 @@ def _create_concepts(
     Generate Concept entries ready for creating from a
     list of values.
 
-    Only creates concepts that are in the allowed domains list.
+    Only creates concepts that are in the allowed domains list AND
+    have standard concept mappings (for non-standard concepts).
 
     Workflow:
-
         For each value in the table_values, checks if it is a
         valid concept or not (Yes/No).
 
@@ -54,6 +54,9 @@ def _create_concepts(
 
         If No for valid concept & not available in allowed
         domains, skip the concept.
+
+        For non-standard concepts (standard_concept != "S"), skip
+        if they don't have `Maps to` relationship to a standard concept.
 
     Args:
         - table_values (List[ScanReportValueDict]): List of
@@ -89,6 +92,20 @@ def _create_concepts(
                 ):
                     continue
 
+                # For non-standard concepts, check if they have standard mappings
+                if concept_obj.standard_concept != "S":
+
+                    # Query the concept_relationship table
+                    standard_mappings = ConceptRelationship.objects.filter(
+                        concept_id_1=concept_id,
+                        relationship_id="Maps to",
+                        invalid_reason__isnull=True,
+                    ).values_list("concept_id_2", flat=True)
+
+                    # Skip if no standard mappings exist
+                    if not standard_mappings:
+                        continue
+
                 # The valid concept ID is added to the final list
                 valid_concept_ids.append(concept_id)
             except Concept.DoesNotExist:
@@ -115,19 +132,23 @@ def _transform_concepts(
     table_values: List[ScanReportValueDict], table: ScanReportTable
 ) -> None:
     """
-    For each vocab, set "concept_id" and "standard_concept" in each entry in the vocab.
+    For each vocab, set "concept_id" and "standard_concept" in
+    each entry in the vocab.
+
     Transforms the values in place.
 
     For the case when vocab is None, set it to defaults.
 
-    For other cases, get the concepts from the vocab via /omop/conceptsfilter under
-    pagination.
+    For other cases, get the concepts from the vocab via
+    /omop/conceptsfilter under pagination.
+
     Then match these back to the originating values, setting "concept_id" and
     "standard_concept" in each case.
-    Finally, we need to fix all entries where "standard_concept" != "S" using
-    `find_standard_concept_batch()`. This may result in more than one standard
-    concept for a single nonstandard concept, and so "concept_id" may be either an
-    int or str, or a list of such.
+
+    Finally, we need to fix all entries where "standard_concept" != "S"
+    using `find_standard_concept_batch()`. This may result in more than
+    one standard concept for a single nonstandard concept, and so
+    "concept_id" may be either an int or str, or a list of such.
 
     Args:
         - table_values: List[ScanReportValueDict]: List of Scan Report Values.
@@ -154,7 +175,8 @@ def _set_defaults_for_none_vocab(entries: List[ScanReportValueDict]) -> None:
     Set default values for entries with none vocabulary.
 
     Args:
-        - entries (List[ScanReportValueDict]): A list of Scan Report Value dictionaries.
+        - entries (List[ScanReportValueDict]): A list of Scan
+        Report Value dictionaries.
 
     Returns:
         - None
@@ -173,7 +195,9 @@ def _process_concepts_for_vocab(
 
     Args:
         - vocab (str): The vocabulary to process concepts for.
-        - entries (List[ScanReportValueDict]): A list of Scan Report Value dictionaries representing the entries.
+
+        - entries (List[ScanReportValueDict]): A list of Scan
+        Report Value dictionaries representing the entries.
 
     Returns:
         - None
@@ -205,7 +229,9 @@ def _get_concepts_for_vocab(
 
     Args:
         - vocab (str): The vocabulary to get concepts for.
-        - entries (List[ScanReportValueDict]): The list of Scan Report Values to filter by.
+
+        - entries (List[ScanReportValueDict]): The list of
+        Scan Report Values to filter by.
 
     Returns:
         - List[Concept]: A list of Concepts matching the filter.
@@ -227,13 +253,16 @@ def _match_concepts_to_entries(
     Match concepts to entries.
 
     Remarks:
-        Loop over all returned concepts, and match their concept_code and vocabulary_id with
-        the full_value in the entries, and set the latter's
-        concept_id and standard_concept with those values
+        Loop over all returned concepts, and match their concept_code
+        and vocabulary_id with the full_value in the entries, and
+        set the latter's concept_id and standard_concept with those values
 
     Args:
-        - entries (List[ScanReportValueDict]): A list of Scan Report Value dictionaries representing the entries.
-        - concept_vocab_content (List[tuple]): A list of tuples containing (concept_code, concept_id, standard_concept).
+        - entries (List[ScanReportValueDict]): A list of Scan Report Value
+        dictionaries representing the entries.
+
+        - concept_vocab_content (List[tuple]): A list of tuples
+        containing (concept_code, concept_id, standard_concept).
 
     Returns:
         - None
@@ -257,7 +286,8 @@ def _batch_process_non_standard_concepts(entries: List[ScanReportValueDict]) -> 
     Batch process non-standard concepts.
 
     Args:
-        - entries (List[ScanReportValueDict]): A list of Scan Report Value dictionaries representing the entries.
+        - entries (List[ScanReportValueDict]): A list of Scan Report
+        Value dictionaries representing the entries.
 
     Returns:
         - None
@@ -281,13 +311,16 @@ def _update_entries_with_standard_concepts(
     Update entries with standard concepts.
 
     Remarks:
-        batched_standard_concepts_map maps from an original concept id to
-        a list of associated standard concepts. Use each item to update the
-        relevant entry from entries[vocab].
+        batched_standard_concepts_map maps from an original concept
+        id to a list of associated standard concepts. Use each item
+        to update the relevant entry from entries[vocab].
 
     Args:
-        - entries (List[ScanReportValueDict]): A list of Scan Report Value dictionaries representing the entries.
-        - standard_concepts_map (Dict[str, Any]): A dictionary mapping non-standard concepts to standard concepts.
+        - entries (List[ScanReportValueDict]): A list of Scan Report
+        Value dictionaries representing the entries.
+
+        - standard_concepts_map (Dict[str, Any]): A dictionary mapping
+        non-standard concepts to standard concepts.
 
     Returns:
         - None
@@ -295,14 +328,24 @@ def _update_entries_with_standard_concepts(
     """
     # Convert standard_concepts_map to a normal dictionary
     standard_concepts_dict = dict(standard_concepts_map)
+
     # Loop over all the entries
+    # Convert concept_id to int to match the keys in the dictionary
     for entry in entries:
-        concept_id = int(
-            entry["concept_id"]
-        )  # Convert concept_id to int to match the keys in the dictionary
-        # If the concept_id match the key of the dict (which is the non stantard concept), update it with the value of the key (with is the standard concept)
+        concept_id = int(entry["concept_id"])
+
+        # If the concept_id match the key of the dict (which is the non stantard concept),
+        # update it with the value of the key (with is the standard concept)
         if concept_id in standard_concepts_dict:
-            entry["concept_id"] = standard_concepts_dict[concept_id]
+            standard_concepts = standard_concepts_dict[concept_id]
+
+            if standard_concepts:
+                entry["concept_id"] = standard_concepts
+
+            # No standard concepts found, mark as invalid
+            else:
+                entry["concept_id"] = -1
+                entry["standard_concept"] = None
 
 
 def _handle_table(
