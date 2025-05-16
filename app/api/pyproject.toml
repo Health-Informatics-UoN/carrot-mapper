@@ -28,7 +28,7 @@ dependencies = [
     "drf-dynamic-fields>=0.4.0,<0.5",
     "django-cors-headers>=4.4.0,<5",
     "python-dotenv>=1.0.1,<2",
-    "carrot-shared",
+    "carrot",
     "azure-monitor-opentelemetry>=1.6.0,<2",
     "djangorestframework-simplejwt>=5.3.1,<6",
     "django-allauth==0.61.1",
@@ -52,7 +52,7 @@ default-groups = [
 ]
 
 [tool.uv.sources]
-carrot-shared = { path = "../shared", editable = true }
+carrot = { path = "../shared", editable = true }
 
 [build-system]
 requires = ["setuptools>=61.0"]

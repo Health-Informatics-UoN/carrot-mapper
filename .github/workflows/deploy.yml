@@ -29,34 +29,12 @@ jobs:
           python -m pip install --upgrade pip
           pip install uv
 
-      - name: "Resolve Project Dependencies Using UV"
-        run: |
-          pushd './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
-          uv pip compile pyproject.toml --output-file requirements.txt
-          popd
-        shell: bash
-
-      - name: "Resolve Project Dependencies Including Shared"
-        shell: bash
-        run: |
-          pushd './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
-          uv pip compile pyproject.toml --output-file requirements.txt
-          uv pip compile ../shared/pyproject.toml --output-file shared-requirements.txt
-          cat shared-requirements.txt >> requirements.txt
-          popd
-
       - name: "Install Dependencies Using Pip"
         shell: bash
         run: |
           pushd './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
           uv pip install --system -r requirements.txt --target=".python_packages/lib/site-packages"
           popd
-
-      - name: "Copy Shared Module Complete Structure"
-        shell: bash
-        run: |
-          mkdir -p ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/.python_packages/lib/site-packages/shared
-          cp -r ./app/shared/shared/* ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/.python_packages/lib/site-packages/shared/
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
