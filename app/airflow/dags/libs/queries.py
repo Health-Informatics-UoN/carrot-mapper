@@ -419,7 +419,6 @@ create_fields_query = """
 """
 
 create_temp_data_dictionary_table_query = """
-    DROP TABLE IF EXISTS temp_data_dictionary_%(scan_report_id)s;
     CREATE TABLE temp_data_dictionary_%(scan_report_id)s (
         table_name VARCHAR(255),
         field_name VARCHAR(255),

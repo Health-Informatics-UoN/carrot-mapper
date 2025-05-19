@@ -166,7 +166,6 @@ def create_temp_field_values_table(
         # Create temp table to store field value frequencies
         pg_hook.run(
             """
-            DROP TABLE IF EXISTS temp_field_values_%(table_id)s;
             CREATE TABLE IF NOT EXISTS temp_field_values_%(table_id)s (
                 field_name VARCHAR(255),
                 value TEXT,
@@ -219,4 +218,21 @@ def create_temp_field_values_table(
 
     except Exception as e:
         logging.error(f"Error creating data dictionary table: {str(e)}")
+        raise e
+
+
+def delete_temp_tables(scan_report_id: int, table_pairs: List[Tuple[str, int]]) -> None:
+    """
+    Deletes the temporary tables for a scan report.
+
+    Args:
+        scan_report_id: The ID of the scan report
+        table_pairs: A list of tuples containing the table name and ID
+    """
+    try:
+        pg_hook.run(f"DROP TABLE IF EXISTS temp_data_dictionary_{scan_report_id}")
+        for _, table_id in table_pairs:
+            pg_hook.run(f"DROP TABLE IF EXISTS temp_field_values_{table_id}")
+    except Exception as e:
+        logging.error(f"Error deleting temporary tables: {str(e)}")
         raise e

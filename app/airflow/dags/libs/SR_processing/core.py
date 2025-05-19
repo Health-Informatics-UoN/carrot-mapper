@@ -1,4 +1,5 @@
 import logging
+import os
 from openpyxl import load_workbook
 from libs.utils import pull_validated_params
 import csv
@@ -7,6 +8,7 @@ from libs.SR_processing.db_services import (
     create_field_entries,
     update_temp_data_dictionary_table,
     create_temp_field_values_table,
+    delete_temp_tables,
 )
 from libs.SR_processing.helpers import (
     remove_BOM,
@@ -66,6 +68,9 @@ def process_data_dictionary(**kwargs) -> None:
         data_dictionary = process_four_item_dict(dictionary_data)
         # Create a temporary table to store the data dictionary
         update_temp_data_dictionary_table(data_dictionary, scan_report_id)
+        # Remove the temp file after everything is done
+        # TODO: double check with KubernetesExecutor if this is the best way to do this
+        os.remove(local_DD_path)
 
 
 def process_and_create_scan_report_entries(**kwargs) -> None:
@@ -160,5 +165,11 @@ def process_and_create_scan_report_entries(**kwargs) -> None:
         except Exception as e:
             logging.error(f"Error creating scan report values: {str(e)}")
             raise e
+
+        # Delete the temporary tables after processing and creating the scan report values/fields/tables
+        delete_temp_tables(scan_report_id, table_pairs)
     else:
         logging.info("No tables found in the scan report, skipping processing")
+    # Remove the temp file after processing
+    # TODO: double check with KubernetesExecutor if this is the best way to do this
+    os.remove(local_SR_path)
