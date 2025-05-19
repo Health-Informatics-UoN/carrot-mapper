@@ -1,21 +1,69 @@
-from typing import TypedDict, List, Optional, Any, Dict, Tuple
+from typing import List, Any, Dict
 from airflow.providers.microsoft.azure.hooks.wasb import WasbHook
 from airflow.providers.amazon.aws.hooks.s3 import S3Hook
-from airflow.models.connection import Connection
-from airflow.utils.session import create_session
 from libs.enums import StorageType
 import os
 from openpyxl.worksheet.worksheet import Worksheet
-from libs.queries import create_fields_query
 import logging
 from collections import defaultdict
-from airflow.providers.postgres.hooks.postgres import PostgresHook
+from airflow.utils.session import create_session
+from airflow.models.connection import Connection
 from pathlib import Path
 
-# PostgreSQL connection hook
-pg_hook = PostgresHook(postgres_conn_id="postgres_db_conn")
 # Storage type
 storage_type = os.getenv("STORAGE_TYPE", StorageType.MINIO)
+
+
+def connect_to_storage() -> None:
+    """
+    Connects to the storage service based on the storage type.
+    """
+    with create_session() as session:
+        if storage_type == StorageType.AZURE:
+            # Check if WASB connection exists
+            existing_conn = (
+                session.query(Connection)
+                .filter(Connection.conn_id == "wasb_conn")
+                .first()
+            )
+
+            if existing_conn is None:
+                conn = Connection(
+                    conn_id="wasb_conn",
+                    conn_type="wasb",
+                    extra={
+                        "connection_string": os.getenv(
+                            "AIRFLOW_VAR_WASB_CONNECTION_STRING"
+                        ),
+                    },
+                )
+                session.add(conn)
+                session.commit()
+                logging.info("Created new WASB connection")
+
+        elif storage_type == StorageType.MINIO:
+            # Check if MinIO connection exists
+            existing_conn = (
+                session.query(Connection)
+                .filter(Connection.conn_id == "minio_conn")
+                .first()
+            )
+
+            if existing_conn is None:
+                conn = Connection(
+                    conn_id="minio_conn",
+                    conn_type="aws",
+                    extra={
+                        "endpoint_url": os.getenv("AIRFLOW_VAR_MINIO_ENDPOINT"),
+                        "aws_access_key_id": os.getenv("AIRFLOW_VAR_MINIO_ACCESS_KEY"),
+                        "aws_secret_access_key": os.getenv(
+                            "AIRFLOW_VAR_MINIO_SECRET_KEY"
+                        ),
+                    },
+                )
+                session.add(conn)
+                session.commit()
+                logging.info("Created new MinIO connection")
 
 
 def get_unique_table_names(worksheet: Worksheet) -> List[str]:
@@ -42,7 +90,7 @@ def get_unique_table_names(worksheet: Worksheet) -> List[str]:
     return table_names
 
 
-def remove_BOM(intermediate: List[Dict[str, Any]]):
+def remove_BOM(intermediate: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """
     Given a list of dictionaries, remove any occurrences of the BOM in the keys.
 
@@ -66,21 +114,8 @@ def process_four_item_dict(
     'code' and 'value') to a nested dictionary with indices 'csv_file_name',
     'field_name', 'code', and internal value 'value'.
 
-    [{'csv_file_name': 'table1', 'field_name': 'field1', 'value': 'value1', 'code':
-    'code1'},
-    {'csv_file_name': 'table1', 'field_name': 'field2', 'value': 'value2', 'code':
-    'code2'},
-    {'csv_file_name': 'table2', 'field_name': 'field2', 'value': 'value2', 'code':
-    'code2'},
-    {'csv_file_name': 'table2', 'field_name': 'field2', 'value': 'value3', 'code':
-    'code3'},
-    {'csv_file_name': 'table3', 'field_name': 'field3', 'value': 'value3', 'code':
-    'code3'}]
-    ->
-    {'table1': {'field1': {'value1': 'code1'}, 'field2': {'value2': 'code2'}},
-    'table2': {'field2': {'value2': 'code2', 'value3': 'code3'}},
-    'table3': {'field3': {'value3': 'code3'}}
-    }
+    Note: This function was copied from the shared project. More details can be found here:
+    app/shared/services/utils.py -> function: process_four_item_dict
     """
     csv_file_names = set(row["csv_file_name"] for row in four_item_data)
     # Initialise the dictionary with the keys, and each value set to a blank dict()
@@ -159,6 +194,9 @@ storage_type = os.getenv("STORAGE_TYPE", StorageType.MINIO)
 
 
 def get_storage_hook():
+    """
+    Returns a storage hook based on the storage type.
+    """
     if storage_type == StorageType.AZURE:
         return WasbHook(wasb_conn_id="wasb_conn")
     elif storage_type == StorageType.MINIO:

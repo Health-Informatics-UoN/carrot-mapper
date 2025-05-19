@@ -4,9 +4,9 @@ from airflow.operators.empty import EmptyOperator
 from libs.utils import create_task, validate_params_SR_processing
 from libs.SR_processing.core import (
     process_data_dictionary,
-    create_scan_report_tables,
+    process_and_create_scan_report_entries,
 )
-from libs.SR_processing.utils import connect_to_storage
+from libs.SR_processing.helpers import connect_to_storage
 
 """
 This DAG automates the process of ...
@@ -43,7 +43,11 @@ tasks = [
     create_task("validate_params_SR_processing", validate_params_SR_processing, dag),
     create_task("connect_to_storage", connect_to_storage, dag),
     create_task("process_data_dictionary", process_data_dictionary, dag),
-    create_task("create_scan_report_tables", create_scan_report_tables, dag),
+    create_task(
+        "process_and_create_scan_report_entries",
+        process_and_create_scan_report_entries,
+        dag,
+    ),
     # TODO: add task to clean up temp files and tables
 ]
 

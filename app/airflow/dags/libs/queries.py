@@ -395,7 +395,7 @@ create_values_query = """
         AND scan_report_field.name = field_values.field_name
     LEFT JOIN 
         temp_data_dictionary_%(scan_report_id)s data_dictionary
-        ON data_dictionary.table_name = field_values.table_name
+        ON data_dictionary.table_name = %(table_name)s 
         AND data_dictionary.field_name = field_values.field_name
         AND data_dictionary.value = field_values.value
     ORDER BY

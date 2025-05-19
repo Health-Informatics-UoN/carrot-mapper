@@ -3,15 +3,17 @@ from openpyxl import load_workbook
 from libs.utils import pull_validated_params
 import csv
 from io import StringIO
-from libs.SR_processing.utils import (
+from libs.SR_processing.db_services import (
+    create_field_entries,
+    create_temp_data_dictionary_table,
+    create_temp_field_values_table,
+)
+from libs.SR_processing.helpers import (
     remove_BOM,
     process_four_item_dict,
     get_unique_table_names,
-    create_field_entries,
-    transform_scan_report_sheet_table,
-    create_temp_data_dictionary_table,
-    create_temp_field_values_table,
     download_blob_to_tmp,
+    transform_scan_report_sheet_table,
 )
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from typing import List, Tuple
@@ -29,7 +31,7 @@ def process_data_dictionary(**kwargs) -> None:
         context: Airflow context containing task information
 
     Returns:
-        Dict containing processing results and metadata
+        None
     """
 
     validated_params = pull_validated_params(kwargs, "validate_params_SR_processing")
@@ -61,12 +63,21 @@ def process_data_dictionary(**kwargs) -> None:
         create_temp_data_dictionary_table(data_dictionary, scan_report_id)
 
 
-def create_scan_report_tables(**kwargs) -> None:
+def process_and_create_scan_report_entries(**kwargs) -> None:
     """
-    Creates the scan report tables in the database and returns their IDs.
+    Processes the scan report and creates the scan report entries in the database.
+    Steps:
+    1. Get the unique table names from the worksheet
+    2. Create a temporary table to store the table name and id pairs
+    3. Create a temporary table to store the field values and their frequencies
+    4. Create fields based on the table pairs in the last step
+    5. Create scan report values using temporary tables: data_dictionary and field_values, based on the table pairs
+
+    Args:
+        context: Airflow context containing task information
 
     Returns:
-        Dict containing table names, ids, and name-id pairs
+        None
     """
 
     validated_params = pull_validated_params(kwargs, "validate_params_SR_processing")
@@ -107,12 +118,12 @@ def create_scan_report_tables(**kwargs) -> None:
                 # Extract the id from the returned record
                 table_id = result[0][0]
                 table_pairs.append((table_name, table_id))
-                # Generate a dictionary of table name - field name - values and their frequencies
+                # Generate a dictionary of field name - values and their frequencies
                 field_values_dict = transform_scan_report_sheet_table(
                     workbook[table_name]
                 )
                 # Create a temporary table to store the field values and their frequencies
-                create_temp_field_values_table(field_values_dict, table_id, table_name)
+                create_temp_field_values_table(field_values_dict, table_id)
 
         except Exception as e:
             logging.error(
@@ -129,7 +140,7 @@ def create_scan_report_tables(**kwargs) -> None:
             logging.error(f"Error creating scan report fields: {str(e)}")
             raise e
 
-        # Create scan report values using temporary tables: data_dictionary and field_values
+        # Create scan report values using temporary tables: data_dictionary and field_values, based on the table pairs
         try:
             for table_name, table_id in table_pairs:
                 # Insert scan report values using data from temporary tables
@@ -137,9 +148,12 @@ def create_scan_report_tables(**kwargs) -> None:
                     create_values_query,
                     parameters={
                         "table_id": table_id,
+                        "table_name": table_name,
                         "scan_report_id": scan_report_id,
                     },
                 )
         except Exception as e:
             logging.error(f"Error creating scan report values: {str(e)}")
             raise e
+    else:
+        logging.info("No tables found in the scan report, skipping processing")
