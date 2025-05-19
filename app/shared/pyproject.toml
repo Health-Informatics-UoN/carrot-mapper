@@ -14,7 +14,7 @@ dependencies = [
     "azure-storage-queue>=12.9.0,<13",
     "python-dotenv>=1.0.1,<2",
     "graphviz>=0.20.3,<0.21",
-    "cryptography<43.0.0",
+    "cryptography<43.0.0", # added cryptography to make UV compatible with azure-storage-blob (version below 43.0.0) 
     "azure-storage-blob==12.20.0",
     "djangorestframework==3.15.2",
     "django-filter==24.2",
