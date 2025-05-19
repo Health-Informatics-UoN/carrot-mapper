@@ -5,6 +5,8 @@ import logging
 from collections import defaultdict
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from libs.SR_processing.helpers import default_zero
+from libs.enums import JobStageType, StageStatusType
+from libs.utils import update_job_status
 
 # PostgreSQL connection hook
 pg_hook = PostgresHook(postgres_conn_id="postgres_db_conn")
@@ -141,6 +143,11 @@ def update_temp_data_dictionary_table(
 
     except Exception as e:
         logging.error(f"Error creating data dictionary table: {str(e)}")
+        update_job_status(
+            stage=JobStageType.UPLOAD_SCAN_REPORT,
+            status=StageStatusType.FAILED,
+            scan_report=scan_report_id,
+        )
         raise e
 
 

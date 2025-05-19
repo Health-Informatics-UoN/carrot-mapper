@@ -20,6 +20,8 @@ from libs.SR_processing.helpers import (
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from typing import List, Tuple
 from libs.queries import create_values_query, create_temp_data_dictionary_table_query
+from libs.enums import JobStageType, StageStatusType
+from libs.utils import update_job_status
 
 # PostgreSQL connection hook
 pg_hook = PostgresHook(postgres_conn_id="postgres_db_conn")
@@ -48,29 +50,40 @@ def process_data_dictionary(**kwargs) -> None:
     if not data_dictionary_blob:
         logging.info("No data dictionary blob provided, skipping processing")
     else:
-        local_DD_path = download_blob_to_tmp(
-            container_name="data-dictionaries", blob_name=data_dictionary_blob
-        )
+        try:
+            local_DD_path = download_blob_to_tmp(
+                container_name="data-dictionaries", blob_name=data_dictionary_blob
+            )
 
-        # Read and process the CSV file
-        logging.info(f"Reading file from {local_DD_path}")
-        with open(local_DD_path, "r", encoding="utf-8") as f:
-            csv_content = f.read()
+            # Read and process the CSV file
+            logging.info(f"Reading file from {local_DD_path}")
+            with open(local_DD_path, "r", encoding="utf-8") as f:
+                csv_content = f.read()
 
-        # Process data dictionary (rows with values)
-        data_dictionary_intermediate = [
-            row for row in csv.DictReader(StringIO(csv_content)) if row["value"] != ""
-        ]
-        # Remove BOM from start of file if it's supplied
-        dictionary_data = remove_BOM(data_dictionary_intermediate)
+            # Process data dictionary (rows with values)
+            data_dictionary_intermediate = [
+                row
+                for row in csv.DictReader(StringIO(csv_content))
+                if row["value"] != ""
+            ]
+            # Remove BOM from start of file if it's supplied
+            dictionary_data = remove_BOM(data_dictionary_intermediate)
 
-        # Convert to nested dictionaries with structure {tables: {fields: {values: value description}}}
-        data_dictionary = process_four_item_dict(dictionary_data)
-        # Create a temporary table to store the data dictionary
-        update_temp_data_dictionary_table(data_dictionary, scan_report_id)
-        # Remove the temp file after everything is done
-        # TODO: double check with KubernetesExecutor if this is the best way to do this
-        os.remove(local_DD_path)
+            # Convert to nested dictionaries with structure {tables: {fields: {values: value description}}}
+            data_dictionary = process_four_item_dict(dictionary_data)
+            # Create a temporary table to store the data dictionary
+            update_temp_data_dictionary_table(data_dictionary, scan_report_id)
+            # Remove the temp file after everything is done
+            # TODO: double check with KubernetesExecutor if this is the best way to do this
+            os.remove(local_DD_path)
+        except Exception as e:
+            logging.error(f"Error processing data dictionary: {str(e)}")
+            update_job_status(
+                stage=JobStageType.BUILD_CONCEPTS_FROM_DICT,
+                status=StageStatusType.FAILED,
+                scan_report=scan_report_id,
+            )
+            raise e
 
 
 def process_and_create_scan_report_entries(**kwargs) -> None:
@@ -139,6 +152,11 @@ def process_and_create_scan_report_entries(**kwargs) -> None:
             logging.error(
                 f"Error inserting tables into mapping_scanreporttable: {str(e)}"
             )
+            update_job_status(
+                stage=JobStageType.UPLOAD_SCAN_REPORT,
+                status=StageStatusType.FAILED,
+                scan_report=scan_report_id,
+            )
             raise e
 
         # Create fields based on the table pairs in the last step
@@ -148,6 +166,11 @@ def process_and_create_scan_report_entries(**kwargs) -> None:
 
         except Exception as e:
             logging.error(f"Error creating scan report fields: {str(e)}")
+            update_job_status(
+                stage=JobStageType.UPLOAD_SCAN_REPORT,
+                status=StageStatusType.FAILED,
+                scan_report=scan_report_id,
+            )
             raise e
 
         # Create scan report values using temporary tables: data_dictionary and field_values, based on the table pairs
@@ -164,12 +187,27 @@ def process_and_create_scan_report_entries(**kwargs) -> None:
                 )
         except Exception as e:
             logging.error(f"Error creating scan report values: {str(e)}")
+            update_job_status(
+                stage=JobStageType.UPLOAD_SCAN_REPORT,
+                status=StageStatusType.FAILED,
+                scan_report=scan_report_id,
+            )
             raise e
 
         # Delete the temporary tables after processing and creating the scan report values/fields/tables
         delete_temp_tables(scan_report_id, table_pairs)
     else:
         logging.info("No tables found in the scan report, skipping processing")
+        update_job_status(
+            stage=JobStageType.UPLOAD_SCAN_REPORT,
+            status=StageStatusType.FAILED,
+            scan_report=scan_report_id,
+        )
     # Remove the temp file after processing
     # TODO: double check with KubernetesExecutor if this is the best way to do this
     os.remove(local_SR_path)
+    update_job_status(
+        stage=JobStageType.UPLOAD_SCAN_REPORT,
+        status=StageStatusType.COMPLETE,
+        scan_report=scan_report_id,
+    )

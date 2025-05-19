@@ -6,6 +6,7 @@ from enum import Enum
 from airflow.operators.python import PythonOperator
 from typing import TypedDict, List, Optional
 from airflow.models.taskinstance import TaskInstance
+from libs.enums import JobStageType, StageStatusType
 
 # PostgreSQL connection hook
 pg_hook = PostgresHook(postgres_conn_id="postgres_db_conn")
@@ -31,20 +32,6 @@ class ValidatedParams(TypedDict):
     data_dictionary_blob: Optional[str]
 
 
-class StageStatusType(Enum):
-    IN_PROGRESS = "Job in Progress"
-    COMPLETE = "Job Complete"
-    FAILED = "Job Failed"
-
-
-class JobStageType(Enum):
-    UPLOAD_SCAN_REPORT = "Upload Scan Report"
-    BUILD_CONCEPTS_FROM_DICT = "Build concepts from OMOP Data dictionary"
-    REUSE_CONCEPTS = "Reuse concepts from other scan reports"
-    GENERATE_RULES = "Generate mapping rules from available concepts"
-    DOWNLOAD_RULES = "Generate and download mapping rules JSON"
-
-
 def _process_field_vocab_pairs(field_vocab_pairs: str):
     """Extract and validate field_vocab_pairs from DAG run configuration"""
 
@@ -60,10 +47,10 @@ def _process_field_vocab_pairs(field_vocab_pairs: str):
 
 
 def update_job_status(
-    scan_report: int,
-    scan_report_table: int,
     stage: JobStageType,
     status: StageStatusType,
+    scan_report: int,
+    scan_report_table: Optional[int] = None,
     details: str = "",
 ) -> None:
     """Update the status of a job in the database"""
@@ -71,24 +58,33 @@ def update_job_status(
     status_value = status.name
     stage_value = stage.name
 
-    update_query = """
-        UPDATE jobs_job
-        SET status_id = (
-            SELECT id FROM jobs_stagestatus WHERE value = %(status_value)s
-        ),
-        details = %(details)s, 
-        updated_at = NOW()
-        WHERE id = (
-            SELECT id FROM jobs_job
-            WHERE scan_report_id = %(scan_report)s
-            AND scan_report_table_id = %(scan_report_table)s
-            AND stage_id IN (
-                SELECT id FROM jobs_jobstage WHERE value = %(stage_value)s
+    if stage == JobStageType.UPLOAD_SCAN_REPORT:
+        update_query = """
+            UPDATE mapping_scanreport
+            SET upload_status_id = (
+                SELECT id FROM mapping_uploadstatus WHERE value = %(status_value)s
             )
-            ORDER BY updated_at DESC
-            LIMIT 1
-        )
-    """
+            WHERE id = %(scan_report)s
+        """
+    else:
+        update_query = """
+            UPDATE jobs_job
+            SET status_id = (
+                SELECT id FROM jobs_stagestatus WHERE value = %(status_value)s
+            ),
+            details = %(details)s, 
+            updated_at = NOW()
+            WHERE id = (
+                SELECT id FROM jobs_job
+                WHERE scan_report_id = %(scan_report)s
+                AND scan_report_table_id = %(scan_report_table)s
+                AND stage_id IN (
+                    SELECT id FROM jobs_jobstage WHERE value = %(stage_value)s
+                )
+                ORDER BY updated_at DESC
+                LIMIT 1
+            )
+        """
     try:
         pg_hook.run(
             update_query,
