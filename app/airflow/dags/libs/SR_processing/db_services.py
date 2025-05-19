@@ -1,6 +1,6 @@
 from typing import List, Any, Dict, Tuple
 from openpyxl.worksheet.worksheet import Worksheet
-from libs.queries import create_fields_query
+from libs.queries import create_fields_query, create_temp_data_dictionary_table_query
 import logging
 from collections import defaultdict
 from airflow.providers.postgres.hooks.postgres import PostgresHook
@@ -79,11 +79,11 @@ def create_field_entries(
         raise e
 
 
-def create_temp_data_dictionary_table(
+def update_temp_data_dictionary_table(
     data_dictionary: Dict[str, Dict[str, Dict[str, str]]], scan_report_id: int
 ) -> None:
     """
-    Creates a temporary table to store data dictionary information.
+    Updates the temporary table to store data dictionary information.
 
     Args:
         data_dictionary: A dictionary of data dictionary information
@@ -92,26 +92,14 @@ def create_temp_data_dictionary_table(
     Returns:
         None
     """
-
+    # Skip updating the temporary table if no data dictionary provided
     if not data_dictionary:
-        logging.info("No data dictionary available, skipping dictionary table creation")
+        logging.info(
+            "No data dictionary (4 items list) available, skipping dictionary table creation"
+        )
         return
 
     try:
-        # Create temporary table for data dictionary
-        pg_hook.run(
-            """
-            DROP TABLE IF EXISTS temp_data_dictionary_%(scan_report_id)s;
-            CREATE TABLE temp_data_dictionary_%(scan_report_id)s (
-                table_name VARCHAR(255),
-                field_name VARCHAR(255),
-                value TEXT,
-                value_description TEXT
-            )
-        """,
-            parameters={"scan_report_id": scan_report_id},
-        )
-
         # Prepare data for insertion
         dictionary_records = []
         for table_name, fields in data_dictionary.items():

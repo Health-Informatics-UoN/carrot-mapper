@@ -5,7 +5,7 @@ import csv
 from io import StringIO
 from libs.SR_processing.db_services import (
     create_field_entries,
-    create_temp_data_dictionary_table,
+    update_temp_data_dictionary_table,
     create_temp_field_values_table,
 )
 from libs.SR_processing.helpers import (
@@ -17,7 +17,7 @@ from libs.SR_processing.helpers import (
 )
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from typing import List, Tuple
-from libs.queries import create_values_query
+from libs.queries import create_values_query, create_temp_data_dictionary_table_query
 
 # PostgreSQL connection hook
 pg_hook = PostgresHook(postgres_conn_id="postgres_db_conn")
@@ -37,7 +37,12 @@ def process_data_dictionary(**kwargs) -> None:
     validated_params = pull_validated_params(kwargs, "validate_params_SR_processing")
     scan_report_id = validated_params["scan_report_id"]
     data_dictionary_blob = validated_params["data_dictionary_blob"]
-    # Return empty dictionary if no blob provided
+    # Create a temporary table to store the data dictionary
+    pg_hook.run(
+        create_temp_data_dictionary_table_query,
+        parameters={"scan_report_id": scan_report_id},
+    )
+    # Skip processing if no blob provided
     if not data_dictionary_blob:
         logging.info("No data dictionary blob provided, skipping processing")
     else:
@@ -60,7 +65,7 @@ def process_data_dictionary(**kwargs) -> None:
         # Convert to nested dictionaries with structure {tables: {fields: {values: value description}}}
         data_dictionary = process_four_item_dict(dictionary_data)
         # Create a temporary table to store the data dictionary
-        create_temp_data_dictionary_table(data_dictionary, scan_report_id)
+        update_temp_data_dictionary_table(data_dictionary, scan_report_id)
 
 
 def process_and_create_scan_report_entries(**kwargs) -> None:
