@@ -119,7 +119,9 @@ def remove_BOM(intermediate: List[Dict[str, Any]]):
     ]
 
 
-def process_four_item_dict(four_item_data):
+def process_four_item_dict(
+    four_item_data: List[Dict[str, Any]],
+) -> Dict[str, Dict[str, Dict[str, str]]]:
     """
     Converts a list of dictionaries (each with keys 'csv_file_name', 'field_name' and
     'code' and 'value') to a nested dictionary with indices 'csv_file_name',
@@ -142,9 +144,10 @@ def process_four_item_dict(four_item_data):
     }
     """
     csv_file_names = set(row["csv_file_name"] for row in four_item_data)
-
     # Initialise the dictionary with the keys, and each value set to a blank dict()
-    new_data_dictionary = dict.fromkeys(csv_file_names, {})
+    new_data_dictionary: Dict[str, Dict[str, Dict[str, str]]] = {}
+    for csv_file_name in csv_file_names:
+        new_data_dictionary[csv_file_name] = {}
 
     for row in four_item_data:
         if row["field_name"] not in new_data_dictionary[row["csv_file_name"]]:
@@ -204,7 +207,7 @@ def transform_scan_report_sheet_table(sheet: Worksheet) -> defaultdict[Any, List
     return cleaned_dict
 
 
-def _default_zero(value):
+def _default_zero(value) -> float:
     """
     Helper function that returns the input, replacing anything Falsey
     (such as Nones or empty strings) with 0.0.
@@ -212,9 +215,11 @@ def _default_zero(value):
     return round(value or 0.0, 2)
 
 
-def create_field_entry(worksheet: Worksheet, tables: List[Tuple[str, int]]):
+def create_field_entries(
+    worksheet: Worksheet, table_pairs: List[Tuple[str, int]]
+) -> None:
     """
-    Creates a field entry in the database for a scan report table.
+    Creates field entries in the database for a scan report table.
 
     Args:
         row: The worksheet row containing field data
@@ -236,7 +241,12 @@ def create_field_entry(worksheet: Worksheet, tables: List[Tuple[str, int]]):
             # If the row is not empty, then it is a field in a table
             if row[0].value != "" and row[0].value is not None:
                 current_table_name = row[0].value
-                table = next(t for t in tables if t[0] == current_table_name)
+                # table_pair[0] is table name, table_pair[1] is table id
+                table = next(
+                    table_pair
+                    for table_pair in table_pairs
+                    if table_pair[0] == current_table_name
+                )
 
                 # Extract values from the row, handling possible None values
                 field_name = str(row[1].value) if row[1].value is not None else ""
@@ -255,6 +265,7 @@ def create_field_entry(worksheet: Worksheet, tables: List[Tuple[str, int]]):
                 pg_hook.run(
                     create_fields_query,
                     parameters={
+                        # table[1] is table id
                         "scan_report_table_id": table[1],
                         "name": field_name.replace("\ufeff", ""),
                         "description_column": description,
@@ -273,12 +284,15 @@ def create_field_entry(worksheet: Worksheet, tables: List[Tuple[str, int]]):
         raise e
 
 
-def create_data_dictionary_table(data_dictionary: Dict[Any, Dict], scan_report_id: int):
+def create_temp_data_dictionary_table(
+    data_dictionary: Dict[str, Dict[str, Dict[str, str]]], scan_report_id: int
+) -> None:
     """
     Creates a temporary table to store data dictionary information.
 
     Args:
-        kwargs: Airflow context containing the data dictionary
+        data_dictionary: A dictionary of data dictionary information
+        scan_report_id: The ID of the scan report
 
     Returns:
         None
@@ -347,7 +361,7 @@ def create_data_dictionary_table(data_dictionary: Dict[Any, Dict], scan_report_i
         raise e
 
 
-def create_field_values_table(
+def create_temp_field_values_table(
     field_values_dict: defaultdict[Any, List], table_id: int, table_name: str
 ):
     """
@@ -432,78 +446,34 @@ def create_field_values_table(
 storage_hook = get_storage_hook()
 
 
-def get_scan_report(scan_report_blob: str) -> Path:
+def download_blob_to_tmp(container_name: str, blob_name: str) -> Path:
     """
-    Wrapper function for the scan report processing task using openpyxl
+    Downloads a blob from storage to a temporary local file.
 
     Args:
-        context: Airflow context containing task information
+        container_name (str): The name of the storage container/bucket.
+        blob_name (str): The name of the blob/file to download.
 
     Returns:
-        Dict containing processing results and metadata
+        Path: The local path to the downloaded file.
     """
-
-    container_name = "scan-reports"
-    local_SR_path = Path(f"/tmp/{scan_report_blob}")
     # TODO: double check temp file can be accessed by other tasks
     # TODO: check if temp file is persistent, if yes then we can remove the file after processing
     # https://stackoverflow.com/questions/69294934/where-is-tmp-folder-located-in-airflow
+    local_path = Path(f"/tmp/{blob_name}")
     try:
-        # Download file based on storage type
-        logging.info(f"Downloading file from {container_name}/{scan_report_blob}")
-
+        logging.info(f"Downloading file from {container_name}/{blob_name}")
         if storage_type == StorageType.AZURE:
             storage_hook.get_file(
-                file_path=local_SR_path,
+                file_path=local_path,
                 container_name=container_name,
-                blob_name=scan_report_blob,
+                blob_name=blob_name,
             )
         elif storage_type == StorageType.MINIO:
-            s3_object = storage_hook.get_key(
-                key=scan_report_blob, bucket_name=container_name
-            )
-            with open(local_SR_path, "wb") as f:
+            s3_object = storage_hook.get_key(key=blob_name, bucket_name=container_name)
+            with open(local_path, "wb") as f:
                 s3_object.download_fileobj(f)
-
-        return local_SR_path
-
+        return local_path
     except Exception as e:
-        logging.error(f"Error processing scan report: {str(e)}")
-        raise
-
-
-def get_data_dictionary(data_dictionary_blob: str) -> Path:
-    """
-    Wrapper function for the data dictionary processing task using openpyxl
-
-    Args:
-        context: Airflow context containing task information
-
-    Returns:
-        Dict containing processing results and metadata
-    """
-
-    container_name = "data-dictionaries"
-    local_DD_path = Path(f"/tmp/{data_dictionary_blob}")
-
-    try:
-        # Download file based on storage type
-        logging.info(f"Downloading file from {container_name}/{data_dictionary_blob}")
-        if storage_type == StorageType.AZURE:
-            storage_hook.get_file(
-                file_path=local_DD_path,
-                container_name=container_name,
-                blob_name=data_dictionary_blob,
-            )
-        elif storage_type == StorageType.MINIO:
-            s3_object = storage_hook.get_key(
-                key=data_dictionary_blob, bucket_name=container_name
-            )
-            with open(local_DD_path, "wb") as f:
-                s3_object.download_fileobj(f)
-
-        return local_DD_path
-
-    except Exception as e:
-        logging.error(f"Error processing data dictionary: {str(e)}")
+        logging.error(f"Error downloading {blob_name} from {container_name}: {str(e)}")
         raise

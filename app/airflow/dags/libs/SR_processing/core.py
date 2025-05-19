@@ -7,12 +7,11 @@ from libs.SR_processing.utils import (
     remove_BOM,
     process_four_item_dict,
     get_unique_table_names,
-    create_field_entry,
+    create_field_entries,
     transform_scan_report_sheet_table,
-    create_data_dictionary_table,
-    create_field_values_table,
-    get_scan_report,
-    get_data_dictionary,
+    create_temp_data_dictionary_table,
+    create_temp_field_values_table,
+    download_blob_to_tmp,
 )
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from typing import List, Tuple
@@ -40,9 +39,12 @@ def process_data_dictionary(**kwargs) -> None:
     if not data_dictionary_blob:
         logging.info("No data dictionary blob provided, skipping processing")
     else:
-        local_DD_path = get_data_dictionary(data_dictionary_blob)
+        local_DD_path = download_blob_to_tmp(
+            container_name="data-dictionaries", blob_name=data_dictionary_blob
+        )
 
-        # Read the CSV file
+        # Read and process the CSV file
+        logging.info(f"Reading file from {local_DD_path}")
         with open(local_DD_path, "r", encoding="utf-8") as f:
             csv_content = f.read()
 
@@ -55,7 +57,8 @@ def process_data_dictionary(**kwargs) -> None:
 
         # Convert to nested dictionaries with structure {tables: {fields: {values: value description}}}
         data_dictionary = process_four_item_dict(dictionary_data)
-        create_data_dictionary_table(data_dictionary, scan_report_id)
+        # Create a temporary table to store the data dictionary
+        create_temp_data_dictionary_table(data_dictionary, scan_report_id)
 
 
 def create_scan_report_tables(**kwargs) -> None:
@@ -70,20 +73,21 @@ def create_scan_report_tables(**kwargs) -> None:
     scan_report_id = validated_params["scan_report_id"]
     scan_report_blob = validated_params["scan_report_blob"]
     # Read and process the Excel file
-    local_SR_path = get_scan_report(scan_report_blob)
+    local_SR_path = download_blob_to_tmp(
+        container_name="scan-reports", blob_name=scan_report_blob
+    )
     logging.info(f"Reading file from {local_SR_path}")
     workbook = load_workbook(
         filename=local_SR_path, data_only=True, keep_links=False, read_only=True
     )
 
     worksheet = workbook.worksheets[0]
+    # Get the unique table names from the worksheet
     table_names = get_unique_table_names(worksheet)
-
-    # Filter out tables that already exist
-    new_tables = [name for name in table_names]
+    # Initialise a list to store the table name and id pairs
     table_pairs: List[Tuple[str, int]] = []
 
-    if new_tables:
+    if table_names:
         try:
             # Prepare and execute each insert with RETURNING id to build table name and id pairs
             insert_sql = """
@@ -92,7 +96,7 @@ def create_scan_report_tables(**kwargs) -> None:
                 RETURNING id
             """
 
-            for table_name in new_tables:
+            for table_name in table_names:
                 result = pg_hook.get_records(
                     insert_sql,
                     parameters={
@@ -103,12 +107,12 @@ def create_scan_report_tables(**kwargs) -> None:
                 # Extract the id from the returned record
                 table_id = result[0][0]
                 table_pairs.append((table_name, table_id))
-
+                # Generate a dictionary of table name - field name - values and their frequencies
                 field_values_dict = transform_scan_report_sheet_table(
                     workbook[table_name]
                 )
-
-                create_field_values_table(field_values_dict, table_id, table_name)
+                # Create a temporary table to store the field values and their frequencies
+                create_temp_field_values_table(field_values_dict, table_id, table_name)
 
         except Exception as e:
             logging.error(
@@ -116,14 +120,16 @@ def create_scan_report_tables(**kwargs) -> None:
             )
             raise e
 
+        # Create fields based on the table pairs in the last step
         try:
-            create_field_entry(worksheet, table_pairs)
-            logging.info("Created fields grouped by table")
+            create_field_entries(worksheet, table_pairs)
+            logging.info("Created scan report fields")
 
         except Exception as e:
-            logging.error(f"Error creating fields grouped by table: {str(e)}")
+            logging.error(f"Error creating scan report fields: {str(e)}")
             raise e
 
+        # Create scan report values using temporary tables: data_dictionary and field_values
         try:
             for table_name, table_id in table_pairs:
                 # Insert scan report values using data from temporary tables
