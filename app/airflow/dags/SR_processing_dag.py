@@ -9,10 +9,15 @@ from libs.SR_processing.core import (
 from libs.SR_processing.helpers import connect_to_storage
 
 """
-This DAG automates the process of ...
+This DAG automates the process of creating scan report tables, fields and values 
+from a uploaded scan report and data dictionary.
 
 Workflow steps:
-
+1. Validate the parameters
+2. Connect to storage
+3. Process the data dictionary
+4. Process and create scan report entries (tables, fields and values)
+5. Clean up
 """
 
 default_args = {
@@ -28,13 +33,15 @@ default_args = {
 dag = DAG(
     "scan_report_processing",
     default_args=default_args,
-    description=""" ....""",
+    description="""
+    This DAG automates the process of creating scan report tables, fields and values 
+    from a uploaded scan report and data dictionary.
+    """,
     tags=["SR_processing"],
     schedule_interval=None,
     catchup=False,
 )
 
-# TODO: clean up
 # TODO: add validate for DD file size: DATA_UPLOAD_MAX_MEMORY_SIZE :(
 # Start the workflow
 start = EmptyOperator(task_id="start", dag=dag)
@@ -48,7 +55,6 @@ tasks = [
         process_and_create_scan_report_entries,
         dag,
     ),
-    # TODO: add task to clean up temp files and tables
 ]
 
 
