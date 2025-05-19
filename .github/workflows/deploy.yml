@@ -53,16 +53,6 @@ jobs:
 
           popd
 
-      - name: Verify binary compatibility
-        run: |
-          pushd './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/.python_packages/lib/site-packages'
-          echo "Checking for native extensions and their GLIBC dependencies:"
-          find . -name "*.so" -exec file {} \; | grep -i GLIBC
-          echo "---------------------"
-          echo "GLIBC dependencies:"
-          grep -i GLIBC binary_info.txt || echo "No GLIBC dependencies found"
-          popd
-
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
