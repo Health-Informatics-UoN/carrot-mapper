@@ -1,4 +1,4 @@
-from enum import StrEnum, Enum
+from enum import StrEnum
 
 
 class StorageType(StrEnum):
@@ -6,13 +6,13 @@ class StorageType(StrEnum):
     MINIO = "minio"
 
 
-class StageStatusType(Enum):
+class StageStatusType(StrEnum):
     IN_PROGRESS = "Job in Progress"
     COMPLETE = "Job Complete"
     FAILED = "Job Failed"
 
 
-class JobStageType(Enum):
+class JobStageType(StrEnum):
     UPLOAD_SCAN_REPORT = "Upload Scan Report"
     BUILD_CONCEPTS_FROM_DICT = "Build concepts from OMOP Data dictionary"
     REUSE_CONCEPTS = "Reuse concepts from other scan reports"
