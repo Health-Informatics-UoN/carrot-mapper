@@ -40,17 +40,7 @@ jobs:
         shell: bash
         run: |
           pushd './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
-          echo "---------------------"
-          echo "Contents of requirements.txt:"
-          cat requirements.txt
-
-          echo "Installing dependencies..."
           pip install -r requirements.txt --target=".python_packages/lib/site-packages"
-
-          echo "---------------------"
-          echo "Listing installed packages:"
-          pip list --path ".python_packages/lib/site-packages"
-
           popd
 
       - name: Upload artifact for deployment job
