@@ -367,3 +367,53 @@ find_object_id_query = """
     DELETE FROM temp_reuse_concepts_%(table_id)s
     WHERE object_id IS NULL;
 """
+
+
+create_values_query = """
+    INSERT INTO mapping_scanreportvalue (
+        scan_report_field_id, 
+        value, 
+        frequency, 
+        value_description, 
+        created_at, 
+        updated_at, 
+        "conceptID"
+    )
+    SELECT 
+        scan_report_field.id, 
+        field_values.value, 
+        field_values.frequency, 
+        data_dictionary.value_description, 
+        NOW(), 
+        NOW(), 
+        -1
+    FROM 
+        temp_field_values_%(table_id)s field_values
+    JOIN 
+        mapping_scanreportfield scan_report_field 
+        ON scan_report_field.scan_report_table_id = %(table_id)s 
+        AND scan_report_field.name = field_values.field_name
+    LEFT JOIN 
+        temp_data_dictionary_%(scan_report_id)s data_dictionary
+        ON data_dictionary.table_name = field_values.table_name
+        AND data_dictionary.field_name = field_values.field_name
+        AND data_dictionary.value = field_values.value
+    ORDER BY
+        field_values.ctid    -- Keep the order of the values to be the same in the scan report. "ctid": The physical location of the row version within its table.
+"""
+
+
+create_fields_query = """
+    INSERT INTO mapping_scanreportfield (
+        scan_report_table_id, name, description_column, type_column,
+        max_length, nrows, nrows_checked, fraction_empty,
+        nunique_values, fraction_unique, created_at, updated_at,
+        is_patient_id, is_ignore, pass_from_source
+    )
+    VALUES (
+        %(scan_report_table_id)s, %(name)s, %(description_column)s, %(type_column)s,
+        %(max_length)s, %(nrows)s, %(nrows_checked)s, %(fraction_empty)s,
+        %(nunique_values)s, %(fraction_unique)s, NOW(), NOW(), False, False,
+        True
+    )
+"""

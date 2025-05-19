@@ -6,7 +6,7 @@ from airflow.utils.session import create_session
 from libs.enums import StorageType
 import os
 from openpyxl.worksheet.worksheet import Worksheet
-from openpyxl.workbook.workbook import Workbook
+from libs.queries import create_fields_query
 import logging
 from collections import defaultdict
 from airflow.providers.postgres.hooks.postgres import PostgresHook
@@ -37,7 +37,7 @@ def get_unique_table_names(worksheet: Worksheet) -> List[str]:
         cell_value = row[0].value
         if cell_value and isinstance(cell_value, str) and cell_value not in table_names:
             # Truncate table names because sheet names are truncated to 31 characters in Excel
-            # NOTE: This can casue the table names to be duplicated
+            # NOTE: This can cause the table names to be duplicated
             table_names.append(cell_value[:31])
     return table_names
 
@@ -159,6 +159,8 @@ def process_four_item_dict(four_item_data):
 def transform_scan_report_sheet_table(sheet: Worksheet) -> defaultdict[Any, List]:
     """
     Transforms a worksheet data into a JSON like format.
+    Note: This function was copied from the workers project. More details can be found here:
+    app/workers/UploadQueue/__init__.py -> function: _transform_scan_report_sheet_table
 
     Args:
         sheet (Worksheet): Sheet of data to transform
@@ -174,20 +176,7 @@ def transform_scan_report_sheet_table(sheet: Worksheet) -> defaultdict[Any, List
     first_row = sheet[1]
     sheet_headers = [cell.value for cell in first_row[::2]]
 
-    # Set up an empty defaultdict, and fill it with one entry per header (i.e. one
-    # per column)
-    # Append each entry's value with the tuple (value, frequency) so that we end up
-    # with each entry containing one tuple per non-empty entry in the column.
-    #
-    # This will give us
-    #
-    # ordereddict({'a': [('apple', 20), ('banana', 3), ('pear', 12)],
-    #              'b': [('orange', 5), ('plantain', 50)]})
-
     d = defaultdict(list)
-    # Iterate over all rows beyond the header - use the number of sheet_headers*2 to
-    # set the maximum column rather than relying on sheet.max_col as this is not
-    # always reliably updated by Excel etc.
     for row in sheet.iter_rows(
         min_col=1,
         max_col=len(sheet_headers) * 2,
@@ -203,9 +192,6 @@ def transform_scan_report_sheet_table(sheet: Worksheet) -> defaultdict[Any, List
             if (cell != "" and cell is not None) or (freq != "" and freq is not None):
                 d[header].append((str(cell), freq))
                 this_row_empty = False
-        # This will trigger if we hit a row that is entirely empty. Short-circuit
-        # to exit early here - this saves us from situations where sheet.max_row is
-        # incorrectly set (too large)
         if this_row_empty:
             break
     # Clean BOM characters from keys before returning
@@ -218,9 +204,15 @@ def transform_scan_report_sheet_table(sheet: Worksheet) -> defaultdict[Any, List
     return cleaned_dict
 
 
-def create_field_entry(
-    worksheet: Worksheet, tables: List[Tuple[str, int]]
-) -> Dict[str, List[Tuple[str, int]]]:
+def _default_zero(value):
+    """
+    Helper function that returns the input, replacing anything Falsey
+    (such as Nones or empty strings) with 0.0.
+    """
+    return round(value or 0.0, 2)
+
+
+def create_field_entry(worksheet: Worksheet, tables: List[Tuple[str, int]]):
     """
     Creates a field entry in the database for a scan report table.
 
@@ -232,9 +224,6 @@ def create_field_entry(
         The ID of the newly created field
     """
     try:
-        # Initialize dictionary to group fields by table name
-        fields_by_table: Dict[str, List[Tuple[str, int]]] = {}
-
         previous_row_value = None
         for row in worksheet.iter_rows(min_row=2, max_row=worksheet.max_row + 2):
             # Guard against unnecessary rows beyond the last true row with contents
@@ -249,23 +238,6 @@ def create_field_entry(
                 current_table_name = row[0].value
                 table = next(t for t in tables if t[0] == current_table_name)
 
-                # Prepare the SQL insert statement with RETURNING id to get the created field ID
-                insert_sql = """
-                    INSERT INTO mapping_scanreportfield (
-                        scan_report_table_id, name, description_column, type_column,
-                        max_length, nrows, nrows_checked, fraction_empty,
-                        nunique_values, fraction_unique, created_at, updated_at,
-                        is_patient_id, is_ignore, pass_from_source
-                    )
-                    VALUES (
-                        %(scan_report_table_id)s, %(name)s, %(description_column)s, %(type_column)s,
-                        %(max_length)s, %(nrows)s, %(nrows_checked)s, %(fraction_empty)s,
-                        %(nunique_values)s, %(fraction_unique)s, NOW(), NOW(), False, False,
-                        True
-                    )
-                    RETURNING id
-                """
-
                 # Extract values from the row, handling possible None values
                 field_name = str(row[1].value) if row[1].value is not None else ""
                 description = str(row[2].value) if row[2].value is not None else ""
@@ -275,13 +247,13 @@ def create_field_entry(
                 nrows_checked = row[6].value
 
                 # Calculate fractions with default values
-                fraction_empty = round(float(row[7].value or 0), 2)
+                fraction_empty = round(_default_zero(row[7].value), 2)
                 nunique_values = row[8].value
-                fraction_unique = round(float(row[9].value or 0), 2)
+                fraction_unique = round(_default_zero(row[9].value), 2)
 
                 # Execute the query and get the returned ID
-                result = pg_hook.get_records(
-                    insert_sql,
+                pg_hook.run(
+                    create_fields_query,
                     parameters={
                         "scan_report_table_id": table[1],
                         "name": field_name.replace("\ufeff", ""),
@@ -295,27 +267,6 @@ def create_field_entry(
                         "fraction_unique": fraction_unique,
                     },
                 )
-
-                # Extract the ID from the result
-                field_id = result[0][0]
-
-                # Remove BOM from field name if present
-                clean_field_name = field_name.replace("\ufeff", "")
-
-                # Initialize the list for this table if it's the first field
-                if str(current_table_name) not in fields_by_table:
-                    fields_by_table[str(current_table_name)] = []
-
-                # Add the field to the appropriate table group
-                fields_by_table[str(current_table_name)].append(
-                    (clean_field_name, field_id)
-                )
-
-                logging.info(
-                    f"Created field '{clean_field_name}' with ID {field_id} for table '{current_table_name}'"
-                )
-
-        return fields_by_table
 
     except Exception as e:
         logging.error(f"Error creating field entry: {str(e)}")
@@ -419,10 +370,8 @@ def create_field_values_table(
             """
             DROP TABLE IF EXISTS temp_field_values_%(table_id)s;
             CREATE TABLE IF NOT EXISTS temp_field_values_%(table_id)s (
-                table_id INTEGER,
                 table_name VARCHAR(255),
                 field_name VARCHAR(255),
-                description TEXT,
                 value TEXT,
                 frequency INTEGER
             )
@@ -447,7 +396,6 @@ def create_field_values_table(
 
                 field_values_data.append(
                     {
-                        "table_id": table_id,
                         "table_name": table_name,
                         "field_name": field_name,
                         "value": value,
@@ -460,7 +408,6 @@ def create_field_values_table(
                 table=f"temp_field_values_{table_id}",
                 rows=[
                     (
-                        d["table_id"],
                         d["table_name"],
                         d["field_name"],
                         d["value"],
@@ -469,7 +416,6 @@ def create_field_values_table(
                     for d in field_values_data
                 ],
                 target_fields=[
-                    "table_id",
                     "table_name",
                     "field_name",
                     "value",

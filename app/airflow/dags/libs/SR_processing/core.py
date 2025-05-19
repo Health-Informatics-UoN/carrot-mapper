@@ -16,6 +16,7 @@ from libs.SR_processing.utils import (
 )
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from typing import List, Tuple
+from libs.queries import create_values_query
 
 # PostgreSQL connection hook
 pg_hook = PostgresHook(postgres_conn_id="postgres_db_conn")
@@ -84,7 +85,7 @@ def create_scan_report_tables(**kwargs) -> None:
 
     if new_tables:
         try:
-            # Prepare and execute each insert with RETURNING id
+            # Prepare and execute each insert with RETURNING id to build table name and id pairs
             insert_sql = """
                 INSERT INTO mapping_scanreporttable (scan_report_id, name, created_at, updated_at)
                 VALUES (%(scan_report_id)s, %(table_name)s, NOW(), NOW())
@@ -109,10 +110,6 @@ def create_scan_report_tables(**kwargs) -> None:
 
                 create_field_values_table(field_values_dict, table_id, table_name)
 
-                logging.info(
-                    f"Added scan report values for table {table_name} (ID: {table_id})"
-                )
-
         except Exception as e:
             logging.error(
                 f"Error inserting tables into mapping_scanreporttable: {str(e)}"
@@ -120,8 +117,8 @@ def create_scan_report_tables(**kwargs) -> None:
             raise e
 
         try:
-            fields_by_table = create_field_entry(worksheet, table_pairs)
-            logging.info(f"Created fields grouped by table: {fields_by_table}")
+            create_field_entry(worksheet, table_pairs)
+            logging.info("Created fields grouped by table")
 
         except Exception as e:
             logging.error(f"Error creating fields grouped by table: {str(e)}")
@@ -130,41 +127,13 @@ def create_scan_report_tables(**kwargs) -> None:
         try:
             for table_name, table_id in table_pairs:
                 # Insert scan report values using data from temporary tables
-                sql_query = f"""
-                    INSERT INTO mapping_scanreportvalue (
-                        scan_report_field_id, 
-                        value, 
-                        frequency, 
-                        value_description, 
-                        created_at, 
-                        updated_at, 
-                        "conceptID"
-                    )
-                    SELECT 
-                        field.id, 
-                        field_values.value, 
-                        field_values.frequency, 
-                        data_dictionary.value_description, 
-                        NOW(), 
-                        NOW(), 
-                        -1
-                    FROM 
-                        temp_field_values_{table_id} field_values
-                    JOIN 
-                        mapping_scanreportfield field 
-                        ON field.scan_report_table_id = {table_id} 
-                        AND field.name = field_values.field_name
-                    LEFT JOIN 
-                        temp_data_dictionary_{scan_report_id} data_dictionary
-                        ON data_dictionary.table_name = field_values.table_name
-                        AND data_dictionary.field_name = field_values.field_name
-                        AND data_dictionary.value = field_values.value
-                    ORDER BY
-                        field_values.ctid
-                """
-
-                # Execute the query
-                pg_hook.run(sql_query)
+                pg_hook.run(
+                    create_values_query,
+                    parameters={
+                        "table_id": table_id,
+                        "scan_report_id": scan_report_id,
+                    },
+                )
         except Exception as e:
             logging.error(f"Error creating scan report values: {str(e)}")
             raise e
