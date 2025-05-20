@@ -80,6 +80,7 @@ dag = DAG(
     tags=["V-concepts", "R-concepts", "mapping_rules_creation"],
     schedule_interval=None,
     catchup=False,
+    is_paused_upon_creation=False,
 )
 
 # TODO: clean up

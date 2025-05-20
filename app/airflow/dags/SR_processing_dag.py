@@ -40,6 +40,7 @@ dag = DAG(
     tags=["SR_processing"],
     schedule_interval=None,
     catchup=False,
+    is_paused_upon_creation=False,
 )
 
 # TODO: add validate for DD file size: DATA_UPLOAD_MAX_MEMORY_SIZE :(
