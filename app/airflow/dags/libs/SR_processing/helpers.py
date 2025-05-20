@@ -6,64 +6,7 @@ import os
 from openpyxl.worksheet.worksheet import Worksheet
 import logging
 from collections import defaultdict
-from airflow.utils.session import create_session
-from airflow.models.connection import Connection
 from pathlib import Path
-
-# Storage type
-storage_type = os.getenv("STORAGE_TYPE", StorageType.MINIO)
-
-
-def connect_to_storage() -> None:
-    """
-    Connects to the storage service based on the storage type.
-    """
-    with create_session() as session:
-        if storage_type == StorageType.AZURE:
-            # Check if WASB connection exists
-            existing_conn = (
-                session.query(Connection)
-                .filter(Connection.conn_id == "wasb_conn")
-                .first()
-            )
-
-            if existing_conn is None:
-                conn = Connection(
-                    conn_id="wasb_conn",
-                    conn_type="wasb",
-                    extra={
-                        "connection_string": os.getenv(
-                            "AIRFLOW_VAR_WASB_CONNECTION_STRING"
-                        ),
-                    },
-                )
-                session.add(conn)
-                session.commit()
-                logging.info("Created new WASB connection")
-
-        elif storage_type == StorageType.MINIO:
-            # Check if MinIO connection exists
-            existing_conn = (
-                session.query(Connection)
-                .filter(Connection.conn_id == "minio_conn")
-                .first()
-            )
-
-            if existing_conn is None:
-                conn = Connection(
-                    conn_id="minio_conn",
-                    conn_type="aws",
-                    extra={
-                        "endpoint_url": os.getenv("AIRFLOW_VAR_MINIO_ENDPOINT"),
-                        "aws_access_key_id": os.getenv("AIRFLOW_VAR_MINIO_ACCESS_KEY"),
-                        "aws_secret_access_key": os.getenv(
-                            "AIRFLOW_VAR_MINIO_SECRET_KEY"
-                        ),
-                    },
-                )
-                session.add(conn)
-                session.commit()
-                logging.info("Created new MinIO connection")
 
 
 def get_unique_table_names(worksheet: Worksheet) -> List[str]:

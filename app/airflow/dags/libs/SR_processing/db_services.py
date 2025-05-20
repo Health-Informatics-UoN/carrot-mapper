@@ -1,6 +1,6 @@
 from typing import List, Any, Dict, Tuple
 from openpyxl.worksheet.worksheet import Worksheet
-from libs.queries import create_fields_query, create_temp_data_dictionary_table_query
+from libs.queries import create_fields_query
 import logging
 from collections import defaultdict
 from airflow.providers.postgres.hooks.postgres import PostgresHook

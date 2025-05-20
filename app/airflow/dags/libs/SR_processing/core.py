@@ -91,7 +91,7 @@ def process_and_create_scan_report_entries(**kwargs) -> None:
     Processes the scan report and creates the scan report entries in the database.
     Steps:
     1. Get the unique table names from the worksheet
-    2. Create a temporary table to store the table name and id pairs
+    2. Create Scan Report Tables and get table name and id pairs
     3. Create a temporary table to store the field values and their frequencies
     4. Create fields based on the table pairs in the last step
     5. Create scan report values using temporary tables: data_dictionary and field_values, based on the table pairs

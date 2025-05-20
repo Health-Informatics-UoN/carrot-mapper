@@ -6,7 +6,7 @@ from libs.SR_processing.core import (
     process_data_dictionary,
     process_and_create_scan_report_entries,
 )
-from libs.SR_processing.helpers import connect_to_storage
+from libs.utils import connect_to_storage
 
 """
 This DAG automates the process of creating scan report tables, fields and values 
