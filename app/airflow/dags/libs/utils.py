@@ -34,6 +34,8 @@ class ValidatedParams(TypedDict):
     trigger_reuse_concepts: bool
     scan_report_blob: str
     data_dictionary_blob: Optional[str]
+    user_id: int
+    file_type: str
 
 
 def _process_field_vocab_pairs(field_vocab_pairs: str):
@@ -233,6 +235,17 @@ def validate_params_SR_processing(**context):
         int_params=int_params,
         string_params=string_params,
         check_data_dictionary_blob=True,
+        **context,
+    )
+
+
+def validate_params_rules_export(**context):
+    """Validates parameters required for rules export DAG tasks."""
+    int_params = ["scan_report_id", "user_id"]
+    string_params = ["file_type"]
+    return _validate_dag_params(
+        int_params=int_params,
+        string_params=string_params,
         **context,
     )
 
