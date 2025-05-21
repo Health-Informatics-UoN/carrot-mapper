@@ -76,6 +76,7 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt",
     "allauth",
     "allauth.account",
+    "allauth.socialaccount",
     "dj_rest_auth",
     "dj_rest_auth.registration",
     "shared",
@@ -101,8 +102,10 @@ CORS_ALLOW_CREDENTIALS = os.getenv("CORS_ALLOW_CREDENTIALS", "False").lower() in
     "true",
     "1",
 )
-CORS_ALLOWED_ORIGINS = [os.environ.get("FRONTEND_URL", "http://localhost:3000")]
-CSRF_TRUSTED_ORIGINS = [os.environ.get("FRONTEND_URL", "http://localhost:3000")]
+CORS_ALLOWED_ORIGINS = [os.environ.get(
+    "FRONTEND_URL", "http://localhost:3000")]
+CSRF_TRUSTED_ORIGINS = [os.environ.get(
+    "FRONTEND_URL", "http://localhost:3000")]
 
 SITE_ID = 1
 
@@ -232,7 +235,8 @@ WORKERS_RULES_KEY = os.environ.get("WORKERS_RULES_KEY", "")
 WORKERS_RULES_EXPORT_NAME = os.environ.get(
     "WORKERS_RULES_EXPORT_NAME", "rules-exports-queue"
 )
-WORKERS_UPLOAD_NAME = os.environ.get("WORKERS_UPLOAD_NAME", "upload-reports-queue")
+WORKERS_UPLOAD_NAME = os.environ.get(
+    "WORKERS_UPLOAD_NAME", "upload-reports-queue")
 RULES_QUEUE_NAME = os.environ.get("RULES_QUEUE_NAME", "rules-queue")
 
 # Auth
@@ -272,7 +276,8 @@ WORKER_SERVICE_TYPE = os.getenv("WORKER_SERVICE_TYPE", WorkerServiceType.AZURE)
 # Azure Storage Connection String
 azure_storage_conn_string = "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;TableEndpoint=http://azurite:10002/devstoreaccount1;"
 
-STORAGE_CONN_STRING = os.getenv("STORAGE_CONN_STRING", azure_storage_conn_string)
+STORAGE_CONN_STRING = os.getenv(
+    "STORAGE_CONN_STRING", azure_storage_conn_string)
 
 # MinIO Storage Configuration Credentials
 MINIO_ENDPOINT = os.environ.get("MINIO_ENDPOINT", "minio:9000")
@@ -280,11 +285,14 @@ MINIO_ACCESS_KEY = os.environ.get("MINIO_ACCESS_KEY", "minioadmin")
 MINIO_SECRET_KEY = os.environ.get("MINIO_SECRET_KEY", "minioadmin")
 
 # Airflow Configuration
-AIRFLOW_BASE_URL = os.getenv("AIRFLOW_BASE_URL", "http://airflow-webserver:8081")
-AIRFLOW_AUTO_MAPPING_DAG_ID = os.getenv("AIRFLOW_AUTO_MAPPING_DAG_ID", "auto_mapping")
+AIRFLOW_BASE_URL = os.getenv(
+    "AIRFLOW_BASE_URL", "http://airflow-webserver:8081")
+AIRFLOW_AUTO_MAPPING_DAG_ID = os.getenv(
+    "AIRFLOW_AUTO_MAPPING_DAG_ID", "auto_mapping")
 AIRFLOW_SCAN_REPORT_PROCESSING_DAG_ID = os.getenv(
     "AIRFLOW_SCAN_REPORT_PROCESSING_DAG_ID", "scan_report_processing"
 )
-AIRFLOW_RULES_EXPORT_DAG_ID = os.getenv("AIRFLOW_RULES_EXPORT_DAG_ID", "rules_export")
+AIRFLOW_RULES_EXPORT_DAG_ID = os.getenv(
+    "AIRFLOW_RULES_EXPORT_DAG_ID", "rules_export")
 AIRFLOW_ADMIN_USERNAME = os.getenv("AIRFLOW_ADMIN_USERNAME", "admin")
 AIRFLOW_ADMIN_PASSWORD = os.getenv("AIRFLOW_ADMIN_PASSWORD", "admin")
