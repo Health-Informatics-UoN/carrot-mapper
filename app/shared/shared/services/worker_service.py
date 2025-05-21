@@ -140,10 +140,7 @@ class AirflowWorkerService(WorkerService):
         self._trigger_airflow_dag(self._auto_mapping_dag_id, payload)
 
     def trigger_scan_report_processing(self, message_body: Dict[str, Any]):
-        # For now using the queue approach until Airflow implementation is completed
-        add_message(self._workers_upload_name, message_body)
-        # Future implementation:
-        # self._trigger_airflow_dag(self._scan_report_processing_dag_id, message_body)
+        self._trigger_airflow_dag(self._scan_report_processing_dag_id, message_body)
 
     def trigger_rules_export(self, message_body: Dict[str, Any]):
         # For now using the queue approach until Airflow implementation is completed

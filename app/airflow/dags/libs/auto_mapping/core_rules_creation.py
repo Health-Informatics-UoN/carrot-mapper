@@ -25,7 +25,7 @@ def create_mapping_rules(**kwargs) -> None:
     """
 
     # Get validated parameters from XCom
-    validated_params = pull_validated_params(kwargs, "validate_params")
+    validated_params = pull_validated_params(kwargs, "validate_params_auto_mapping")
 
     scan_report_id = validated_params["scan_report_id"]
     table_id = validated_params["table_id"]

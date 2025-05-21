@@ -23,7 +23,7 @@ def delete_mapping_rules(**kwargs) -> None:
     - table_id (int): The ID of the scan report table to process
     """
     # Get validated parameters from XCom
-    validated_params = pull_validated_params(kwargs, "validate_params")
+    validated_params = pull_validated_params(kwargs, "validate_params_auto_mapping")
     table_id = validated_params["table_id"]
     try:
         delete_query = """
@@ -46,7 +46,7 @@ def create_temp_existing_concepts_table(**kwargs) -> None:
     - table_id (int): The ID of the scan report table to process
     """
     # Get validated parameters from XCom
-    validated_params = pull_validated_params(kwargs, "validate_params")
+    validated_params = pull_validated_params(kwargs, "validate_params_auto_mapping")
     table_id = validated_params["table_id"]
 
     try:
@@ -68,7 +68,7 @@ def find_existing_concepts(**kwargs) -> None:
     - table_id (int): The ID of the scan report table to process
     """
     # Get validated parameters from XCom
-    validated_params = pull_validated_params(kwargs, "validate_params")
+    validated_params = pull_validated_params(kwargs, "validate_params_auto_mapping")
 
     table_id = validated_params["table_id"]
     scan_report_id = validated_params["scan_report_id"]
