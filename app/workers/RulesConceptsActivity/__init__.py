@@ -30,7 +30,6 @@ ALLOWED_DOMAINS = [
     "observation",
     "drug",
     "procedure",
-    "specimen",
     "device",
 ]
 
