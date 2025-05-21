@@ -36,7 +36,14 @@ def process_rules_export(**kwargs) -> None:
             dest_table TEXT,
             source_field TEXT,
             source_table TEXT,
-            term_mapping_value TEXT
+            term_mapping_value TEXT,
+            domain TEXT,
+            standard_concept TEXT,
+            concept_class TEXT,
+            vocabulary TEXT,
+            valid_start_date DATE,
+            valid_end_date DATE,
+            creation_type TEXT
         );
         INSERT INTO temp_rules_export_%(scan_report_id)s (
             sr_concept_id,

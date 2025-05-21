@@ -9,6 +9,7 @@ from io import BytesIO
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 import io
 import csv
+from datetime import date
 
 # PostgreSQL connection hook
 pg_hook = PostgresHook(postgres_conn_id="postgres_db_conn")
