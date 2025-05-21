@@ -21,7 +21,6 @@ m_allowed_tables = [
     "observation",
     "drug_exposure",
     "procedure_occurrence",
-    "specimen",
     "device_exposure",
 ]
 
@@ -33,7 +32,6 @@ m_date_field_mapper = {
     "observation": ["observation_datetime"],
     "drug_exposure": ["drug_exposure_start_datetime", "drug_exposure_end_datetime"],
     "procedure_occurrence": ["procedure_datetime"],
-    "specimen": ["specimen_datetime"],
     "device_exposure": [
         "device_exposure_start_datetime",
         "device_exposure_end_datetime",
