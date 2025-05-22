@@ -10,13 +10,18 @@ import Link from "next/link";
 import { getProject } from "@/api/projects";
 import { AvatarList } from "@/components/core/avatar-list";
 
-export default async function DatasetLayout({
-  params,
-  children,
-}: Readonly<{
-  params: { id: string };
-  children: React.ReactNode;
-}>) {
+export default async function DatasetLayout(
+  props: Readonly<{
+    params: { id: string };
+    children: React.ReactNode;
+  }>
+) {
+  const params = await props.params;
+
+  const {
+    children
+  } = props;
+
   const items = [
     {
       name: "Datasets",

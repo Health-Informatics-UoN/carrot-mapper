@@ -10,13 +10,18 @@ import { Badge } from "@/components/ui/badge";
 import { InfoItem } from "@/components/core/InfoItem";
 import Link from "next/link";
 
-export default async function DatasetLayout({
-  params,
-  children,
-}: Readonly<{
-  params: { id: string };
-  children: React.ReactNode;
-}>) {
+export default async function DatasetLayout(
+  props: Readonly<{
+    params: { id: string };
+    children: React.ReactNode;
+  }>
+) {
+  const params = await props.params;
+
+  const {
+    children
+  } = props;
+
   const permissions = await getDatasetPermissions(params.id);
   const requiredPermissions: Permission[] = ["CanAdmin", "CanEdit", "CanView"];
 

@@ -7,16 +7,20 @@ import { getJobs } from "@/api/scanreports";
 import { DownloadStatus } from "./download-status";
 
 interface DownloadsProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
-  searchParams?: FilterParameters;
+  }>;
+  searchParams?: Promise<FilterParameters>;
 }
 
-export default async function Downloads({
-  params: { id },
-  searchParams,
-}: DownloadsProps) {
+export default async function Downloads(props: DownloadsProps) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
+
+  const {
+    id
+  } = params;
+
   const defaultPageSize = 20;
   const defaultParams = {
     p: 1,

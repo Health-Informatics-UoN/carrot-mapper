@@ -16,18 +16,24 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
 interface ScanReportsValueProps {
-  params: {
+  params: Promise<{
     id: string;
     tableId: string;
     fieldId: string;
-  };
-  searchParams?: FilterParameters;
+  }>;
+  searchParams?: Promise<FilterParameters>;
 }
 
-export default async function ScanReportsValue({
-  params: { id, tableId, fieldId },
-  searchParams,
-}: ScanReportsValueProps) {
+export default async function ScanReportsValue(props: ScanReportsValueProps) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
+
+  const {
+    id,
+    tableId,
+    fieldId
+  } = params;
+
   const defaultPageSize = 20;
   const defaultParams = {
     page_size: defaultPageSize,
