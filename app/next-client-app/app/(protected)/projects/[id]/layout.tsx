@@ -11,8 +11,9 @@ import { getProject } from "@/api/projects";
 import { AvatarList } from "@/components/core/avatar-list";
 import { ReactNode } from "react";
 
+
 interface LayoutProps {
-  params: { id: string };
+  params: Promise<{ id: string }>;
   children: ReactNode;
 }
 
@@ -25,7 +26,8 @@ const items = [
 ];
 
 export default async function DatasetLayout({ params, children }: LayoutProps) {
-  const project = await getProject(params.id);
+  const resolvedParams = await params; // Await the promise to extract the actual value
+  const project = await getProject(resolvedParams.id);
   let createdDate = new Date();
 
   if (!project) {
@@ -59,7 +61,7 @@ export default async function DatasetLayout({ params, children }: LayoutProps) {
       {/* "Navs" group */}
       <div className="flex justify-between">
         <NavGroup
-          path={`/projects/${params.id}`}
+          path={`/projects/${resolvedParams.id}`}
           items={[
             ...items.map((x) => ({
               text: x.name,
