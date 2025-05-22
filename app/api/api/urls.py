@@ -118,4 +118,5 @@ urlpatterns = [
         SpectacularRedocView.as_view(url_name="schema"),
         name="schema-redoc",
     ),
+    path("admin-debug/", views.admin_debug, name="admin_debug"),
 ]

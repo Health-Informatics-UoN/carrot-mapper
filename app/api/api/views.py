@@ -1,5 +1,5 @@
 import datetime
-import os
+import traceback, sys, os
 import random
 import string
 from typing import Any, Optional
@@ -27,6 +27,8 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
 from django.http import HttpResponse
+from django.urls import reverse, NoReverseMatch
+from django.conf import settings
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
@@ -1481,3 +1483,49 @@ class ScanReportPermissionView(APIView):
         permissions = get_user_permissions_on_scan_report(request, pk)
 
         return Response({"permissions": permissions}, status=status.HTTP_200_OK)
+
+
+def admin_debug(request):
+    try:
+        # Try to get admin URL
+        try:
+            admin_url = reverse("admin:index")
+        except NoReverseMatch:
+            admin_url = "Could not resolve admin:index URL"
+
+        # Check admin in INSTALLED_APPS
+        admin_installed = "django.contrib.admin" in settings.INSTALLED_APPS
+
+        # Check middleware order
+        middleware_order = [m.split(".")[-1] for m in settings.MIDDLEWARE]
+
+        # Basic diagnostics
+        info = {
+            "django_settings_module": os.environ.get("DJANGO_SETTINGS_MODULE"),
+            "admin_in_installed_apps": admin_installed,
+            "admin_url": admin_url,
+            "debug_setting": settings.DEBUG,
+            "allowed_hosts": settings.ALLOWED_HOSTS,
+            "middleware_order": middleware_order,
+            "static_root": settings.STATIC_ROOT,
+            "static_url": settings.STATIC_URL,
+            "urls_config": str(settings.ROOT_URLCONF),
+            "request_path": request.path,
+            "request_headers": dict(request.headers),
+            "server_hostname": os.environ.get("HOSTNAME", "unknown"),
+        }
+
+        # Test direct rendering of admin template
+        try:
+            from django.template.loader import render_to_string
+
+            test_render = render_to_string("admin/login.html", {"title": "Test"})
+            info["admin_template_render"] = "Success"
+        except Exception as e:
+            info["admin_template_error"] = str(e)
+
+        return HttpResponse("<pre>" + str(info) + "</pre>")
+    except Exception as e:
+        return HttpResponse(
+            "<pre>Error in diagnostic view:\n" + traceback.format_exc() + "</pre>"
+        )
