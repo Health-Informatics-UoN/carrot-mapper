@@ -10,14 +10,16 @@ import { Badge } from "@/components/ui/badge";
 import { InfoItem } from "@/components/core/InfoItem";
 import Link from "next/link";
 
-export default async function DatasetLayout(
-  props: Readonly<{
-    params: { id: string };
-    children: React.ReactNode;
-  }>
-) {
-  const { params, children } = props;
+interface LayoutProps {
+  params: { id: string };
+  children: React.ReactNode;
+}
 
+export default async function DatasetLayout({
+  params,
+  children,
+}: Readonly<LayoutProps>) {
+ 
   const permissions = await getDatasetPermissions(params.id);
   const requiredPermissions: Permission[] = ["CanAdmin", "CanEdit", "CanView"];
 
@@ -30,11 +32,12 @@ export default async function DatasetLayout(
   ];
 
   const dataset = await getDataSet(params.id);
+
   const dataPartner = dataset.data_partner;
   const projects = dataset.projects;
 
   const createdDate = new Date(dataset.created_at);
-
+  // Checking permissions
   if (
     !requiredPermissions.some((permission) =>
       permissions.permissions.includes(permission)
@@ -42,7 +45,6 @@ export default async function DatasetLayout(
   ) {
     return <Forbidden />;
   }
-
   return (
     <div className="space-y-2">
       <div className="flex font-semibold text-xl items-center space-x-2">
@@ -81,19 +83,21 @@ export default async function DatasetLayout(
           className="py-1 md:py-0 md:px-3"
         />
       </div>
-
+      {/* "Navs" group */}
       <div className="flex justify-between">
         <NavGroup
           path={`/datasets/${params.id}`}
-          items={items.map((x) => ({
-            text: x.name,
-            slug: x.slug,
-            iconName: x.iconName,
-          }))}
+          items={[
+            ...items.map((x) => ({
+              text: x.name,
+              slug: x.slug,
+              iconName: x.iconName,
+            })),
+          ]}
         />
       </div>
-
       <Boundary>
+        {" "}
         <Suspense fallback={<Skeleton className="h-full w-full" />}>
           {children}
         </Suspense>
