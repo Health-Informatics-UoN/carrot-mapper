@@ -16,7 +16,7 @@ export default async function DatasetLayout(
     children: React.ReactNode;
   }>
 ) {
-  const params = await props.params;
+  const params = props.params;
 
   const {
     children
