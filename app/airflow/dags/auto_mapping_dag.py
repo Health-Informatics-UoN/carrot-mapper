@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.operators.empty import EmptyOperator
-from libs.find_R_concepts_to_reuse import (
+from libs.auto_mapping.find_R_concepts_to_reuse import (
     find_matching_field,
     find_matching_value,
     find_object_id,
@@ -9,23 +9,23 @@ from libs.find_R_concepts_to_reuse import (
     delete_R_concepts,
 )
 
-from libs.find_standard_V_concepts import (
+from libs.auto_mapping.find_standard_V_concepts import (
     find_standard_concepts,
     create_standard_concepts,
 )
 
-from libs.core_get_existing_concepts import (
+from libs.auto_mapping.core_get_existing_concepts import (
     delete_mapping_rules,
     create_temp_existing_concepts_table,
     find_existing_concepts,
 )
-from libs.core_prep_rules_creation import (
+from libs.auto_mapping.core_prep_rules_creation import (
     find_dest_table_and_person_field_id,
     find_date_fields,
     find_concept_fields,
     find_additional_fields,
 )
-from libs.core_rules_creation import create_mapping_rules
+from libs.auto_mapping.core_rules_creation import create_mapping_rules
 from libs.utils import create_task, validate_params_auto_mapping
 
 """
@@ -80,6 +80,7 @@ dag = DAG(
     tags=["V-concepts", "R-concepts", "mapping_rules_creation"],
     schedule_interval=None,
     catchup=False,
+    is_paused_upon_creation=False,
 )
 
 # TODO: clean up
@@ -88,7 +89,7 @@ dag = DAG(
 start = EmptyOperator(task_id="start", dag=dag)
 
 tasks = [
-    create_task("validate_params", validate_params_auto_mapping, dag),
+    create_task("validate_params_auto_mapping", validate_params_auto_mapping, dag),
     create_task("delete_mapping_rules", delete_mapping_rules, dag),
     create_task("find_standard_concepts", find_standard_concepts, dag),
     create_task("create_standard_concepts", create_standard_concepts, dag),

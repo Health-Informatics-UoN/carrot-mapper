@@ -4,7 +4,10 @@ FROM apache/airflow:2.10.5
 RUN pip install --no-cache-dir \
     apache-airflow-providers-microsoft-azure \
     apache-airflow-providers-postgres \
-    apache-airflow-providers-amazon
+    apache-airflow-providers-amazon \
+    openpyxl \
+    types-openpyxl \
+    types-psycopg2
 
 # Copy DAGs to the container
 COPY ./dags /opt/airflow/dags
