@@ -52,6 +52,9 @@ COPY --from=builder /etc/group /etc/group
 
 # --- Entrypoint Execution setup
 COPY --chown=django:django --chmod=0755 ./api/entrypoint.sh /entrypoint.sh
+RUN mkdir -p /api/staticfiles && \
+    chown -R django:django /api/staticfiles && \
+    chmod 755 /api/staticfiles
 ENTRYPOINT ["/entrypoint.sh"]
 
 # Return to django user to run the container as this user by default
