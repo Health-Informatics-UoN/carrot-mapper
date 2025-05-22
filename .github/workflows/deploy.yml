@@ -43,6 +43,13 @@ jobs:
           pip install -r requirements.txt --target=".python_packages/lib/site-packages"
           popd
 
+      - name: "Collect Static Files"
+        shell: bash
+        run: |
+          pushd './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
+          python manage.py collectstatic --noinput --clear
+          popd
+
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
