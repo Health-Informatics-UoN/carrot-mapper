@@ -49,6 +49,9 @@ jobs:
           cd ./app/api
           python manage.py collectstatic --noinput --clear
 
+          echo "Verifying static files were created"
+          ls -la staticfiles/
+
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
