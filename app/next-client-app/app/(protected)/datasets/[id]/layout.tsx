@@ -16,11 +16,7 @@ export default async function DatasetLayout(
     children: React.ReactNode;
   }>
 ) {
-  const params = await props.params;
-
-  const {
-    children
-  } = props;
+  const { params, children } = props;
 
   const permissions = await getDatasetPermissions(params.id);
   const requiredPermissions: Permission[] = ["CanAdmin", "CanEdit", "CanView"];
@@ -34,12 +30,11 @@ export default async function DatasetLayout(
   ];
 
   const dataset = await getDataSet(params.id);
-
   const dataPartner = dataset.data_partner;
   const projects = dataset.projects;
 
   const createdDate = new Date(dataset.created_at);
-  // Checking permissions
+
   if (
     !requiredPermissions.some((permission) =>
       permissions.permissions.includes(permission)
@@ -47,6 +42,7 @@ export default async function DatasetLayout(
   ) {
     return <Forbidden />;
   }
+
   return (
     <div className="space-y-2">
       <div className="flex font-semibold text-xl items-center space-x-2">
@@ -85,21 +81,19 @@ export default async function DatasetLayout(
           className="py-1 md:py-0 md:px-3"
         />
       </div>
-      {/* "Navs" group */}
+
       <div className="flex justify-between">
         <NavGroup
           path={`/datasets/${params.id}`}
-          items={[
-            ...items.map((x) => ({
-              text: x.name,
-              slug: x.slug,
-              iconName: x.iconName,
-            })),
-          ]}
+          items={items.map((x) => ({
+            text: x.name,
+            slug: x.slug,
+            iconName: x.iconName,
+          }))}
         />
       </div>
+
       <Boundary>
-        {" "}
         <Suspense fallback={<Skeleton className="h-full w-full" />}>
           {children}
         </Suspense>
