@@ -46,9 +46,8 @@ jobs:
       - name: "Collect Static Files"
         shell: bash
         run: |
-          pushd './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
+          cd ./app/api
           python manage.py collectstatic --noinput --clear
-          popd
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
