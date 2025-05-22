@@ -8,10 +8,11 @@ import { FilterParameters } from "@/types/filter";
 import { FileScan } from "lucide-react";
 
 interface ScanReportsProps {
-  searchParams?: { status__in: string } & FilterParameters;
+  searchParams?: Promise<{ status__in: string } & FilterParameters>;
 }
 
-export default async function ScanReports({ searchParams }: ScanReportsProps) {
+export default async function ScanReports(props: ScanReportsProps) {
+  const searchParams = await props.searchParams;
   const defaultPageSize = 10;
   const defaultParams = {
     hidden: false,

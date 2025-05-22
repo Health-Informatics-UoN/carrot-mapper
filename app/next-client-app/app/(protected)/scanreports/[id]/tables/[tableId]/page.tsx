@@ -14,17 +14,22 @@ import { ConceptDataTable } from "@/components/concepts/ConceptDataTable";
 import { Button } from "@/components/ui/button";
 
 interface ScanReportsFieldProps {
-  params: {
+  params: Promise<{
     id: string;
     tableId: string;
-  };
-  searchParams?: FilterParameters;
+  }>;
+  searchParams?: Promise<FilterParameters>;
 }
 
-export default async function ScanReportsField({
-  params: { id, tableId },
-  searchParams,
-}: ScanReportsFieldProps) {
+export default async function ScanReportsField(props: ScanReportsFieldProps) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
+
+  const {
+    id,
+    tableId
+  } = params;
+
   const defaultPageSize = 20;
   const defaultParams = {
     page_size: defaultPageSize,

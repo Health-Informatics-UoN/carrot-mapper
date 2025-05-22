@@ -9,16 +9,20 @@ import ScanReportsTableClient from "@/components/scanreports/ScanReportsTableCli
 import { DataTableFilter } from "@/components/data-table/DataTableFilter";
 
 interface ScanReportsTableProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
-  searchParams?: FilterParameters;
+  }>;
+  searchParams?: Promise<FilterParameters>;
 }
 
-export default async function ScanReportsTable({
-  params: { id },
-  searchParams,
-}: ScanReportsTableProps) {
+export default async function ScanReportsTable(props: ScanReportsTableProps) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
+
+  const {
+    id
+  } = params;
+
   const defaultParams = {};
 
   const combinedParams = { ...defaultParams, ...searchParams };

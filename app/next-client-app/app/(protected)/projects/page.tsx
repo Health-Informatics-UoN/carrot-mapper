@@ -7,10 +7,11 @@ import { Folders } from "lucide-react";
 import { getProjectsList } from "@/api/projects";
 
 interface ProjectListProps {
-  searchParams?: FilterParameters;
+  searchParams?: Promise<FilterParameters>;
 }
 
-export default async function Projects({ searchParams }: ProjectListProps) {
+export default async function Projects(props: ProjectListProps) {
+  const searchParams = await props.searchParams;
   const defaultParams = {
     page_size: 10,
   };
