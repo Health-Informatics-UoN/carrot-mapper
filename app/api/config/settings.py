@@ -284,8 +284,9 @@ MINIO_SECRET_KEY = os.environ.get("MINIO_SECRET_KEY", "minioadmin")
 # Airflow Configuration
 AIRFLOW_BASE_URL = os.getenv("AIRFLOW_BASE_URL", "http://airflow-webserver:8081")
 AIRFLOW_AUTO_MAPPING_DAG_ID = os.getenv("AIRFLOW_AUTO_MAPPING_DAG_ID", "auto_mapping")
-AIRFLOW_SCAN_REPORT_PROCESSING_DAG_ID = os.getenv("AIRFLOW_SCAN_REPORT_PROCESSING_DAG_ID", "scan_report_processing")
-AIRFLOW_RULES_EXPORT_DAG_ID = os.getenv(
-    "AIRFLOW_RULES_EXPORT_DAG_ID", "rules_export")
+AIRFLOW_SCAN_REPORT_PROCESSING_DAG_ID = os.getenv(
+    "AIRFLOW_SCAN_REPORT_PROCESSING_DAG_ID", "scan_report_processing"
+)
+AIRFLOW_RULES_EXPORT_DAG_ID = os.getenv("AIRFLOW_RULES_EXPORT_DAG_ID", "rules_export")
 AIRFLOW_ADMIN_USERNAME = os.getenv("AIRFLOW_ADMIN_USERNAME", "admin")
 AIRFLOW_ADMIN_PASSWORD = os.getenv("AIRFLOW_ADMIN_PASSWORD", "admin")
