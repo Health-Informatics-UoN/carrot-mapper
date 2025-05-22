@@ -11,7 +11,7 @@ import { InfoItem } from "@/components/core/InfoItem";
 import Link from "next/link";
 
 interface LayoutProps {
-  params: { id: string };
+  params: Promise<{ id: string }>;
   children: React.ReactNode;
 }
 
@@ -19,8 +19,9 @@ export default async function DatasetLayout({
   params,
   children,
 }: Readonly<LayoutProps>) {
- 
-  const permissions = await getDatasetPermissions(params.id);
+  const { id } = await params;
+
+  const permissions = await getDatasetPermissions(id);
   const requiredPermissions: Permission[] = ["CanAdmin", "CanEdit", "CanView"];
 
   const items = [
@@ -31,13 +32,12 @@ export default async function DatasetLayout({
     { name: "Edit Details", slug: "details", iconName: "Edit" },
   ];
 
-  const dataset = await getDataSet(params.id);
+  const dataset = await getDataSet(id);
 
   const dataPartner = dataset.data_partner;
   const projects = dataset.projects;
 
   const createdDate = new Date(dataset.created_at);
-  // Checking permissions
   if (
     !requiredPermissions.some((permission) =>
       permissions.permissions.includes(permission)
@@ -86,7 +86,7 @@ export default async function DatasetLayout({
       {/* "Navs" group */}
       <div className="flex justify-between">
         <NavGroup
-          path={`/datasets/${params.id}`}
+          path={`/datasets/${id}`}
           items={[
             ...items.map((x) => ({
               text: x.name,
