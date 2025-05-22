@@ -57,98 +57,98 @@ def build_rules_json(df: DataFrame) -> BytesIO:
     return json_bytes
 
 
-def build_rules_csv(processed_rules: DataFrame) -> io.StringIO:
-    """
-    Gets Mapping Rules in csv format.
+# def build_rules_csv(processed_rules: DataFrame) -> io.StringIO:
+#     """
+#     Gets Mapping Rules in csv format.
 
-    Args:
-        - qs (QuerySet[MappingRule]) queryset of Mapping Rules.
+#     Args:
+#         - qs (QuerySet[MappingRule]) queryset of Mapping Rules.
 
-    Returns:
-        - Mapping rules as StringIO.
-    """
-    # make a string buffer
-    _buffer = io.StringIO()
-    # setup a csv writter
-    writer = csv.writer(
-        _buffer,
-        lineterminator="\n",
-        delimiter=",",
-        quoting=csv.QUOTE_MINIMAL,
-    )
+#     Returns:
+#         - Mapping rules as StringIO.
+#     """
+#     # make a string buffer
+#     _buffer = io.StringIO()
+#     # setup a csv writter
+#     writer = csv.writer(
+#         _buffer,
+#         lineterminator="\n",
+#         delimiter=",",
+#         quoting=csv.QUOTE_MINIMAL,
+#     )
 
-    # setup the headers from the first object
-    # replace term_mapping ({'source_value':'concept'}) with separate columns
-    headers = [
-        "source_table",
-        "source_field",
-        "source_value",
-        "concept_id",
-        "omop_term",
-        "class",
-        "concept",
-        "validity",
-        "domain",
-        "vocabulary",
-        "creation_type",
-        "rule_id",
-        "isFieldMapping",
-    ]
+#     # setup the headers from the first object
+#     # replace term_mapping ({'source_value':'concept'}) with separate columns
+#     headers = [
+#         "source_table",
+#         "source_field",
+#         "source_value",
+#         "concept_id",
+#         "omop_term",
+#         "class",
+#         "concept",
+#         "validity",
+#         "domain",
+#         "vocabulary",
+#         "creation_type",
+#         "rule_id",
+#         "isFieldMapping",
+#     ]
 
-    # write the headers to the csv
-    writer.writerow(headers)
+#     # write the headers to the csv
+#     writer.writerow(headers)
 
-    # Get the current date to check validity
-    today = date.today()
+#     # Get the current date to check validity
+#     today = date.today()
 
-    # loop over the content
-    for content in processed_rules:
-        # replace the django model objects with string names
-        content["destination_table"] = content["destination_table"].table
-        content["domain"] = content["domain"]
-        content["source_table"] = content["source_table"].name
-        content["source_field"] = content["source_field"].name
+#     # loop over the content
+#     for content in processed_rules:
+#         # replace the django model objects with string names
+#         content["destination_table"] = content["destination_table"].table
+#         content["domain"] = content["domain"]
+#         content["source_table"] = content["source_table"].name
+#         content["source_field"] = content["source_field"].name
 
-        # pop out the term mapping
-        term_mapping = content.pop("term_mapping")
-        content["isFieldMapping"] = ""
-        content["validity"] = ""
-        content["vocabulary"] = ""
-        content["concept"] = ""
-        content["class"] = ""
-        # if no term mapping, set columns to blank
-        if term_mapping is None:
-            content["source_value"] = ""
-            content["concept_id"] = ""
-        elif isinstance(term_mapping, dict):
-            # if is a dict, it's a map between a source value and a concept
-            # set these based on the value/key
-            content["source_value"] = list(term_mapping.keys())[0]
-            content["concept_id"] = list(term_mapping.values())[0]
-            content["isFieldMapping"] = "0"
-        else:
-            # otherwise it is a scalar, it is a term map of a field, so set this
-            content["source_value"] = ""
-            content["concept_id"] = term_mapping
-            content["isFieldMapping"] = "1"
+#         # pop out the term mapping
+#         term_mapping = content.pop("term_mapping")
+#         content["isFieldMapping"] = ""
+#         content["validity"] = ""
+#         content["vocabulary"] = ""
+#         content["concept"] = ""
+#         content["class"] = ""
+#         # if no term mapping, set columns to blank
+#         if term_mapping is None:
+#             content["source_value"] = ""
+#             content["concept_id"] = ""
+#         elif isinstance(term_mapping, dict):
+#             # if is a dict, it's a map between a source value and a concept
+#             # set these based on the value/key
+#             content["source_value"] = list(term_mapping.keys())[0]
+#             content["concept_id"] = list(term_mapping.values())[0]
+#             content["isFieldMapping"] = "0"
+#         else:
+#             # otherwise it is a scalar, it is a term map of a field, so set this
+#             content["source_value"] = ""
+#             content["concept_id"] = term_mapping
+#             content["isFieldMapping"] = "1"
 
-        # Lookup and extract concept
-        if content["concept_id"]:
-            if concept := Concept.objects.filter(
-                concept_id=content["concept_id"]
-            ).first():
-                content["validity"] = (
-                    concept.valid_start_date <= today < concept.valid_end_date
-                )
-                content["vocabulary"] = concept.vocabulary_id
-                content["concept"] = concept.standard_concept
-                content["class"] = concept.concept_class_id
+#         # Lookup and extract concept
+#         if content["concept_id"]:
+#             if concept := Concept.objects.filter(
+#                 concept_id=content["concept_id"]
+#             ).first():
+#                 content["validity"] = (
+#                     concept.valid_start_date <= today < concept.valid_end_date
+#                 )
+#                 content["vocabulary"] = concept.vocabulary_id
+#                 content["concept"] = concept.standard_concept
+#                 content["class"] = concept.concept_class_id
 
-        # extract and write the contents now
-        content_out = [str(content[x]) for x in headers]
-        writer.writerow(content_out)
+#         # extract and write the contents now
+#         content_out = [str(content[x]) for x in headers]
+#         writer.writerow(content_out)
 
-    # rewind the buffer and return the response
-    _buffer.seek(0)
+#     # rewind the buffer and return the response
+#     _buffer.seek(0)
 
-    return _buffer
+#     return _buffer
