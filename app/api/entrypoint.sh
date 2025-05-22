@@ -5,9 +5,7 @@ wait-for-it ${DB_HOST}:${DB_PORT} -- echo "Database is ready! Listening on ${DB_
 
 
 # Collect static files for serving
-rm -rf staticfiles
-mkdir staticfiles
-python manage.py collectstatic
+python manage.py collectstatic --noinput
 python manage.py migrate
 python manage.py automatic_seeding_data
 python manage.py default_super_user
