@@ -230,9 +230,12 @@ WORKERS_RULES_NAME = os.environ.get("WORKERS_RULES_NAME", "RulesOrchestrator")
 WORKERS_RULES_KEY = os.environ.get("WORKERS_RULES_KEY", "")
 
 # Queue Names
-WORKERS_RULES_EXPORT_NAME = os.environ.get("WORKERS_RULES_EXPORT_NAME", "rules-exports-queue")
+WORKERS_RULES_EXPORT_NAME = os.environ.get(
+    "WORKERS_RULES_EXPORT_NAME", "rules-exports-queue"
+)
 WORKERS_UPLOAD_NAME = os.environ.get("WORKERS_UPLOAD_NAME", "upload-reports-queue")
 RULES_QUEUE_NAME = os.environ.get("RULES_QUEUE_NAME", "rules-queue")
+
 
 # Auth
 
