@@ -9,7 +9,6 @@ import { InfoItem } from "@/components/core/InfoItem";
 import Link from "next/link";
 import { getProject } from "@/api/projects";
 import { AvatarList } from "@/components/core/avatar-list";
-
 import { ReactNode } from "react";
 
 interface LayoutProps {
@@ -17,16 +16,15 @@ interface LayoutProps {
   children: ReactNode;
 }
 
+const items = [
+  {
+    name: "Datasets",
+    slug: "",
+    iconName: "Database",
+  },
+];
+
 export default async function DatasetLayout({ params, children }: LayoutProps) {
-
-  const items = [
-    {
-      name: "Datasets",
-      slug: "",
-      iconName: "Database",
-    },
-  ];
-
   const project = await getProject(params.id);
   let createdDate = new Date();
 
@@ -72,7 +70,6 @@ export default async function DatasetLayout({ params, children }: LayoutProps) {
         />
       </div>
       <Boundary>
-        {" "}
         <Suspense fallback={<Skeleton className="h-full w-full" />}>
           {children}
         </Suspense>
