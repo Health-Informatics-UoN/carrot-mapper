@@ -1,14 +1,11 @@
 from airflow.providers.microsoft.azure.hooks.wasb import WasbHook
 from airflow.providers.amazon.aws.hooks.s3 import S3Hook
 from libs.enums import StorageType
-import os
+from libs.settings import storage_type
 from pathlib import Path
 import logging
 from typing import Any
 from azure.storage.blob import ContentSettings
-
-# Storage type
-storage_type = os.getenv("STORAGE_TYPE", StorageType.MINIO)
 
 
 def get_storage_hook():

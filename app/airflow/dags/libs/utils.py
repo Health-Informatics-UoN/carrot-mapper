@@ -9,11 +9,16 @@ from libs.enums import JobStageType, StageStatusType, StorageType
 import os
 from airflow.utils.session import create_session
 from airflow.models.connection import Connection
+from libs.settings import (
+    storage_type,
+    AIRFLOW_VAR_WASB_CONNECTION_STRING,
+    AIRFLOW_VAR_MINIO_ENDPOINT,
+    AIRFLOW_VAR_MINIO_ACCESS_KEY,
+    AIRFLOW_VAR_MINIO_SECRET_KEY,
+)
 
 # PostgreSQL connection hook
 pg_hook = PostgresHook(postgres_conn_id="postgres_db_conn")
-# Storage type
-storage_type = os.getenv("STORAGE_TYPE", StorageType.MINIO)
 
 
 # Define a type for field-vocab pairs
@@ -302,11 +307,7 @@ def connect_to_storage() -> None:
                 conn = Connection(
                     conn_id="wasb_conn",
                     conn_type="wasb",
-                    extra={
-                        "connection_string": os.getenv(
-                            "AIRFLOW_VAR_WASB_CONNECTION_STRING"
-                        ),
-                    },
+                    extra={"connection_string": AIRFLOW_VAR_WASB_CONNECTION_STRING},
                 )
                 session.add(conn)
                 session.commit()
@@ -325,11 +326,9 @@ def connect_to_storage() -> None:
                     conn_id="minio_conn",
                     conn_type="aws",
                     extra={
-                        "endpoint_url": os.getenv("AIRFLOW_VAR_MINIO_ENDPOINT"),
-                        "aws_access_key_id": os.getenv("AIRFLOW_VAR_MINIO_ACCESS_KEY"),
-                        "aws_secret_access_key": os.getenv(
-                            "AIRFLOW_VAR_MINIO_SECRET_KEY"
-                        ),
+                        "endpoint_url": AIRFLOW_VAR_MINIO_ENDPOINT,
+                        "aws_access_key_id": AIRFLOW_VAR_MINIO_ACCESS_KEY,
+                        "aws_secret_access_key": AIRFLOW_VAR_MINIO_SECRET_KEY,
                     },
                 )
                 session.add(conn)
