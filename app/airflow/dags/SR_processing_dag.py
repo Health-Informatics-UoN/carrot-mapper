@@ -24,10 +24,11 @@ default_args = {
     "owner": "airflow",
     "depends_on_past": False,
     "start_date": datetime(2025, 3, 25),
+    # TODO: add email on failure and retry
     "email_on_failure": False,
     "email_on_retry": False,
-    # TODO: modify these settings about retries
-    "retries": 0,
+    "retries": 3,
+    "retry_delay": timedelta(minutes=1),
 }
 
 dag = DAG(
