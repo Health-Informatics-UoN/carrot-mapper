@@ -4,7 +4,7 @@ from libs.utils import update_job_status
 import json
 import pandas as pd
 from pandas import DataFrame
-from datetime import datetime
+from datetime import datetime, timezone
 from io import BytesIO
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 import io
@@ -21,12 +21,12 @@ def build_rules_json(scan_report_name: str, scan_report_id: int) -> BytesIO:
     """
     #  Build the metadata for the JSON file
     metadata = {
+        "date_created": datetime.now(timezone.utc).isoformat(),
         "dataset": scan_report_name,
-        "date_created": datetime.now().isoformat(),
     }
     #  Get the all processed rules from the temp table as dataframe in Pandas
     processed_rules = pg_hook.get_pandas_df(
-        "SELECT * FROM temp_rules_export_%(scan_report_id)s;",
+        "SELECT * FROM temp_rules_export_%(scan_report_id)s ORDER BY sr_concept_id;",
         parameters={"scan_report_id": scan_report_id},
     )
 
@@ -39,7 +39,8 @@ def build_rules_json(scan_report_name: str, scan_report_id: int) -> BytesIO:
         source_field = row["source_field"]
 
         # Prepare the term_mapping value
-        # will solve #1006 here, then assign term_mapping step below
+        # will solve #1006 here (fields end with source_concept_id and concept_id will have different values),
+        # then assign term_mapping step below
         if pd.notnull(row["term_mapping_value"]):
             term_mapping = {row["term_mapping_value"]: row["concept_id"]}
         else:
@@ -48,7 +49,7 @@ def build_rules_json(scan_report_name: str, scan_report_id: int) -> BytesIO:
         # Build the field entry
         field_entry = {"source_table": source_table, "source_field": source_field}
         # Assign term_mapping
-        if pd.notnull(row["term_mapping_value"]) and dest_field.endswith("_concept_id"):
+        if dest_field.endswith("_concept_id"):
             field_entry["term_mapping"] = term_mapping
 
         result.setdefault(dest_table, {}).setdefault(concept_key, {})[
@@ -60,13 +61,12 @@ def build_rules_json(scan_report_name: str, scan_report_id: int) -> BytesIO:
         "cdm": result,
     }
     json_data = json.dumps(cdm, indent=6)
-    print(json_data)
     json_bytes = BytesIO(json_data.encode("utf-8"))
     json_bytes.seek(0)
     return json_bytes
 
 
-def build_rules_csv(scan_report_id: int) -> io.StringIO:
+def build_rules_csv(scan_report_id: int) -> BytesIO:
     """
     Gets Mapping Rules in csv format.
 
@@ -76,16 +76,16 @@ def build_rules_csv(scan_report_id: int) -> io.StringIO:
     Returns:
         - Mapping rules as StringIO.
     """
-
+    #  Update the temp table with the concept information (only for CSV file generation)
     update_temp_rules_table_query = """
         UPDATE temp_rules_export_%(scan_report_id)s AS temp_rules
-        SET temp_rules.domain = omop_concept.domain_id,
-            temp_rules.standard_concept = omop_concept.standard_concept,
-            temp_rules.concept_class = omop_concept.concept_class_id,
-            temp_rules.vocabulary = omop_concept.vocabulary_id,
-            temp_rules.valid_start_date = omop_concept.valid_start_date,
-            temp_rules.valid_end_date = omop_concept.valid_end_date,
-        FROM omop_concept
+        SET domain = omop_concept.domain_id,
+            standard_concept = omop_concept.standard_concept,
+            concept_class = omop_concept.concept_class_id,
+            vocabulary = omop_concept.vocabulary_id,
+            valid_start_date = omop_concept.valid_start_date,
+            valid_end_date = omop_concept.valid_end_date
+        FROM omop.concept AS omop_concept
         WHERE temp_rules.concept_id = omop_concept.concept_id;
     """
     pg_hook.run(
@@ -93,7 +93,7 @@ def build_rules_csv(scan_report_id: int) -> io.StringIO:
     )
     #  Get the all processed rules from the temp table as dataframe in Pandas
     processed_rules = pg_hook.get_pandas_df(
-        "SELECT * FROM temp_rules_export_%(scan_report_id)s;",
+        "SELECT * FROM temp_rules_export_%(scan_report_id)s ORDER BY sr_concept_id;",
         parameters={"scan_report_id": scan_report_id},
     )
     # make a string buffer
@@ -133,44 +133,40 @@ def build_rules_csv(scan_report_id: int) -> io.StringIO:
     # loop over the content
     for _, row in processed_rules.iterrows():
         # Use .get or direct attribute access for pandas Series
-        destination_table = row.get("dest_table", "")
         domain = row.get("domain", "")
+        rule_id = row.get("sr_concept_id", "")
+        creation_type = row.get("creation_type", "")
         source_table = row.get("source_table", "")
         source_field = row.get("source_field", "")
         omop_term = row.get("concept_name", "")
-        concept_id = row.get("concept_id", "")
-        creation_type = row.get("creation_type", "")
-        rule_id = row.get("sr_concept_id", "")
-
-        # Handle term_mapping
-        term_mapping_value = row.get("term_mapping_value", None)
-        isFieldMapping = ""
         source_value = ""
-        concept_id_out = ""
-        if pd.isnull(term_mapping_value):
-            source_value = ""
-            concept_id_out = ""
-        else:
-            source_value = term_mapping_value
-            concept_id_out = concept_id
-            isFieldMapping = "0" if source_value else "1"
+        concept_id = ""
+        concept_class = ""
+        concept = ""
+        validity = ""
+        vocabulary = ""
+        isFieldMapping = ""
 
-        # Validity check
-        validity = (
-            row.get("valid_start_date", "") <= today < row.get("valid_end_date", "")
+        concept_related_rule = (
+            True if row.get("dest_field", "").endswith("_concept_id") else False
         )
-        # Vocabulary id
-        vocabulary = row.get("vocabulary", "")
-        # Standard concept or not?
-        concept = row.get("standard_concept", "")
-        # Concept class
-        concept_class = row.get("concept_class", "")
+
+        if concept_related_rule:
+            concept_id = row.get("concept_id", "")
+            concept_class = row.get("concept_class", "")
+            concept = row.get("standard_concept", "")
+            validity = (
+                row.get("valid_start_date", "") <= today < row.get("valid_end_date", "")
+            )
+            vocabulary = row.get("vocabulary", "")
+            source_value = row.get("term_mapping_value", "")
+            isFieldMapping = "0" if source_value else "1"
 
         content_out = [
             source_table,
             source_field,
             source_value,
-            concept_id_out,
+            concept_id,
             omop_term,
             concept_class,
             concept,
@@ -184,4 +180,4 @@ def build_rules_csv(scan_report_id: int) -> io.StringIO:
         writer.writerow(content_out)
 
     _buffer.seek(0)
-    return _buffer
+    return io.BytesIO(_buffer.getvalue().encode("utf-8"))

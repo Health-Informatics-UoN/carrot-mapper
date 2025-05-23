@@ -6,6 +6,7 @@ from libs.rules_export.file_services import build_rules_json, build_rules_csv
 from typing import Dict
 from datetime import datetime
 from libs.queries import create_update_temp_rules_table_query
+from libs.storage_services import upload_blob_to_storage
 
 # PostgreSQL connection hook
 pg_hook = PostgresHook(postgres_conn_id="postgres_db_conn")
@@ -55,3 +56,9 @@ def process_rules_export(**kwargs) -> None:
 
     # Save to blob
     filename = f"Rules - {scan_report_name} - {scan_report_id} - {datetime.now()}.{file_extension}"
+    upload_blob_to_storage(
+        container_name="rules-exports",
+        blob_name=filename,
+        data=file,
+        content_type=file_type,
+    )
