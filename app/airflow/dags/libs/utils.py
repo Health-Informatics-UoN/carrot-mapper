@@ -26,6 +26,7 @@ class FieldVocabPair(TypedDict):
 # Define a type for validated parameters
 class ValidatedParams(TypedDict):
     scan_report_id: int
+    scan_report_name: str
     table_id: int
     person_id_field: int
     date_event_field: int
@@ -242,7 +243,7 @@ def validate_params_SR_processing(**context):
 def validate_params_rules_export(**context):
     """Validates parameters required for rules export DAG tasks."""
     int_params = ["scan_report_id", "user_id"]
-    string_params = ["file_type"]
+    string_params = ["file_type", "scan_report_name"]
     return _validate_dag_params(
         int_params=int_params,
         string_params=string_params,
