@@ -86,11 +86,10 @@ def main(msg: func.QueueMessage) -> None:
     # Unwrap message
     msg_body: RulesFileMessage = json.loads(msg.get_body().decode("utf-8"))
     scan_report_id = msg_body.get("scan_report_id")
+    scan_report_name = msg_body.get("scan_report_name")
     user_id = msg_body.get("user_id")
     file_type = msg_body.get("file_type")
-
-    # Get models for this SR
-    scan_report = ScanReport.objects.get(id=scan_report_id)
+    # Get all rules for the scan report
     rules = MappingRule.objects.filter(scan_report__id=scan_report_id).all()
 
     # Setup file config
@@ -123,7 +122,7 @@ def main(msg: func.QueueMessage) -> None:
     file_extension = config.file_extension
 
     # Save to blob
-    filename = f"Rules - {scan_report.dataset} - {scan_report_id} - {datetime.now()}.{file_extension}"
+    filename = f"Rules - {scan_report_name} - {scan_report_id} - {datetime.now()}.{file_extension}"
 
     # Upload the file to rules-exports container
     storage_service.upload_file(

@@ -143,10 +143,7 @@ class AirflowWorkerService(WorkerService):
         self._trigger_airflow_dag(self._scan_report_processing_dag_id, message_body)
 
     def trigger_rules_export(self, message_body: Dict[str, Any]):
-        # For now using the queue approach until Airflow implementation is completed
-        add_message(self._workers_rules_export_name, message_body)
-        # Future implementation:
-        # self._trigger_airflow_dag(self._rules_export_dag_id, message_body)
+        self._trigger_airflow_dag(self._rules_export_dag_id, message_body)
 
 
 # Function to create the appropriate service based on configuration

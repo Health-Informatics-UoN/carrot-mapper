@@ -14,9 +14,9 @@ from libs.SR_processing.helpers import (
     remove_BOM,
     process_four_item_dict,
     get_unique_table_names,
-    download_blob_to_tmp,
     transform_scan_report_sheet_table,
 )
+from libs.storage_services import download_blob_to_tmp
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from typing import List, Tuple
 from libs.queries import create_values_query, create_temp_data_dictionary_table_query

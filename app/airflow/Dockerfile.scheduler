@@ -8,7 +8,9 @@ RUN pip install --no-cache-dir \
     apache-airflow-providers-amazon \
     openpyxl \
     types-openpyxl \
-    types-psycopg2
+    types-psycopg2 \
+    pandas \
+    pandas-stubs
 
 # Copy DAGs to the container
 COPY ./dags /opt/airflow/dags
