@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.operators.empty import EmptyOperator
 from libs.utils import create_task, validate_params_rules_export
-from libs.rules_export.core import process_rules_export
+from libs.rules_export.core import pre_process_rules, build_and_upload_rules_file
 from libs.utils import connect_to_storage
 
 """
@@ -46,7 +46,9 @@ start = EmptyOperator(task_id="start", dag=dag)
 
 tasks = [
     create_task("validate_params_rules_export", validate_params_rules_export, dag),
-    create_task("process_rules_export", process_rules_export, dag),
+    create_task("connect_to_storage", connect_to_storage, dag),
+    create_task("pre_process_rules", pre_process_rules, dag),
+    create_task("build_and_upload_rules_file", build_and_upload_rules_file, dag),
 ]
 
 
