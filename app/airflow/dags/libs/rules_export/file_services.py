@@ -74,6 +74,12 @@ def build_rules_json(scan_report_name: str, scan_report_id: int) -> BytesIO:
         return json_bytes
     except Exception as e:
         logging.error(f"Error building rules JSON: {str(e)}")
+        update_job_status(
+            scan_report=scan_report_id,
+            stage=JobStageType.DOWNLOAD_RULES,
+            status=StageStatusType.FAILED,
+            details=f"Error building rules JSON for scan report {scan_report_id}",
+        )
         raise e
 
 
@@ -197,4 +203,10 @@ def build_rules_csv(scan_report_id: int) -> BytesIO:
         return io.BytesIO(_buffer.getvalue().encode("utf-8"))
     except Exception as e:
         logging.error(f"Error building rules CSV: {str(e)}")
+        update_job_status(
+            scan_report=scan_report_id,
+            stage=JobStageType.DOWNLOAD_RULES,
+            status=StageStatusType.FAILED,
+            details=f"Error building rules CSV for scan report {scan_report_id}",
+        )
         raise e
