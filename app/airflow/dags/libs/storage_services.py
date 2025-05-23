@@ -87,8 +87,12 @@ def upload_blob_to_storage(
                 content_settings=ContentSettings(content_type=content_type),
             )
         elif storage_type == StorageType.MINIO:
-            s3_object = storage_hook.get_key(key=blob_name, bucket_name=container_name)
-            s3_object.upload_fileobj(data)
+            storage_hook.load_file_obj(
+                file_obj=data,
+                key=blob_name,
+                bucket_name=container_name,
+                replace=True,
+            )
     except Exception as e:
         logging.error(f"Error uploading {blob_name} to {container_name}: {str(e)}")
         raise
