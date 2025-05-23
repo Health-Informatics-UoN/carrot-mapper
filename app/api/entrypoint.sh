@@ -5,6 +5,7 @@ wait-for-it ${DB_HOST}:${DB_PORT} -- echo "Database is ready! Listening on ${DB_
 
 
 # Collect static files for serving
+python manage.py airflow_schema_creation
 python manage.py collectstatic --noinput
 python manage.py migrate
 python manage.py automatic_seeding_data

@@ -180,7 +180,10 @@ services:
       context: app/airflow
       dockerfile: Dockerfile.webserver
     depends_on:
-      - db
+      db:
+        condition: service_started
+      api:
+        condition: service_started
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       # Database connection here needs to be in URI format. With real values, which have special characters, they need to be encoded using the ref. in https://www.w3schools.com/tags/ref_urlencode.ASP.

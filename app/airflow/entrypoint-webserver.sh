@@ -42,6 +42,10 @@ if [ -z "$AIRFLOW_EXEC" ]; then
   exit 1
 fi
 
+# Wait until the API is up
+echo "Waiting 30 seconds for API to start..."
+sleep 30
+
 # Wait for the database to be ready
 $AIRFLOW_EXEC db check || { echo "Database check failed"; exit 1; }
 
