@@ -27,7 +27,7 @@ class Command(BaseCommand):
                     [self._SCHEMA_NAME],
                 )
 
-                exists = cursor.fetchone() 
+                exists = cursor.fetchone()
                 if exists:
                     self.stdout.write(
                         self.style.WARNING(
@@ -59,7 +59,7 @@ class Command(BaseCommand):
             self.stdout.write(f"Creating Airflow schema '{self._SCHEMA_NAME}'...")
             with connection.cursor() as cursor:
 
-                # Create the schema in the PostgreSQL database 
+                # Create the schema in the PostgreSQL database
                 cursor.execute(f"CREATE SCHEMA {self._SCHEMA_NAME};")
                 db_user = settings.DATABASES["default"]["USER"]
                 cursor.execute(
@@ -74,14 +74,16 @@ class Command(BaseCommand):
 
         except Exception as e:
             self.stdout.write(
-                self.style.ERROR(f"Error creating schema '{self._SCHEMA_NAME}': {str(e)}")
+                self.style.ERROR(
+                    f"Error creating schema '{self._SCHEMA_NAME}': {str(e)}"
+                )
             )
             raise ValueError(f"Failed when creating the schema for the Airflow: {e}")
 
     def handle(self, *args, **kwargs):
         """
         The main entry point for the command.
-        
+
         This method checks if the Airflow schema exists and
         creates it if it doesn't.
         """
