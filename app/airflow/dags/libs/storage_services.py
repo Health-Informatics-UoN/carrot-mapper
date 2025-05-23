@@ -34,8 +34,7 @@ def download_blob_to_tmp(container_name: str, blob_name: str) -> Path:
     Returns:
         Path: The local path to the downloaded file.
     """
-    # TODO: double check temp file can be accessed by other tasks
-    # TODO: check if temp file is persistent, if yes then we need to remove the temp file after processing
+    # TODO: double check temp file can be accessed by other tasks, using KubernetesExecutor
     # https://stackoverflow.com/questions/69294934/where-is-tmp-folder-located-in-airflow
     local_path = Path(f"/tmp/{blob_name}")
     # Storage hook
