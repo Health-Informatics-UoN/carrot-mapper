@@ -6,15 +6,14 @@ from libs.rules_export.core import pre_process_rules, build_and_upload_rules_fil
 from libs.utils import connect_to_storage
 
 """
-This DAG automates the process of creating scan report tables, fields and values 
-from a uploaded scan report and data dictionary.
+This DAG automates the process of retrieving the mapping rules from the database, 
+processing them and then exporting them to a file for downloading.
 
 Workflow steps:
 1. Validate the parameters
 2. Connect to storage
-3. Process the data dictionary
-4. Process and create scan report entries (tables, fields and values)
-5. Clean up
+3. Pre-process the rules
+4. Build and upload the rules file
 """
 
 default_args = {
