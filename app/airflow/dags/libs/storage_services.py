@@ -76,7 +76,9 @@ def upload_blob_to_storage(
     # Storage hook
     storage_hook = get_storage_hook()
     try:
-        logging.info(f"Uploading file to {container_name}/{blob_name}")
+        logging.info(
+            f"Uploading file to {container_name}/{blob_name}, using {storage_type} storage"
+        )
         if storage_type == StorageType.AZURE:
             storage_hook.upload(
                 data=data,
