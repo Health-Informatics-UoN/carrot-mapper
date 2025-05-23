@@ -9,7 +9,7 @@ class Command(BaseCommand):
     help = "Create Airflow schema in the database automatically"
 
     _SCHEMA_NAME = "airflow"
-    _WORKER_SERVICE_TYPE = os.getenv("WORKER_SERVICE_TYPE")
+    _WORKER_SERVICE_TYPE = getattr(settings, "WORKER_SERVICE_TYPE", None)
 
     # Validate the schema name and worker type at class load time
     if not _SCHEMA_NAME and _WORKER_SERVICE_TYPE:
@@ -87,6 +87,9 @@ class Command(BaseCommand):
         This method checks if the Airflow schema exists and
         creates it if it doesn't.
         """
+        self.stdout.write(
+            f"Worker service type is initialised as : {self._WORKER_SERVICE_TYPE}"
+        )
 
         # Only execute schema creation logic for Airflow worker type
         if self._WORKER_SERVICE_TYPE.lower() == "airflow":
