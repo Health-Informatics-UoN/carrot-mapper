@@ -118,6 +118,7 @@ LEFT JOIN mapping_omoptable AS omop_table ON
         WHEN 'Drug' THEN 'drug_exposure'
         WHEN 'Procedure' THEN 'procedure_occurrence'
         WHEN 'Specimen' THEN 'specimen'
+        WHEN 'Spec Anatomic Site' THEN 'specimen'
         ELSE LOWER(target_concept.domain_id)
     END = omop_table.table
 -- Because concepts may or may not have the standard_concept_id, in general. And we prefer to use the standard_concept_id, if it exists.
@@ -189,21 +190,33 @@ SELECT
     (SELECT omop_field.id 
     FROM mapping_omopfield AS omop_field 
     WHERE omop_field.table_id = temp_existing_concepts.dest_table_id 
-    AND omop_field.field = LOWER(target_concept.domain_id) || '_source_concept_id'
+    AND omop_field.field = 
+        CASE 
+            WHEN target_concept.domain_id = 'Spec Anatomic Site' THEN 'anatomic_site_source_concept_id'  -- Not applicable for Specimen table
+            ELSE LOWER(target_concept.domain_id) || '_source_concept_id'
+        END
     LIMIT 1) AS source_concept_field_id,
 
     -- Use domain-specific source_value_field_id
     (SELECT omop_field.id 
     FROM mapping_omopfield AS omop_field 
     WHERE omop_field.table_id = temp_existing_concepts.dest_table_id 
-    AND omop_field.field = LOWER(target_concept.domain_id) || '_source_value'
+    AND omop_field.field = 
+        CASE 
+            WHEN target_concept.domain_id = 'Spec Anatomic Site' THEN 'anatomic_site_source_value'
+            ELSE LOWER(target_concept.domain_id) || '_source_value'
+        END
     LIMIT 1) AS source_value_field_id,
 
     -- Use domain-specific dest_concept_field_id
     (SELECT omop_field.id 
     FROM mapping_omopfield AS omop_field 
     WHERE omop_field.table_id = temp_existing_concepts.dest_table_id 
-    AND omop_field.field = LOWER(target_concept.domain_id) || '_concept_id'
+    AND omop_field.field = 
+        CASE 
+            WHEN target_concept.domain_id = 'Spec Anatomic Site' THEN 'anatomic_site_concept_id'
+            ELSE LOWER(target_concept.domain_id) || '_concept_id'
+        END
     LIMIT 1) AS dest_concept_field_id
 
 FROM temp_existing_concepts_%(table_id)s temp_existing_concepts

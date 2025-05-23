@@ -44,6 +44,7 @@ def find_standard_concepts(**kwargs) -> None:
         "Gender",
         "Race",
         "Ethnicity",
+        "Spec Anatomic Site",
     ]
     # Flag to skip this check when necessary
     skip_domains_check = False
