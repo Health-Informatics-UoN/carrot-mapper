@@ -481,3 +481,9 @@ create_update_temp_rules_table_query = """
         LEFT JOIN omop.concept AS omop_concept ON sr_concept.concept_id = omop_concept.concept_id
         WHERE mapping_rule.scan_report_id = %(scan_report_id)s;
 """
+
+
+create_file_entry_query = """
+    INSERT INTO files_filedownload (name, file_url, user_id, file_type_id, scan_report_id, created_at, updated_at)
+    VALUES (%(name)s, %(file_url)s, %(user_id)s, %(file_type_id)s, %(scan_report_id)s, %(created_at)s, %(updated_at)s)
+"""
