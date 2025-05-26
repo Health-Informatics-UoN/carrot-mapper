@@ -89,6 +89,7 @@ jobs:
           publish-profile: ${{ secrets.AIRFLOW_SCHEDULER_PUBLISH_PROFILE }}
           images: "ccomreg.azurecr.io/${{ secrets.REGISTRY_USERNAME_DEV }}/latest:${{ github.sha }}"
 
+  # TODO: When test env is ready, enable the following steps
   # # Deploy Airflow Webserver Test
   # deploy-webserver-test:
   #   runs-on: ubuntu-latest
