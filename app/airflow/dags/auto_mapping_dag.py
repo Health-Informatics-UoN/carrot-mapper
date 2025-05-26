@@ -83,8 +83,6 @@ dag = DAG(
     is_paused_upon_creation=False,
 )
 
-# TODO: clean up
-
 # Start the workflow
 start = EmptyOperator(task_id="start", dag=dag)
 

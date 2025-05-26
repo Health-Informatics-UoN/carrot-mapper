@@ -40,7 +40,6 @@ dag = DAG(
     is_paused_upon_creation=False,
 )
 
-# TODO: add validate for DD file size: DATA_UPLOAD_MAX_MEMORY_SIZE :(
 # Start the workflow
 start = EmptyOperator(task_id="start", dag=dag)
 
