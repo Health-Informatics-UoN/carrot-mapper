@@ -180,6 +180,8 @@ SET
 
 # Create a staging table with computed field values
 find_concept_fields_query = """
+-- Prevent duplicate creation of the staging table, in case of re-running the DAG after a bug fix
+DROP TABLE IF EXISTS temp_concept_fields_staging_%(table_id)s;
 -- Create a staging table with the correct field IDs for each record
 CREATE TABLE temp_concept_fields_staging_%(table_id)s AS
 SELECT 

@@ -117,6 +117,12 @@ def build_and_upload_rules_file(**kwargs) -> None:
             status=StageStatusType.COMPLETE,
             details="Rules file successfully created and uploaded to blob storage",
         )
+
+        # Clean up
+        pg_hook.run(
+            "DROP TABLE IF EXISTS temp_rules_export_%(scan_report_id)s",
+            parameters={"scan_report_id": scan_report_id},
+        )
     except Exception as e:
         logging.error(f"Error creating file entry: {str(e)}")
         update_job_status(

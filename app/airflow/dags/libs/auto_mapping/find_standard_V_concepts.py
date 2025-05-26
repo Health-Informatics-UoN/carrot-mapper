@@ -67,6 +67,8 @@ def find_standard_concepts(**kwargs) -> None:
         table_id = validated_params["table_id"]
         # Create the temporary table once, outside the loop, with all the columns needed
         create_table_query = """
+        -- Prevent duplicate creation of the temp standard concepts table, in case of re-running the DAG after a bug fix
+        DROP TABLE IF EXISTS temp_standard_concepts_%(table_id)s;
         CREATE TABLE temp_standard_concepts_%(table_id)s (
             sr_value_id INTEGER,
             source_concept_id INTEGER,
