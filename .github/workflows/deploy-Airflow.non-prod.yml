@@ -1,11 +1,10 @@
-name: Publish release images to Github Registry
+name: Build, Publish and Deploy Airflow app to Dev
 
 on:
   push:
     branches:
       - master
-    paths:
-      - app/airflow/**
+  workflow_dispatch:
 
 env:
   app-name: carrot
@@ -13,7 +12,7 @@ env:
   registry: ghcr.io
 
 jobs:
-  publish:
+  build-and-publish-webserver-scheduler:
     runs-on: ubuntu-latest
     permissions:
       packages: write
@@ -78,3 +77,41 @@ jobs:
           push: true
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.scheduler_meta.outputs.tags }}
+
+  # Deploy Airflow Webserver Dev
+  deploy-webserver-dev:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    needs: [build-and-publish-webserver-scheduler]
+    environment:
+      name: "dev"
+      url: ${{ steps.deploy-airflow-webserver-dev.outputs.webapp-url }}
+
+    steps:
+      - name: Deploy to Azure Web App
+        id: deploy-airflow-webserver-dev
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: ${{ vars.AIRFLOW_WEBSERVER_NAME }}
+          publish-profile: ${{ secrets.AIRFLOW_WEBSERVER_PUBLISH_PROFILE }}
+          images: "${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/airflow-webserver:${{ github.sha }}"
+
+  # Deploy Airflow Scheduler Dev
+  deploy-scheduler-dev:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    needs: [build-and-publish-webserver-scheduler]
+    environment:
+      name: "dev"
+      url: ${{ steps.deploy-airflow-scheduler-dev.outputs.webapp-url }}
+
+    steps:
+      - name: Deploy to Azure Web App
+        id: deploy-airflow-scheduler-dev
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: ${{ vars.AIRFLOW_SCHEDULER_NAME }}
+          publish-profile: ${{ secrets.AIRFLOW_SCHEDULER_PUBLISH_PROFILE }}
+          images: "${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/airflow-scheduler:${{ github.sha }}"
