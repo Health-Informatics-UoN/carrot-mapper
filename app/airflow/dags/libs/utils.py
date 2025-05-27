@@ -3,17 +3,22 @@ import ast
 import json
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.operators.python import PythonOperator
-from typing import TypedDict, List, Optional
+from typing import TypedDict, List, Optional, Dict, Any
 from airflow.models.taskinstance import TaskInstance
 from libs.enums import JobStageType, StageStatusType, StorageType
 import os
 from airflow.utils.session import create_session
 from airflow.models.connection import Connection
+from libs.settings import (
+    storage_type,
+    AIRFLOW_VAR_WASB_CONNECTION_STRING,
+    AIRFLOW_VAR_MINIO_ENDPOINT,
+    AIRFLOW_VAR_MINIO_ACCESS_KEY,
+    AIRFLOW_VAR_MINIO_SECRET_KEY,
+)
 
 # PostgreSQL connection hook
 pg_hook = PostgresHook(postgres_conn_id="postgres_db_conn")
-# Storage type
-storage_type = os.getenv("STORAGE_TYPE", StorageType.MINIO)
 
 
 # Define a type for field-vocab pairs
@@ -26,6 +31,7 @@ class FieldVocabPair(TypedDict):
 # Define a type for validated parameters
 class ValidatedParams(TypedDict):
     scan_report_id: int
+    scan_report_name: str
     table_id: int
     person_id_field: int
     date_event_field: int
@@ -34,6 +40,8 @@ class ValidatedParams(TypedDict):
     trigger_reuse_concepts: bool
     scan_report_blob: str
     data_dictionary_blob: Optional[str]
+    user_id: int
+    file_type: str
 
 
 def _process_field_vocab_pairs(field_vocab_pairs: str):
@@ -57,52 +65,80 @@ def update_job_status(
     scan_report_table: Optional[int] = None,
     details: str = "",
 ) -> None:
-    """Update the status of a job in the database"""
-    # TODO: for upload SR, this fuction will update the SR record in mapping_scanreport, not the job record
-    status_value = status.name
-    stage_value = stage.name
+    """
+    Update the status of a job in the database.
 
-    if stage == JobStageType.UPLOAD_SCAN_REPORT:
-        update_query = """
-            UPDATE mapping_scanreport
-            SET upload_status_id = (
-                SELECT id FROM mapping_uploadstatus WHERE value = %(status_value)s
-            )
-            WHERE id = %(scan_report)s
-        """
-    else:
-        update_query = """
-            UPDATE jobs_job
-            SET status_id = (
-                SELECT id FROM jobs_stagestatus WHERE value = %(status_value)s
-            ),
-            details = %(details)s, 
-            updated_at = NOW()
-            WHERE id = (
-                SELECT id FROM jobs_job
-                WHERE scan_report_id = %(scan_report)s
-                AND scan_report_table_id = %(scan_report_table)s
-                AND stage_id IN (
-                    SELECT id FROM jobs_jobstage WHERE value = %(stage_value)s
-                )
-                ORDER BY updated_at DESC
-                LIMIT 1
-            )
-        """
-    try:
-        pg_hook.run(
-            update_query,
-            parameters={
-                "scan_report": scan_report,
-                "scan_report_table": scan_report_table,
-                "status_value": status_value,
-                "details": details,
-                "stage_value": stage_value,
-            },
+    Args:
+        stage (JobStageType): The stage of the job (e.g., UPLOAD_SCAN_REPORT, DOWNLOAD_RULES)
+        status (StageStatusType): The status to set
+        scan_report (int): ID of the scan report
+        scan_report_table (Optional[int]): ID of the scan report table (if applicable)
+        details (str): Additional details about the status update
+
+    Raises:
+        ValueError: If there's an error updating the job status
+    """
+    # Base parameters used in all queries
+    params: Dict[str, Any] = {
+        "scan_report": scan_report,
+        "status_value": status.name,
+        "stage_value": stage.name,
+        "details": details,
+    }
+
+    # Define query templates
+    update_sr_job_query = """
+        UPDATE mapping_scanreport
+        SET upload_status_id = (
+            SELECT id FROM mapping_uploadstatus 
+            WHERE value = %(status_value)s
         )
+        WHERE id = %(scan_report)s
+    """
+
+    job_update_query = """
+        UPDATE jobs_job
+        SET status_id = (
+            SELECT id FROM jobs_stagestatus 
+            WHERE value = %(status_value)s
+        ),
+        details = %(details)s,
+        updated_at = NOW()
+        WHERE id = (
+            SELECT id FROM jobs_job
+            WHERE scan_report_id = %(scan_report)s
+            {additional_conditions}
+            AND stage_id IN (
+                SELECT id FROM jobs_jobstage 
+                WHERE value = %(stage_value)s
+            )
+            ORDER BY updated_at DESC
+            LIMIT 1
+        )
+    """
+
+    try:
+        if stage == JobStageType.UPLOAD_SCAN_REPORT:
+            update_query = update_sr_job_query
+        else:
+            # Add scan_report_table condition if needed
+            additional_conditions = ""
+            if stage != JobStageType.DOWNLOAD_RULES:
+                additional_conditions = (
+                    "AND scan_report_table_id = %(scan_report_table)s"
+                )
+                params["scan_report_table"] = scan_report_table
+
+            update_query = job_update_query.format(
+                additional_conditions=additional_conditions
+            )
+
+        pg_hook.run(update_query, parameters=params)
+
     except Exception as e:
-        logging.error(f"Error in update_job_status: {str(e)}")
-        raise ValueError(f"Error in update_job_status: {str(e)}")
+        error_msg = f"Failed to update job status for scan_report={scan_report}, stage={stage.name}"
+        logging.error(error_msg)
+        raise ValueError(error_msg)
 
 
 def create_task(task_id, python_callable, dag, provide_context=True):
@@ -237,6 +273,17 @@ def validate_params_SR_processing(**context):
     )
 
 
+def validate_params_rules_export(**context):
+    """Validates parameters required for rules export DAG tasks."""
+    int_params = ["scan_report_id", "user_id"]
+    string_params = ["file_type", "scan_report_name"]
+    return _validate_dag_params(
+        int_params=int_params,
+        string_params=string_params,
+        **context,
+    )
+
+
 def pull_validated_params(kwargs: dict, task_id: str) -> ValidatedParams:
     """Pull parameters from XCom for a given task"""
     task_instance: TaskInstance = kwargs["ti"]
@@ -260,11 +307,7 @@ def connect_to_storage() -> None:
                 conn = Connection(
                     conn_id="wasb_conn",
                     conn_type="wasb",
-                    extra={
-                        "connection_string": os.getenv(
-                            "AIRFLOW_VAR_WASB_CONNECTION_STRING"
-                        ),
-                    },
+                    extra={"connection_string": AIRFLOW_VAR_WASB_CONNECTION_STRING},
                 )
                 session.add(conn)
                 session.commit()
@@ -283,11 +326,9 @@ def connect_to_storage() -> None:
                     conn_id="minio_conn",
                     conn_type="aws",
                     extra={
-                        "endpoint_url": os.getenv("AIRFLOW_VAR_MINIO_ENDPOINT"),
-                        "aws_access_key_id": os.getenv("AIRFLOW_VAR_MINIO_ACCESS_KEY"),
-                        "aws_secret_access_key": os.getenv(
-                            "AIRFLOW_VAR_MINIO_SECRET_KEY"
-                        ),
+                        "endpoint_url": AIRFLOW_VAR_MINIO_ENDPOINT,
+                        "aws_access_key_id": AIRFLOW_VAR_MINIO_ACCESS_KEY,
+                        "aws_secret_access_key": AIRFLOW_VAR_MINIO_SECRET_KEY,
                     },
                 )
                 session.add(conn)

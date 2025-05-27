@@ -106,6 +106,8 @@ def find_matching_value(**kwargs):
 
         # Create temp table for reuse concepts
         create_table_query = """
+        -- Prevent duplicate creation of the temp reuse concepts table, in case of re-running the DAG after a bug fix
+        DROP TABLE IF EXISTS temp_reuse_concepts_%(table_id)s;
         CREATE TABLE temp_reuse_concepts_%(table_id)s (
             object_id INTEGER,
             matching_value_name TEXT,

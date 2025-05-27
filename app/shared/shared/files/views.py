@@ -111,9 +111,11 @@ class FileDownloadView(GenericAPIView, ListModelMixin, RetrieveModelMixin):
                 return JsonResponse(
                     {"error": "scan_report_id and file_type are required."}, status=400
                 )
-
+            # Get the scan report model to get the scan report name for both Azure and Airflow tasks later on
+            scan_report = ScanReport.objects.get(id=scan_report_id)
             msg = {
                 "scan_report_id": scan_report_id,
+                "scan_report_name": scan_report.dataset,
                 "user_id": request.user.id,
                 "file_type": file_type,
             }

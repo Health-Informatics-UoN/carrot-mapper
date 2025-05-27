@@ -55,7 +55,6 @@ mapping rules connecting source data to OMOP-compliant destination tables.
 # TODO: compare the R and V logic related to prep_for_rules_creation
 # TODO: do we want to reuse R concepts?
 # NOTE: when the DB is huge, the performance of the DAG will be affected by refreshing the existing R concepts. --> consider to only refresh the R Mapping rules
-# TODO: many concepts have the domain "SPEC ANATOMIC SITE", which should be added to the table "SPECIMEN" in a different way (OMOP field id is different)
 # TODO: should we add `value` column in MAPPINGRULE model? in order to filter the mapping rule based on the SR value?
 # TODO: add the source_concept_id to the UI
 # TODO: improve naming of columns
@@ -65,10 +64,11 @@ default_args = {
     "owner": "airflow",
     "depends_on_past": False,
     "start_date": datetime(2025, 3, 25),
+    # TODO: add email on failure and retry
     "email_on_failure": False,
     "email_on_retry": False,
-    # TODO: modify these settings about retries
-    "retries": 0,
+    "retries": 3,
+    "retry_delay": timedelta(minutes=1),
 }
 
 dag = DAG(
@@ -82,8 +82,6 @@ dag = DAG(
     catchup=False,
     is_paused_upon_creation=False,
 )
-
-# TODO: clean up
 
 # Start the workflow
 start = EmptyOperator(task_id="start", dag=dag)

@@ -8,22 +8,27 @@ RUN pip install --no-cache-dir \
     apache-airflow-providers-amazon \
     openpyxl \
     types-openpyxl \
-    types-psycopg2
+    types-psycopg2 \
+    pandas \
+    pandas-stubs
 
 # Copy DAGs to the container
-COPY ./dags /opt/airflow/dags
+COPY --chown=airflow:root ./dags /opt/airflow/dags
 
-# Set ownership and permissions for directories
+# Create directories with correct ownership from the start
 USER root
-RUN mkdir -p /opt/airflow/logs /opt/airflow/config
-RUN chown -R airflow:root /opt/airflow/dags /opt/airflow/logs /opt/airflow/config
-RUN chmod -R 775 /opt/airflow/logs /opt/airflow/dags /opt/airflow/config
+RUN mkdir -p /opt/airflow/logs /opt/airflow/config && \
+    chown -R airflow:root /opt/airflow && \
+    chmod -R g+rw /opt/airflow
 
 # Create entrypoint script
-COPY entrypoint-scheduler.sh /entrypoint-scheduler.sh
+COPY --chown=airflow:root entrypoint-scheduler.sh /entrypoint-scheduler.sh
 RUN chmod +x /entrypoint-scheduler.sh
 
 USER airflow
+
+# Set umask to ensure new files are group writable
+ENV UMASK=0002
 
 ENTRYPOINT ["/entrypoint-scheduler.sh"]
 
