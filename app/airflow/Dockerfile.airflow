@@ -1,5 +1,6 @@
 # TODO: Airflow has version 3.0.0 but this is a breaking change
 FROM apache/airflow:2.10.5
+
 # Install provider packages
 RUN pip install --no-cache-dir \
     apache-airflow-providers-microsoft-azure \
@@ -10,18 +11,19 @@ RUN pip install --no-cache-dir \
     types-psycopg2
 
 # Copy DAGs to the container
-COPY ./dags /opt/airflow/dags
+COPY --chown=airflow:root ./dags /opt/airflow/dags
 
 # Set ownership and permissions for directories
 USER root
-RUN mkdir -p /opt/airflow/logs /opt/airflow/config
-RUN chown -R airflow:root /opt/airflow/dags /opt/airflow/logs /opt/airflow/config
-RUN chmod -R 775 /opt/airflow/logs /opt/airflow/dags /opt/airflow/config
+RUN mkdir -p /opt/airflow/{logs,config} && \
+    chown -R airflow:root /opt/airflow && \
+    chmod -R 775 /opt/airflow
 
-# Create entrypoint script
-COPY entrypoint-webserver.sh /entrypoint-webserver.sh
-RUN chmod +x /entrypoint-webserver.sh
+# Create entrypoint script for Airflow Webserver & Scheduler
+COPY --chmod=755 entrypoint-scheduler.sh /entrypoint-scheduler.sh
+COPY --chmod=755 entrypoint-webserver.sh /entrypoint-webserver.sh
 
 USER airflow
+ENTRYPOINT ["bash", "-c", "exec \"/$AIRFLOW_COMPONENT\""]
 
-ENTRYPOINT ["/entrypoint-webserver.sh"]
+
