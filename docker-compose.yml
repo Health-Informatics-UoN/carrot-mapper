@@ -219,6 +219,7 @@ services:
       - airflow-webserver
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__EXECUTE_TASKS_NEW_PYTHON_INTERPRETER: True
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://postgres:postgres@db:5432/postgres?options=-csearch_path%3Dairflow
       AIRFLOW__DATABASE__SQL_ALCHEMY_SCHEMA: airflow
       AIRFLOW__WEBSERVER__SECRET_KEY: "test"
