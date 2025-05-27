@@ -17,19 +17,17 @@ COPY --chown=airflow:root ./dags /opt/airflow/dags
 
 # Create directories with correct ownership from the start
 USER root
-RUN mkdir -p /opt/airflow/logs /opt/airflow/config && \
+RUN mkdir -p /opt/airflow/{logs,config} && \
     chown -R airflow:root /opt/airflow && \
-    chmod -R g+rw /opt/airflow
+    chmod -R 775 /opt/airflow
 
-# Create entrypoint script
-COPY --chown=airflow:root entrypoint-scheduler.sh /entrypoint-scheduler.sh
-RUN chmod +x /entrypoint-scheduler.sh
+# Create entrypoint script for Airflow Webserver & Scheduler
+COPY --chmod=755 entrypoint-scheduler.sh /entrypoint-scheduler.sh
+COPY --chmod=755 entrypoint-webserver.sh /entrypoint-webserver.sh
 
+# Set user as Airflow and umask to ensure new files are group writable
 USER airflow
-
-# Set umask to ensure new files are group writable
 ENV UMASK=0002
-
-ENTRYPOINT ["/entrypoint-scheduler.sh"]
+ENTRYPOINT ["bash", "-c", "exec \"/$AIRFLOW_COMPONENT\""]
 
 
