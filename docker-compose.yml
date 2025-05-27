@@ -1,5 +1,24 @@
 name: carrot-mapper-dev
 
+# ------ Shared Env Variables for Airflow Services ------
+
+x-airflow-common-env: &airflow-common-env
+  AIRFLOW__CORE__EXECUTOR: LocalExecutor
+  # Database connection here needs to be in URI format. With real values, which have special characters, they need to be encoded using the ref. in https://www.w3schools.com/tags/ref_urlencode.ASP.
+  AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://postgres:postgres@db:5432/postgres?options=-csearch_path%3Dairflow
+  AIRFLOW__DATABASE__SQL_ALCHEMY_SCHEMA: airflow
+  AIRFLOW__WEBSERVER__SECRET_KEY: "test"
+  AIRFLOW__API__AUTH_BACKENDS: airflow.api.auth.backend.basic_auth
+  # This connection can be in separate variables (then don't need to do URL encoding), but it can reuse the same connection string with SQL_ALCHEMY_CONN (without extras)
+  AIRFLOW_CONN_POSTGRES_DB_CONN: postgresql+psycopg2://postgres:postgres@db:5432/postgres
+  STORAGE_TYPE: ${STORAGE_TYPE:-azure}
+  # Minio connection variables (don't need to do URL encoding here)
+  AIRFLOW_VAR_MINIO_ENDPOINT: http://minio:9000
+  AIRFLOW_VAR_MINIO_ACCESS_KEY: minioadmin
+  AIRFLOW_VAR_MINIO_SECRET_KEY: minioadmin
+  # WASB connection string (don't need to do URL encoding here)
+  AIRFLOW_VAR_WASB_CONNECTION_STRING: DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;TableEndpoint=http://azurite:10002/devstoreaccount1
+
 services:
   db:
     image: postgres:13
@@ -183,34 +202,21 @@ services:
       retries: 5
 
   airflow-webserver:
+    image: carrot-airflow
     build:
       context: app/airflow
-      dockerfile: Dockerfile.webserver
+      dockerfile: Dockerfile.airflow
     depends_on:
       db:
         condition: service_started
       api:
         condition: service_healthy
     environment:
-      AIRFLOW__CORE__EXECUTOR: LocalExecutor
-      # Database connection here needs to be in URI format. With real values, which have special characters, they need to be encoded using the ref. in https://www.w3schools.com/tags/ref_urlencode.ASP.
-      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://postgres:postgres@db:5432/postgres?options=-csearch_path%3Dairflow
-      AIRFLOW__DATABASE__SQL_ALCHEMY_SCHEMA: airflow
+      <<: *airflow-common-env
+      AIRFLOW_COMPONENT: entrypoint-webserver.sh
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
       AIRFLOW__WEBSERVER__WEB_SERVER_PORT: 8081
-      AIRFLOW__WEBSERVER__SECRET_KEY: "test"
-      AIRFLOW__API__AUTH_BACKENDS: airflow.api.auth.backend.basic_auth
       AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "False"
-      # This connection can be in separate variables (then don't need to do URL encoding), but it can reuse the same connection string with SQL_ALCHEMY_CONN (without extras)
-      AIRFLOW_CONN_POSTGRES_DB_CONN: postgresql+psycopg2://postgres:postgres@db:5432/postgres
-      # The blob storage where Airflow get/put necessary files
-      STORAGE_TYPE: ${STORAGE_TYPE:-azure}
-      # Minio connection variables (don't need to do URL encoding here)
-      AIRFLOW_VAR_MINIO_ENDPOINT: http://minio:9000
-      AIRFLOW_VAR_MINIO_ACCESS_KEY: minioadmin
-      AIRFLOW_VAR_MINIO_SECRET_KEY: minioadmin
-      # WASB connection string (don't need to do URL encoding here)
-      AIRFLOW_VAR_WASB_CONNECTION_STRING: DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;TableEndpoint=http://azurite:10002/devstoreaccount1
       # Admin user configuration to access the Airlfow API
       AIRFLOW_ADMIN_USERNAME: admin
       AIRFLOW_ADMIN_PASSWORD: admin
@@ -222,27 +228,19 @@ services:
       - "8081:8081"
 
   scheduler:
+    image: carrot-airflow
     build:
       context: app/airflow
-      dockerfile: Dockerfile.scheduler
+      dockerfile: Dockerfile.airflow
     depends_on:
       api:
         condition: service_healthy
       airflow-webserver:
         condition: service_started
     environment:
-      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      <<: *airflow-common-env
+      AIRFLOW_COMPONENT: entrypoint-scheduler.sh
       AIRFLOW__CORE__EXECUTE_TASKS_NEW_PYTHON_INTERPRETER: True
-      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://postgres:postgres@db:5432/postgres?options=-csearch_path%3Dairflow
-      AIRFLOW__DATABASE__SQL_ALCHEMY_SCHEMA: airflow
-      AIRFLOW__WEBSERVER__SECRET_KEY: "test"
-      AIRFLOW__API__AUTH_BACKENDS: airflow.api.auth.backend.basic_auth
-      AIRFLOW_CONN_POSTGRES_DB_CONN: postgresql+psycopg2://postgres:postgres@db:5432/postgres
-      STORAGE_TYPE: ${STORAGE_TYPE:-azure}
-      AIRFLOW_VAR_MINIO_ENDPOINT: http://minio:9000
-      AIRFLOW_VAR_MINIO_ACCESS_KEY: minioadmin
-      AIRFLOW_VAR_MINIO_SECRET_KEY: minioadmin
-      AIRFLOW_VAR_WASB_CONNECTION_STRING: DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;TableEndpoint=http://azurite:10002/devstoreaccount1
     volumes:
       - ./app/airflow/dags:/opt/airflow/dags
 
