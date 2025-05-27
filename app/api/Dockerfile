@@ -33,6 +33,7 @@ WORKDIR /api
 RUN  apt-get update && apt-get install -y --no-install-recommends\
     wait-for-it \
     graphviz \
+    curl \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # --- Copy required dirs from builder (includes libs, user info, and code)

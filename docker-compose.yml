@@ -95,6 +95,12 @@ services:
     volumes:
       - ./app/api:/api
       - ./app/shared:/shared
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     depends_on:
       omop-lite:
         condition: service_completed_successfully
@@ -183,7 +189,7 @@ services:
       db:
         condition: service_started
       api:
-        condition: service_started
+        condition: service_healthy
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       # Database connection here needs to be in URI format. With real values, which have special characters, they need to be encoded using the ref. in https://www.w3schools.com/tags/ref_urlencode.ASP.
@@ -219,7 +225,10 @@ services:
       context: app/airflow
       dockerfile: Dockerfile.scheduler
     depends_on:
-      - airflow-webserver
+      api:
+        condition: service_healthy
+      airflow-webserver:
+        condition: service_started
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://postgres:postgres@db:5432/postgres?options=-csearch_path%3Dairflow
