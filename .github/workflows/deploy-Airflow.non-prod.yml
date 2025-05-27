@@ -81,6 +81,8 @@ jobs:
   # Deploy Airflow Webserver Dev
   deploy-webserver-dev:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     needs: [build-and-publish-webserver-scheduler]
     environment:
       name: "dev"
@@ -98,6 +100,8 @@ jobs:
   # Deploy Airflow Scheduler Dev
   deploy-scheduler-dev:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     needs: [build-and-publish-webserver-scheduler]
     environment:
       name: "dev"
