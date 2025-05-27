@@ -43,7 +43,7 @@ from rest_framework.mixins import (
     UpdateModelMixin,
 )
 from rest_framework.parsers import FormParser, MultiPartParser
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from shared.data.models import Concept
@@ -1481,3 +1481,15 @@ class ScanReportPermissionView(APIView):
         permissions = get_user_permissions_on_scan_report(request, pk)
 
         return Response({"permissions": permissions}, status=status.HTTP_200_OK)
+
+
+class HealthCheckView(APIView):
+    """
+    A simple health check endpoint that returns 200 OK.
+    This endpoint is used by Docker health checks to verify the service is running.
+    """
+
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        return Response({"status": "healthy"}, status=status.HTTP_200_OK)
