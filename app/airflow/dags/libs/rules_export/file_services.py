@@ -34,7 +34,7 @@ def build_rules_json(scan_report_name: str, scan_report_id: int) -> BytesIO:
         }
         #  Get the all processed rules from the temp table as dataframe in Pandas
         processed_rules = pg_hook.get_pandas_df(
-            "SELECT * FROM temp_rules_export_%(scan_report_id)s ORDER BY sr_concept_id;",
+            "SELECT * FROM temp_rules_export_%(scan_report_id)s_json ORDER BY sr_concept_id;",
             parameters={"scan_report_id": scan_report_id},
         )
 
@@ -96,7 +96,7 @@ def build_rules_csv(scan_report_id: int) -> BytesIO:
     try:
         #  Update the temp table with the concept information (only for CSV file generation)
         update_temp_rules_table_query = """
-            UPDATE temp_rules_export_%(scan_report_id)s AS temp_rules
+            UPDATE temp_rules_export_%(scan_report_id)s_csv AS temp_rules
             SET domain = omop_concept.domain_id,
                 standard_concept = omop_concept.standard_concept,
                 concept_class = omop_concept.concept_class_id,
@@ -111,7 +111,7 @@ def build_rules_csv(scan_report_id: int) -> BytesIO:
         )
         #  Get the all processed rules from the temp table as dataframe in Pandas
         processed_rules = pg_hook.get_pandas_df(
-            "SELECT * FROM temp_rules_export_%(scan_report_id)s ORDER BY sr_concept_id;",
+            "SELECT * FROM temp_rules_export_%(scan_report_id)s_csv ORDER BY sr_concept_id;",
             parameters={"scan_report_id": scan_report_id},
         )
         # make a string buffer

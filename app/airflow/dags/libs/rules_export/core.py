@@ -9,6 +9,7 @@ from libs.queries import create_update_temp_rules_table_query, create_file_entry
 from libs.storage_services import upload_blob_to_storage
 from libs.enums import JobStageType, StageStatusType
 from libs.utils import update_job_status
+from libs.settings import AIRFLOW_DEBUG_MODE
 
 # PostgreSQL connection hook
 pg_hook = PostgresHook(postgres_conn_id="postgres_db_conn")
@@ -27,11 +28,15 @@ def pre_process_rules(**kwargs) -> None:
     # Pull validated params
     validated_params = pull_validated_params(kwargs, "validate_params_rules_export")
     scan_report_id = validated_params["scan_report_id"]
+    file_type = validated_params["file_type"]
     try:
         #  Create or update the temp table with the processed rules data
         pg_hook.run(
-            create_update_temp_rules_table_query,
-            parameters={"scan_report_id": scan_report_id},
+            create_update_temp_rules_table_query
+            % {
+                "scan_report_id": scan_report_id,
+                "file_type": file_type,
+            },
         )
     except Exception as e:
         logging.error(f"Error creating or updating the temp table: {str(e)}")
@@ -57,12 +62,12 @@ def build_and_upload_rules_file(**kwargs) -> None:
 
     # Setup file config. (Credit: @AndyRae)
     file_handlers: Dict[str, FileHandlerConfig] = {
-        "text/csv": FileHandlerConfig(
+        "csv": FileHandlerConfig(
             lambda: build_rules_csv(scan_report_id),
             "mapping_csv",
             "csv",
         ),
-        "application/json": FileHandlerConfig(
+        "json": FileHandlerConfig(
             lambda: build_rules_json(scan_report_name, scan_report_id),
             "mapping_json",
             "json",
@@ -118,10 +123,15 @@ def build_and_upload_rules_file(**kwargs) -> None:
             details="Rules file successfully created and uploaded to blob storage",
         )
 
+        if AIRFLOW_DEBUG_MODE == "true":
+            return
         # Clean up
         pg_hook.run(
-            "DROP TABLE IF EXISTS temp_rules_export_%(scan_report_id)s",
-            parameters={"scan_report_id": scan_report_id},
+            "DROP TABLE IF EXISTS temp_rules_export_%(scan_report_id)s_%(file_type)s"
+            % {
+                "scan_report_id": scan_report_id,
+                "file_type": file_type,
+            }
         )
     except Exception as e:
         logging.error(f"Error creating file entry: {str(e)}")

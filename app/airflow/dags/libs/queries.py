@@ -444,8 +444,8 @@ create_temp_data_dictionary_table_query = """
 
 
 create_update_temp_rules_table_query = """
-        DROP TABLE IF EXISTS temp_rules_export_%(scan_report_id)s;
-        CREATE TABLE temp_rules_export_%(scan_report_id)s (
+        DROP TABLE IF EXISTS temp_rules_export_%(scan_report_id)s_%(file_type)s;
+        CREATE TABLE temp_rules_export_%(scan_report_id)s_%(file_type)s (
             sr_concept_id INT,
             concept_name TEXT,
             concept_id INT,
@@ -462,7 +462,7 @@ create_update_temp_rules_table_query = """
             valid_end_date DATE,
             creation_type TEXT
         );
-        INSERT INTO temp_rules_export_%(scan_report_id)s (
+        INSERT INTO temp_rules_export_%(scan_report_id)s_%(file_type)s (
             sr_concept_id,
             concept_name,
             concept_id,
