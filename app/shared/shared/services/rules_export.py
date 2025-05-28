@@ -79,9 +79,6 @@ def get_mapping_rules_list(
             content_type=scanreportvalue_content_type,
         )
     ]
-    print(
-        f"scan_report_values_with_scan_report_concepts: {scan_report_values_with_scan_report_concepts}"
-    )
     # make a batch call to the ORM again..
     scan_report_values_id_to_value_map = {
         obj.id: obj.value
