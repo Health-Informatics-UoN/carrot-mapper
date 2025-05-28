@@ -59,13 +59,12 @@ def create_field_entries(
                 nunique_values = row[8].value
                 fraction_unique = round(default_zero(row[9].value), 2)
 
-                # Execute the query and get the returned ID
                 pg_hook.run(
                     create_fields_query,
                     parameters={
                         # table[1] is table id
                         "scan_report_table_id": table[1],
-                        "name": field_name,
+                        "name": field_name.replace("\ufeff", ""),
                         "description_column": description,
                         "type_column": type_column,
                         "max_length": max_length,
