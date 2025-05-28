@@ -50,7 +50,6 @@ def get_mapping_rules_list(
     # get all scan_report_concepts that are used
     # get the ids first so we can make a batch call
     scan_report_concepts = list({obj.concept_id for obj in mapping_rules})
-    print(f"scan_report_concepts: {scan_report_concepts}")
 
     nmapped_concepts = len(scan_report_concepts)
 
@@ -59,7 +58,6 @@ def get_mapping_rules_list(
         x.id: x
         for x in list(ScanReportConcept.objects.filter(pk__in=scan_report_concepts))
     }
-    print(f"scan_report_concepts_id_to_obj_map: {scan_report_concepts_id_to_obj_map}")
 
     ntotal_concepts = len(scan_report_concepts_id_to_obj_map.values())
 
@@ -71,17 +69,13 @@ def get_mapping_rules_list(
 
     # get all the ids for all ScanReportValues that are used (have been mapped with a concept)
     scanreportvalue_content_type = ContentType.objects.get_for_model(ScanReportValue)
-    print(f"scanreportvalue_content_type: {scanreportvalue_content_type}")
     scan_report_values_with_scan_report_concepts = [
         obj.object_id
         for obj in ScanReportConcept.objects.filter(
             pk__in=scan_report_concepts_id_to_obj_map,
-            content_type_id=23,
+            content_type=scanreportvalue_content_type,
         )
     ]
-    print(
-        f"scan_report_values_with_scan_report_concepts: {scan_report_values_with_scan_report_concepts}"
-    )
     # make a batch call to the ORM again..
     scan_report_values_id_to_value_map = {
         obj.id: obj.value
@@ -91,7 +85,7 @@ def get_mapping_rules_list(
             )
         )
     }
-    print(f"scan_report_values_id_to_value_map: {scan_report_values_id_to_value_map}")
+
     # get all destination field ids
     destination_fields_ids = [obj.omop_field_id for obj in mapping_rules]
     # batch call
@@ -122,19 +116,13 @@ def get_mapping_rules_list(
     # Using select_related() means we can chain together querysets into one database
     # query rather than using multiple
     structural_mapping_rules_sr_concepts = mapping_rules.select_related("concept")
-    print(
-        f"structural_mapping_rules_sr_concepts: {structural_mapping_rules_sr_concepts}"
-    )
     # Generate rule.id to SRConcept.id map for all SRConcepts related to these rules.
     rule_to_srconcept_id_map = {
         obj.id: obj.concept.id for obj in structural_mapping_rules_sr_concepts
     }
-    print(f"rule_to_srconcept_id_map: {rule_to_srconcept_id_map}")
+
     structural_mapping_rules_sr_concepts_concepts = mapping_rules.select_related(
         "concept__concept"
-    )
-    print(
-        f"structural_mapping_rules_sr_concepts_concepts: {structural_mapping_rules_sr_concepts_concepts}"
     )
     # Generate MappingRule.id to Concept.id map for all Concepts related to SRConcepts
     # related to these MappingRules.
@@ -142,7 +130,7 @@ def get_mapping_rules_list(
         obj.id: obj.concept.concept.concept_name
         for obj in structural_mapping_rules_sr_concepts_concepts
     }
-    print(f"rule_id_to_concept_name_map: {rule_id_to_concept_name_map}")
+
     # Make a single query to get all ScanReportConcepts associated to
     # ScanReportValues. This means we avoid what would be more understandable,
     # but extremely slow, code to check whether each object is associated to a
@@ -151,10 +139,10 @@ def get_mapping_rules_list(
         obj.id
         for obj in ScanReportConcept.objects.filter(
             pk__in=scan_report_concepts_id_to_obj_map,
-            content_type_id=23,
+            content_type=scanreportvalue_content_type,
         )
     ]
-    print(f"scan_report_concepts_with_values: {scan_report_concepts_with_values}")
+
     # now loop over the rules to actually create the list version of the rules
     rules = []
     for rule in mapping_rules:
@@ -187,12 +175,6 @@ def get_mapping_rules_list(
         term_mapping = None
         if "concept_id" in destination_field.field:
             if scan_report_concept.id in scan_report_concepts_with_values:
-                print(
-                    f"scan_report_concept.id: {scan_report_concept.id} in scan_report_concepts_with_values"
-                )
-                print(
-                    f"scan_report_values_id_to_value_map[scan_report_concept.object_id]: {scan_report_values_id_to_value_map[scan_report_concept.object_id]}"
-                )
                 term_mapping = {
                     scan_report_values_id_to_value_map[
                         scan_report_concept.object_id
