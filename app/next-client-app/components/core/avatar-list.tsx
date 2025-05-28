@@ -13,6 +13,7 @@ export function AvatarList({ members }: { members: User[] | [] }) {
             data-tooltip-content={`${name}`}
             data-tooltip-place="top"
             className="flex justify-center"
+            key={name}
           >
             <Tooltip id="icon-tooltip" className="hidden lg:block" />
             {/* The below is for mobile devices with an additional setting to support show on tapping */}
