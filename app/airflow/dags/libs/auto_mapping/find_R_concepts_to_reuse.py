@@ -36,14 +36,20 @@ def delete_R_concepts(**kwargs) -> None:
                 WHERE creation_type = 'R' 
                 AND (
                     -- Delete concepts for fields in this table
-                    (content_type_id = 22 AND object_id IN (
+                    (content_type_id = (
+                        SELECT id FROM django_content_type 
+                        WHERE app_label = 'mapping' AND model = 'scanreportfield'
+                    ) AND object_id IN (
                         SELECT srf.id 
                         FROM mapping_scanreportfield AS srf
                         WHERE srf.scan_report_table_id = %(table_id)s
                     ))
                     OR 
                     -- Delete concepts for values in this table
-                    (content_type_id = 23 AND object_id IN (
+                    (content_type_id = (
+                        SELECT id FROM django_content_type 
+                        WHERE app_label = 'mapping' AND model = 'scanreportvalue'
+                    ) AND object_id IN (
                         SELECT srv.id
                         FROM mapping_scanreportvalue AS srv
                         JOIN mapping_scanreportfield AS srf ON srv.scan_report_field_id = srf.id

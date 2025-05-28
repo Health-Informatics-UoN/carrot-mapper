@@ -38,7 +38,10 @@ find_existing_concepts_query = """
     WHERE 
         (
             -- For ScanReportField
-            sr_concept.content_type_id = 22 
+            sr_concept.content_type_id = (
+                SELECT id FROM django_content_type 
+                WHERE app_label = 'mapping' AND model = 'scanreportfield'
+            )
             AND sr_concept.object_id IN (
                 SELECT sr_field.id 
                 FROM mapping_scanreportfield AS sr_field 
@@ -49,7 +52,10 @@ find_existing_concepts_query = """
         OR
         (
             -- For ScanReportValue
-            sr_concept.content_type_id = 23 
+            sr_concept.content_type_id = (
+                SELECT id FROM django_content_type 
+                WHERE app_label = 'mapping' AND model = 'scanreportvalue'
+            )
             AND sr_concept.object_id IN (
                 SELECT sr_value.id 
                 FROM mapping_scanreportvalue AS sr_value
@@ -66,8 +72,14 @@ find_source_field_id_query = """
     UPDATE temp_existing_concepts_%(table_id)s AS temp_table
     SET source_field_id =
         CASE
-            WHEN temp_table.content_type_id = 22 THEN temp_table.object_id
-            WHEN temp_table.content_type_id = 23 THEN (
+            WHEN temp_table.content_type_id = (
+                SELECT id FROM django_content_type 
+                WHERE app_label = 'mapping' AND model = 'scanreportfield'
+            ) THEN temp_table.object_id
+            WHEN temp_table.content_type_id = (
+                SELECT id FROM django_content_type 
+                WHERE app_label = 'mapping' AND model = 'scanreportvalue'
+            ) THEN (
                 SELECT sr_value.scan_report_field_id
                 FROM mapping_scanreportvalue AS sr_value
                 WHERE sr_value.id = temp_table.object_id
@@ -247,7 +259,7 @@ SELECT DISTINCT
     sr_value.value, 
     sr_field.name,
     sr_table.name,
-    23,
+    (SELECT id FROM django_content_type WHERE app_label = 'mapping' AND model = 'scanreportvalue'),
     eligible_sr_concept.concept_id,
     -- TODO: add eligible_sr_concept.standard_concept_id here
     eligible_scan_report.id
@@ -279,7 +291,10 @@ JOIN mapping_mappingstatus AS map_status
     ON eligible_scan_report.mapping_status_id = map_status.id
 JOIN mapping_scanreportconcept AS eligible_sr_concept
     ON eligible_sr_concept.object_id = eligible_sr_value.id
-    AND eligible_sr_concept.content_type_id = 23     -- Value level concepts
+    AND eligible_sr_concept.content_type_id = (
+        SELECT id FROM django_content_type 
+        WHERE app_label = 'mapping' AND model = 'scanreportvalue'
+    )
     AND eligible_sr_concept.creation_type != 'R'     -- We don't want to reuse R concepts
     %(exclude_v_concepts_condition)s
 
@@ -296,7 +311,10 @@ WHERE
     temp_table.matching_value_name = temp_table_duplicate.matching_value_name
     AND temp_table.source_concept_id = temp_table_duplicate.source_concept_id
     -- TODO: add standard_concept_id matching check (future) here
-    AND temp_table.content_type_id = 23
+    AND temp_table.content_type_id = (
+        SELECT id FROM django_content_type 
+        WHERE app_label = 'mapping' AND model = 'scanreportvalue'
+    )
     AND temp_table.source_scanreport_id > temp_table_duplicate.source_scanreport_id;
 """
 
@@ -308,7 +326,7 @@ INSERT INTO temp_reuse_concepts_%(table_id)s (
 SELECT DISTINCT 
     sr_field.name, 
     sr_table.name,
-    22,
+    (SELECT id FROM django_content_type WHERE app_label = 'mapping' AND model = 'scanreportfield'),
     eligible_sr_concept.concept_id,
     eligible_scan_report.id
 FROM mapping_scanreportfield AS sr_field
@@ -330,7 +348,10 @@ JOIN mapping_mappingstatus AS map_status
     ON eligible_scan_report.mapping_status_id = map_status.id
 JOIN mapping_scanreportconcept AS eligible_sr_concept
     ON eligible_sr_concept.object_id = eligible_sr_field.id
-    AND eligible_sr_concept.content_type_id = 22     -- Field level concepts
+    AND eligible_sr_concept.content_type_id = (
+        SELECT id FROM django_content_type 
+        WHERE app_label = 'mapping' AND model = 'scanreportfield'
+    )
     AND eligible_sr_concept.creation_type != 'R'     -- We don't want to reuse R concepts
 
 WHERE dataset.id = %(parent_dataset_id)s        -- Other conditions
@@ -347,7 +368,10 @@ WHERE
     AND temp_table.matching_table_name = temp_table_duplicate.matching_table_name
     AND temp_table.source_concept_id = temp_table_duplicate.source_concept_id
     -- TODO: add standard_concept_id matching check (future) here
-    AND temp_table.content_type_id = 22
+    AND temp_table.content_type_id = (
+        SELECT id FROM django_content_type 
+        WHERE app_label = 'mapping' AND model = 'scanreportfield'
+    )
     AND temp_table.source_scanreport_id > temp_table_duplicate.source_scanreport_id;
 """
 
@@ -356,28 +380,40 @@ find_object_id_query = """
     UPDATE temp_reuse_concepts_%(table_id)s AS temp_table
         SET object_id = 
             CASE 
-                WHEN temp_table.content_type_id = 22 THEN  -- For ScanReportField
+                WHEN temp_table.content_type_id = (
+                    SELECT id FROM django_content_type 
+                    WHERE app_label = 'mapping' AND model = 'scanreportfield'
+                ) THEN  -- For ScanReportField
                     (SELECT sr_field.id 
                     FROM mapping_scanreportfield AS sr_field 
                     JOIN mapping_scanreporttable AS sr_table ON sr_field.scan_report_table_id = sr_table.id
                     WHERE sr_table.scan_report_id = %(scan_report_id)s AND sr_table.id = %(table_id)s
                     AND sr_field.name = temp_table.matching_field_name
-                    AND sr_table.name = temp_table.matching_table_name    -- Matching table name
+                    AND sr_table.name = temp_table.matching_table_name
                     LIMIT 1)
-                WHEN temp_table.content_type_id = 23 THEN  -- For ScanReportValue
+                WHEN temp_table.content_type_id = (
+                    SELECT id FROM django_content_type 
+                    WHERE app_label = 'mapping' AND model = 'scanreportvalue'
+                ) THEN  -- For ScanReportValue
                     (SELECT sr_value.id 
                     FROM mapping_scanreportvalue AS sr_value
                     JOIN mapping_scanreportfield AS sr_field ON sr_value.scan_report_field_id = sr_field.id
                     JOIN mapping_scanreporttable AS sr_table ON sr_field.scan_report_table_id = sr_table.id
                     WHERE sr_table.scan_report_id = %(scan_report_id)s AND sr_table.id = %(table_id)s
                     AND sr_value.value = temp_table.matching_value_name
-                    AND sr_field.name = temp_table.matching_field_name    -- Matching field name
-                    AND sr_table.name = temp_table.matching_table_name    -- Matching table name
+                    AND sr_field.name = temp_table.matching_field_name
+                    AND sr_table.name = temp_table.matching_table_name
                     LIMIT 1)
                 ELSE NULL
             END
-        WHERE (temp_table.content_type_id = 22 AND temp_table.matching_field_name IS NOT NULL)
-        OR (temp_table.content_type_id = 23 AND temp_table.matching_value_name IS NOT NULL);
+        WHERE (temp_table.content_type_id = (
+            SELECT id FROM django_content_type 
+            WHERE app_label = 'mapping' AND model = 'scanreportfield'
+        ) AND temp_table.matching_field_name IS NOT NULL)
+        OR (temp_table.content_type_id = (
+            SELECT id FROM django_content_type 
+            WHERE app_label = 'mapping' AND model = 'scanreportvalue'
+        ) AND temp_table.matching_value_name IS NOT NULL);
 
     DELETE FROM temp_reuse_concepts_%(table_id)s
     WHERE object_id IS NULL;
@@ -482,7 +518,10 @@ create_update_temp_rules_table_query = """
             sr_field.name AS source_field,
             sr_table.name AS source_table,
             CASE
-                WHEN sr_concept.content_type_id = 23 THEN sr_value.value
+                WHEN sr_concept.content_type_id = (
+                    SELECT id FROM django_content_type 
+                    WHERE app_label = 'mapping' AND model = 'scanreportvalue'
+                ) THEN sr_value.value
                 ELSE NULL
             END AS term_mapping_value,
             sr_concept.creation_type
@@ -492,7 +531,10 @@ create_update_temp_rules_table_query = """
         JOIN mapping_scanreportfield AS sr_field ON mapping_rule.source_field_id = sr_field.id
         JOIN mapping_scanreporttable AS sr_table ON sr_field.scan_report_table_id = sr_table.id
         JOIN mapping_scanreportconcept AS sr_concept ON mapping_rule.concept_id = sr_concept.id
-        LEFT JOIN mapping_scanreportvalue AS sr_value ON sr_concept.object_id = sr_value.id AND sr_concept.content_type_id = 23
+        LEFT JOIN mapping_scanreportvalue AS sr_value ON sr_concept.object_id = sr_value.id AND sr_concept.content_type_id = (
+            SELECT id FROM django_content_type 
+            WHERE app_label = 'mapping' AND model = 'scanreportvalue'
+        )
         LEFT JOIN omop.concept AS omop_concept ON sr_concept.concept_id = omop_concept.concept_id
         WHERE mapping_rule.scan_report_id = %(scan_report_id)s;
 """
