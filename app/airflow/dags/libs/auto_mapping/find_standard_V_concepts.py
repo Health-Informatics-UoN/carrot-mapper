@@ -208,9 +208,6 @@ def create_standard_concepts(**kwargs) -> None:
                 AND concept_id = temp_std_concepts.standard_concept_id
                 AND content_type_id = 23
             );
-
-            -- Drop the temp table holding the temp standard concepts data after creating the V concepts
-            DROP TABLE IF EXISTS temp_standard_concepts_%(table_id)s;
             """
         try:
             pg_hook.run(create_concept_query, parameters={"table_id": table_id})

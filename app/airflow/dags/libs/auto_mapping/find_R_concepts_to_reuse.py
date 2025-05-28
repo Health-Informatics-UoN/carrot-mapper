@@ -289,10 +289,7 @@ def create_reusing_concepts(**kwargs):
                 -- TODO: add standard_concept_id here for the newly creted SR concepts
                 temp_reuse_concepts.source_concept_id,
                 temp_reuse_concepts.content_type_id -- content_type_id for scanreportvalue
-            FROM temp_reuse_concepts_%(table_id)s AS temp_reuse_concepts;
-
-            -- Drop the temp table holding the temp reusing concepts data after creating the R concepts
-            DROP TABLE IF EXISTS temp_reuse_concepts_%(table_id)s;
+            FROM temp_reuse_concepts_%(table_id)s AS temp_reuse_concepts;     
             """
 
         try:

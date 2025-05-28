@@ -7,6 +7,7 @@ from airflow.providers.postgres.hooks.postgres import PostgresHook
 from libs.SR_processing.helpers import default_zero
 from libs.enums import JobStageType, StageStatusType
 from libs.utils import update_job_status
+from libs.settings import AIRFLOW_DEBUG_MODE
 
 # PostgreSQL connection hook
 pg_hook = PostgresHook(postgres_conn_id="postgres_db_conn")
@@ -237,6 +238,8 @@ def delete_temp_tables(scan_report_id: int, table_pairs: List[Tuple[str, int]]) 
         table_pairs: A list of tuples containing the table name and ID
     """
     try:
+        if AIRFLOW_DEBUG_MODE == "true":
+            return
         pg_hook.run(f"DROP TABLE IF EXISTS temp_data_dictionary_{scan_report_id}")
         for _, table_id in table_pairs:
             pg_hook.run(f"DROP TABLE IF EXISTS temp_field_values_{table_id}")

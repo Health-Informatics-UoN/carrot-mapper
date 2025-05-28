@@ -27,6 +27,7 @@ from libs.auto_mapping.core_prep_rules_creation import (
 )
 from libs.auto_mapping.core_rules_creation import create_mapping_rules
 from libs.utils import create_task, validate_params_auto_mapping
+from libs.settings import AIRFLOW_DEBUG_MODE
 
 """
 This DAG automates the process of creating and reusing concepts from scan reports and generating mapping rules.
@@ -67,7 +68,7 @@ default_args = {
     # TODO: add email on failure and retry
     "email_on_failure": False,
     "email_on_retry": False,
-    "retries": 3,
+    "retries": 0 if AIRFLOW_DEBUG_MODE == "true" else 3,
     "retry_delay": timedelta(minutes=1),
 }
 
