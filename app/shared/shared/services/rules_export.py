@@ -76,7 +76,7 @@ def get_mapping_rules_list(
         obj.object_id
         for obj in ScanReportConcept.objects.filter(
             pk__in=scan_report_concepts_id_to_obj_map,
-            content_type=scanreportvalue_content_type,
+            content_type_id=23,
         )
     ]
     print(
