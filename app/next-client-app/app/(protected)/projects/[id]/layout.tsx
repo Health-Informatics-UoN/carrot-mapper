@@ -9,23 +9,25 @@ import { InfoItem } from "@/components/core/InfoItem";
 import Link from "next/link";
 import { getProject } from "@/api/projects";
 import { AvatarList } from "@/components/core/avatar-list";
+import { ReactNode } from "react";
 
-export default async function DatasetLayout({
-  params,
-  children,
-}: Readonly<{
-  params: { id: string };
-  children: React.ReactNode;
-}>) {
-  const items = [
-    {
-      name: "Datasets",
-      slug: "",
-      iconName: "Database",
-    },
-  ];
 
-  const project = await getProject(params.id);
+interface LayoutProps {
+  params: Promise<{ id: string }>;
+  children: ReactNode;
+}
+
+const items = [
+  {
+    name: "Datasets",
+    slug: "",
+    iconName: "Database",
+  },
+];
+
+export default async function DatasetLayout({ params, children }: LayoutProps) {
+  const resolvedParams = await params; // Await the promise to extract the actual value
+  const project = await getProject(resolvedParams.id);
   let createdDate = new Date();
 
   if (!project) {
@@ -59,7 +61,7 @@ export default async function DatasetLayout({
       {/* "Navs" group */}
       <div className="flex justify-between">
         <NavGroup
-          path={`/projects/${params.id}`}
+          path={`/projects/${resolvedParams.id}`}
           items={[
             ...items.map((x) => ({
               text: x.name,
@@ -70,7 +72,6 @@ export default async function DatasetLayout({
         />
       </div>
       <Boundary>
-        {" "}
         <Suspense fallback={<Skeleton className="h-full w-full" />}>
           {children}
         </Suspense>

@@ -10,16 +10,22 @@ import { Button } from "@/components/ui/button";
 import { notFound } from "next/navigation";
 
 interface ScanReportsEditFieldProps {
-  params: {
+  params: Promise<{
     id: string;
     tableId: string;
     fieldId: string;
-  };
+  }>;
 }
 
-export default async function ScanReportsEditField({
-  params: { id, tableId, fieldId },
-}: ScanReportsEditFieldProps) {
+export default async function ScanReportsEditField(props: ScanReportsEditFieldProps) {
+  const params = await props.params;
+
+  const {
+    id,
+    tableId,
+    fieldId
+  } = params;
+
   const scanReport = await getScanReport(id);
   const table = await getScanReportTable(id, tableId);
   const field = await getScanReportField(id, tableId, fieldId);

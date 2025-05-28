@@ -7,16 +7,20 @@ import { RulesButton } from "./rules-buttons";
 import { getScanReport } from "@/api/scanreports";
 
 interface ScanReportsMappingRulesProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
-  searchParams?: FilterParameters;
+  }>;
+  searchParams?: Promise<FilterParameters>;
 }
 
-export default async function ScanReportsMappingRules({
-  params: { id },
-  searchParams,
-}: ScanReportsMappingRulesProps) {
+export default async function ScanReportsMappingRules(props: ScanReportsMappingRulesProps) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
+
+  const {
+    id
+  } = params;
+
   const defaultPageSize = 30;
   const defaultParams = {
     p: 1,
