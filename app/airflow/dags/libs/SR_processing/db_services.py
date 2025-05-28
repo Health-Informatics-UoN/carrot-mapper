@@ -65,7 +65,7 @@ def create_field_entries(
                     parameters={
                         # table[1] is table id
                         "scan_report_table_id": table[1],
-                        "name": field_name.replace("\ufeff", ""),
+                        "name": field_name,
                         "description_column": description,
                         "type_column": type_column,
                         "max_length": max_length,
