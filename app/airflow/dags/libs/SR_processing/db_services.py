@@ -64,7 +64,7 @@ def create_field_entries(
                     parameters={
                         # table[1] is table id
                         "scan_report_table_id": table[1],
-                        "name": field_name.replace("\ufeff", ""),
+                        "name": field_name,  # NOTE: without BOM removal to keep the consistency with Azure functions
                         "description_column": description,
                         "type_column": type_column,
                         "max_length": max_length,

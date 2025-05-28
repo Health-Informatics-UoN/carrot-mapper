@@ -43,8 +43,8 @@ def build_rules_json(scan_report_name: str, scan_report_id: int) -> BytesIO:
             dest_table = row["dest_table"]
             concept_key = f"{row['concept_name']} {row['sr_concept_id']}"
             dest_field = row["dest_field"]
-            source_table = row["source_table"]
-            source_field = row["source_field"]
+            source_table = row["source_table"].replace("\ufeff", "")
+            source_field = row["source_field"].replace("\ufeff", "")
 
             # Prepare the term_mapping value
             # will solve #1006 here (fields end with source_concept_id and concept_id will have different values),
