@@ -68,7 +68,8 @@ def get_mapping_rules_list(
         )
 
     # get all the ids for all ScanReportValues that are used (have been mapped with a concept)
-    scanreportvalue_content_type = ContentType.objects.get_for_model(ScanReportValue)
+    scanreportvalue_content_type = ContentType.objects.get(model="scanreportvalue")
+    print(f"scanreportvalue_content_type: {scanreportvalue_content_type}")
     scan_report_values_with_scan_report_concepts = [
         obj.object_id
         for obj in ScanReportConcept.objects.filter(
@@ -76,6 +77,9 @@ def get_mapping_rules_list(
             content_type=scanreportvalue_content_type,
         )
     ]
+    print(
+        f"scan_report_values_with_scan_report_concepts: {scan_report_values_with_scan_report_concepts}"
+    )
     # make a batch call to the ORM again..
     scan_report_values_id_to_value_map = {
         obj.id: obj.value
