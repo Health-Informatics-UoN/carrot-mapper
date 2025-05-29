@@ -6,11 +6,20 @@ import { Sparkles, Loader2 } from "lucide-react";
 import { AISuggestionDialog } from "./ai-suggestions-dialog";
 import type { AISuggestion } from "./ai-suggestions-dialog";
 
+/**
+   * The AI suggestion selected by the user
+    * - Tooltip
+    * - Button to trigger API call for AI Suggestion
+    * - Dialog component to display AI suggestions
+  */
+
 export function AISuggestionsButton() {
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [suggestions, setSuggestions] = useState<AISuggestion[]>([]);
   const [fetchError, setFetchError] = useState<string | null>(null);
+
+  // Fetches AI suggestions from the API
 
   const handleClick = async () => {
     setIsLoading(true);
@@ -87,6 +96,8 @@ export function AISuggestionsButton() {
       setIsLoading(false);
     }
   };
+
+  // Button & Tooltip functionality
 
   const handleApplySuggestion = (suggestion: AISuggestion) => {
     console.log("Applying suggestion:", suggestion);

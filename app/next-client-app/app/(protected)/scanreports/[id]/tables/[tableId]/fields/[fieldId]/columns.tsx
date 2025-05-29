@@ -9,102 +9,111 @@ import CopyButton from "@/components/core/CopyButton";
 import { Button } from "@/components/ui/button";
 import { AISuggestionsButton } from "@/components/ui/ai-suggesions-button";
 
+// Get the env var for enable AI suggestions column
+const isAIFeatureEnabled = process.env.NEXT_PUBLIC_AI_FEATURE_RECOMMENDATION === 'true';
+
+// All Standard Columns 
 export const columns = (
   addSR: (concept: ScanReportConcept, c: Concept) => void,
   deleteSR: (id: number) => void,
   tableId: string
-): ColumnDef<ScanReportValue>[] => [
-  {
-    id: "Value",
-    accessorKey: "value",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Value" sortName="value" />
-    ),
-    enableHiding: true,
-    enableSorting: false,
-    cell: ({ row }) => {
-      const { value } = row.original;
+): ColumnDef<ScanReportValue>[] => {
+  const baseColumns: ColumnDef<ScanReportValue>[] = [
+    {
+      id: "Value",
+      accessorKey: "value",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Value" sortName="value" />
+      ),
+      enableHiding: true,
+      enableSorting: false,
+      cell: ({ row }) => {
+        const { value } = row.original;
 
-      return (
-        <div className="flex items-center gap-2">
-          <span className="font-bold">{value}</span>
-          <CopyButton textToCopy={value} />
-        </div>
-      );
+        return (
+          <div className="flex items-center gap-2">
+            <span className="font-bold">{value}</span>
+            <CopyButton textToCopy={value} />
+          </div>
+        );
+      },
     },
-  },
-  {
-    id: "Value Description",
-    accessorKey: "value_description",
-    header: ({ column }) => (
-      <DataTableColumnHeader
-        column={column}
-        title="Value Description"
-        sortName="value_description"
-      />
-    ),
-    enableHiding: true,
-    enableSorting: false,
-  },
-  {
-    id: "Frequency",
-    accessorKey: "frequency",
-    header: ({ column }) => (
-      <DataTableColumnHeader
-        column={column}
-        title="Frequency"
-        sortName="frequency"
-      />
-    ),
-    enableHiding: true,
-    enableSorting: false,
-  },
-
-  // AI Suggestions Button column
-  {
-    id: "AI Suggestions",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="AI Suggestions" />
-    ),
-    enableHiding: true,
-    enableSorting: false,
-    cell: ({ row }) => {
-      return <AISuggestionsButton />;
-    },
-  },
-
-  {
-    id: "Concepts",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Concepts" />
-    ),
-    enableHiding: true,
-    enableSorting: false,
-    cell: ({ row }) => {
-      const { concepts } = row.original;
-      return (
-        <Suspense fallback={<Skeleton className="h-5 w-[250px]" />}>
-          <ConceptTags concepts={concepts ?? []} deleteSR={deleteSR} />
-        </Suspense>
-      );
-    },
-  },
-  {
-    id: "Add Concept",
-    header: "",
-    cell: ({ row }) => {
-      const { id, permissions } = row.original;
-      const canEdit =
-        permissions.includes("CanEdit") || permissions.includes("CanAdmin");
-      return (
-        <AddConcept
-          rowId={id}
-          tableId={tableId}
-          contentType="scanreportvalue"
-          disabled={!canEdit}
-          addSR={addSR}
+    {
+      id: "Value Description",
+      accessorKey: "value_description",
+      header: ({ column }) => (
+        <DataTableColumnHeader
+          column={column}
+          title="Value Description"
+          sortName="value_description"
         />
-      );
+      ),
+      enableHiding: true,
+      enableSorting: false,
     },
-  },
-];
+    {
+      id: "Frequency",
+      accessorKey: "frequency",
+      header: ({ column }) => (
+        <DataTableColumnHeader
+          column={column}
+          title="Frequency"
+          sortName="frequency"
+        />
+      ),
+      enableHiding: true,
+      enableSorting: false,
+    },
+    {
+      id: "Concepts",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Concepts" />
+      ),
+      enableHiding: true,
+      enableSorting: false,
+      cell: ({ row }) => {
+        const { concepts } = row.original;
+        return (
+          <Suspense fallback={<Skeleton className="h-5 w-[250px]" />}>
+            <ConceptTags concepts={concepts ?? []} deleteSR={deleteSR} />
+          </Suspense>
+        );
+      },
+    },
+    {
+      id: "Add Concept",
+      header: "",
+      cell: ({ row }) => {
+        const { id, permissions } = row.original;
+        const canEdit =
+          permissions.includes("CanEdit") || permissions.includes("CanAdmin");
+        return (
+          <AddConcept
+            rowId={id}
+            tableId={tableId}
+            contentType="scanreportvalue"
+            disabled={!canEdit}
+            addSR={addSR}
+          />
+        );
+      },
+    },
+  ];
+
+  // AI Suggestions Column & setting as 4th Column
+  if (isAIFeatureEnabled) {
+    baseColumns.splice(3, 0, {
+      id: "AI Suggestions",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="AI Suggestions" />
+      ),
+      enableHiding: true,
+      enableSorting: false,
+      cell: ({ row }) => {
+        return <AISuggestionsButton />;
+      },
+    });
+  }
+
+  return baseColumns;
+}

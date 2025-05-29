@@ -30,6 +30,7 @@ services:
       - NEXTAUTH_BACKEND_URL=http://api:8000/api/
       - NODE_ENV=development
       - WATCHPACK_POLLING=true
+      - NEXT_PUBLIC_AI_FEATURE_RECOMMENDATION=true
     volumes:
       - ./app/next-client-app:/app
       - /app/node_modules
