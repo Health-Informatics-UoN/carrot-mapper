@@ -47,7 +47,7 @@ const DeleteDialog = ({
     <Dialog open={isOpen} onOpenChange={() => setOpen(false)}>
       {needTrigger && (
         <DialogTrigger asChild>
-          <div className="hover:bg-carrot-200 text-red-400 relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-carrot-100 focus:text-carrot-900 data-[disabled]:pointer-events-none data-[disabled]:opacity-50 dark:focus:bg-carrot-800 dark:focus:text-carrot-50">
+          <div className="hover:bg-accent text-destructive relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-destructive data-[disabled]:pointer-events-none data-[disabled]:opacity-50">
             <TrashIcon className="mr-2 size-4" />
             Delete Scan Report
           </div>
@@ -59,7 +59,7 @@ const DeleteDialog = ({
           <DialogDescription>
             Are you sure you want to delete this Scan Report? This will:
           </DialogDescription>
-          <ul className="text-gray-500 list-disc pl-4 pt-2">
+          <ul className="text-muted-foreground list-disc pl-4 pt-2">
             <li>Delete the Scan Report</li>
             <li>Delete the Scan Report file and data dictionary</li>
             <li>
@@ -76,7 +76,7 @@ const DeleteDialog = ({
             Delete
           </Button>
           <DialogClose asChild>
-            <Button className="bg-black text-white">Cancel</Button>
+            <Button variant="outline">Cancel</Button>
           </DialogClose>
         </DialogFooter>
       </DialogContent>

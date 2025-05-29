@@ -17,7 +17,7 @@ interface LayoutProps {
 
 export default async function DatasetLayout({
   params,
-  children,
+  children
 }: Readonly<LayoutProps>) {
   const { id } = await params;
 
@@ -27,9 +27,9 @@ export default async function DatasetLayout({
   const items = [
     {
       name: "Scan Reports",
-      iconName: "FileScan",
+      iconName: "FileScan"
     },
-    { name: "Edit Details", slug: "details", iconName: "Edit" },
+    { name: "Edit Details", slug: "details", iconName: "Edit" }
   ];
 
   const dataset = await getDataSet(id);
@@ -48,25 +48,21 @@ export default async function DatasetLayout({
   return (
     <div className="space-y-2">
       <div className="flex font-semibold text-xl items-center space-x-2">
-        <Database className="text-gray-500" />
+        <Database className="text-muted-foreground" />
         <Link href={`/datasets`}>
-          <h2 className="text-gray-500 dark:text-gray-400">Datasets</h2>
+          <h2 className="text-muted-foreground">Datasets</h2>
         </Link>
-        <h2 className="text-gray-500 dark:text-gray-400">{"/"}</h2>
-        <Database className="text-blue-700" />
+        <h2 className="text-muted-foreground">{"/"}</h2>
+        <Database className="text-primary" />
         <h2>{dataset.name}</h2>
       </div>
 
-      <div className="flex flex-col md:flex-row md:items-center text-sm space-y-2 md:space-y-0 divide-y md:divide-y-0 md:divide-x divide-gray-300">
-        <h3 className="text-gray-500 dark:text-gray-400 flex items-center gap-2 pr-2">
+      <div className="flex flex-col md:flex-row md:items-center text-sm space-y-2 md:space-y-0 divide-y md:divide-y-0 md:divide-x divide-muted">
+        <h3 className="text-muted-foreground flex items-center gap-2 pr-2">
           <div>Project(s): </div>
           <div className="flex space-x-1">
             {projects.map((project) => (
-              <Badge
-                variant={"outline"}
-                className="bg-carrot-100 dark:bg-carrot-700"
-                key={project.id}
-              >
+              <Badge variant="outline" key={project.id}>
                 {project.name}
               </Badge>
             ))}
@@ -91,8 +87,8 @@ export default async function DatasetLayout({
             ...items.map((x) => ({
               text: x.name,
               slug: x.slug,
-              iconName: x.iconName,
-            })),
+              iconName: x.iconName
+            }))
           ]}
         />
       </div>
