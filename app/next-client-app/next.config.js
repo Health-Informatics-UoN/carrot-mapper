@@ -9,6 +9,7 @@ const nextConfig = {
   experimental: {
     serverActions: {
       allowedOrigins: allowedOrigins,
+      bodySizeLimit: 10485760, // 10MB limit for server actions
     },
   },
   async redirects() {
