@@ -118,6 +118,7 @@ LEFT JOIN mapping_omoptable AS omop_table ON
         WHEN 'Drug' THEN 'drug_exposure'
         WHEN 'Procedure' THEN 'procedure_occurrence'
         WHEN 'Specimen' THEN 'specimen'
+        WHEN 'Spec Anatomic Site' THEN 'specimen'
         ELSE LOWER(target_concept.domain_id)
     END = omop_table.table
 -- Because concepts may or may not have the standard_concept_id, in general. And we prefer to use the standard_concept_id, if it exists.
@@ -179,6 +180,8 @@ SET
 
 # Create a staging table with computed field values
 find_concept_fields_query = """
+-- Prevent duplicate creation of the staging table, in case of re-running the DAG after a bug fix
+DROP TABLE IF EXISTS temp_concept_fields_staging_%(table_id)s;
 -- Create a staging table with the correct field IDs for each record
 CREATE TABLE temp_concept_fields_staging_%(table_id)s AS
 SELECT 
@@ -189,21 +192,33 @@ SELECT
     (SELECT omop_field.id 
     FROM mapping_omopfield AS omop_field 
     WHERE omop_field.table_id = temp_existing_concepts.dest_table_id 
-    AND omop_field.field = LOWER(target_concept.domain_id) || '_source_concept_id'
+    AND omop_field.field = 
+        CASE 
+            WHEN target_concept.domain_id = 'Spec Anatomic Site' THEN 'anatomic_site_source_concept_id'  -- Not applicable for Specimen table
+            ELSE LOWER(target_concept.domain_id) || '_source_concept_id'
+        END
     LIMIT 1) AS source_concept_field_id,
 
     -- Use domain-specific source_value_field_id
     (SELECT omop_field.id 
     FROM mapping_omopfield AS omop_field 
     WHERE omop_field.table_id = temp_existing_concepts.dest_table_id 
-    AND omop_field.field = LOWER(target_concept.domain_id) || '_source_value'
+    AND omop_field.field = 
+        CASE 
+            WHEN target_concept.domain_id = 'Spec Anatomic Site' THEN 'anatomic_site_source_value'
+            ELSE LOWER(target_concept.domain_id) || '_source_value'
+        END
     LIMIT 1) AS source_value_field_id,
 
     -- Use domain-specific dest_concept_field_id
     (SELECT omop_field.id 
     FROM mapping_omopfield AS omop_field 
     WHERE omop_field.table_id = temp_existing_concepts.dest_table_id 
-    AND omop_field.field = LOWER(target_concept.domain_id) || '_concept_id'
+    AND omop_field.field = 
+        CASE 
+            WHEN target_concept.domain_id = 'Spec Anatomic Site' THEN 'anatomic_site_concept_id'
+            ELSE LOWER(target_concept.domain_id) || '_concept_id'
+        END
     LIMIT 1) AS dest_concept_field_id
 
 FROM temp_existing_concepts_%(table_id)s temp_existing_concepts
@@ -425,4 +440,65 @@ create_temp_data_dictionary_table_query = """
         value TEXT,
         value_description TEXT
     );
+"""
+
+
+create_update_temp_rules_table_query = """
+        DROP TABLE IF EXISTS temp_rules_export_%(scan_report_id)s;
+        CREATE TABLE temp_rules_export_%(scan_report_id)s (
+            sr_concept_id INT,
+            concept_name TEXT,
+            concept_id INT,
+            dest_field TEXT,
+            dest_table TEXT,
+            source_field TEXT,
+            source_table TEXT,
+            term_mapping_value TEXT,
+            domain TEXT,
+            standard_concept TEXT,
+            concept_class TEXT,
+            vocabulary TEXT,
+            valid_start_date DATE,
+            valid_end_date DATE,
+            creation_type TEXT
+        );
+        INSERT INTO temp_rules_export_%(scan_report_id)s (
+            sr_concept_id,
+            concept_name,
+            concept_id,
+            dest_field,
+            dest_table,
+            source_field,
+            source_table,
+            term_mapping_value, 
+            creation_type
+        )
+        SELECT
+            mapping_rule.concept_id AS sr_concept_id,
+            omop_concept.concept_name,
+            sr_concept.concept_id,
+            omop_field.field AS dest_field,
+            omop_table.table AS dest_table,
+            sr_field.name AS source_field,
+            sr_table.name AS source_table,
+            CASE
+                WHEN sr_concept.content_type_id = 23 THEN sr_value.value
+                ELSE NULL
+            END AS term_mapping_value,
+            sr_concept.creation_type
+        FROM mapping_mappingrule AS mapping_rule
+        JOIN mapping_omopfield AS omop_field ON mapping_rule.omop_field_id = omop_field.id
+        JOIN mapping_omoptable AS omop_table ON omop_field.table_id = omop_table.id
+        JOIN mapping_scanreportfield AS sr_field ON mapping_rule.source_field_id = sr_field.id
+        JOIN mapping_scanreporttable AS sr_table ON sr_field.scan_report_table_id = sr_table.id
+        JOIN mapping_scanreportconcept AS sr_concept ON mapping_rule.concept_id = sr_concept.id
+        LEFT JOIN mapping_scanreportvalue AS sr_value ON sr_concept.object_id = sr_value.id AND sr_concept.content_type_id = 23
+        LEFT JOIN omop.concept AS omop_concept ON sr_concept.concept_id = omop_concept.concept_id
+        WHERE mapping_rule.scan_report_id = %(scan_report_id)s;
+"""
+
+
+create_file_entry_query = """
+    INSERT INTO files_filedownload (name, file_url, user_id, file_type_id, scan_report_id, created_at, updated_at)
+    VALUES (%(name)s, %(file_url)s, %(user_id)s, %(file_type_id)s, %(scan_report_id)s, %(created_at)s, %(updated_at)s)
 """

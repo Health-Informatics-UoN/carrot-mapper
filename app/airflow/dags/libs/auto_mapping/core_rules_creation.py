@@ -62,6 +62,9 @@ def create_mapping_rules(**kwargs) -> None:
     ) AS field_mapping(field_id, source_id)
     WHERE field_id IS NOT NULL
     ORDER BY object_id;
+
+    -- Clean up
+    DROP TABLE IF EXISTS temp_existing_concepts_%(table_id)s;
     """
 
     try:
