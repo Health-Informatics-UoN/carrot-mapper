@@ -5,6 +5,7 @@ from shared.mapping.models import (
     ScanReportField,
     ScanReportValue,
     ScanReportTable,
+    Concept,
 )
 from shared_code import db
 from shared_code.logger import logger
@@ -355,6 +356,13 @@ def select_concepts_to_post(
         try:
             existing_content_id, concept_ids = details_to_id_and_concept_ids_map[key]
             for concept_id in concept_ids:
+                if content_type == ScanReportConceptContentType.VALUE:
+                    try:
+                        concept_obj = Concept.objects.get(pk=concept_id)
+                        if concept_obj.domain_id in ("Visit", "Specimen"):
+                            continue  # Skip this concept if it has Visit or Specimen domain
+                    except Concept.DoesNotExist:
+                        continue  # If concept doesn't exist, skip
                 logger.info(
                     f"Found existing {'field' if content_type == ScanReportConceptContentType.FIELD else 'value'} with id: {existing_content_id} "
                     f"with existing concept mapping: {concept_id} which matches new {'field' if content_type == ScanReportConceptContentType.FIELD else 'value'} id: {new_content_detail['id']}"

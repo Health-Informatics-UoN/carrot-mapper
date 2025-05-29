@@ -323,11 +323,6 @@ def save_mapping_rules(
         source_field = scan_report_value.scan_report_field
     else:
         source_field = content_object
-    if scan_report_concept.creation_type == "R" and (
-        scan_report_concept.concept.domain_id == "Specimen"
-        or scan_report_concept.concept.domain_id == "Visit"
-    ):
-        return []
 
     scan_report = source_field.scan_report_table.scan_report
     concept = scan_report_concept.concept
