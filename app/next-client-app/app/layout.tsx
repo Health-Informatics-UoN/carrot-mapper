@@ -1,6 +1,7 @@
 import "./globals.css";
 import { Toaster } from "sonner";
 import { ThemeProvider } from "@/components/core/theme-provider";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -53,7 +54,9 @@ export default async function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          {children}
+          <TooltipProvider>
+            {children}
+          </TooltipProvider>
         </ThemeProvider>
 
         <Toaster

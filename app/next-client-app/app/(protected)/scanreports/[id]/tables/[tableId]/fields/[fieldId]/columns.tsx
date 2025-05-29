@@ -6,6 +6,8 @@ import AddConcept from "@/components/concepts/add-concept";
 import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import CopyButton from "@/components/core/CopyButton";
+import { Button } from "@/components/ui/button";
+import { AISuggestionsButton } from "@/components/ui/ai-suggesions-button";
 
 export const columns = (
   addSR: (concept: ScanReportConcept, c: Concept) => void,
@@ -29,7 +31,7 @@ export const columns = (
           <CopyButton textToCopy={value} />
         </div>
       );
-    }
+    },
   },
   {
     id: "Value Description",
@@ -42,7 +44,7 @@ export const columns = (
       />
     ),
     enableHiding: true,
-    enableSorting: false
+    enableSorting: false,
   },
   {
     id: "Frequency",
@@ -55,8 +57,22 @@ export const columns = (
       />
     ),
     enableHiding: true,
-    enableSorting: false
+    enableSorting: false,
   },
+
+  // AI Suggestions Button column
+  {
+    id: "AI Suggestions",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="AI Suggestions" />
+    ),
+    enableHiding: true,
+    enableSorting: false,
+    cell: ({ row }) => {
+      return <AISuggestionsButton />;
+    },
+  },
+
   {
     id: "Concepts",
     header: ({ column }) => (
@@ -71,7 +87,7 @@ export const columns = (
           <ConceptTags concepts={concepts ?? []} deleteSR={deleteSR} />
         </Suspense>
       );
-    }
+    },
   },
   {
     id: "Add Concept",
@@ -89,6 +105,6 @@ export const columns = (
           addSR={addSR}
         />
       );
-    }
-  }
+    },
+  },
 ];
