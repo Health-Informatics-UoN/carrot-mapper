@@ -62,7 +62,7 @@ export default function SignIn() {
               placeholder="Enter your password"
             />
           </div>
-          <Button type="submit" className="w-full">
+          <Button type="submit" className="w-full" variant="outline">
             Sign In
           </Button>
         </form>

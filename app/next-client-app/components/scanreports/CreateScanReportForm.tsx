@@ -29,7 +29,7 @@ interface FormData {
 
 export function CreateScanReportForm({
   dataPartners,
-  projects,
+  projects
 }: {
   dataPartners: DataPartner[];
   projects: Project[];
@@ -97,7 +97,7 @@ export function CreateScanReportForm({
           visibility: "PUBLIC",
           name: "",
           scan_report_file: null,
-          Data_dict: null,
+          Data_dict: null
         }}
         onSubmit={(data) => {
           toast.info("Validating ...");
@@ -189,8 +189,8 @@ export function CreateScanReportForm({
                     handleChange({
                       target: {
                         name: "visibility",
-                        value: checked ? "PUBLIC" : "RESTRICTED",
-                      },
+                        value: checked ? "PUBLIC" : "RESTRICTED"
+                      }
                     });
                     setPublicVisibility(checked);
                   }}
@@ -298,7 +298,7 @@ export function CreateScanReportForm({
               <div className="mb-5 mt-3 flex">
                 <Button
                   type="submit"
-                  className="px-4 py-2 bg-carrot text-white rounded text-lg"
+                  className="px-4 py-2 text-lg border border-input"
                   disabled={
                     values.dataPartner === 0 ||
                     values.dataset === 0 ||
