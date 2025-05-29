@@ -39,7 +39,7 @@ services:
         condition: service_healthy
 
   omop-lite:
-    image: ghcr.io/andyrae/omop-lite
+    image: ghcr.io/health-informatics-uon/omop-lite
     volumes:
       - ./vocabs:/vocabs
     depends_on:
@@ -47,6 +47,8 @@ services:
     environment:
       - DB_PASSWORD=postgres
       - DB_NAME=postgres
+      - SCHEMA_NAME=omop
+      - DATA_DIR=vocabs
 
   api:
     image: carrot-backend

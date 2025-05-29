@@ -17,3 +17,5 @@ api/static
 vocabs
 .idea
 .mypy_cache
+build
+*.egg-info
