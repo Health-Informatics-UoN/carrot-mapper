@@ -347,7 +347,7 @@ def select_concepts_to_post(
                 if content_type == ScanReportConceptContentType.VALUE:
                     try:
                         concept_obj = Concept.objects.get(pk=concept_id)
-                        if concept_obj.domain_id not in ALLOWED_DOMAINS:
+                        if concept_obj.domain_id.lower() not in ALLOWED_DOMAINS:
                             continue  # Skip this concept if it is not in the allowed domains
                     except Concept.DoesNotExist:
                         continue  # If concept doesn't exist, skip
