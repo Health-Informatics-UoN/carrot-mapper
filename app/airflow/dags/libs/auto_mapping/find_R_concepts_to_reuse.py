@@ -10,6 +10,7 @@ from libs.queries import (
     find_reusing_value_query,
     find_reusing_field_query,
     find_object_id_query,
+    validate_reused_value_query,
 )
 
 # PostgreSQL connection hook
@@ -141,13 +142,13 @@ def find_matching_value(**kwargs):
         # because that is the job of V concepts DAG
         field_vocab_pairs = validated_params["field_vocab_pairs"]
         exclude_v_concepts_condition = (
-            "AND esc.creation_type != 'V'" if field_vocab_pairs else ""
+            "AND eligible_concept.creation_type != 'V'" if field_vocab_pairs else ""
         )
 
         try:
             # NOTE: parameterizing the query is not working for the exclude_v_concepts_condition, so we are using string interpolation instead
             pg_hook.run(
-                find_reusing_value_query
+                (find_reusing_value_query + validate_reused_value_query)
                 % {
                     "table_id": table_id,
                     "parent_dataset_id": parent_dataset_id,
