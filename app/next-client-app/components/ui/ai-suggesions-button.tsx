@@ -110,6 +110,7 @@ export function AISuggestionsButton() {
         <TooltipTrigger asChild>
           <Button
             variant="outline"
+            size="sm"
             className="gap-2 border-purple-400 hover:bg-purple-100 hover:text-black"
             onClick={handleClick}
             disabled={isLoading}
@@ -119,11 +120,11 @@ export function AISuggestionsButton() {
             ) : (
               <Sparkles className="h-4 w-4 text-purple-500" />
             )}
-            Get AI Suggestions
+            Use AI Assistant
           </Button>
         </TooltipTrigger>
         <TooltipContent>
-          <p>Get AI-powered mapping suggestions</p>
+          <p>Get AI-powered Concept Suggestions</p>
         </TooltipContent>
       </Tooltip>
 
