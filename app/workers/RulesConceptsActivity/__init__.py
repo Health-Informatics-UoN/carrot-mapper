@@ -16,22 +16,10 @@ from shared.data.models import Concept, ConceptRelationship
 from shared.mapping.models import ScanReportConcept, ScanReportTable
 from shared_code import db
 from shared_code.db import JobStageType, StageStatusType, update_job
-
+from shared_code.helpers import ALLOWED_DOMAINS
 from .reuse import reuse_existing_field_concepts, reuse_existing_value_concepts
 
 storage_service = StorageService()
-
-ALLOWED_DOMAINS = [
-    "gender",
-    "race",
-    "ethnicity",
-    "measurement",
-    "condition",
-    "observation",
-    "drug",
-    "procedure",
-    "device",
-]
 
 
 def _create_concepts(
