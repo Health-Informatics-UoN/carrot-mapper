@@ -345,44 +345,60 @@ WHERE (
 
 
 find_reusing_field_query = """
+WITH
+    -- Get the content type id for scanreportfield
+    field_content_type AS (
+        SELECT id FROM django_content_type
+        WHERE app_label = 'mapping' AND model = 'scanreportfield'
+        LIMIT 1
+    ),
+    -- Get all eligible scan reports in the same dataset, completed, not hidden, not the current one
+    eligible_reports AS (
+        SELECT scan_report.id
+        FROM mapping_scanreport scan_report
+        JOIN mapping_dataset dataset ON scan_report.parent_dataset_id = dataset.id
+        JOIN mapping_mappingstatus map_status ON scan_report.mapping_status_id = map_status.id
+        WHERE dataset.id = %(parent_dataset_id)s
+          AND dataset.hidden = FALSE
+          AND scan_report.hidden = FALSE
+          AND map_status.value = 'COMPLETE'
+          AND scan_report.id != %(scan_report_id)s
+    ),
+    -- Get all non-empty fields in the current table
+    current_fields AS (
+        SELECT
+            sr_field.name AS field_name,
+            sr_table.name AS table_name
+        FROM mapping_scanreportfield sr_field
+        JOIN mapping_scanreporttable sr_table ON sr_field.scan_report_table_id = sr_table.id
+        WHERE sr_table.id = %(table_id)s
+          AND (sr_field.name IS NOT NULL AND TRIM(sr_field.name) <> '')
+    ),
+    -- Find eligible fields matches in eligible scan reports
+    eligible_field_matches AS (
+        SELECT
+            current_fields.field_name AS matching_field_name,
+            current_fields.table_name AS matching_table_name,
+            field_content_type.id AS content_type_id,
+            -- TODO: add eligible_concept.standard_concept_id here (future)
+            eligible_concept.concept_id AS source_concept_id,
+            eligible_report.id AS source_scanreport_id
+        FROM current_fields
+        JOIN mapping_scanreportfield AS eligible_field ON eligible_field.name = current_fields.field_name
+        JOIN mapping_scanreporttable AS eligible_table ON eligible_field.scan_report_table_id = eligible_table.id 
+            AND eligible_table.name = current_fields.table_name
+        JOIN eligible_reports AS eligible_report ON eligible_table.scan_report_id = eligible_report.id
+        JOIN mapping_scanreportconcept AS eligible_concept ON eligible_concept.object_id = eligible_field.id
+            AND eligible_concept.content_type_id = (SELECT id FROM field_content_type)
+            AND eligible_concept.creation_type != 'R'
+        CROSS JOIN field_content_type
+    )
 INSERT INTO temp_reuse_concepts_%(table_id)s (
     matching_field_name, matching_table_name, content_type_id, source_concept_id, source_scanreport_id
 )
-SELECT DISTINCT 
-    sr_field.name, 
-    sr_table.name,
-    (SELECT id FROM django_content_type WHERE app_label = 'mapping' AND model = 'scanreportfield'),
-    eligible_sr_concept.concept_id,
-    eligible_scan_report.id
-FROM mapping_scanreportfield AS sr_field
-JOIN mapping_scanreporttable AS sr_table 
-    ON sr_field.scan_report_table_id = %(table_id)s
-
--- Join to eligible fields in other eligible scan reports
-JOIN mapping_scanreportfield AS eligible_sr_field 
-    ON eligible_sr_field.name = sr_field.name        -- Matching field name
-JOIN mapping_scanreporttable AS eligible_sr_table 
-    ON eligible_sr_field.scan_report_table_id = eligible_sr_table.id
-    AND eligible_sr_table.name = sr_table.name       -- Matching table name
-JOIN mapping_scanreport AS eligible_scan_report 
-    ON eligible_sr_table.scan_report_id = eligible_scan_report.id
-    AND eligible_scan_report.id != %(scan_report_id)s  -- Don't reuse concepts from the same scan report
-JOIN mapping_dataset AS dataset 
-    ON eligible_scan_report.parent_dataset_id = dataset.id
-JOIN mapping_mappingstatus AS map_status 
-    ON eligible_scan_report.mapping_status_id = map_status.id
-JOIN mapping_scanreportconcept AS eligible_sr_concept
-    ON eligible_sr_concept.object_id = eligible_sr_field.id
-    AND eligible_sr_concept.content_type_id = (
-        SELECT id FROM django_content_type 
-        WHERE app_label = 'mapping' AND model = 'scanreportfield'
-    )
-    AND eligible_sr_concept.creation_type != 'R'     -- We don't want to reuse R concepts
-
-WHERE dataset.id = %(parent_dataset_id)s        -- Other conditions
-AND dataset.hidden = FALSE
-AND eligible_scan_report.hidden = FALSE
-AND map_status.value = 'COMPLETE';
+SELECT DISTINCT
+    matching_field_name, matching_table_name, content_type_id, source_concept_id, source_scanreport_id
+FROM eligible_field_matches;
 
 -- After finding eligible matching field, we need to delete (matching_field_name, standard_concept_id (future) , source_concept_id) duplicates, 
 --only get the occurence with the lowest source_scanreport_id
