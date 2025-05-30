@@ -252,69 +252,77 @@ DROP TABLE IF EXISTS temp_concept_fields_staging_%(table_id)s;
 
 
 find_reusing_value_query = """
+WITH
+    -- Get the content type id for scanreportvalue
+    value_content_type AS (
+        SELECT id FROM django_content_type
+        WHERE app_label = 'mapping' AND model = 'scanreportvalue'
+        LIMIT 1
+    ),
+    -- Get all eligible scan reports in the same dataset, completed, not hidden, not the current one
+    eligible_reports AS (
+        SELECT sr.id
+        FROM mapping_scanreport sr
+        JOIN mapping_dataset d ON sr.parent_dataset_id = d.id
+        JOIN mapping_mappingstatus ms ON sr.mapping_status_id = ms.id
+        WHERE d.id = %(parent_dataset_id)s
+          AND d.hidden = FALSE
+          AND sr.hidden = FALSE
+          AND ms.value = 'COMPLETE'
+          AND sr.id != %(scan_report_id)s
+    ),
+    -- Get all non-empty values in the current table
+    current_values AS (
+        SELECT
+            v.value,
+            f.name AS field_name,
+            t.name AS table_name,
+            v.value_description
+        FROM mapping_scanreportvalue v
+        JOIN mapping_scanreportfield f ON v.scan_report_field_id = f.id
+        JOIN mapping_scanreporttable t ON f.scan_report_table_id = t.id
+        WHERE t.id = %(table_id)s
+          AND (v.value IS NOT NULL AND TRIM(v.value) <> '')
+    ),
+    -- Find eligible matches in other scan reports
+    eligible_matches AS (
+        SELECT
+            cv.value AS matching_value_name,
+            cv.field_name AS matching_field_name,
+            cv.table_name AS matching_table_name,
+            vct.id AS content_type_id,
+            esc.concept_id AS source_concept_id,
+            esr.id AS source_scanreport_id
+        FROM current_values cv
+        JOIN mapping_scanreportfield esf ON esf.name = cv.field_name
+        JOIN mapping_scanreporttable est ON esf.scan_report_table_id = est.id AND est.name = cv.table_name
+        JOIN mapping_scanreportvalue esv ON esv.scan_report_field_id = esf.id
+            AND esv.value = cv.value
+            AND (
+                (esv.value_description = cv.value_description)
+                OR (esv.value_description IS NULL AND cv.value_description IS NULL)
+            )
+        JOIN eligible_reports esr ON est.scan_report_id = esr.id
+        JOIN mapping_scanreportconcept esc ON esc.object_id = esv.id
+            AND esc.content_type_id = (SELECT id FROM value_content_type vct)
+            AND esc.creation_type != 'R'
+            %(exclude_v_concepts_condition)s
+        CROSS JOIN value_content_type vct
+    )
 INSERT INTO temp_reuse_concepts_%(table_id)s (
     matching_value_name, matching_field_name, matching_table_name, content_type_id, source_concept_id, source_scanreport_id
 )
-SELECT DISTINCT 
-    sr_value.value, 
-    sr_field.name,
-    sr_table.name,
-    (SELECT id FROM django_content_type WHERE app_label = 'mapping' AND model = 'scanreportvalue'),
-    eligible_sr_concept.concept_id,
-    -- TODO: add eligible_sr_concept.standard_concept_id here
-    eligible_scan_report.id
-FROM mapping_scanreportvalue AS sr_value
-JOIN mapping_scanreportfield AS sr_field 
-    ON sr_value.scan_report_field_id = sr_field.id
-JOIN mapping_scanreporttable AS sr_table 
-    ON sr_field.scan_report_table_id = %(table_id)s
+SELECT DISTINCT
+    matching_value_name, matching_field_name, matching_table_name, content_type_id, source_concept_id, source_scanreport_id
+FROM eligible_matches;
 
--- Join to eligible values in other eligible scan reports
-JOIN mapping_scanreportvalue AS eligible_sr_value 
-    ON sr_value.value = eligible_sr_value.value       -- Matching value's name
-    AND (
-        sr_value.value_description = eligible_sr_value.value_description
-        OR (sr_value.value_description IS NULL AND eligible_sr_value.value_description IS NULL)
-    )                                                 -- Matching value's description.
-JOIN mapping_scanreportfield AS eligible_sr_field 
-    ON eligible_sr_value.scan_report_field_id = eligible_sr_field.id
-    AND eligible_sr_field.name = sr_field.name        -- Matching value's field name
-JOIN mapping_scanreporttable AS eligible_sr_table 
-    ON eligible_sr_field.scan_report_table_id = eligible_sr_table.id
-    AND eligible_sr_table.name = sr_table.name        -- Matching table name
-JOIN mapping_scanreport AS eligible_scan_report 
-    ON eligible_sr_table.scan_report_id = eligible_scan_report.id
-    AND eligible_scan_report.id != %(scan_report_id)s -- Don't reuse concepts from the same scan report
-JOIN mapping_dataset AS dataset 
-    ON eligible_scan_report.parent_dataset_id = dataset.id
-JOIN mapping_mappingstatus AS map_status 
-    ON eligible_scan_report.mapping_status_id = map_status.id
-JOIN mapping_scanreportconcept AS eligible_sr_concept
-    ON eligible_sr_concept.object_id = eligible_sr_value.id
-    AND eligible_sr_concept.content_type_id = (
-        SELECT id FROM django_content_type 
-        WHERE app_label = 'mapping' AND model = 'scanreportvalue'
-    )
-    AND eligible_sr_concept.creation_type != 'R'     -- We don't want to reuse R concepts
-    %(exclude_v_concepts_condition)s
-
-WHERE dataset.id = %(parent_dataset_id)s        -- Other conditions
-AND dataset.hidden = FALSE
-AND eligible_scan_report.hidden = FALSE
-AND map_status.value = 'COMPLETE';
-
--- After finding eligible matching value, we need to delete (matching_value_name, standard_concept_id (future) , source_concept_id) duplicates, 
---only get the occurence with the lowest source_scanreport_id
+-- Remove duplicates, keeping the one with the lowest source_scanreport_id
 DELETE FROM temp_reuse_concepts_%(table_id)s AS temp_table
 USING temp_reuse_concepts_%(table_id)s AS temp_table_duplicate
 WHERE
     temp_table.matching_value_name = temp_table_duplicate.matching_value_name
     AND temp_table.source_concept_id = temp_table_duplicate.source_concept_id
-    -- TODO: add standard_concept_id matching check (future) here
-    AND temp_table.content_type_id = (
-        SELECT id FROM django_content_type 
-        WHERE app_label = 'mapping' AND model = 'scanreportvalue'
-    )
+    AND temp_table.content_type_id = (SELECT id FROM django_content_type WHERE app_label = 'mapping' AND model = 'scanreportvalue')
     AND temp_table.source_scanreport_id > temp_table_duplicate.source_scanreport_id;
 """
 

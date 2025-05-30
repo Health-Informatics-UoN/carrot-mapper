@@ -141,7 +141,7 @@ def find_matching_value(**kwargs):
         # because that is the job of V concepts DAG
         field_vocab_pairs = validated_params["field_vocab_pairs"]
         exclude_v_concepts_condition = (
-            "AND eligible_sr_concept.creation_type != 'V'" if field_vocab_pairs else ""
+            "AND esc.creation_type != 'V'" if field_vocab_pairs else ""
         )
 
         try:
