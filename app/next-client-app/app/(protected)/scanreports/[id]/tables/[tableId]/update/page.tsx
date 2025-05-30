@@ -12,15 +12,20 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
 interface UpdateTableProps {
-  params: {
+  params: Promise<{
     id: string;
     tableId: string;
-  };
+  }>;
 }
 
-export default async function UpdateTable({
-  params: { id, tableId },
-}: UpdateTableProps) {
+export default async function UpdateTable(props: UpdateTableProps) {
+  const params = await props.params;
+
+  const {
+    id,
+    tableId
+  } = params;
+
   const defaultPageSize = 50;
   const defaultParams = {
     fields: "name,id",

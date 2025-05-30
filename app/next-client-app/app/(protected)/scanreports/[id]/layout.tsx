@@ -22,13 +22,18 @@ import { StatusIcon } from "@/components/core/StatusIcon";
 import { UploadStatusOptions } from "@/constants/scanReportStatus";
 import ExportScanReport from "@/components/scanreports/ExportScanReport";
 
-export default async function ScanReportLayout({
-  params,
-  children,
-}: Readonly<{
-  params: { id: string };
-  children: React.ReactNode;
-}>) {
+export default async function ScanReportLayout(
+  props: Readonly<{
+    params: { id: string };
+    children: React.ReactNode;
+  }>
+) {
+  const params = await props.params;
+
+  const {
+    children
+  } = props;
+
   const permissions = await getScanReportPermissions(params.id);
   const requiredPermissions: Permission[] = ["CanAdmin", "CanEdit", "CanView"];
   const canEdit =
@@ -45,7 +50,7 @@ export default async function ScanReportLayout({
     { name: "Downloads", slug: "downloads", iconName: "Download" },
   ];
 
-   {/* Pushed the Edit button to the Items above so it appears on same level */}
+  {/* Pushed the Edit button to the Items above so it appears on same level */}
   if (canEdit) {
     items.push({
       name: "Edit Details",

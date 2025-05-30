@@ -10,10 +10,11 @@ import { Database } from "lucide-react";
 import { getAllProjects } from "@/api/projects";
 
 interface DataSetListProps {
-  searchParams?: FilterParameters;
+  searchParams?: Promise<FilterParameters>;
 }
 
-export default async function DataSets({ searchParams }: DataSetListProps) {
+export default async function DataSets(props: DataSetListProps) {
+  const searchParams = await props.searchParams;
   const defaultParams = {
     hidden: false,
     page_size: 10,

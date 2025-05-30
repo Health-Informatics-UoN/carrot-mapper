@@ -8,14 +8,18 @@ import { getAllProjects } from "@/api/projects";
 import { DatasetForm } from "@/components/datasets/DatasetForm";
 
 interface DataSetListProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
-export default async function DatasetDetails({
-  params: { id },
-}: DataSetListProps) {
+export default async function DatasetDetails(props: DataSetListProps) {
+  const params = await props.params;
+
+  const {
+    id
+  } = params;
+
   const dataset = await getDataSet(id);
   const partners = await getDataPartners();
   const users = await getDataUsers();
