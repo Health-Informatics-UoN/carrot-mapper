@@ -461,6 +461,31 @@ find_object_id_query = """
 """
 
 
+# TODO: when source_concept_id is added to the model SCANREPORTCONCEPT, we need to update the query belowto solve the issue #1006
+create_concept_query = """
+    -- Insert standard concepts for field values (only if they don't already exist)
+    INSERT INTO mapping_scanreportconcept (
+        created_at,
+        updated_at,
+        object_id,
+        creation_type,
+        -- TODO: Will have the standard_concept_id (nullable) here
+        concept_id,
+        content_type_id
+    )
+    SELECT
+        NOW(),
+        NOW(),
+        temp_reuse_concepts.object_id,
+        'R',       -- Creation type: Reused
+        -- TODO: if standard_concept_id is null then we need to use the source_concept_id
+        -- TODO: add standard_concept_id here for the newly creted SR concepts
+        temp_reuse_concepts.source_concept_id,
+        temp_reuse_concepts.content_type_id -- content_type_id for scanreportvalue
+    FROM temp_reuse_concepts_%(table_id)s AS temp_reuse_concepts;     
+    """
+
+
 create_values_query = """
     INSERT INTO mapping_scanreportvalue (
         scan_report_field_id, 

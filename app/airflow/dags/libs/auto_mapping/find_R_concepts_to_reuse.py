@@ -11,6 +11,7 @@ from libs.queries import (
     find_reusing_field_query,
     find_object_id_query,
     validate_reused_value_query,
+    create_concept_query,
 )
 
 # PostgreSQL connection hook
@@ -232,21 +233,21 @@ def find_matching_field(**kwargs):
         logging.info("Skipping find_matching_field as trigger_reuse_concepts is False")
 
 
-def find_object_id(**kwargs):
+def create_reusing_concepts(**kwargs):
     """
-    Find object ids for reusing concepts.
+    Find object ids for reusing concepts and create R concepts for a given scan report table.
     Validated param needed is:
     - table_id (int): The ID of the scan report table to process
     - scan_report_id (int): The ID of the scan report to process
     """
-    # Get validated parameters from XCom
+
     validated_params = pull_validated_params(kwargs, "validate_params_auto_mapping")
     trigger_reuse_concepts = validated_params["trigger_reuse_concepts"]
 
     if trigger_reuse_concepts:
-        scan_report_id = validated_params["scan_report_id"]
         table_id = validated_params["table_id"]
-
+        scan_report_id = validated_params["scan_report_id"]
+        #  Find object ids for reusing concepts
         try:
             pg_hook.run(
                 find_object_id_query,
@@ -256,49 +257,7 @@ def find_object_id(**kwargs):
         except Exception as e:
             logging.error(f"Failed to find object ids for reusing concepts: {str(e)}")
             raise
-    else:
-        logging.info("Skipping find_object_id as trigger_reuse_concepts is False")
-
-
-def create_reusing_concepts(**kwargs):
-    """
-    Create R concepts for a given scan report table.
-    Validated param needed is:
-    - table_id (int): The ID of the scan report table to process
-    - scan_report_id (int): The ID of the scan report to process
-    """
-
-    validated_params = pull_validated_params(kwargs, "validate_params_auto_mapping")
-    trigger_reuse_concepts = validated_params["trigger_reuse_concepts"]
-
-    if trigger_reuse_concepts:
-        table_id = validated_params["table_id"]
-        scan_report_id = validated_params["scan_report_id"]
-
-        # TODO: when source_concept_id is added to the model SCANREPORTCONCEPT, we need to update the query belowto solve the issue #1006
-        create_concept_query = """
-            -- Insert standard concepts for field values (only if they don't already exist)
-            INSERT INTO mapping_scanreportconcept (
-                created_at,
-                updated_at,
-                object_id,
-                creation_type,
-                -- TODO: Will have the standard_concept_id (nullable) here
-                concept_id,
-                content_type_id
-            )
-            SELECT
-                NOW(),
-                NOW(),
-                temp_reuse_concepts.object_id,
-                'R',       -- Creation type: Reused
-                -- TODO: if standard_concept_id is null then we need to use the source_concept_id
-                -- TODO: add standard_concept_id here for the newly creted SR concepts
-                temp_reuse_concepts.source_concept_id,
-                temp_reuse_concepts.content_type_id -- content_type_id for scanreportvalue
-            FROM temp_reuse_concepts_%(table_id)s AS temp_reuse_concepts;     
-            """
-
+        #  Create R concepts
         try:
             pg_hook.run(create_concept_query, parameters={"table_id": table_id})
             logging.info("Successfully created R (Reused) concepts")

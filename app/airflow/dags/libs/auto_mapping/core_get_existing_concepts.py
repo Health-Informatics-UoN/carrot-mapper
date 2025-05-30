@@ -39,16 +39,18 @@ def delete_mapping_rules(**kwargs) -> None:
         raise ValueError(f"Error in delete_mapping_rules: {str(e)}")
 
 
-def create_temp_existing_concepts_table(**kwargs) -> None:
+def find_existing_concepts(**kwargs) -> None:
     """
-    Create the temporary table for all existing concepts.
+    Find all existing concepts for a given scan report table.
     Validated param needed is:
     - table_id (int): The ID of the scan report table to process
     """
     # Get validated parameters from XCom
     validated_params = pull_validated_params(kwargs, "validate_params_auto_mapping")
     table_id = validated_params["table_id"]
+    scan_report_id = validated_params["scan_report_id"]
 
+    # Create the temporary table for all existing concepts
     try:
         pg_hook.run(
             create_existing_concepts_table_query, parameters={"table_id": table_id}
@@ -58,20 +60,7 @@ def create_temp_existing_concepts_table(**kwargs) -> None:
         logging.error(
             f"Failed to create temp_existing_concepts_{table_id} table: {str(e)}"
         )
-        raise
-
-
-def find_existing_concepts(**kwargs) -> None:
-    """
-    Find all existing concepts for a given scan report table.
-    Validated param needed is:
-    - table_id (int): The ID of the scan report table to process
-    """
-    # Get validated parameters from XCom
-    validated_params = pull_validated_params(kwargs, "validate_params_auto_mapping")
-
-    table_id = validated_params["table_id"]
-    scan_report_id = validated_params["scan_report_id"]
+        raise e
 
     update_job_status(
         scan_report=scan_report_id,

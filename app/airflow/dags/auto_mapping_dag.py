@@ -4,7 +4,6 @@ from airflow.operators.empty import EmptyOperator
 from libs.auto_mapping.find_R_concepts_to_reuse import (
     find_matching_field,
     find_matching_value,
-    find_object_id,
     create_reusing_concepts,
     delete_R_concepts,
 )
@@ -16,7 +15,6 @@ from libs.auto_mapping.find_standard_V_concepts import (
 
 from libs.auto_mapping.core_get_existing_concepts import (
     delete_mapping_rules,
-    create_temp_existing_concepts_table,
     find_existing_concepts,
 )
 from libs.auto_mapping.core_prep_rules_creation import (
@@ -39,13 +37,12 @@ Workflow steps:
 4. Delete existing reusable concepts (R-concepts)
 5. Find matching values, fields, and object IDs for reuse
 6. Create reusable concepts based on matches
-7. Create temporary tables of existing concepts
-8. Collect all existing concepts
-9. Identify destination tables and person field IDs
-10. Find date fields for each concept
-11. Find concept fields for mapping
-12. Find additional fields needed for mapping
-13. Create mapping rules based on all collected information
+7. Collect all existing concepts
+8. Identify destination tables and person field IDs
+9. Find date fields for each concept
+10. Find concept fields for mapping
+11. Find additional fields needed for mapping
+12. Create mapping rules based on all collected information
 
 This pipeline enables efficient concept reuse across scan reports and automates the creation of
 mapping rules connecting source data to OMOP-compliant destination tables.
@@ -53,13 +50,10 @@ mapping rules connecting source data to OMOP-compliant destination tables.
 #  TODO: for now the creation of mapping rules will use the source_concept_id of temp_reuse_concepts table.
 # When we can distinguish between standard and non-standard concepts, we will use them accordingly in the create_mapping_rules function of reuse.
 # TODO: for death table, only reuse when the source table is death table as well
-# TODO: compare the R and V logic related to prep_for_rules_creation
-# TODO: do we want to reuse R concepts?
 # NOTE: when the DB is huge, the performance of the DAG will be affected by refreshing the existing R concepts. --> consider to only refresh the R Mapping rules
 # TODO: should we add `value` column in MAPPINGRULE model? in order to filter the mapping rule based on the SR value?
 # TODO: add the source_concept_id to the UI
 # TODO: improve naming of columns
-#  TODO: after testing passed, move the delete existing table to the end of the DAG
 
 default_args = {
     "owner": "airflow",
@@ -95,11 +89,7 @@ tasks = [
     create_task("delete_R_concepts", delete_R_concepts, dag),
     create_task("find_matching_value", find_matching_value, dag),
     create_task("find_matching_field", find_matching_field, dag),
-    create_task("find_object_id", find_object_id, dag),
     create_task("create_reusing_concepts", create_reusing_concepts, dag),
-    create_task(
-        "create_temp_existing_concepts_table", create_temp_existing_concepts_table, dag
-    ),
     create_task("find_existing_concepts", find_existing_concepts, dag),
     create_task(
         "find_dest_table_and_person_field_id",
