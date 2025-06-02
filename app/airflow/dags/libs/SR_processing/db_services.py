@@ -7,6 +7,7 @@ from airflow.providers.postgres.hooks.postgres import PostgresHook
 from libs.SR_processing.helpers import default_zero
 from libs.enums import JobStageType, StageStatusType
 from libs.utils import update_job_status
+from libs.settings import AIRFLOW_DEBUG_MODE
 
 # PostgreSQL connection hook
 pg_hook = PostgresHook(postgres_conn_id="postgres_db_conn")
@@ -58,13 +59,12 @@ def create_field_entries(
                 nunique_values = row[8].value
                 fraction_unique = round(default_zero(row[9].value), 2)
 
-                # Execute the query and get the returned ID
                 pg_hook.run(
                     create_fields_query,
                     parameters={
                         # table[1] is table id
                         "scan_report_table_id": table[1],
-                        "name": field_name.replace("\ufeff", ""),
+                        "name": field_name,  # NOTE: without BOM removal to keep the consistency with Azure functions
                         "description_column": description,
                         "type_column": type_column,
                         "max_length": max_length,
@@ -237,6 +237,8 @@ def delete_temp_tables(scan_report_id: int, table_pairs: List[Tuple[str, int]]) 
         table_pairs: A list of tuples containing the table name and ID
     """
     try:
+        if AIRFLOW_DEBUG_MODE == "true":
+            return
         pg_hook.run(f"DROP TABLE IF EXISTS temp_data_dictionary_{scan_report_id}")
         for _, table_id in table_pairs:
             pg_hook.run(f"DROP TABLE IF EXISTS temp_field_values_{table_id}")

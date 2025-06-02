@@ -25,6 +25,7 @@ services:
     environment:
       - BACKEND_URL=http://api:8000
       - BACKEND_ORIGIN=localhost:8000
+      - NEXT_SERVER_ACTION_BODY_SIZE_LIMIT=15728640
       - NEXTAUTH_URL=http://localhost:3000/
       - NEXTAUTH_SECRET=verycomplexsecretkey
       - NEXTAUTH_BACKEND_URL=http://api:8000/api/
@@ -39,7 +40,7 @@ services:
         condition: service_healthy
 
   omop-lite:
-    image: ghcr.io/andyrae/omop-lite
+    image: ghcr.io/health-informatics-uon/omop-lite
     volumes:
       - ./vocabs:/vocabs
     depends_on:
@@ -47,6 +48,8 @@ services:
     environment:
       - DB_PASSWORD=postgres
       - DB_NAME=postgres
+      - SCHEMA_NAME=omop
+      - DATA_DIR=vocabs
 
   api:
     image: carrot-backend
@@ -243,6 +246,7 @@ services:
       AIRFLOW_VAR_MINIO_ACCESS_KEY: minioadmin
       AIRFLOW_VAR_MINIO_SECRET_KEY: minioadmin
       AIRFLOW_VAR_WASB_CONNECTION_STRING: DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;TableEndpoint=http://azurite:10002/devstoreaccount1
+      AIRFLOW_DEBUG_MODE: True
     volumes:
       - ./app/airflow/dags:/opt/airflow/dags
 

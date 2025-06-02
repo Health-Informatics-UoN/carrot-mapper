@@ -6,3 +6,10 @@ class WorkerServiceType(StrEnum):
 
     AZURE = "azure"
     AIRFLOW = "airflow"
+
+
+class ContentTypeModel(StrEnum):
+    """Enum for content type models."""
+
+    SCAN_REPORT_VALUE = "scanreportvalue"
+    SCAN_REPORT_FIELD = "scanreportfield"

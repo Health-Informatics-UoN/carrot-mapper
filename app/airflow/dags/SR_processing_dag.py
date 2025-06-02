@@ -7,6 +7,7 @@ from libs.SR_processing.core import (
     process_and_create_scan_report_entries,
 )
 from libs.utils import connect_to_storage
+from libs.settings import AIRFLOW_DEBUG_MODE
 
 """
 This DAG automates the process of creating scan report tables, fields and values 
@@ -27,7 +28,7 @@ default_args = {
     # TODO: add email on failure and retry
     "email_on_failure": False,
     "email_on_retry": False,
-    "retries": 3,
+    "retries": 0 if AIRFLOW_DEBUG_MODE == "true" else 3,
     "retry_delay": timedelta(minutes=1),
 }
 

@@ -7,6 +7,7 @@ from libs.utils import (
     StageStatusType,
     pull_validated_params,
 )
+from libs.settings import AIRFLOW_DEBUG_MODE
 
 # PostgreSQL connection hook
 pg_hook = PostgresHook(postgres_conn_id="postgres_db_conn")
@@ -62,13 +63,10 @@ def create_mapping_rules(**kwargs) -> None:
     ) AS field_mapping(field_id, source_id)
     WHERE field_id IS NOT NULL
     ORDER BY object_id;
-
-    -- Clean up
-    DROP TABLE IF EXISTS temp_existing_concepts_%(table_id)s;
     """
 
     try:
-        result = pg_hook.run(
+        pg_hook.run(
             mapping_rule_query,
             parameters={
                 "table_id": table_id,
@@ -84,7 +82,18 @@ def create_mapping_rules(**kwargs) -> None:
             status=StageStatusType.COMPLETE,
             details="Successfully (re-)created mapping rules for all existing concepts",
         )
-        return result
+        if AIRFLOW_DEBUG_MODE == "true":
+            return
+        # Clean up if not in debug mode
+        pg_hook.run(
+            """
+            DROP TABLE IF EXISTS temp_existing_concepts_%(table_id)s;
+            DROP TABLE IF EXISTS temp_standard_concepts_%(table_id)s;
+            DROP TABLE IF EXISTS temp_reuse_concepts_%(table_id)s;
+            """,
+            parameters={"table_id": table_id},
+        )
+
     except Exception as e:
         logging.error(f"Database error in create_mapping_rules: {str(e)}")
         update_job_status(

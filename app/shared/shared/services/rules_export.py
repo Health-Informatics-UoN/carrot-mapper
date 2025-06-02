@@ -17,6 +17,7 @@ from shared.mapping.models import (
     ScanReportTable,
     ScanReportValue,
 )
+from shared.enums import ContentTypeModel
 
 
 class NonStandardConceptMapsToSelf(Exception):
@@ -68,7 +69,9 @@ def get_mapping_rules_list(
         )
 
     # get all the ids for all ScanReportValues that are used (have been mapped with a concept)
-    scanreportvalue_content_type = ContentType.objects.get_for_model(ScanReportValue)
+    scanreportvalue_content_type = ContentType.objects.get(
+        model=ContentTypeModel.SCAN_REPORT_VALUE.value
+    )
     scan_report_values_with_scan_report_concepts = [
         obj.object_id
         for obj in ScanReportConcept.objects.filter(
