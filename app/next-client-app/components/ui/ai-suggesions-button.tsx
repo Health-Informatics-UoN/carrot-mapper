@@ -139,3 +139,11 @@ export function AISuggestionsButton() {
     </>
   );
 }
+
+// TODO:
+// 1. Add a loading state to the button (Use Suspense).
+// 2. Try to use Portals to display the tooltip (Use React Portals).
+// 3. Make the component pure when fetching the AI Suggestions (side effects)
+// 4. Trigger apply button to use the suggestion and change the concept code (make it as a state hook). 
+// 5. Add error handling (probably an error boundary). 
+// 6. Add error handling for the API call.
