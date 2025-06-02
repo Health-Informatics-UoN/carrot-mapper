@@ -93,8 +93,8 @@ jobs:
         id: deploy-airflow-webserver-dev
         uses: azure/webapps-deploy@v2
         with:
-          app-name: ${{ vars.AIRFLOW_WEBSERVER_NAME }}
-          publish-profile: ${{ secrets.AIRFLOW_WEBSERVER_PUBLISH_PROFILE }}
+          app-name: ${{ vars.AIRFLOW_WEBSERVER_NAME_TEST }}
+          publish-profile: ${{ secrets.AIRFLOW_WEBSERVER_PUBLISH_PROFILE_TEST }}
           images: "${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/airflow-webserver:${{ github.sha }}"
 
   # Deploy Airflow Scheduler Dev
