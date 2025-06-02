@@ -256,6 +256,7 @@ class ScanReportTable(BaseModel):
         blank=True,
         related_name="date_event",
     )
+    trigger_reuse = models.BooleanField(default=True)
 
     class Meta:
         app_label = "mapping"
