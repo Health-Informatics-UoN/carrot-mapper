@@ -7,16 +7,20 @@ import { RulesButton } from "../mapping_rules/rules-buttons";
 import { getScanReport } from "@/api/scanreports";
 
 interface SummaryProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
-  searchParams?: FilterParameters;
+  }>;
+  searchParams?: Promise<FilterParameters>;
 }
 
-export default async function SummaryViewDialog({
-  params: { id },
-  searchParams,
-}: SummaryProps) {
+export default async function SummaryViewDialog(props: SummaryProps) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
+
+  const {
+    id
+  } = params;
+
   const defaultPageSize = 20;
   const defaultParams = {
     p: 1,

@@ -9,14 +9,18 @@ import { Forbidden } from "@/components/core/Forbidden";
 import { notFound } from "next/navigation";
 
 interface ScanReportDetailsProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
-export default async function ScanreportDetails({
-  params: { id },
-}: ScanReportDetailsProps) {
+export default async function ScanreportDetails(props: ScanReportDetailsProps) {
+  const params = await props.params;
+
+  const {
+    id
+  } = params;
+
   const scanreport = await getScanReport(id);
   const datasetList = await getDatasetList();
   const users = await getDataUsers();

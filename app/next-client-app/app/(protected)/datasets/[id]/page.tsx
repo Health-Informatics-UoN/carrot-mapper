@@ -7,16 +7,20 @@ import { ScanReportsTableFilter } from "@/components/scanreports/ScanReportsTabl
 import { FilterParameters } from "@/types/filter";
 
 interface DataSetListProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
-  searchParams?: { status__in: string } & FilterParameters;
+  }>;
+  searchParams?: Promise<{ status__in: string } & FilterParameters>;
 }
 
-export default async function DatasetSRList({
-  params: { id },
-  searchParams,
-}: DataSetListProps) {
+export default async function DatasetSRList(props: DataSetListProps) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
+
+  const {
+    id
+  } = params;
+
   const defaultParams = {
     hidden: false,
     page_size: 10,
