@@ -1,18 +1,22 @@
 "use client";
 
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { updateScanReportTable } from "@/api/scanreports";
 import { Save } from "lucide-react";
 import { toast } from "sonner";
 import { FormDataFilter } from "../form-components/FormikUtils";
 import { Form, Formik } from "formik";
-import { Tooltips } from "../core/Tooltips";
 import { FormikSelect } from "../form-components/FormikSelect";
+import { Switch } from "../ui/switch";
+import { Label } from "../ui/label";
+import { Tooltips } from "../core/Tooltips";
 import { useRouter } from "next/navigation";
 
 interface FormData {
   personId: number | null;
   dateEvent: number | null;
+  triggerReuse: boolean;
 }
 
 export function ScanReportTableUpdateForm({
@@ -28,6 +32,7 @@ export function ScanReportTableUpdateForm({
   personId: ScanReportField;
   dateEvent: ScanReportField;
 }) {
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const router = useRouter();
   const canUpdate =
     permissions.includes("CanEdit") || permissions.includes("CanAdmin");
@@ -41,6 +46,7 @@ export function ScanReportTableUpdateForm({
     const submittingData = {
       person_id: data.personId !== 0 ? data.personId : null,
       date_event: data.dateEvent !== 0 ? data.dateEvent : null,
+      trigger_reuse: data.triggerReuse,
     };
 
     const response = await updateScanReportTable(
@@ -63,12 +69,13 @@ export function ScanReportTableUpdateForm({
       initialValues={{
         dateEvent: initialDateEvent[0].value,
         personId: initialPersonId[0].value,
+        triggerReuse: scanreportTable.trigger_reuse,
       }}
       onSubmit={(data) => {
         handleSubmit(data);
       }}
     >
-      {({ handleSubmit }) => (
+      {({ handleSubmit, values, setFieldValue }) => (
         <Form className="w-full" onSubmit={handleSubmit}>
           <div className="flex flex-col gap-3 text-lg">
             <div className="flex flex-col gap-2">
@@ -118,6 +125,28 @@ export function ScanReportTableUpdateForm({
                 content="You must be the author of the scan report or an admin of the parent dataset
                     to update the details of this scan report table."
               />
+            </div>
+
+            <div className="flex gap-2 mt-2">
+              <h3 className="flex">
+                Do you want to trigger the reuse of existing concepts?
+                <Tooltips
+                  content="Concepts added to other scan reports which has the same
+                      parent dataset with this scan report will be reused, based
+                      on the matching value and field. This feature may make the
+                      auto mapping process longer to run."
+                />
+              </h3>
+              <Switch
+                checked={values.triggerReuse}
+                onCheckedChange={(checked) => {
+                  setFieldValue("triggerReuse", checked);
+                }}
+                disabled={!canUpdate}
+              />
+              <Label className="text-lg">
+                {values.triggerReuse === true ? "YES" : "NO"}
+              </Label>
             </div>
           </div>
         </Form>

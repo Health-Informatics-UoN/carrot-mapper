@@ -243,10 +243,10 @@ def create_reusing_concepts(**kwargs):
 
     validated_params = pull_validated_params(kwargs, "validate_params_auto_mapping")
     trigger_reuse_concepts = validated_params["trigger_reuse_concepts"]
+    scan_report_id = validated_params["scan_report_id"]
+    table_id = validated_params["table_id"]
 
     if trigger_reuse_concepts:
-        table_id = validated_params["table_id"]
-        scan_report_id = validated_params["scan_report_id"]
         #  Find object ids for reusing concepts
         try:
             pg_hook.run(
