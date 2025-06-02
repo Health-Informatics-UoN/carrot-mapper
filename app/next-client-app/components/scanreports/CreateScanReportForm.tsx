@@ -120,7 +120,7 @@ export function CreateScanReportForm({
                 <Input
                   onChange={handleChange}
                   name="name"
-                  className="text-lg text-carrot"
+                  className="text-lg"
                   required
                 />
               </div>
@@ -244,7 +244,7 @@ export function CreateScanReportForm({
                 <h3 className="flex">
                   <div className="flex items-center gap-2">
                     WhiteRabbit Scan Report{" "}
-                    <span className="text-gray-500 text-sm">(.xlsx file)</span>
+                    <span className="text-muted-foreground text-sm">(.xlsx file)</span>
                   </div>
                   <Tooltips
                     content="Scan Report file generated from White Rabbit application."
@@ -273,7 +273,7 @@ export function CreateScanReportForm({
                 <h3 className="flex">
                   <div className="flex items-center gap-2">
                     Data Dictionary{" "}
-                    <span className="text-gray-500 text-sm">
+                    <span className="text-muted-foreground text-sm">
                       (.csv file, optional)
                     </span>
                   </div>
