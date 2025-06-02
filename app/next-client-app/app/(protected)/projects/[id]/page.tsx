@@ -7,16 +7,20 @@ import { getDataSets } from "@/api/datasets";
 import { columns } from "../../datasets/columns";
 
 interface ProjectDetailProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
-  searchParams?: { status__in: string } & FilterParameters;
+  }>;
+  searchParams?: Promise<{ status__in: string } & FilterParameters>;
 }
 
-export default async function ProjectDetail({
-  params: { id },
-  searchParams,
-}: ProjectDetailProps) {
+export default async function ProjectDetail(props: ProjectDetailProps) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
+
+  const {
+    id
+  } = params;
+
   const defaultParams = {
     hidden: false,
     page_size: 10,

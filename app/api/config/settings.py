@@ -76,6 +76,7 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt",
     "allauth",
     "allauth.account",
+    "allauth.socialaccount",
     "dj_rest_auth",
     "dj_rest_auth.registration",
     "shared",
@@ -234,6 +235,7 @@ WORKERS_RULES_EXPORT_NAME = os.environ.get(
 )
 WORKERS_UPLOAD_NAME = os.environ.get("WORKERS_UPLOAD_NAME", "upload-reports-queue")
 RULES_QUEUE_NAME = os.environ.get("RULES_QUEUE_NAME", "rules-queue")
+
 
 # Auth
 
