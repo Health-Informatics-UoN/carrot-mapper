@@ -31,6 +31,8 @@ const request = async <T>(url: string, options: RequestOptions = {}) => {
   });
   const contentType = response.headers.get("Content-Type");
 
+  console.log(response);
+
   if (!response.ok) {
     let errorMessage = "An error occurred";
     if (contentType && contentType.includes("application/json")) {

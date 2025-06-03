@@ -1,5 +1,5 @@
-import React, { lazy } from "react";
-import { deleteConcept } from "@/api/concepts";
+import React, { lazy, useOptimistic } from "react";
+import { deleteConceptV3 } from "@/api/concepts";
 import { Button } from "@/components/ui/button";
 import { ApiError } from "@/lib/api/error";
 import { Cross2Icon } from "@radix-ui/react-icons";
@@ -9,18 +9,30 @@ import { Tooltip } from "react-tooltip";
 const LazyBadge = lazy(() =>
   import("@/components/ui/badge").then((module) => ({ default: module.Badge })),
 );
-// Using react.memo and react.lazy to prevent loading unnecessary tags
-export const ConceptTagsV3 = React.memo(function ConceptTagsV3({
+export function ConceptTagsV3({
   concepts,
-  deleteSR,
+  scanReportId,
+  tableId,
+  fieldId,
 }: {
   concepts: ScanReportConceptV3[];
-  deleteSR: any;
+  scanReportId: string;
+  tableId: string;
+  fieldId: string;
 }) {
+  const [optimisticConcepts, setOptimisticConcepts] = useOptimistic(
+    concepts,
+    (state, conceptIdToDelete: number) =>
+      state.filter((concept) => concept.id !== conceptIdToDelete),
+  );
+
   const handleDelete = async (conceptId: number) => {
     try {
-      await deleteConcept(conceptId);
-      deleteSR(conceptId);
+      setOptimisticConcepts(conceptId);
+      await deleteConceptV3(
+        conceptId,
+        `/scanreports/${scanReportId}/tables/${tableId}/fields/${fieldId}/beta`,
+      );
       toast.success("Concept Id Deleted");
     } catch (error) {
       const errorObj = JSON.parse((error as ApiError).message);
@@ -31,9 +43,9 @@ export const ConceptTagsV3 = React.memo(function ConceptTagsV3({
     }
   };
 
-  return concepts && concepts.length > 0 ? (
+  return optimisticConcepts && optimisticConcepts.length > 0 ? (
     <div className="flex flex-col items-start w-[250px]">
-      {concepts.map((concept) => (
+      {optimisticConcepts.map((concept) => (
         <a
           key={concept.id}
           data-tooltip-id="badge-tooltip"
@@ -79,4 +91,4 @@ export const ConceptTagsV3 = React.memo(function ConceptTagsV3({
   ) : (
     <></>
   );
-});
+}

@@ -1,6 +1,7 @@
 "use server";
 import request from "@/lib/api/request";
 import { fetchAllPages } from "@/lib/api/utils";
+import { revalidatePath } from "next/cache";
 
 const fetchKeys = {
   conceptFilter: (filter: string) =>
@@ -56,4 +57,14 @@ export async function deleteConcept(conceptId: number) {
       "Content-type": "application/json",
     },
   });
+}
+
+export async function deleteConceptV3(conceptId: number, path: string) {
+  await request(fetchKeys.deleteConcept(conceptId), {
+    method: "DELETE",
+    headers: {
+      "Content-type": "application/json",
+    },
+  });
+  revalidatePath(path);
 }

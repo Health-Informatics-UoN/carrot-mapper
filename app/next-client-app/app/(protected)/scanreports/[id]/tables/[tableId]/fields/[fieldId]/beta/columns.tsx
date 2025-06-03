@@ -67,7 +67,12 @@ export const columns = (
       const { concepts } = row.original;
       return (
         <Suspense fallback={<Skeleton className="h-5 w-[250px]" />}>
-          <ConceptTagsV3 concepts={concepts} deleteSR={() => {}} />
+          <ConceptTagsV3
+            concepts={concepts}
+            scanReportId={"1"}
+            tableId={tableId}
+            fieldId={row.scan_report_field}
+          />
         </Suspense>
       );
     },
