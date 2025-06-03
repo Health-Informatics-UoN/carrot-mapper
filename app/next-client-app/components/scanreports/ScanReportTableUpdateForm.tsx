@@ -131,8 +131,8 @@ export function ScanReportTableUpdateForm({
                 <h3 className="flex">
                   Do you want to trigger the reuse of existing concepts?
                   <Tooltips
-                    content="Concepts added to other scan reports which has the same
-                      parent dataset with this scan report will be reused, based
+                    content="If YES, concepts added to other scan reports which are in same
+                      parent dataset will be reused, based
                       on the matching value and field. This feature may make the
                       auto mapping process longer to run."
                   />
