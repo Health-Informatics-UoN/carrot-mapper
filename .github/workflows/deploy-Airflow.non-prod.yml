@@ -95,7 +95,7 @@ jobs:
         with:
           app-name: ${{ vars.AIRFLOW_WEBSERVER_NAME_TEST }}
           publish-profile: ${{ secrets.AIRFLOW_WEBSERVER_PUBLISH_PROFILE_TEST }}
-          images: ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/airflow-webserver:latest
+          images: ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/airflow-webserver:${{ github.sha }}
 
   # Deploy Airflow Scheduler Dev
   deploy-scheduler-dev:
@@ -114,7 +114,7 @@ jobs:
         with:
           app-name: ${{ vars.AIRFLOW_SCHEDULER_NAME_TEST }}
           publish-profile: ${{ secrets.AIRFLOW_SCHEDULER_PUBLISH_PROFILE_TEST }}
-          images: ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/airflow-scheduler:latest
+          images: ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/airflow-scheduler:${{ github.sha }}
 
   # # Deploy Airflow Webserver Test
   # deploy-webserver-test:
