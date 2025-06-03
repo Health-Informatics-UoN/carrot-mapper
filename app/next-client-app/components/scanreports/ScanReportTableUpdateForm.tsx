@@ -126,28 +126,29 @@ export function ScanReportTableUpdateForm({
                     to update the details of this scan report table."
               />
             </div>
-
-            <div className="flex gap-2 mt-2">
-              <h3 className="flex">
-                Do you want to trigger the reuse of existing concepts?
-                <Tooltips
-                  content="Concepts added to other scan reports which has the same
+            {process.env.NEXT_PUBLIC_ENABLE_REUSE_TRIGGER_OPTION == "true" && (
+              <div className="flex gap-2 mt-2">
+                <h3 className="flex">
+                  Do you want to trigger the reuse of existing concepts?
+                  <Tooltips
+                    content="Concepts added to other scan reports which has the same
                       parent dataset with this scan report will be reused, based
                       on the matching value and field. This feature may make the
                       auto mapping process longer to run."
+                  />
+                </h3>
+                <Switch
+                  checked={values.triggerReuse}
+                  onCheckedChange={(checked) => {
+                    setFieldValue("triggerReuse", checked);
+                  }}
+                  disabled={!canUpdate}
                 />
-              </h3>
-              <Switch
-                checked={values.triggerReuse}
-                onCheckedChange={(checked) => {
-                  setFieldValue("triggerReuse", checked);
-                }}
-                disabled={!canUpdate}
-              />
-              <Label className="text-lg">
-                {values.triggerReuse === true ? "YES" : "NO"}
-              </Label>
-            </div>
+                <Label className="text-lg">
+                  {values.triggerReuse === true ? "YES" : "NO"}
+                </Label>
+              </div>
+            )}
           </div>
         </Form>
       )}
