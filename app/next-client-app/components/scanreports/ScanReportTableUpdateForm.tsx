@@ -1,6 +1,5 @@
 "use client";
 
-import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { updateScanReportTable } from "@/api/scanreports";
 import { Save } from "lucide-react";
@@ -32,7 +31,6 @@ export function ScanReportTableUpdateForm({
   personId: ScanReportField;
   dateEvent: ScanReportField;
 }) {
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const router = useRouter();
   const canUpdate =
     permissions.includes("CanEdit") || permissions.includes("CanAdmin");

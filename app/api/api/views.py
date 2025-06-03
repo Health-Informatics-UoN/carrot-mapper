@@ -665,7 +665,6 @@ class ScanReportTableDetailV2(
             scan_report=scan_report_instance,
             table=instance,
             data_dictionary_name=data_dictionary_name,
-            # always trigger reuse concepts for now
             trigger_reuse_concepts=instance.trigger_reuse,
         )
 
