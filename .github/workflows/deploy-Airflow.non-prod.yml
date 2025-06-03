@@ -93,8 +93,8 @@ jobs:
         id: deploy-airflow-webserver-dev
         uses: azure/webapps-deploy@v2
         with:
-          app-name: ${{ vars.AIRFLOW_WEBSERVER_NAME_TEST }}
-          publish-profile: ${{ secrets.AIRFLOW_WEBSERVER_PUBLISH_PROFILE_TEST }}
+          app-name: ${{ vars.AIRFLOW_WEBSERVER_NAME }}
+          publish-profile: ${{ secrets.AIRFLOW_WEBSERVER_PUBLISH_PROFILE }}
           images: ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/airflow-webserver:${{ github.sha }}
 
   # Deploy Airflow Scheduler Dev
@@ -112,44 +112,44 @@ jobs:
         id: deploy-airflow-scheduler-dev
         uses: azure/webapps-deploy@v2
         with:
-          app-name: ${{ vars.AIRFLOW_SCHEDULER_NAME_TEST }}
-          publish-profile: ${{ secrets.AIRFLOW_SCHEDULER_PUBLISH_PROFILE_TEST }}
+          app-name: ${{ vars.AIRFLOW_SCHEDULER_NAME }}
+          publish-profile: ${{ secrets.AIRFLOW_SCHEDULER_PUBLISH_PROFILE }}
           images: ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/airflow-scheduler:${{ github.sha }}
 
-  # # Deploy Airflow Webserver Test
-  # deploy-webserver-test:
-  #   runs-on: ubuntu-latest
-  #   permissions:
-  #     contents: read
-  #   needs: [deploy-webserver-dev]
-  #   environment:
-  #     name: "test"
-  #     url: ${{ steps.deploy-airflow-webserver-test.outputs.webapp-url }}
+  # Deploy Airflow Webserver Test
+  deploy-webserver-test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    needs: [deploy-webserver-dev]
+    environment:
+      name: "test"
+      url: ${{ steps.deploy-airflow-webserver-test.outputs.webapp-url }}
 
-  #   steps:
-  #     - name: Deploy to Azure Web App
-  #       id: deploy-airflow-webserver-test
-  #       uses: azure/webapps-deploy@v2
-  #       with:
-  #         app-name: ${{ vars.AIRFLOW_WEBSERVER_NAME_TEST }}
-  #         publish-profile: ${{ secrets.AIRFLOW_WEBSERVER_PUBLISH_PROFILE_TEST }}
-  #         images: "${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/airflow-webserver:${{ github.sha }}"
+    steps:
+      - name: Deploy to Azure Web App
+        id: deploy-airflow-webserver-test
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: ${{ vars.AIRFLOW_WEBSERVER_NAME }}
+          publish-profile: ${{ secrets.AIRFLOW_WEBSERVER_PUBLISH_PROFILE }}
+          images: ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/airflow-webserver:${{ github.sha }}
 
-  # # Deploy Airflow Scheduler Test
-  # deploy-scheduler-test:
-  #   runs-on: ubuntu-latest
-  #   permissions:
-  #     contents: read
-  #   needs: [deploy-scheduler-dev]
-  #   environment:
-  #     name: "test"
-  #     url: ${{ steps.deploy-airflow-scheduler-test.outputs.webapp-url }}
+  # Deploy Airflow Scheduler Test
+  deploy-scheduler-test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    needs: [deploy-scheduler-dev]
+    environment:
+      name: "test"
+      url: ${{ steps.deploy-airflow-scheduler-test.outputs.webapp-url }}
 
-  #   steps:
-  #     - name: Deploy to Azure Web App
-  #       id: deploy-airflow-scheduler-test
-  #       uses: azure/webapps-deploy@v2
-  #       with:
-  #         app-name: ${{ vars.AIRFLOW_SCHEDULER_NAME }}
-  #         publish-profile: ${{ secrets.AIRFLOW_SCHEDULER_PUBLISH_PROFILE }}
-  #         images: "${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/airflow-scheduler:${{ github.sha }}"
+    steps:
+      - name: Deploy to Azure Web App
+        id: deploy-airflow-scheduler-test
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: ${{ vars.AIRFLOW_SCHEDULER_NAME }}
+          publish-profile: ${{ secrets.AIRFLOW_SCHEDULER_PUBLISH_PROFILE }}
+          images: ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/airflow-scheduler:${{ github.sha }}
