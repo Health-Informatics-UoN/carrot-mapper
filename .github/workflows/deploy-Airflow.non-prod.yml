@@ -8,7 +8,7 @@ on:
 
 env:
   app-name: carrot
-  repo-owner: ${{ github.repository_owner }}
+  repo-owner: health-informatics-uon
   registry: ghcr.io
 
 jobs:
@@ -78,24 +78,24 @@ jobs:
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.scheduler_meta.outputs.tags }}
 
-  # # Deploy Airflow Webserver Dev
-  # deploy-webserver-dev:
-  #   runs-on: ubuntu-latest
-  #   permissions:
-  #     contents: read
-  #   needs: [build-and-publish-webserver-scheduler]
-  #   environment:
-  #     name: "dev"
-  #     url: ${{ steps.deploy-airflow-webserver-dev.outputs.webapp-url }}
+  # Deploy Airflow Webserver Dev
+  deploy-webserver-dev:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    needs: [build-and-publish-webserver-scheduler]
+    environment:
+      name: "dev"
+      url: ${{ steps.deploy-airflow-webserver-dev.outputs.webapp-url }}
 
-  #   steps:
-  #     - name: Deploy to Azure Web App
-  #       id: deploy-airflow-webserver-dev
-  #       uses: azure/webapps-deploy@v2
-  #       with:
-  #         app-name: ${{ vars.AIRFLOW_WEBSERVER_NAME_TEST }}
-  #         publish-profile: ${{ secrets.AIRFLOW_WEBSERVER_PUBLISH_PROFILE_TEST }}
-  #         images: "${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/airflow-webserver:${{ github.sha }}"
+    steps:
+      - name: Deploy to Azure Web App
+        id: deploy-airflow-webserver-dev
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: ${{ vars.AIRFLOW_WEBSERVER_NAME_TEST }}
+          publish-profile: ${{ secrets.AIRFLOW_WEBSERVER_PUBLISH_PROFILE_TEST }}
+          images: ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/airflow-webserver:latest
 
   # Deploy Airflow Scheduler Dev
   deploy-scheduler-dev:
@@ -114,7 +114,7 @@ jobs:
         with:
           app-name: ${{ vars.AIRFLOW_SCHEDULER_NAME_TEST }}
           publish-profile: ${{ secrets.AIRFLOW_SCHEDULER_PUBLISH_PROFILE_TEST }}
-          images: ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/airflow-scheduler:${{ github.sha }}
+          images: ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/airflow-scheduler:latest
 
   # # Deploy Airflow Webserver Test
   # deploy-webserver-test:
