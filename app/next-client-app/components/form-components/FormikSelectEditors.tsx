@@ -90,7 +90,6 @@ const CustomSelect = ({
         singleValue: (base) => ({
           ...base,
           fontSize: "17px",
-          color: "#F98109",
         }),
       }}
     />
