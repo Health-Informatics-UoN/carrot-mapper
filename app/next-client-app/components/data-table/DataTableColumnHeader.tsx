@@ -2,14 +2,14 @@ import {
   ArrowDownIcon,
   ArrowUpIcon,
   CaretSortIcon,
-  EyeNoneIcon,
+  EyeNoneIcon
 } from "@radix-ui/react-icons";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-  DropdownMenuTrigger,
+  DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { Column } from "@tanstack/react-table";
@@ -20,7 +20,7 @@ import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
-  TooltipTrigger,
+  TooltipTrigger
 } from "../ui/tooltip";
 
 interface DataTableColumnHeaderProps<TData, TValue>
@@ -36,7 +36,7 @@ export function DataTableColumnHeader<TData, TValue>({
   title,
   sortName = "",
   className,
-  description,
+  description
 }: DataTableColumnHeaderProps<TData, TValue>) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -48,7 +48,7 @@ export function DataTableColumnHeader<TData, TValue>({
           <TooltipTrigger asChild>
             <div className={cn(className)}>{title}</div>
           </TooltipTrigger>
-          <TooltipContent className="bg-black text-white">
+          <TooltipContent>
             <p>{description}</p>
           </TooltipContent>
         </Tooltip>
@@ -82,27 +82,27 @@ export function DataTableColumnHeader<TData, TValue>({
             <span>{title}</span>
             {getColumnSortState() ? (
               getColumnSortState().type === "desc" ? (
-                <ArrowDownIcon className="ml-2 h-4 w-4" />
+                <ArrowDownIcon className="ml-2 h-4 w-4 text-muted-foreground" />
               ) : getColumnSortState().type === "asc" ? (
-                <ArrowUpIcon className="ml-2 h-4 w-4" />
+                <ArrowUpIcon className="ml-2 h-4 w-4 text-muted-foreground" />
               ) : (
-                <CaretSortIcon className="ml-2 h-4 w-4" />
+                <CaretSortIcon className="ml-2 h-4 w-4 text-muted-foreground" />
               )
             ) : null}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start">
           <DropdownMenuItem onClick={() => sortColumn(sortName)}>
-            <ArrowUpIcon className="mr-2 h-3.5 w-3.5 text-muted-foreground/70" />
+            <ArrowUpIcon className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
             Asc
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => sortColumn(`-${sortName}`)}>
-            <ArrowDownIcon className="mr-2 h-3.5 w-3.5 text-muted-foreground/70" />
+            <ArrowDownIcon className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
             Desc
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={() => column.toggleVisibility(false)}>
-            <EyeNoneIcon className="mr-2 h-3.5 w-3.5 text-muted-foreground/70" />
+            <EyeNoneIcon className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
             Hide
           </DropdownMenuItem>
         </DropdownMenuContent>

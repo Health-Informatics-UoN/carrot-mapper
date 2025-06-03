@@ -30,7 +30,7 @@ export default async function DataSets(props: DataSetListProps) {
   return (
     <div className="space-y-2">
       <div className="flex font-semibold text-xl items-center">
-        <Database className="mr-2 text-blue-700" />
+        <Database className="mr-2 text-primary" />
         <h2>Datasets</h2>
       </div>
       <div className="my-3 justify-between">

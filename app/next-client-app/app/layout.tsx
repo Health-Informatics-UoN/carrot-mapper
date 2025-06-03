@@ -59,10 +59,10 @@ export default async function RootLayout({
         <Toaster
           toastOptions={{
             classNames: {
-              error: "bg-red-700 text-white",
-              success: "bg-green-700 text-white",
-              warning: "text-yellow-400",
-              info: "bg-blue-800 text-white",
+              error: "bg-destructive text-destructive-foreground",
+              success: "bg-success text-success-foreground",
+              warning: "bg-warning text-warning-foreground",
+              info: "bg-popover text-popover-foreground",
             },
           }}
         />

@@ -17,7 +17,7 @@ interface LayoutProps {
 
 export default async function DatasetLayout({
   params,
-  children,
+  children
 }: Readonly<LayoutProps>) {
   const { id } = await params;
 

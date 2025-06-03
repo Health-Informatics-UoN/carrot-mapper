@@ -22,19 +22,17 @@ export default async function Projects(props: ProjectListProps) {
   const filter = <DataTableFilter filter="name" />;
 
   return (
-    <div className="space-y-2">
-      <div className="flex font-semibold text-xl items-center">
-        <Folders className="mr-2 text-orange-700" />
+    <div>
+      <div className="flex items-center font-semibold text-xl">
+        <Folders className="mr-2" />
         <h2>Projects</h2>
       </div>
-      <div>
-        <DataTable
-          columns={columns}
-          data={projects.results}
-          count={projects.count}
-          Filter={filter}
-        />
-      </div>
+      <DataTable
+        columns={columns}
+        data={projects.results}
+        count={projects.count}
+        Filter={filter}
+      />
     </div>
   );
 }

@@ -25,9 +25,9 @@ export default async function ScanReports(props: ScanReportsProps) {
   const filter = <ScanReportsTableFilter filter="dataset" filterText="name" />;
 
   return (
-    <div className="space-y-2">
-      <div className="flex font-semibold text-xl items-center">
-        <FileScan className="mr-2 text-green-700" />
+    <div>
+      <div className="flex items-center font-semibold text-xl">
+        <FileScan className="mr-2" />
         <h2>Scan Reports</h2>
       </div>
 

@@ -8,16 +8,7 @@ const config = {
     "./app/**/*.{ts,tsx}",
     "./src/**/*.{ts,tsx}",
   ],
-  safelist: [
-    // Only keep classes you use dynamically, or remove entirely if not needed
-    "text-blue-500",
-    "text-green-600",
-    "text-red-900",
-    "text-orange-500",
-    "text-orange-600",
-    "bg-orange-500",
-    "bg-orange-600",
-  ],
+  safelist: [],
   prefix: "",
   theme: {
     container: {
@@ -42,7 +33,6 @@ const config = {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
       },
-      // No custom colors! Use Tailwind/shadcn default palette.
     },
   },
   plugins: [require("tailwindcss-animate")],

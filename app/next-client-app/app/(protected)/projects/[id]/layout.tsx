@@ -39,16 +39,16 @@ export default async function DatasetLayout({ params, children }: LayoutProps) {
   return (
     <div className="space-y-2">
       <div className="flex font-semibold text-xl items-center space-x-2">
-        <Folders className="text-gray-500" />
+        <Folders />
         <Link href={`/projects`}>
-          <h2 className="text-gray-500 dark:text-gray-400">Projects</h2>
+          <h2>Projects</h2>
         </Link>
-        <h2 className="text-gray-500 dark:text-gray-400">{"/"}</h2>
-        <Folders className="text-orange-700" />
+        <h2>{"/"}</h2>
+        <Folders />
         <h2>{project?.name}</h2>
       </div>
 
-      <div className="flex flex-col md:flex-row md:items-center text-sm space-y-2 md:space-y-0 divide-y md:divide-y-0 md:divide-x divide-gray-300">
+      <div className="flex flex-col md:flex-row md:items-center text-sm space-y-2 md:space-y-0 divide-y md:divide-y-0 md:divide-x">
         <InfoItem
           label="Created"
           value={format(createdDate, "MMM dd, yyyy h:mm a")}
