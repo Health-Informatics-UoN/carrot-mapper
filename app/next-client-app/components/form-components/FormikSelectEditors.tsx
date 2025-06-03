@@ -90,7 +90,7 @@ const CustomSelect = ({
         singleValue: (base) => ({
           ...base,
           fontSize: "17px",
-          color: `${config.theme.extend.colors.carrot.DEFAULT}`,
+          color: "#F98109",
         }),
       }}
     />
