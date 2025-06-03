@@ -8,7 +8,7 @@ on:
 
 env:
   app-name: carrot
-  repo-owner: ${{ github.repository_owner }}
+  repo-owner: health-informatics-uon
   registry: ghcr.io
 
 jobs:
@@ -95,7 +95,7 @@ jobs:
         with:
           app-name: ${{ vars.AIRFLOW_WEBSERVER_NAME }}
           publish-profile: ${{ secrets.AIRFLOW_WEBSERVER_PUBLISH_PROFILE }}
-          images: "${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/airflow-webserver:${{ github.sha }}"
+          images: ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/airflow-webserver:${{ github.sha }}
 
   # Deploy Airflow Scheduler Dev
   deploy-scheduler-dev:
@@ -114,7 +114,7 @@ jobs:
         with:
           app-name: ${{ vars.AIRFLOW_SCHEDULER_NAME }}
           publish-profile: ${{ secrets.AIRFLOW_SCHEDULER_PUBLISH_PROFILE }}
-          images: "${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/airflow-scheduler:${{ github.sha }}"
+          images: ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/airflow-scheduler:${{ github.sha }}
 
   # Deploy Airflow Webserver Test
   deploy-webserver-test:
@@ -133,7 +133,7 @@ jobs:
         with:
           app-name: ${{ vars.AIRFLOW_WEBSERVER_NAME }}
           publish-profile: ${{ secrets.AIRFLOW_WEBSERVER_PUBLISH_PROFILE }}
-          images: "${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/airflow-webserver:${{ github.sha }}"
+          images: ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/airflow-webserver:${{ github.sha }}
 
   # Deploy Airflow Scheduler Test
   deploy-scheduler-test:
@@ -152,4 +152,4 @@ jobs:
         with:
           app-name: ${{ vars.AIRFLOW_SCHEDULER_NAME }}
           publish-profile: ${{ secrets.AIRFLOW_SCHEDULER_PUBLISH_PROFILE }}
-          images: "${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/airflow-scheduler:${{ github.sha }}"
+          images: ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/airflow-scheduler:${{ github.sha }}
