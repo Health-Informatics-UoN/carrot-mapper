@@ -17,9 +17,7 @@ export default async function DatasetSRList(props: DataSetListProps) {
   const searchParams = await props.searchParams;
   const params = await props.params;
 
-  const {
-    id
-  } = params;
+  const { id } = params;
 
   const defaultParams = {
     hidden: false,
@@ -44,10 +42,20 @@ export default async function DatasetSRList(props: DataSetListProps) {
     >
       <TabsList>
         <a href="?hidden=false" className="h-full">
-          <TabsTrigger value="active">Active Reports</TabsTrigger>
+          <TabsTrigger
+            value="active"
+            className="border border-border bg-background text-foreground data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+          >
+            Active Reports
+          </TabsTrigger>
         </a>
         <a href="?hidden=true" className="h-full">
-          <TabsTrigger value="archived">Archived Reports</TabsTrigger>
+          <TabsTrigger
+            value="archived"
+            className="border border-border bg-background text-foreground data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+          >
+            Archived Reports
+          </TabsTrigger>
         </a>
       </TabsList>
       <TabsContent value="active">
