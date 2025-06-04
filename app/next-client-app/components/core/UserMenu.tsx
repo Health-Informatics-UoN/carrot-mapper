@@ -29,9 +29,12 @@ export async function UserMenu({ username }: { username?: string }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="dark:text-white">
+        <Button
+          variant="ghost"
+          className="group dark:text-white p-1 rounded-full"
+        >
           <Avatar>
-            <AvatarFallback className="dark:text-white bg-gray-200 dark:bg-gray-800">
+            <AvatarFallback className="dark:text-white bg-gray-200 dark:bg-gray-800 transition-colors">
               {initials}
             </AvatarFallback>
           </Avatar>

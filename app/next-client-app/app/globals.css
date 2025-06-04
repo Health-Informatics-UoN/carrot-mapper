@@ -19,3 +19,10 @@
   --muted: 217.2 32.6% 17.5%;
   --muted-foreground: 215 20.2% 65.1%;
 }
+
+/* Show shadcn/ui muted grey background on hover for all circular ghost buttons */
+button.rounded-full:hover,
+button.rounded-full:focus-visible {
+  background-color: hsl(var(--muted));
+  transition: background-color 0.2s;
+}
