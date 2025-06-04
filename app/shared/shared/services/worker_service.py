@@ -62,6 +62,7 @@ class AzureWorkerService(WorkerService):
             "scan_report_id": scan_report.pk,
             "table_id": table.pk,
             "data_dictionary_blob": data_dictionary_name,
+            "trigger_reuse_concepts": trigger_reuse_concepts,
         }
         trigger = f"/api/orchestrators/{self._workers_rules_name}?code={self._workers_rules_key}"
 

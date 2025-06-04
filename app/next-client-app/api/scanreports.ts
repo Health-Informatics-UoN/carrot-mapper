@@ -141,6 +141,7 @@ export async function getScanReportTable(
       date_event: null,
       permissions: [],
       jobs: [],
+      trigger_reuse: true,
     };
   }
 }
