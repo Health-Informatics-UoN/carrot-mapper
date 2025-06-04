@@ -53,7 +53,7 @@ export default async function DatasetLayout({
           <h2 className="text-muted-foreground">Datasets</h2>
         </Link>
         <h2 className="text-muted-foreground">{"/"}</h2>
-        <Database className="text-primary" />
+        <Database className="mr-2 text-blue-700" />
         <h2>{dataset.name}</h2>
       </div>
 

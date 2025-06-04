@@ -87,7 +87,7 @@ export default async function ScanReportLayout(
         <h2 className="text-muted-foreground">{"/"}</h2>
         <Link href={`/scanreports/${scanreport.id}`}>
           <h2 className="flex items-center">
-            <FileScan className="mr-2" />
+            <FileScan className="mr-2 text-green-700" />
             {scanreport.dataset}
           </h2>
         </Link>

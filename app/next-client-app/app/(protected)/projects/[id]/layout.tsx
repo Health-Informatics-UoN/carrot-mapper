@@ -44,7 +44,7 @@ export default async function DatasetLayout({ params, children }: LayoutProps) {
           <h2>Projects</h2>
         </Link>
         <h2>{"/"}</h2>
-        <Folders />
+        <Folders className="text-orange-700" />
         <h2>{project?.name}</h2>
       </div>
 
