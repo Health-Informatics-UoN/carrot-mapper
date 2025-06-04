@@ -22,7 +22,7 @@ export default async function DatasetSRList(props: DataSetListProps) {
   const defaultParams = {
     hidden: false,
     page_size: 10,
-    parent_dataset: id,
+    parent_dataset: id
   };
   const combinedParams = { ...defaultParams, ...searchParams };
 
@@ -42,20 +42,10 @@ export default async function DatasetSRList(props: DataSetListProps) {
     >
       <TabsList>
         <a href="?hidden=false" className="h-full">
-          <TabsTrigger
-            value="active"
-            className="border border-border bg-background text-foreground data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
-          >
-            Active Reports
-          </TabsTrigger>
+          <TabsTrigger value="active">Active Reports</TabsTrigger>
         </a>
         <a href="?hidden=true" className="h-full">
-          <TabsTrigger
-            value="archived"
-            className="border border-border bg-background text-foreground data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
-          >
-            Archived Reports
-          </TabsTrigger>
+          <TabsTrigger value="archived">Archived Reports</TabsTrigger>
         </a>
       </TabsList>
       <TabsContent value="active">

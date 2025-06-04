@@ -6,16 +6,16 @@ export const UploadStatusOptions = [
     color: "text-green-600 dark:text-green-600",
   },
   {
-    label: "Upload In Progress",
-    icon: "Loader2",
-    value: "IN_PROGRESS",
-    color: "text-orange-500 dark:text-orange-500",
-  },
-  {
     label: "Upload Failed",
     icon: "X",
     value: "FAILED",
     color: "text-red-500 dark:text-red-500",
+  },
+  {
+    label: "Upload In Progress",
+    icon: "Loader2",
+    value: "IN_PROGRESS",
+    color: "text-orange-500 dark:text-orange-500",
   },
 ];
 
