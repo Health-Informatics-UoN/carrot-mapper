@@ -62,6 +62,17 @@ button.rounded-full:focus-visible {
   color: hsl(var(--foreground));
 }
 
+.my-react-select__multi-value__remove {
+  color: #ef4444 !important; /* Tailwind's red-500 */
+  background: transparent !important;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.my-react-select__multi-value__remove:hover {
+  color: #b91c1c !important; /* Tailwind's red-700 for hover */
+  background: transparent !important;
+}
+
 .dark .my-react-select__option--is-focused {
   background-color: hsl(var(--muted)) !important;
   color: hsl(var(--foreground)) !important;
