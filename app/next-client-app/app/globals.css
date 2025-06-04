@@ -1,3 +1,17 @@
 @tailwind base;
 @tailwind utilities;
 @tailwind components;
+
+/* shadcn/ui color tokens for dialogs and backgrounds */
+:root {
+  --background: 0 0% 100%;
+  --foreground: 222.2 47.4% 11.2%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222.2 47.4% 11.2%;
+}
+.dark {
+  --background: 0 0% 7%;
+  --foreground: 210 40% 98%;
+  --popover: 224 71.4% 4.1%;
+  --popover-foreground: 210 40% 98%;
+}
