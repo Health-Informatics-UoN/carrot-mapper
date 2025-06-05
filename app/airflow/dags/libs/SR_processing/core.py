@@ -125,8 +125,8 @@ def process_and_create_scan_report_entries(**kwargs) -> None:
         try:
             # Prepare and execute each insert with RETURNING id to build table name and id pairs
             insert_sql = """
-                INSERT INTO mapping_scanreporttable (scan_report_id, name, created_at, updated_at)
-                VALUES (%(scan_report_id)s, %(table_name)s, NOW(), NOW())
+                INSERT INTO mapping_scanreporttable (scan_report_id, name, created_at, updated_at, trigger_reuse)
+                VALUES (%(scan_report_id)s, %(table_name)s, NOW(), NOW(), TRUE)
                 RETURNING id
             """
 
