@@ -16,6 +16,8 @@
   --destructive-foreground: 210 40% 98%; /* white */
   --warning: 38 92% 50%; /* amber-400 */
   --warning-foreground: 222.2 47.4% 11.2%; /* dark */
+  --accent: 240 4.8% 95.9%;
+  --accent-foreground: 240 10% 3.9%;
 }
 .dark {
   --background: 0 0% 7%;
@@ -30,6 +32,8 @@
   --destructive-foreground: 210 40% 98%;
   --warning: 38 92% 50%;
   --warning-foreground: 210 40% 98%;
+  --accent: 240 3.7% 15.9%;
+  --accent-foreground: 0 0% 98%;
 }
 
 /* Show shadcn/ui muted grey background on hover for all circular ghost buttons */
@@ -98,4 +102,11 @@ button.rounded-full:focus-visible {
 .avatar-initial {
   background-color: #f98109 !important;
   color: #fff !important;
+}
+
+.shadcn-dropdown-item {
+  @apply relative flex select-none items-center rounded-sm py-1.5 text-sm outline-none transition-colors
+    hover:bg-accent hover:text-accent-foreground
+    focus:bg-accent focus:text-accent-foreground
+    data-[disabled]:pointer-events-none data-[disabled]:opacity-50;
 }
