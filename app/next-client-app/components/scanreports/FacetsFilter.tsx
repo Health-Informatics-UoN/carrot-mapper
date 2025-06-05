@@ -12,12 +12,12 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-  CommandSeparator,
+  CommandSeparator
 } from "@/components/ui/command";
 import {
   Popover,
   PopoverContent,
-  PopoverTrigger,
+  PopoverTrigger
 } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
 import { Filter } from "lucide-react";
@@ -35,12 +35,12 @@ export function FacetsFilter<TData, TValue>({
   options,
   selectedOptions,
   handleSelect,
-  handleClear,
+  handleClear
 }: DataTableFacetedFilterProps<TData, TValue>) {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button variant="outline">
+        <Button variant="outline" className="hover:bg-muted transition-colors">
           <Filter className="mr-2 size-4" />
           {title}
           {selectedOptions && selectedOptions?.length > 0 && (
@@ -72,7 +72,10 @@ export function FacetsFilter<TData, TValue>({
                       <Badge
                         variant="secondary"
                         key={option.value}
-                        className={cn(option.color, "rounded-sm px-1 font-normal")}
+                        className={cn(
+                          option.color,
+                          "rounded-sm px-1 font-normal"
+                        )}
                       >
                         {option.label}
                       </Badge>
@@ -83,7 +86,10 @@ export function FacetsFilter<TData, TValue>({
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[12.5rem] p-0 bg-background text-foreground" align="start">
+      <PopoverContent
+        className="w-[12.5rem] p-0 bg-background text-foreground"
+        align="start"
+      >
         <Command>
           <CommandInput placeholder={title} />
           <CommandList>
