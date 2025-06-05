@@ -1,4 +1,6 @@
 /** @type {import('next').NextConfig} */
+const { makeEnvPublic } = require("next-runtime-env");
+makeEnvPublic("NEXT_SERVER_ACTION_BODY_SIZE_LIMIT");
 
 // Local BACKEND_ORIGIN="127.0.0.1:8000"
 // Allows for multiple allowedOrigins in one environment
