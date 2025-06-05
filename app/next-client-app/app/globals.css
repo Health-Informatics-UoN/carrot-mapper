@@ -94,3 +94,8 @@ button.rounded-full:focus-visible {
   background-color: hsl(var(--primary)) !important;
   color: hsl(var(--primary-foreground)) !important;
 }
+
+.avatar-initial {
+  background-color: #F98109 !important;
+  color: #fff !important; 
+}

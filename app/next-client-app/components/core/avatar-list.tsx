@@ -20,7 +20,7 @@ export function AvatarList({ members }: { members: User[] | [] }) {
             <Tooltip id="icon-tooltip" className="lg:hidden" openOnClick />
             <div
               key={index}
-              className="h-8 w-8 rounded-full border-2 border-background bg-primary text-primary-foreground flex text-sm items-center justify-center"
+              className="h-8 w-8 rounded-full border-2 border-background bg-primary flex text-sm items-center justify-center avatar-initial"
             >
               {name.charAt(0).toUpperCase()}
             </div>
