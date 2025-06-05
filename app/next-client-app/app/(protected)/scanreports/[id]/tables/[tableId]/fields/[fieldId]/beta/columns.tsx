@@ -69,7 +69,7 @@ export const columns = (
         <Suspense fallback={<Skeleton className="h-5 w-[250px]" />}>
           <ConceptTagsV3
             concepts={concepts}
-            scanReportId={"1"}
+            scanReportId={"11"}
             tableId={tableId}
             fieldId={row.scan_report_field}
           />
@@ -89,6 +89,8 @@ export const columns = (
           tableId={tableId}
           contentType="scanreportvalue"
           disabled={!canEdit}
+          scanReportId={"11"}
+          fieldId={row.scan_report_field}
         />
       );
     },

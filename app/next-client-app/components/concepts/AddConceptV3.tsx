@@ -1,5 +1,5 @@
 import {
-    addConcept,
+    addConceptV3,
   } from "@/api/concepts";
   import { Button } from "@/components/ui/button";
   import { Input } from "@/components/ui/input";
@@ -11,6 +11,8 @@ import {
     tableId: string;
     contentType: "scanreportvalue" | "scanreportfield";
     disabled: boolean;
+    scanReportId: string;
+    fieldId: string;
   }
   
   export default function AddConceptV3({
@@ -18,16 +20,18 @@ import {
     tableId,
     contentType,
     disabled,
+    scanReportId,
+    fieldId,
   }: AddConceptProps) {
     const handleSubmit = async (conceptCode: number) => {
       try {
-        const response = await addConcept({
+        const response = await addConceptV3({
           concept: conceptCode,
           object_id: rowId,
           content_type: contentType,
           creation_type: "M",
           table_id: tableId,
-        });
+        }, `/scanreports/${scanReportId}/tables/${tableId}/fields/${fieldId}/beta`);
   
         if (response) {
           toast.error(`Adding concept failed. ${response.errorMessage}`);

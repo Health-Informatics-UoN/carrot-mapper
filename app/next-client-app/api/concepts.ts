@@ -50,6 +50,22 @@ export async function addConcept(data: {}) {
   }
 }
 
+export async function addConceptV3(data: {}, path: string) {
+  try {
+    await request(fetchKeys.addConcept, {
+      method: "POST",
+      headers: {
+        "Content-type": "application/json",
+      },
+      body: JSON.stringify(data),
+    });
+    revalidatePath(path);
+  } catch (error: any) {
+    // Only return a response when there is an error
+    return { errorMessage: error.message };
+  }
+}
+
 export async function deleteConcept(conceptId: number) {
   await request(fetchKeys.deleteConcept(conceptId), {
     method: "DELETE",
