@@ -6,13 +6,16 @@ import { Save } from "lucide-react";
 import { toast } from "sonner";
 import { FormDataFilter } from "../form-components/FormikUtils";
 import { Form, Formik } from "formik";
-import { Tooltips } from "../core/Tooltips";
 import { FormikSelect } from "../form-components/FormikSelect";
+import { Label } from "../ui/label";
+import { Tooltips } from "../core/Tooltips";
 import { useRouter } from "next/navigation";
+import { Checkbox } from "../ui/checkbox";
 
 interface FormData {
   personId: number | null;
   dateEvent: number | null;
+  triggerReuse: boolean;
 }
 
 export function ScanReportTableUpdateForm({
@@ -41,6 +44,7 @@ export function ScanReportTableUpdateForm({
     const submittingData = {
       person_id: data.personId !== 0 ? data.personId : null,
       date_event: data.dateEvent !== 0 ? data.dateEvent : null,
+      trigger_reuse: data.triggerReuse,
     };
 
     const response = await updateScanReportTable(
@@ -63,12 +67,13 @@ export function ScanReportTableUpdateForm({
       initialValues={{
         dateEvent: initialDateEvent[0].value,
         personId: initialPersonId[0].value,
+        triggerReuse: scanreportTable.trigger_reuse,
       }}
       onSubmit={(data) => {
         handleSubmit(data);
       }}
     >
-      {({ handleSubmit }) => (
+      {({ handleSubmit, values, setFieldValue }) => (
         <Form className="w-full" onSubmit={handleSubmit}>
           <div className="flex flex-col gap-3 text-lg">
             <div className="flex flex-col gap-2">
@@ -105,7 +110,30 @@ export function ScanReportTableUpdateForm({
                 isDisabled={!canUpdate}
               />
             </div>
-
+            {process.env.NEXT_PUBLIC_ENABLE_REUSE_TRIGGER_OPTION == "true" && (
+              <div className="flex gap-2 mt-2 items-center">
+                <h3 className="flex">
+                  Do you want to trigger the reuse of existing concepts?
+                  <Tooltips
+                    content="If YES, concepts added to other scan reports which are in same
+                      parent dataset will be reused, based
+                      on the matching value and field. This feature may make the
+                      auto mapping process longer to run."
+                  />
+                </h3>
+                <Checkbox
+                  checked={values.triggerReuse}
+                  onCheckedChange={(checked) => {
+                    setFieldValue("triggerReuse", checked);
+                  }}
+                  disabled={!canUpdate}
+                  className="size-5"
+                />
+                <Label className="text-lg">
+                  {values.triggerReuse === true ? "YES" : "NO"}
+                </Label>
+              </div>
+            )}
             <div className="flex mt-3">
               <Button
                 type="submit"

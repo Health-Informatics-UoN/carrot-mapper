@@ -13,6 +13,18 @@ services:
     volumes:
       - db_data:/var/lib/postgresql/data
 
+  omop-lite:
+    image: ghcr.io/health-informatics-uon/omop-lite
+    volumes:
+      - ./vocabs:/vocabs
+    depends_on:
+      - db
+    environment:
+      - DB_PASSWORD=postgres
+      - DB_NAME=postgres
+      - SCHEMA_NAME=omop
+      - DATA_DIR=vocabs
+
   frontend:
     image: carrot-frontend
     build:
@@ -31,6 +43,7 @@ services:
       - NEXTAUTH_BACKEND_URL=http://api:8000/api/
       - NODE_ENV=development
       - WATCHPACK_POLLING=true
+      - NEXT_PUBLIC_ENABLE_REUSE_TRIGGER_OPTION=true
     volumes:
       - ./app/next-client-app:/app
       - /app/node_modules
@@ -38,18 +51,6 @@ services:
     depends_on:
       api:
         condition: service_healthy
-
-  omop-lite:
-    image: ghcr.io/health-informatics-uon/omop-lite
-    volumes:
-      - ./vocabs:/vocabs
-    depends_on:
-      - db
-    environment:
-      - DB_PASSWORD=postgres
-      - DB_NAME=postgres
-      - SCHEMA_NAME=omop
-      - DATA_DIR=vocabs
 
   api:
     image: carrot-backend
@@ -77,14 +78,13 @@ services:
       - WORKERS_RULES_EXPORT_NAME=rules-exports-queue
       - STORAGE_CONN_STRING=DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;TableEndpoint=http://azurite:10002/devstoreaccount1;
       - SIGNING_KEY=secret
-      - STORAGE_TYPE=${STORAGE_TYPE:-azure}
+      - STORAGE_TYPE=${STORAGE_TYPE:-minio}
       - MINIO_ENDPOINT=minio:9000
       - MINIO_ACCESS_KEY=minioadmin
       - MINIO_SECRET_KEY=minioadmin
-      # Choose `airflow` for testing and development of Airflow.
-      - WORKER_SERVICE_TYPE=airflow
+      - WORKER_SERVICE_TYPE=${WORKER_SERVICE_TYPE:-airflow}
       # TODO: update to API v2 when updating Airflow to 3.0.0
-      - AIRFLOW_BASE_URL=http://airflow-webserver:8081/api/v1/
+      - AIRFLOW_BASE_URL=http://airflow-webserver:8080/api/v1/
       - AIRFLOW_AUTO_MAPPING_DAG_ID=auto_mapping
       - AIRFLOW_SCAN_REPORT_PROCESSING_DAG_ID=scan_report_processing
       - AIRFLOW_RULES_EXPORT_DAG_ID=rules_export
@@ -110,6 +110,7 @@ services:
         condition: service_completed_successfully
 
   workers:
+    profiles: ["azure"]
     image: carrot-workers
     build:
       context: app
@@ -138,7 +139,7 @@ services:
       - DB_USER=postgres
       - DB_PASSWORD=postgres
       - PYTHONPATH=/home/site/wwwroot:/home/site/wwwroot/shared
-      - STORAGE_TYPE=${STORAGE_TYPE:-azure}
+      - STORAGE_TYPE=azure
       - MINIO_ENDPOINT=minio:9000
       - MINIO_ACCESS_KEY=minioadmin
       - MINIO_SECRET_KEY=minioadmin
@@ -148,10 +149,13 @@ services:
       # Mount the local secret to Docker container
       - ./app/workers/Secrets:/azure-functions-host/Secrets/
     depends_on:
-      - api
-      - azurite
+      azurite:
+        condition: service_started
+      api:
+        condition: service_healthy
 
   azurite:
+    profiles: ["azure"]
     image: mcr.microsoft.com/azure-storage/azurite
     restart: always
     ports:
@@ -164,9 +168,8 @@ services:
       - AZURITE_ACCOUNTS=devstoreaccount1:Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==
 
   minio:
-    profiles: ["minio"]
+    profiles: ["main"]
     image: minio/minio
-    container_name: minio
     restart: always
     command: server /data --console-address ":9001"
     ports:
@@ -186,6 +189,7 @@ services:
       retries: 5
 
   airflow-webserver:
+    profiles: ["main"]
     build:
       context: app/airflow
       dockerfile: Dockerfile.webserver
@@ -200,14 +204,14 @@ services:
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://postgres:postgres@db:5432/postgres?options=-csearch_path%3Dairflow
       AIRFLOW__DATABASE__SQL_ALCHEMY_SCHEMA: airflow
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
-      AIRFLOW__WEBSERVER__WEB_SERVER_PORT: 8081
+      AIRFLOW__WEBSERVER__WEB_SERVER_PORT: 8080
       AIRFLOW__WEBSERVER__SECRET_KEY: "test"
       AIRFLOW__API__AUTH_BACKENDS: airflow.api.auth.backend.basic_auth
       AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "False"
       # This connection can be in separate variables (then don't need to do URL encoding), but it can reuse the same connection string with SQL_ALCHEMY_CONN (without extras)
       AIRFLOW_CONN_POSTGRES_DB_CONN: postgresql+psycopg2://postgres:postgres@db:5432/postgres
       # The blob storage where Airflow get/put necessary files
-      STORAGE_TYPE: ${STORAGE_TYPE:-azure}
+      STORAGE_TYPE: minio
       # Minio connection variables (don't need to do URL encoding here)
       AIRFLOW_VAR_MINIO_ENDPOINT: http://minio:9000
       AIRFLOW_VAR_MINIO_ACCESS_KEY: minioadmin
@@ -221,10 +225,10 @@ services:
     volumes:
       - ./app/airflow/dags:/opt/airflow/dags
     ports:
-      # to be solved in #1036: normal port is 8080 but to avoid the conflict with workers, use 8081, but this will be changed to 8080 in #1036
-      - "8081:8081"
+      - "8080:8080"
 
   scheduler:
+    profiles: ["main"]
     build:
       context: app/airflow
       dockerfile: Dockerfile.scheduler
@@ -241,7 +245,7 @@ services:
       AIRFLOW__WEBSERVER__SECRET_KEY: "test"
       AIRFLOW__API__AUTH_BACKENDS: airflow.api.auth.backend.basic_auth
       AIRFLOW_CONN_POSTGRES_DB_CONN: postgresql+psycopg2://postgres:postgres@db:5432/postgres
-      STORAGE_TYPE: ${STORAGE_TYPE:-azure}
+      STORAGE_TYPE: minio
       AIRFLOW_VAR_MINIO_ENDPOINT: http://minio:9000
       AIRFLOW_VAR_MINIO_ACCESS_KEY: minioadmin
       AIRFLOW_VAR_MINIO_SECRET_KEY: minioadmin

@@ -27,6 +27,7 @@ interface ScanReportTable {
   date_event: ScanReportField | null;
   permissions: Permission[];
   jobs: Job[];
+  trigger_reuse: boolean;
 }
 
 interface ScanReportField {
