@@ -2,10 +2,10 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { DataTableColumnHeader } from "@/components/data-table/DataTableColumnHeader";
 import { ConceptTagsV3 } from "@/components/concepts/ConceptTagsV3";
-import AddConcept from "@/components/concepts/add-concept";
 import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import CopyButton from "@/components/core/CopyButton";
+import AddConceptV3 from "@/components/concepts/AddConceptV3";
 
 export const columns = (
   tableId: string,
@@ -84,12 +84,11 @@ export const columns = (
       const { id } = row.original;
 
       return (
-        <AddConcept
+        <AddConceptV3
           rowId={id}
           tableId={tableId}
           contentType="scanreportvalue"
           disabled={!canEdit}
-          addSR={() => {}}
         />
       );
     },
