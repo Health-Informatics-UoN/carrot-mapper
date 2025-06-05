@@ -49,6 +49,10 @@ const config = {
         destructive: "hsl(var(--destructive))",
         "destructive-foreground": "hsl(var(--destructive-foreground))",
         ring: "hsl(var(--ring))",
+        success: "hsl(var(--success))",
+        "success-foreground": "hsl(var(--success-foreground))",
+        warning: "hsl(var(--warning))",
+        "warning-foreground": "hsl(var(--warning-foreground))",
       },
       keyframes: {
         "accordion-down": {

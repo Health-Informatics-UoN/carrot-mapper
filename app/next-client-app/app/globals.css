@@ -10,6 +10,12 @@
   --popover-foreground: 222.2 47.4% 11.2%;
   --muted: 210 40% 96.1%;
   --muted-foreground: 215.4 16.3% 46.9%;
+  --success: 142.1 76.2% 36.3%; /* green-600 */
+  --success-foreground: 210 40% 98%; /* white */
+  --destructive: 0 84.2% 60.2%; /* red-500 */
+  --destructive-foreground: 210 40% 98%; /* white */
+  --warning: 38 92% 50%; /* amber-400 */
+  --warning-foreground: 222.2 47.4% 11.2%; /* dark */
 }
 .dark {
   --background: 0 0% 7%;
@@ -18,6 +24,12 @@
   --popover-foreground: 210 40% 98%;
   --muted: 217.2 32.6% 17.5%;
   --muted-foreground: 215 20.2% 65.1%;
+  --success: 142.1 70% 45%; /* lighter green for dark mode */
+  --success-foreground: 210 40% 98%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 210 40% 98%;
+  --warning: 38 92% 50%;
+  --warning-foreground: 210 40% 98%;
 }
 
 /* Show shadcn/ui muted grey background on hover for all circular ghost buttons */
