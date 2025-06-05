@@ -102,6 +102,8 @@ jobs:
       - name: Build
         run: npm run build --workspaces=false
         working-directory: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
+        env:
+          BODY_SIZE_LIMIT: ${{ vars.BODY_SIZE_LIMIT }}
 
       - name: Copy Static Assets
         run: |
