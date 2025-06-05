@@ -104,7 +104,7 @@ export function DataTable<TData, TValue>({
               <Button
                 aria-label="Toggle columns"
                 variant="outline"
-                className="ml-auto hidden lg:flex"
+                className="ml-auto hidden lg:flex hover:bg-muted transition-colors"
               >
                 <Columns3 className="mr-2 size-4" />
                 Columns
