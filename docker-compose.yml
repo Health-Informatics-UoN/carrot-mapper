@@ -24,8 +24,8 @@ services:
       - 3000:3000
     environment:
       - BACKEND_URL=http://api:8000
-      - BACKEND_ORIGIN=['localhost', '127.0.0.1']
-      - NEXT_SERVER_ACTION_BODY_SIZE_LIMIT=20728640
+      - BACKEND_ORIGIN=localhost:8000
+      - BODY_SIZE_LIMIT=20728640
       - NEXTAUTH_URL=http://localhost:3000/
       - NEXTAUTH_SECRET=verycomplexsecretkey
       - NEXTAUTH_BACKEND_URL=http://api:8000/api/
