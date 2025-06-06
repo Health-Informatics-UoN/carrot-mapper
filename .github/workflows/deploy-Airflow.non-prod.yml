@@ -1,4 +1,4 @@
-name: Build, Publish and Deploy Airflow app to Dev
+name: Build, Publish and Deploy Airflow app to Non-Prod environments
 
 on:
   push:
