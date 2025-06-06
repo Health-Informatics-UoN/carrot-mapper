@@ -4,10 +4,16 @@ FROM apache/airflow:2.10.5
 # Build argument to determine which entrypoint to use
 ARG AIRFLOW_COMPONENT=webserver
 
-# Copy requirements and install dependencies in a single layer
-COPY --chown=airflow:root requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt && \
-    pip cache purge
+# Install provider packages
+RUN pip install --no-cache-dir \
+    apache-airflow-providers-microsoft-azure \
+    apache-airflow-providers-postgres \
+    apache-airflow-providers-amazon \
+    openpyxl \
+    types-openpyxl \
+    types-psycopg2 \
+    pandas \
+    pandas-stubs
 
 # Copy DAGs to the container
 COPY --chown=airflow:root ./dags /opt/airflow/dags
