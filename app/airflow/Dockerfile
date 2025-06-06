@@ -4,7 +4,8 @@ FROM apache/airflow:2.10.5
 # Build argument to determine which entrypoint to use
 ARG AIRFLOW_COMPONENT=webserver
 
-# Install provider packages
+# Install provider packages 
+# (tried using requirements.txt but it took too long to build and install using pyproject.toml didn't work)
 RUN pip install --no-cache-dir \
     apache-airflow-providers-microsoft-azure \
     apache-airflow-providers-postgres \
