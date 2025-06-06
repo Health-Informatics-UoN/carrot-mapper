@@ -2,6 +2,7 @@ import "./globals.css";
 import { Toaster } from "sonner";
 import { ThemeProvider } from "@/components/core/theme-provider";
 import { Metadata } from "next";
+import { PublicEnvScript } from "next-runtime-env";
 
 export const metadata: Metadata = {
   title: "Carrot Mapper",
@@ -46,6 +47,9 @@ export default async function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <PublicEnvScript />
+      </head>
       <body>
         <ThemeProvider
           attribute="class"
