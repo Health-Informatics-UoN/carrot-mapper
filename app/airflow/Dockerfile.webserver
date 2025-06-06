@@ -1,30 +1,28 @@
 # TODO: Airflow has version 3.0.0 but this is a breaking change
 FROM apache/airflow:2.10.5
-# Install provider packages
-RUN pip install --no-cache-dir \
-    apache-airflow-providers-microsoft-azure \
-    apache-airflow-providers-postgres \
-    apache-airflow-providers-amazon \
-    openpyxl \
-    types-openpyxl \
-    types-psycopg2 \
-    pandas \
-    pandas-stubs
-    
-# Copy DAGs to the container
-COPY --chown=airflow:root ./dags /opt/airflow/dags
 
-# Create directories with correct ownership from the start
+# Switch to root for system-level operations
 USER root
+
+# Create directories with correct ownership early
 RUN mkdir -p /opt/airflow/logs /opt/airflow/config && \
     chown -R airflow:root /opt/airflow && \
     chmod -R g+rw /opt/airflow
 
-# Create entrypoint script
+# Copy and setup entrypoint script
 COPY --chown=airflow:root entrypoint-webserver.sh /entrypoint-webserver.sh
 RUN chmod +x /entrypoint-webserver.sh
 
+# Switch back to airflow user for package installation
 USER airflow
+
+# Copy requirements and install dependencies in a single layer
+COPY --chown=airflow:root requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt && \
+    pip cache purge
+
+# Copy DAGs to the container
+COPY --chown=airflow:root ./dags /opt/airflow/dags
 
 # Set umask to ensure new files are group writable
 ENV UMASK=0002
