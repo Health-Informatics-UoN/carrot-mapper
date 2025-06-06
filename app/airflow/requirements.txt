@@ -1,0 +1,5 @@
+apache-airflow-providers-amazon>=9.7.0
+apache-airflow-providers-microsoft-azure>=12.3.1
+apache-airflow-providers-postgres>=6.1.1
+openpyxl>=3.1.5
+pandas>=2.2.3
