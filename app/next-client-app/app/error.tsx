@@ -12,11 +12,11 @@ export default function Error({
 }) {
   return (
     <div className="container py-16 text-center space-y-4">
-      <h2 className="font-semibold text-3xl">Something went wrong!</h2>
+      <h2 className="font-semibold text-3xl text-foreground">Something went wrong!</h2>
       <Button variant="outline" onClick={() => reset()}>
-        Try again.
+        Try again
       </Button>
-      <Button variant="ghost">
+      <Button variant="ghost" asChild>
         <Link href="/">Return Home</Link>
       </Button>
     </div>

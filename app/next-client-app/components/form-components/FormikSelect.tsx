@@ -2,6 +2,7 @@ import { Field, FieldInputProps, FieldProps, FormikProps } from "formik";
 import Select from "react-select";
 import makeAnimated from "react-select/animated";
 import config from "@/tailwind.config";
+import { useTheme } from "next-themes";
 
 type Option = Object & {
   value: number;
@@ -26,6 +27,13 @@ const CustomSelect = ({
   required?: boolean;
 }) => {
   const animatedComponents = makeAnimated();
+
+  // Optional: detect dark mode for better contrast
+  let isDark = false;
+  if (typeof window !== "undefined") {
+    isDark = document.documentElement.classList.contains("dark");
+  }
+
   const onChange = (newValue: any, actionMeta: any) => {
     const selectedValues = isMulti
       ? (newValue as Option[]).map((option) => option.value)
@@ -55,20 +63,6 @@ const CustomSelect = ({
       classNamePrefix="my-react-select"
       isDisabled={isDisabled}
       components={animatedComponents}
-      styles={{
-        multiValueLabel: (base) => ({
-          ...base,
-          fontSize: "17px",
-        }),
-        multiValueRemove: (base) => ({
-          ...base,
-          fontSize: "17px",
-        }),
-        singleValue: (base) => ({
-          ...base,
-          fontSize: "17px",
-        }),
-      }}
       required={required}
     />
   );

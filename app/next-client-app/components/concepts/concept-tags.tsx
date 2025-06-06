@@ -52,15 +52,16 @@ export const ConceptTags = React.memo(function ConceptTags({
         >
           <Tooltip id="badge-tooltip" />
           <LazyBadge
-            className={`${
+            variant={
               concept.creation_type === "V"
-                ? "bg-carrot-vocab hover:bg-carrot-vocab dark:bg-carrot-vocab dark:text-white"
+                ? "secondary"
                 : concept.creation_type === "M"
-                ? "bg-carrot-manual hover:bg-carrot-manual dark:bg-carrot-manual dark:text-white"
+                ? "default"
                 : concept.creation_type === "R"
-                ? "bg-carrot-reuse hover:bg-carrot-reuse dark:bg-carrot-reuse dark:text-white"
-                : ""
-            } ${concepts.length > 1 && "my-[1px]"}`}
+                ? "outline"
+                : "secondary"
+            }
+            className={concepts.length > 1 ? "my-[1px]" : ""}
             key={concept.concept_code}
           >
             <p className="pl-2 pr-1 py-1">{`${concept.concept_id} ${concept.concept_name} (${concept.creation_type})`}</p>

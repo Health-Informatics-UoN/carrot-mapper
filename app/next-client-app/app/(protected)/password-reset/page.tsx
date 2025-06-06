@@ -53,17 +53,17 @@ export default function PasswordResetPage() {
     return (
       <div className="flex min-h-96 items-center justify-center">
         <div className="w-full max-w-md p-8 space-y-4">
-          <h1 className="text-2xl font-semibold text-center text-gray-800 dark:text-white">
+          <h1 className="text-2xl font-semibold text-center">
             Password Reset Successful
           </h1>
-          <p className="text-center text-sm text-gray-600 dark:text-gray-300">
+          <p className="text-center text-sm text-muted-foreground">
             Your password has been reset successfully. You can now log in with your new password.
           </p>
           <div className="text-sm text-center mt-2">
-          <a href="/projects" className="text-blue-600 hover:underline">
-            Back to Projects
-          </a>
-        </div>
+            <a href="/projects" className="underline">
+              Back to Projects
+            </a>
+          </div>
         </div>
       </div>
     );
@@ -72,7 +72,7 @@ export default function PasswordResetPage() {
   return (
     <div className="flex min-h-96 items-center justify-center">
       <div className="w-full max-w-md p-8 space-y-6">
-        <h1 className="text-2xl font-semibold text-center text-gray-800 dark:text-white">
+        <h1 className="text-2xl font-semibold text-center">
           Reset your password
         </h1>
 
@@ -89,15 +89,15 @@ export default function PasswordResetPage() {
               <div className="space-y-2">
                 <Label htmlFor="newPassword">New Password</Label>
                 <Field as={Input} id="newPassword" name="newPassword" type="password" placeholder="Enter new password" />
-                <ErrorMessage name="newPassword" component="div" className="text-red-500 text-sm" />
+                <ErrorMessage name="newPassword" component="div" className="text-destructive text-sm" />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="confirmPassword">Confirm Password</Label>
                 <Field as={Input} id="confirmPassword" name="confirmPassword" type="password" placeholder="Re-enter password" />
-                <ErrorMessage name="confirmPassword" component="div" className="text-red-500 text-sm" />
+                <ErrorMessage name="confirmPassword" component="div" className="text-destructive text-sm" />
               </div>
-              <Button type="submit" className="w-full" disabled={isSubmitting}>
+              <Button type="submit" variant="outline" className="w-full" disabled={isSubmitting}>
                 {isSubmitting ? "Submitting..." : "Reset Password"}
               </Button>
             </Form>
@@ -105,7 +105,7 @@ export default function PasswordResetPage() {
         </Formik>
 
         <div className="text-sm text-center mt-2">
-          <a href="/projects" className="text-blue-600 hover:underline">
+          <a href="/projects" className="underline">
             Back to Projects
           </a>
         </div>
