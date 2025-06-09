@@ -1,4 +1,4 @@
-name: Build, Publish and Deploy Airflow app to Dev
+name: Build, Publish and Deploy Airflow app to Non-Prod environments
 
 on:
   push:
@@ -52,7 +52,8 @@ jobs:
         uses: docker/build-push-action@v5.3.0
         with:
           context: ./app/airflow
-          file: ./app/airflow/Dockerfile.webserver
+          file: ./app/airflow/Dockerfile
+          build-args: AIRFLOW_COMPONENT=webserver
           push: true
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.webserver_meta.outputs.tags }}
@@ -73,7 +74,8 @@ jobs:
         uses: docker/build-push-action@v5.3.0
         with:
           context: ./app/airflow
-          file: ./app/airflow/Dockerfile.scheduler
+          file: ./app/airflow/Dockerfile
+          build-args: AIRFLOW_COMPONENT=scheduler
           push: true
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.scheduler_meta.outputs.tags }}
