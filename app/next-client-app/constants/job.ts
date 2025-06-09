@@ -39,19 +39,19 @@ export const StageStatus = [
     label: "Job Complete",
     icon: "Check",
     value: "COMPLETE",
-    color: "text-success-foreground",
+    color: "text-green-600",
   },
   {
     label: "Job Failed",
     icon: "X",
     value: "FAILED",
-    color: "text-destructive",
+    color: "text-red-900",
   },
   {
     label: "Job In Progress",
     icon: "Loader2",
     value: "IN_PROGRESS",
-    color: "text-accent-foreground",
+    color: "text-orange-600",
   },
 ];
 
@@ -67,18 +67,18 @@ export const GeneralStatus = [
     label: "Complete. Click for details.",
     icon: "Check",
     value: "COMPLETE",
-    color: "text-success-foreground",
+    color: "text-green-600",
   },
   {
     label: "Failed. Click for details.",
     icon: "X",
     value: "FAILED",
-    color: "text-destructive",
+    color: "text-red-500",
   },
   {
     label: "In Progress. Click for details.",
     icon: "Loader2",
     value: "IN_PROGRESS",
-    color: "text-accent-foreground",
+    color: "text-orange-600",
   },
 ];
