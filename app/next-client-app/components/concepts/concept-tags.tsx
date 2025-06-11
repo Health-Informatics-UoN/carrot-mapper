@@ -12,7 +12,7 @@ const LazyBadge = lazy(() =>
 // Using react.memo and react.lazy to prevent loading unnecessary tags
 export const ConceptTags = React.memo(function ConceptTags({
   concepts,
-  deleteSR,
+  deleteSR
 }: {
   concepts: Concept[];
   deleteSR: any;
@@ -52,15 +52,7 @@ export const ConceptTags = React.memo(function ConceptTags({
         >
           <Tooltip id="badge-tooltip" />
           <LazyBadge
-            variant={
-              concept.creation_type === "V"
-                ? "secondary"
-                : concept.creation_type === "M"
-                ? "default"
-                : concept.creation_type === "R"
-                ? "outline"
-                : "secondary"
-            }
+            variant="default"
             className={concepts.length > 1 ? "my-[1px]" : ""}
             key={concept.concept_code}
           >
@@ -71,7 +63,7 @@ export const ConceptTags = React.memo(function ConceptTags({
               onClick={async () =>
                 await handleDelete(concept.scan_report_concept_id ?? 0)
               }
-              className="dark:text-white"
+              className="text-destructive hover:text-red-700"
             >
               <Cross2Icon />
             </Button>

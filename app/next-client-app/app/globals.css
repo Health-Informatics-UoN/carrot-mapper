@@ -18,6 +18,10 @@
   --warning-foreground: 222.2 47.4% 11.2%; /* dark */
   --accent: 240 4.8% 95.9%;
   --accent-foreground: 240 10% 3.9%;
+  --primary: 227 45% 43%; /* #3C579E */
+  --primary-foreground: 0 0% 100%; /* white */
+  --secondary: 210 40% 96.1%;
+  --secondary-foreground: 222.2 47.4% 11.2%;
 }
 .dark {
   --background: 0 0% 7%;
@@ -34,6 +38,10 @@
   --warning-foreground: 210 40% 98%;
   --accent: 240 3.7% 15.9%;
   --accent-foreground: 0 0% 98%;
+  --primary: 227 45% 43%; /* #3C579E for dark mode too */
+  --primary-foreground: 0 0% 100%; /* white */
+  --secondary: 222.2 47.4% 11.2%;
+  --secondary-foreground: 210 40% 98%;
 }
 
 /* Show shadcn/ui muted grey background on hover for all circular ghost buttons */
@@ -45,26 +53,24 @@ button.rounded-full:focus-visible {
 
 /* React Select using shadcn/ui tokens */
 .my-react-select__menu {
-  background-color: hsl(var(--popover));
-  color: hsl(var(--popover-foreground));
-  z-index: 100;
+  background-color: hsl(var(--popover)) !important;
+  color: hsl(var(--popover-foreground)) !important;
 }
 
 .my-react-select__option {
-  background-color: hsl(var(--popover));
-  color: hsl(var(--popover-foreground));
+  background-color: hsl(var(--popover)) !important;
+  color: hsl(var(--popover-foreground)) !important;
   cursor: pointer;
-  transition: background 0.2s;
 }
 
 .my-react-select__option--is-focused {
-  background-color: hsl(var(--accent));
-  color: hsl(var(--accent-foreground));
+  background-color: hsl(var(--accent)) !important;
+  color: hsl(var(--accent-foreground)) !important;
 }
 
 .my-react-select__option--is-selected {
-  background-color: hsl(var(--primary));
-  color: hsl(var(--primary-foreground));
+  background-color: hsl(var(--primary)) !important;
+  color: hsl(var(--primary-foreground)) !important;
 }
 
 .my-react-select__control {
