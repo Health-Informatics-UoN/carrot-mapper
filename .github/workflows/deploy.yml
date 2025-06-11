@@ -11,6 +11,9 @@ env:
   AZURE_WEBAPP_PACKAGE_PATH: "./app/next-client-app"
   PYTHON_VERSION: "3.11"
   NODE_VERSION: 20
+  app-name: carrot
+  repo-owner: health-informatics-uon
+  registry: ghcr.io
 
 jobs:
   build-and-publish-workers:
@@ -120,6 +123,72 @@ jobs:
           name: frontendwebapp
           include-hidden-files: true
 
+  build-and-publish-airflow:
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@f95db51fddba0c2d1ec667646a06c2ce06100226 # v3.0.0
+
+      - name: Docker Login
+        uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3.0.0
+        with:
+          registry: ${{ env.registry }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set timestamp env var
+        run: echo "RUN_TIMESTAMP=$(TZ="Etc/UTC" date +'%Y%m%d%H%M%S')" >> $GITHUB_ENV
+
+      # Tag and build webserver of airflow
+      - name: Extract webserver Docker metadata
+        id: airflow_webserver_meta
+        uses: docker/metadata-action@v5.5.1
+        with:
+          images: ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/airflow-webserver
+          tags: |
+            ${{ github.sha }}
+            ${{ env.RUN_TIMESTAMP }}
+            "edge"
+
+      - name: Build and push webserver image
+        uses: docker/build-push-action@v5.3.0
+        with:
+          context: ./app/airflow
+          file: ./app/airflow/Dockerfile
+          build-args: AIRFLOW_COMPONENT=webserver
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: ${{ steps.airflow_webserver_meta.outputs.tags }}
+
+      # Tag and build scheduler of airflow
+      - name: Extract scheduler Docker metadata
+        id: scheduler_meta
+        uses: docker/metadata-action@v5.5.1
+        with:
+          images: ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/airflow-scheduler
+          tags: |
+            ${{ github.sha }}
+            ${{ env.RUN_TIMESTAMP }}
+            "edge"
+
+      - name: Build and push scheduler image
+        uses: docker/build-push-action@v5.3.0
+        with:
+          context: ./app/airflow
+          file: ./app/airflow/Dockerfile
+          build-args: AIRFLOW_COMPONENT=scheduler
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: ${{ steps.scheduler_meta.outputs.tags }}
+
   # Deploy Workers Dev
   deploy-workers-dev:
     runs-on: ubuntu-latest
@@ -180,6 +249,82 @@ jobs:
           app-name: ${{ vars.AZURE_WEBAPP_NEXT_NAME }}
           publish-profile: ${{ secrets.AZURE_WEBAPP_NEXT_PUBLISH_PROFILE }}
           package: ${{ github.workspace }}/frontendwebapp
+
+  # Deploy Airflow Webserver Dev
+  deploy-airflow-webserver-dev:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    needs: [build-and-publish-airflow]
+    environment:
+      name: "dev"
+      url: ${{ steps.deploy-airflow-webserver-dev.outputs.webapp-url }}
+
+    steps:
+      - name: Deploy to Azure Web App
+        id: deploy-airflow-webserver-dev
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: ${{ vars.AIRFLOW_WEBSERVER_NAME }}
+          publish-profile: ${{ secrets.AIRFLOW_WEBSERVER_PUBLISH_PROFILE }}
+          images: ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/airflow-webserver:${{ github.sha }}
+
+  # Deploy Airflow Scheduler Dev
+  deploy-airflow-scheduler-dev:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    needs: [build-and-publish-airflow]
+    environment:
+      name: "dev"
+      url: ${{ steps.deploy-airflow-scheduler-dev.outputs.webapp-url }}
+
+    steps:
+      - name: Deploy to Azure Web App
+        id: deploy-airflow-scheduler-dev
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: ${{ vars.AIRFLOW_SCHEDULER_NAME }}
+          publish-profile: ${{ secrets.AIRFLOW_SCHEDULER_PUBLISH_PROFILE }}
+          images: ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/airflow-scheduler:${{ github.sha }}
+
+  # Deploy Airflow Webserver Test
+  deploy-airflow-webserver-test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    needs: [deploy-airflow-webserver-dev]
+    environment:
+      name: "test"
+      url: ${{ steps.deploy-airflow-webserver-test.outputs.webapp-url }}
+
+    steps:
+      - name: Deploy to Azure Web App
+        id: deploy-airflow-webserver-test
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: ${{ vars.AIRFLOW_WEBSERVER_NAME }}
+          publish-profile: ${{ secrets.AIRFLOW_WEBSERVER_PUBLISH_PROFILE }}
+          images: ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/airflow-webserver:${{ github.sha }}
+
+  # Deploy Airflow Scheduler Test
+  deploy-airflow-scheduler-test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    needs: [deploy-airflow-scheduler-dev]
+    environment:
+      name: "test"
+      url: ${{ steps.deploy-airflow-scheduler-test.outputs.webapp-url }}
+
+    steps:
+      - name: Deploy to Azure Web App
+        id: deploy-airflow-scheduler-test
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: ${{ vars.AIRFLOW_SCHEDULER_NAME }}
+          publish-profile: ${{ secrets.AIRFLOW_SCHEDULER_PUBLISH_PROFILE }}
+          images: ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/airflow-scheduler:${{ github.sha }}
 
   # Deploy Workers Test
   deploy-workers-test:

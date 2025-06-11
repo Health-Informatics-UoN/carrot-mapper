@@ -423,7 +423,12 @@ def save_mapping_rules(
     # When the concept has the domain "Observation", one more mapping rule to the OMOP field
     # "value_as_number"/"value_as_string" will be added based on the field's datatype
     if domain == "observation" and (
-        type_column == "int" or type_column == "real" or type_column == "float"
+        type_column == "int"
+        or type_column == "real"
+        or type_column == "float"
+        or type_column == "tinyint"
+        or type_column == "smallint"
+        or type_column == "bigint"
     ):
         # create/update a model for the domain value_as_number
         #  - for this destination_field and source_field
