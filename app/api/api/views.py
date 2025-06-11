@@ -1001,6 +1001,9 @@ class ScanReportConceptListV2(
         if domain == "observation" and field_datatype.lower() not in [
             "real",
             "int",
+            "tinyint",
+            "smallint",
+            "bigint",
             "varchar",
             "nvarchar",
             "float",
