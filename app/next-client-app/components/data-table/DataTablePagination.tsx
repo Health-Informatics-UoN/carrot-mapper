@@ -74,10 +74,10 @@ but it also means that we need to change many other API endpoints as well. So it
               changePageSize(Number(value));
             }}
           >
-            <SelectTrigger className="h-8 w-[4.5rem]">
+            <SelectTrigger className="h-8 w-[4.5rem] bg-background text-foreground">
               <SelectValue placeholder={pageSize} />
             </SelectTrigger>
-            <SelectContent side="top">
+            <SelectContent side="top" className="bg-popover">
               {pageSizeOptions.map((pageSize) => (
                 <SelectItem key={pageSize} value={`${pageSize}`}>
                   {pageSize}

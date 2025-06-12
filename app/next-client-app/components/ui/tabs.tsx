@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import * as TabsPrimitive from "@radix-ui/react-tabs";
-
 import { cn } from "@/lib/utils";
 
 const Tabs = TabsPrimitive.Root;
@@ -14,7 +13,7 @@ const TabsList = React.forwardRef<
   <TabsPrimitive.List
     ref={ref}
     className={cn(
-      "inline-flex h-12 items-center justify-center rounded-md bg-carrot-50 p-1 text-carrot-700 dark:bg-carrot-800 dark:text-carrot-400",
+      "inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground",
       className
     )}
     {...props}
@@ -29,7 +28,7 @@ const TabsTrigger = React.forwardRef<
   <TabsPrimitive.Trigger
     ref={ref}
     className={cn(
-      "inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 h-full w-full text-sm font-medium ring-offset-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-carrot-950 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-carrot-900 data-[state=active]:text-carrot-50 data-[state=active]:shadow-sm data-[state=inactive]:text-carrot-900 dark:ring-offset-carrot-950 dark:focus-visible:ring-carrot-300 dark:data-[state=active]:bg-carrot-950 dark:data-[state=active]:text-carrot-50 dark:data-[state=inactive]:text-white/85",
+      "inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 h-full w-full text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm",
       className
     )}
     {...props}
@@ -44,7 +43,7 @@ const TabsContent = React.forwardRef<
   <TabsPrimitive.Content
     ref={ref}
     className={cn(
-      "mt-2 ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-carrot-950 focus-visible:ring-offset-2 dark:ring-offset-carrot-950 dark:focus-visible:ring-carrot-300",
+      "mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
       className
     )}
     {...props}
