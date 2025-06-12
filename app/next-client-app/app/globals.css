@@ -26,11 +26,11 @@
 .dark {
   --background: 0 0% 7%;
   --foreground: 210 40% 98%;
-  --popover: 220 14.3% 17.9%; /* lighter than before */
+  --popover: 220 14.3% 17.9%;
   --popover-foreground: 210 40% 98%;
   --muted: 217.2 32.6% 17.5%;
   --muted-foreground: 215 20.2% 65.1%;
-  --success: 142.1 70% 45%; /* lighter green for dark mode */
+  --success: 142.1 70% 45%; 
   --success-foreground: 210 40% 98%;
   --destructive: 0 62.8% 30.6%;
   --destructive-foreground: 210 40% 98%;
@@ -38,8 +38,8 @@
   --warning-foreground: 210 40% 98%;
   --accent: 240 3.7% 15.9%;
   --accent-foreground: 0 0% 98%;
-  --primary: 227 45% 43%; /* #3C579E for dark mode too */
-  --primary-foreground: 0 0% 100%; /* white */
+  --primary: 227 45% 43%; 
+  --primary-foreground: 0 0% 100%; 
   --secondary: 222.2 47.4% 11.2%;
   --secondary-foreground: 210 40% 98%;
 }
