@@ -53,6 +53,9 @@ const config = {
         "success-foreground": "hsl(var(--success-foreground))",
         warning: "hsl(var(--warning))",
         "warning-foreground": "hsl(var(--warning-foreground))",
+        "carrot-vocab": "#BEA9DF",
+        "carrot-manual": "#3C579E",
+        "carrot-reuse": "#3db28c",
       },
       keyframes: {
         "accordion-down": {

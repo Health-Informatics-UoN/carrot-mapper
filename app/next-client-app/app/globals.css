@@ -22,6 +22,7 @@
   --primary-foreground: 0 0% 100%; /* white */
   --secondary: 210 40% 96.1%;
   --secondary-foreground: 222.2 47.4% 11.2%;
+  --ring: 227 45% 43%; /* #3C579E */
 }
 .dark {
   --background: 0 0% 7%;
