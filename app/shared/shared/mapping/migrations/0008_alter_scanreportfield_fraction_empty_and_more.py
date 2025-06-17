@@ -6,38 +6,42 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('mapping', '0007_alter_dataset_hidden_alter_mappingstatus_value_and_more'),
+        ("mapping", "0007_alter_dataset_hidden_alter_mappingstatus_value_and_more"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='scanreportfield',
-            name='fraction_empty',
-            field=models.DecimalField(blank=True, decimal_places=2, max_digits=10, null=True),
+            model_name="scanreportfield",
+            name="fraction_empty",
+            field=models.DecimalField(
+                blank=True, decimal_places=2, max_digits=10, null=True
+            ),
         ),
         migrations.AlterField(
-            model_name='scanreportfield',
-            name='fraction_unique',
-            field=models.DecimalField(blank=True, decimal_places=2, max_digits=10, null=True),
+            model_name="scanreportfield",
+            name="fraction_unique",
+            field=models.DecimalField(
+                blank=True, decimal_places=2, max_digits=10, null=True
+            ),
         ),
         migrations.AlterField(
-            model_name='scanreportfield',
-            name='max_length',
+            model_name="scanreportfield",
+            name="max_length",
             field=models.IntegerField(blank=True, null=True),
         ),
         migrations.AlterField(
-            model_name='scanreportfield',
-            name='nrows',
+            model_name="scanreportfield",
+            name="nrows",
             field=models.IntegerField(blank=True, null=True),
         ),
         migrations.AlterField(
-            model_name='scanreportfield',
-            name='nrows_checked',
+            model_name="scanreportfield",
+            name="nrows_checked",
             field=models.IntegerField(blank=True, null=True),
         ),
         migrations.AlterField(
-            model_name='scanreportfield',
-            name='nunique_values',
+            model_name="scanreportfield",
+            name="nunique_values",
             field=models.IntegerField(blank=True, null=True),
         ),
     ]
