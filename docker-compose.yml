@@ -255,7 +255,7 @@ services:
     environment:
       <<: *airflow-common-env
       AIRFLOW__CORE__EXECUTE_TASKS_NEW_PYTHON_INTERPRETER: True
-      AIRFLOW_DEBUG_MODE: True
+      AIRFLOW_DEBUG_MODE: False
 
 volumes:
   db_data:
