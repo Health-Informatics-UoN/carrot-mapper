@@ -117,25 +117,4 @@ class Migration(migrations.Migration):
                 fields=["scan_report_field", "value"], name="idx_sr_value_field_value"
             ),
         ),
-        migrations.RunSQL(
-            sql="""
-        -- OMOP concept indexes (different schema - can't be in Django models)
-        CREATE INDEX IF NOT EXISTS idx_concept_code_vocabulary ON omop.concept(concept_code, vocabulary_id);
-        CREATE INDEX IF NOT EXISTS idx_concept_standard_domain ON omop.concept(standard_concept, domain_id);
-        CREATE INDEX IF NOT EXISTS idx_concept_code_vocabulary_standard ON omop.concept(concept_code, vocabulary_id, standard_concept, domain_id);
-        
-        -- Conditional index (Django doesn't support WHERE clauses)
-        CREATE INDEX IF NOT EXISTS idx_concept_relationship_maps_to ON omop.concept_relationship(concept_id_1, relationship_id) WHERE relationship_id = 'Maps to';
-        
-        -- Django ContentType model
-        CREATE INDEX IF NOT EXISTS idx_django_content_type_app_model ON django_content_type(app_label, model);
-        """,
-            reverse_sql="""
-        DROP INDEX IF EXISTS omop.idx_concept_relationship_maps_to;
-        DROP INDEX IF EXISTS omop.idx_concept_code_vocabulary_standard;
-        DROP INDEX IF EXISTS omop.idx_concept_standard_domain;
-        DROP INDEX IF EXISTS omop.idx_concept_code_vocabulary;
-        DROP INDEX IF EXISTS idx_django_content_type_app_model;
-        """,
-        ),
     ]
