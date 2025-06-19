@@ -17,6 +17,8 @@ ALLOWED_DOMAINS = [
     "drug",
     "procedure",
     "device",
+    "specimen",
+    "specanatomic site",
 ]
 
 
