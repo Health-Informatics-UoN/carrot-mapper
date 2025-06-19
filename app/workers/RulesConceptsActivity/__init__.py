@@ -227,7 +227,7 @@ def _get_concepts_for_vocab(
     concept_codes = [entry["value"] for entry in entries]
 
     concepts = Concept.objects.filter(
-        concept_code__in=concept_codes, vocabulary_id=vocab
+        concept_code__in=concept_codes, vocabulary_id__iexact=vocab
     ).values_list("concept_code", "concept_id", "standard_concept")
 
     return list(concepts)

@@ -525,16 +525,12 @@ create_values_query = """
 
 create_fields_query = """
     INSERT INTO mapping_scanreportfield (
-        scan_report_table_id, name, description_column, type_column,
-        max_length, nrows, nrows_checked, fraction_empty,
-        nunique_values, fraction_unique, created_at, updated_at,
+        scan_report_table_id, name, description_column, type_column, created_at, updated_at,
         is_patient_id, is_ignore, pass_from_source
     )
     VALUES (
         %(scan_report_table_id)s, %(name)s, %(description_column)s, %(type_column)s,
-        %(max_length)s, %(nrows)s, %(nrows_checked)s, %(fraction_empty)s,
-        %(nunique_values)s, %(fraction_unique)s, NOW(), NOW(), False, False,
-        True
+        NOW(), NOW(), False, False, True
     )
 """
 

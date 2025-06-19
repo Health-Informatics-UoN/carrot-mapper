@@ -1,7 +1,6 @@
 name: carrot-mapper-dev
 
-x-airflow-common:
-  &airflow-common
+x-airflow-common: &airflow-common
   profiles: ["main"]
   volumes:
     - ./app/airflow/dags:/opt/airflow/dags
@@ -12,8 +11,7 @@ x-airflow-common:
       condition: service_started
     api:
       condition: service_healthy
-  environment:
-    &airflow-common-env
+  environment: &airflow-common-env
     AIRFLOW__CORE__EXECUTOR: LocalExecutor
     # Database connection here needs to be in URI format. With real values, which have special characters, they need to be encoded using the ref. in https://www.w3schools.com/tags/ref_urlencode.ASP.
     AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://postgres:postgres@db:5432/postgres?options=-csearch_path%3Dairflow
@@ -84,8 +82,6 @@ services:
       - /app/.next
     depends_on:
       api:
-        condition: service_healthy
-      airflow-webserver:
         condition: service_healthy
 
   api:
@@ -233,18 +229,13 @@ services:
         AIRFLOW_COMPONENT: webserver
     ports:
       - "8080:8080"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
     environment:
       <<: *airflow-common-env
       # Admin user configuration to access the Airlfow API
       # TODO: add optional admin user configuration in the docs
       AIRFLOW_ADMIN_USERNAME: admin
       AIRFLOW_ADMIN_PASSWORD: admin
-      
+
   scheduler:
     <<: *airflow-common
     build:
