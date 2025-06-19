@@ -302,16 +302,6 @@ class ScanReportField(BaseModel):
     name = models.CharField(max_length=512, db_index=True)
     description_column = models.CharField(max_length=512)
     type_column = models.CharField(max_length=32)
-    max_length = models.IntegerField(null=True, blank=True)
-    nrows = models.IntegerField(null=True, blank=True)
-    nrows_checked = models.IntegerField(null=True, blank=True)
-    fraction_empty = models.DecimalField(
-        decimal_places=2, max_digits=10, null=True, blank=True
-    )
-    nunique_values = models.IntegerField(null=True, blank=True)
-    fraction_unique = models.DecimalField(
-        decimal_places=2, max_digits=10, null=True, blank=True
-    )
     ignore_column = models.CharField(max_length=64, blank=True, null=True)
     is_patient_id = models.BooleanField(default=False)
     is_ignore = models.BooleanField(default=False)
