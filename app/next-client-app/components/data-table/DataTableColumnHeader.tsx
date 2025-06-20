@@ -77,7 +77,7 @@ export function DataTableColumnHeader<TData, TValue>({
           <Button
             variant="ghost"
             size="sm"
-            className="-ml-3 h-8 data-[state=open]:bg-accent text-black"
+            className="-ml-3 h-8 data-[state=open]:bg-accent text-black dark:text-white"
           >
             <span>{title}</span>
             {getColumnSortState() ? (
