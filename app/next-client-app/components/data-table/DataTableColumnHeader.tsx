@@ -2,14 +2,14 @@ import {
   ArrowDownIcon,
   ArrowUpIcon,
   CaretSortIcon,
-  EyeNoneIcon,
+  EyeNoneIcon
 } from "@radix-ui/react-icons";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-  DropdownMenuTrigger,
+  DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { Column } from "@tanstack/react-table";
@@ -20,7 +20,7 @@ import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
-  TooltipTrigger,
+  TooltipTrigger
 } from "../ui/tooltip";
 
 interface DataTableColumnHeaderProps<TData, TValue>
@@ -36,7 +36,7 @@ export function DataTableColumnHeader<TData, TValue>({
   title,
   sortName = "",
   className,
-  description,
+  description
 }: DataTableColumnHeaderProps<TData, TValue>) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -77,7 +77,7 @@ export function DataTableColumnHeader<TData, TValue>({
           <Button
             variant="ghost"
             size="sm"
-            className="-ml-3 h-8 data-[state=open]:bg-accent"
+            className="-ml-3 h-8 data-[state=open]:bg-accent text-black"
           >
             <span>{title}</span>
             {getColumnSortState() ? (
