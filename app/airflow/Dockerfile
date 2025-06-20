@@ -1,7 +1,11 @@
 # TODO: Airflow has version 3.0.0 but this is a breaking change
 FROM apache/airflow:2.10.5
 
-# Install provider packages
+# Build argument to determine which entrypoint to use
+ARG AIRFLOW_COMPONENT=webserver
+
+# Install provider packages 
+# (tried using requirements.txt but it took too long to build and install using pyproject.toml didn't work)
 RUN pip install --no-cache-dir \
     apache-airflow-providers-microsoft-azure \
     apache-airflow-providers-postgres \
@@ -15,21 +19,19 @@ RUN pip install --no-cache-dir \
 # Copy DAGs to the container
 COPY --chown=airflow:root ./dags /opt/airflow/dags
 
-# Create directories with correct ownership from the start
+# Create directories with correct ownership
 USER root
 RUN mkdir -p /opt/airflow/logs /opt/airflow/config && \
     chown -R airflow:root /opt/airflow && \
     chmod -R g+rw /opt/airflow
 
-# Create entrypoint script
-COPY --chown=airflow:root entrypoint-scheduler.sh /entrypoint-scheduler.sh
-RUN chmod +x /entrypoint-scheduler.sh
+# Copy and setup entrypoint script based on component
+COPY --chown=airflow:root entrypoint-${AIRFLOW_COMPONENT}.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
 USER airflow
 
 # Set umask to ensure new files are group writable
 ENV UMASK=0002
 
-ENTRYPOINT ["/entrypoint-scheduler.sh"]
-
-
+ENTRYPOINT ["/entrypoint.sh"]

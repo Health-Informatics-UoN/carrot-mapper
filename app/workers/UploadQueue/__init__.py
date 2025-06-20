@@ -82,12 +82,6 @@ def _create_field_entry(row: Tuple[Cell], scan_report_table_id: str) -> ScanRepo
         name=str(row[1].value),
         description_column=str(row[2].value),
         type_column=str(row[3].value),
-        max_length=row[4].value,
-        nrows=row[5].value,
-        nrows_checked=row[6].value,
-        fraction_empty=round(helpers.default_zero(row[7].value), 2),
-        nunique_values=row[8].value,
-        fraction_unique=round(helpers.default_zero(row[9].value), 2),
     )
 
 

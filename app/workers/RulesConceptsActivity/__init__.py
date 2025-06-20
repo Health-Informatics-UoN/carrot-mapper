@@ -227,7 +227,7 @@ def _get_concepts_for_vocab(
     concept_codes = [entry["value"] for entry in entries]
 
     concepts = Concept.objects.filter(
-        concept_code__in=concept_codes, vocabulary_id=vocab
+        concept_code__in=concept_codes, vocabulary_id__iexact=vocab
     ).values_list("concept_code", "concept_id", "standard_concept")
 
     return list(concepts)
@@ -336,7 +336,9 @@ def _update_entries_with_standard_concepts(
 
 
 def _handle_table(
-    table: ScanReportTable, vocab: Union[Dict[str, Dict[str, str]], None]
+    table: ScanReportTable,
+    vocab: Union[Dict[str, Dict[str, str]], None],
+    trigger_reuse_concepts: bool,
 ) -> None:
     """
     Handles Concept Creation on a table.
@@ -381,29 +383,36 @@ def _handle_table(
             scan_report_table=table,
             details=f"Created {len(concepts)} concepts based on provided data dictionary.",
         )
-
-    # Starting the concepts reusing process
-    update_job(
-        JobStageType.REUSE_CONCEPTS,
-        StageStatusType.IN_PROGRESS,
-        scan_report_table=table,
-    )
-    # handle reuse of concepts at field level
-    reuse_existing_field_concepts(table_fields, table)
-    update_job(
-        JobStageType.REUSE_CONCEPTS,
-        StageStatusType.IN_PROGRESS,
-        scan_report_table=table,
-        details="Finished at field level. Continuing at value level...",
-    )
-    # handle reuse of concepts at value level
-    reuse_existing_value_concepts(table_values, table)
-    update_job(
-        JobStageType.REUSE_CONCEPTS,
-        StageStatusType.COMPLETE,
-        scan_report_table=table,
-        details="Finished",
-    )
+    if trigger_reuse_concepts:
+        # Starting the concepts reusing process
+        update_job(
+            JobStageType.REUSE_CONCEPTS,
+            StageStatusType.IN_PROGRESS,
+            scan_report_table=table,
+        )
+        # handle reuse of concepts at field level
+        reuse_existing_field_concepts(table_fields, table)
+        update_job(
+            JobStageType.REUSE_CONCEPTS,
+            StageStatusType.IN_PROGRESS,
+            scan_report_table=table,
+            details="Finished at field level. Continuing at value level...",
+        )
+        # handle reuse of concepts at value level
+        reuse_existing_value_concepts(table_values, table)
+        update_job(
+            JobStageType.REUSE_CONCEPTS,
+            StageStatusType.COMPLETE,
+            scan_report_table=table,
+            details="Finished",
+        )
+    else:
+        update_job(
+            JobStageType.REUSE_CONCEPTS,
+            StageStatusType.COMPLETE,
+            scan_report_table=table,
+            details="Skipped creating R (Reused) concepts because of user's preference",
+        )
 
 
 def main(msg: Dict[str, str]):
@@ -418,6 +427,7 @@ def main(msg: Dict[str, str]):
     """
     data_dictionary_blob = msg.pop("data_dictionary_blob")
     table_id = msg.pop("table_id")
+    trigger_reuse_concepts = msg.pop("trigger_reuse_concepts")
 
     # get the table
     table = ScanReportTable.objects.get(pk=table_id)
@@ -425,4 +435,4 @@ def main(msg: Dict[str, str]):
     # get the vocab dictionary
     _, vocab_dictionary = storage_service.get_data_dictionary(data_dictionary_blob)
 
-    _handle_table(table, vocab_dictionary)
+    _handle_table(table, vocab_dictionary, trigger_reuse_concepts)

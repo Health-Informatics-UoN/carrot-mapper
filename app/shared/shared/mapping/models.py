@@ -46,7 +46,7 @@ class UploadStatus(models.Model):
 
 
 class MappingStatus(models.Model):
-    value = models.CharField(max_length=64)
+    value = models.CharField(max_length=64, db_index=True)
     display_name = models.CharField(max_length=64)
 
 
@@ -94,7 +94,7 @@ class OmopTable(BaseModel):
         table: Name of the linking table.
     """
 
-    table = models.CharField(max_length=64)
+    table = models.CharField(max_length=64, db_index=True)
 
     class Meta:
         app_label = "mapping"
@@ -117,6 +117,9 @@ class OmopField(BaseModel):
 
     class Meta:
         app_label = "mapping"
+        indexes = [
+            models.Index(fields=["table", "field"], name="idx_omop_table_field"),
+        ]
 
     def __str__(self):
         return str(self.id)
@@ -149,10 +152,25 @@ class ScanReportConcept(BaseModel):
         max_length=1,
         choices=CreationType.choices,
         default=CreationType.Manual,
+        db_index=True,
     )
 
     class Meta:
         app_label = "mapping"
+        indexes = [
+            models.Index(
+                fields=["object_id", "content_type"],
+                name="idx_sr_concept_obj_content",
+            ),
+            models.Index(
+                fields=["object_id", "content_type", "concept"],
+                name="idx_src_obj_content_concept",
+            ),
+            models.Index(
+                fields=["creation_type", "content_type"],
+                name="idx_src_creation_content",
+            ),
+        ]
 
     def __str__(self):
         return str(self.id)
@@ -223,6 +241,16 @@ class ScanReport(BaseModel):
 
     class Meta:
         app_label = "mapping"
+        indexes = [
+            models.Index(
+                fields=["parent_dataset", "hidden"],
+                name="idx_sr_dataset_hidden",
+            ),
+            models.Index(
+                fields=["parent_dataset", "hidden", "mapping_status"],
+                name="idx_sr_dataset_status",
+            ),
+        ]
 
     def __str__(self):
         return str(self.id)
@@ -234,7 +262,7 @@ class ScanReportTable(BaseModel):
     """
 
     scan_report = models.ForeignKey(ScanReport, on_delete=models.CASCADE)
-    name = models.CharField(max_length=256)
+    name = models.CharField(max_length=256, db_index=True)
 
     # Quick notes:
     # - "ScanReportField", instead of ScanReportField,
@@ -256,6 +284,7 @@ class ScanReportTable(BaseModel):
         blank=True,
         related_name="date_event",
     )
+    trigger_reuse = models.BooleanField(default=True)
 
     class Meta:
         app_label = "mapping"
@@ -270,15 +299,9 @@ class ScanReportField(BaseModel):
     """
 
     scan_report_table = models.ForeignKey(ScanReportTable, on_delete=models.CASCADE)
-    name = models.CharField(max_length=512)
+    name = models.CharField(max_length=512, db_index=True)
     description_column = models.CharField(max_length=512)
     type_column = models.CharField(max_length=32)
-    max_length = models.IntegerField()
-    nrows = models.IntegerField()
-    nrows_checked = models.IntegerField()
-    fraction_empty = models.DecimalField(decimal_places=2, max_digits=10)
-    nunique_values = models.IntegerField()
-    fraction_unique = models.DecimalField(decimal_places=2, max_digits=10)
     ignore_column = models.CharField(max_length=64, blank=True, null=True)
     is_patient_id = models.BooleanField(default=False)
     is_ignore = models.BooleanField(default=False)
@@ -341,6 +364,16 @@ class MappingRule(BaseModel):
 
     class Meta:
         app_label = "mapping"
+        indexes = [
+            models.Index(
+                fields=["scan_report", "concept"],
+                name="idx_mappingrule_sr_concept",
+            ),
+            models.Index(
+                fields=["omop_field", "source_field"],
+                name="idx_maprule_omop_scr_fields",
+            ),
+        ]
 
     def __str__(self):
         return str(self.id)
@@ -352,14 +385,22 @@ class ScanReportValue(BaseModel):
     """
 
     scan_report_field = models.ForeignKey(ScanReportField, on_delete=models.CASCADE)
-    value = models.CharField(max_length=128)
+    value = models.CharField(max_length=128, db_index=True)
     frequency = models.IntegerField()
     conceptID = models.IntegerField(default=-1)  # TODO rename it to concept_id
     concepts = GenericRelation(ScanReportConcept)
-    value_description = models.CharField(max_length=512, blank=True, null=True)
+    value_description = models.CharField(
+        max_length=512, blank=True, null=True, db_index=True
+    )
 
     class Meta:
         app_label = "mapping"
+        indexes = [
+            models.Index(
+                fields=["scan_report_field", "value"],
+                name="idx_sr_value_field_value",
+            ),
+        ]
 
     def __str__(self):
         return str(self.id)
@@ -430,7 +471,7 @@ class Dataset(BaseModel):
         related_query_name="dataset_editor",
         blank=True,
     )
-    hidden = models.BooleanField(default=False)
+    hidden = models.BooleanField(default=False, db_index=True)
     # `projects` field added by M2M field in `Project`
     # `scan_reports` field added by FK field in `ScanReport`
 
