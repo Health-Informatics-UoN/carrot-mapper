@@ -1,9 +1,12 @@
 import { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Button, ButtonProps } from "../ui/button";
+import { Button } from "../ui/button";
 
-interface SidebarButtonProps extends ButtonProps {
+interface SidebarButtonProps
+  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   icon?: LucideIcon;
+  children?: React.ReactNode;
+  className?: string;
 }
 
 export function SidebarButton({
