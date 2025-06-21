@@ -1,9 +1,11 @@
 import { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Button } from "../ui/button";
+import { Button, buttonVariants } from "../ui/button";
+import type { VariantProps } from "class-variance-authority";
 
 interface SidebarButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
+    VariantProps<typeof buttonVariants> {
   icon?: LucideIcon;
   children?: React.ReactNode;
   className?: string;
