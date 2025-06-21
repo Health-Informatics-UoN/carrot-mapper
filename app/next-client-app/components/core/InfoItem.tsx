@@ -11,7 +11,7 @@ export const InfoItem: React.FC<InfoItemProps> = ({
   className,
   ...rest
 }) => (
-  <h3 className={cn("text-gray-500 dark:text-gray-400", className)} {...rest}>
-    {label}: <span className="text-black dark:text-white">{value}</span>
+  <h3 className={cn("text-muted-foreground", className)} {...rest}>
+    {label}: <span className="text-foreground">{value}</span>
   </h3>
 );

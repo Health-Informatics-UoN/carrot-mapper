@@ -35,7 +35,7 @@ export function CreateDatasetDialog({
           New Dataset <Plus className="ml-2 h-4 w-4" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="w-full">
+      <DialogContent className="w-full bg-background text-foreground">
         <DialogHeader>
           <DialogTitle className="text-center">
             Create a New Dataset

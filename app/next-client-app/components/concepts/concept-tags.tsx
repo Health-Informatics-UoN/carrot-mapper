@@ -70,7 +70,7 @@ export const ConceptTags = React.memo(function ConceptTags({
               onClick={async () =>
                 await handleDelete(concept.scan_report_concept_id ?? 0)
               }
-              className="dark:text-white"
+              className="text-destructive hover:text-red-700"
             >
               <Cross2Icon />
             </Button>

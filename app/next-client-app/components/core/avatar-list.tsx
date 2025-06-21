@@ -20,16 +20,16 @@ export function AvatarList({ members }: { members: User[] | [] }) {
             <Tooltip id="icon-tooltip" className="lg:hidden" openOnClick />
             <div
               key={index}
-              className="h-8 w-8 rounded-full border-2 border-white dark:border-gray-800 bg-orange-600 dark:bg-orange-700 text-white flex text-sm justify-left pl-2 items-center"
+              className="h-8 w-8 rounded-full border-2 border-background bg-primary flex text-sm items-center justify-center avatar-initial"
             >
               {name.charAt(0).toUpperCase()}
             </div>
           </a>
         ))}
 
-      <a className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-black text-center text-sm font-medium text-white hover:bg-gray-600 dark:border-gray-800 dark:bg-white dark:text-black">
+      <div className="h-8 w-8 flex items-center justify-center rounded-full border-2 border-background bg-muted text-muted-foreground text-sm font-medium">
         {members.length}
-      </a>
+      </div>
     </div>
   );
 }

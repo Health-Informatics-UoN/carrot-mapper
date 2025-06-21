@@ -31,7 +31,7 @@ const ExportScanReport = ({ scanReportId, scanReportName }: ExportProps) => {
     <div
       role="button"
       onClick={handleDownload}
-      className="hover:bg-carrot-200 relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-carrot-100 focus:text-carrot-900 data-[disabled]:pointer-events-none data-[disabled]:opacity-50 dark:focus:bg-carrot-800 dark:focus:text-carrot-50"
+      className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50"
     >
       <Download className="mr-2 size-4" />
       Export Scan Report

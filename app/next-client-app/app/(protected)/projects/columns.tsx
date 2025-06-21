@@ -18,12 +18,15 @@ export const columns: ColumnDef<Project>[] = [
       const { id, name } = row.original;
       return (
         <Link href={`/projects/${id}/`}>
-          <Button variant={"link"} className="font-bold">
+          <Button
+            variant="link"
+            className="font-bold text-black dark:text-white"
+          >
             {name}
           </Button>
         </Link>
       );
-    },
+    }
   },
   {
     id: "Creation Date",
@@ -40,6 +43,6 @@ export const columns: ColumnDef<Project>[] = [
     cell: ({ row }) => {
       const date = new Date(row.original.created_at);
       return format(date, "MMM dd, yyyy h:mm a");
-    },
-  },
+    }
+  }
 ];
