@@ -20,20 +20,20 @@ import {
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// Interface defining the structure of an AI suggestion
+// - Reuse it from types
 
+// Interface matching the API response structure
 export interface AISuggestion {
-  id: string;
-  conceptName: string;
-  conceptCode: string;
-  matchScore: number;
-  source: string;
-  recommendationBy: string;
-  metricsUsed: string;
+  conceptCode: string;     // Code of the recommended concept
+  conceptName: string;     // Name of the recommended concept
+  matchScore: number;      // Score indicating how good the match is (0-1)
+  recommendedBy: string;   // System or algorithm that made the recommendation
+  metricsUsed: string;     // Metrics used for the recommendation
 }
 
-// Props interface for the main dialog component
+// - Move to types
 
+// Props interface for the main dialog component
 interface AISuggestionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -41,10 +41,10 @@ interface AISuggestionDialogProps {
   suggestions: AISuggestion[];
   fetchError: string | null;
   onApplySuggestion: (suggestion: AISuggestion) => void;
+  searchedValue: string;
 }
 
 // Table component that displays the suggestions in a structured format
-
 const AISuggestionTable = React.forwardRef<
   HTMLTableElement,
   {
@@ -59,20 +59,18 @@ const AISuggestionTable = React.forwardRef<
         <TableHead>Concept Name</TableHead>
         <TableHead>Code</TableHead>
         <TableHead>Match Score</TableHead>
-        <TableHead>Source</TableHead>
         <TableHead>Action</TableHead>
       </TableRow>
     </TableHeader>
     {/* Table body mapping through suggestions */}
     <TableBody>
-      {suggestions.map((suggestion) => (
-        <TableRow key={suggestion.id}>
+      {suggestions.map((suggestion, index) => (
+        <TableRow key={`${suggestion.conceptCode}-${index}`}>
           <TableCell className="font-medium">
             {suggestion.conceptName}
           </TableCell>
           <TableCell>{suggestion.conceptCode}</TableCell>
-          <TableCell>{Math.round(suggestion.matchScore * 100)}%</TableCell>
-          <TableCell>{suggestion.source}</TableCell>
+          <TableCell>{suggestion.matchScore}%</TableCell>
           <TableCell>
             <Button size="sm" onClick={() => onApplySuggestion(suggestion)}>
               Apply
@@ -86,7 +84,6 @@ const AISuggestionTable = React.forwardRef<
 AISuggestionTable.displayName = "AISuggestionTable";
 
 // Main content component handling different states (loading, error, data display)
-
 const AISuggestionContent = React.forwardRef<
   HTMLDivElement,
   {
@@ -119,7 +116,6 @@ const AISuggestionContent = React.forwardRef<
 AISuggestionContent.displayName = "AISuggestionContent";
 
 // Footer component with close button
-
 const AISuggestionFooter = React.forwardRef<
   HTMLDivElement,
   { onClose: () => void } & React.HTMLAttributes<HTMLDivElement>
@@ -142,7 +138,6 @@ const AISuggestionFooter = React.forwardRef<
 AISuggestionFooter.displayName = "AISuggestionFooter";
 
 // Main dialog component combining all parts
-
 const AISuggestionDialog = React.forwardRef<
   HTMLDivElement,
   AISuggestionDialogProps
@@ -155,18 +150,22 @@ const AISuggestionDialog = React.forwardRef<
       suggestions,
       fetchError,
       onApplySuggestion,
+      searchedValue
     },
     ref
   ) => (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent ref={ref} className="sm:max-w-[700px]">
         <DialogHeader>
-          <DialogTitle>AI Mapping Suggestions</DialogTitle>
+          <DialogTitle className="text-lg">AI Mapping Suggestions 🥕</DialogTitle>
           <DialogDescription>
+            <div className="mb-2">
+              <span className="font-semibold">Previous Value Code :</span> {searchedValue}
+            </div>
             {suggestions.length > 0 ? (
               <>
-                Recommendation AI Model: {suggestions[0].recommendationBy} |
-                Metrics Used: {suggestions[0].metricsUsed}
+                <span className="font-semibold">Recommendation AI Model:</span> {suggestions[0].recommendedBy} | 
+                <span className="font-semibold ml-2">Metrics Used:</span> {suggestions[0].metricsUsed}
               </>
             ) : (
               "Loading recommendation details..."

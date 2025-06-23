@@ -5,103 +5,59 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "./tooltip";
 import { Sparkles, Loader2 } from "lucide-react";
 import { AISuggestionDialog } from "./ai-suggestions-dialog";
 import type { AISuggestion } from "./ai-suggestions-dialog";
+import { getConceptRecommendations, getMockRecommendations } from "@/lib/api/recommendations";
 
-/**
-   * The AI suggestion selected by the user
-    * - Tooltip
-    * - Button to trigger API call for AI Suggestion
-    * - Dialog component to display AI suggestions
-  */
+interface AISuggestionsButtonProps {
+  value: string;
+}
 
-export function AISuggestionsButton() {
+export function AISuggestionsButton({ value }: AISuggestionsButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [suggestions, setSuggestions] = useState<AISuggestion[]>([]);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
   // Fetches AI suggestions from the API
-
   const handleClick = async () => {
+    console.log('=== AI Suggestions Button Clicked ===');
+    console.log('Value from row:', value);
+    
+    if (!value) {
+      setFetchError("No value provided to search for recommendations");
+      return;
+    }
+    
     setIsLoading(true);
     setFetchError(null);
+    
     try {
-      // API logic will be added here later
+      // Call the getConceptRecommendations function
 
-      // Undo Comments for testing the Button Get AI Suggestions in the UI
-
-      {
-        /* Testing Logic Starts*/
-      }
-
-      // const mockSuggestions: AISuggestion[] = [
-      //   {
-      //     id: "1",
-      //     conceptName: "Diabetes Mellitus",
-      //     conceptCode: "44054006",
-      //     matchScore: 0.92,
-      //     source: "SNOMED CT",
-      //     recommendationBy: "Lettuce",
-      //     metricsUsed: "Semantic Similarity",
-      //   },
-      //   {
-      //     id: "2",
-      //     conceptName: "Type 2 Diabetes",
-      //     conceptCode: "44054006-2",
-      //     matchScore: 0.85,
-      //     source: "SNOMED CT",
-      //     recommendationBy: "Lettuce",
-      //     metricsUsed: "Semantic Similarity",
-      //   },
-      //   {
-      //     id: "3",
-      //     conceptName: "Hypertension",
-      //     conceptCode: "38341003",
-      //     matchScore: 0.78,
-      //     source: "ICD-10",
-      //     recommendationBy: "Lettuce",
-      //     metricsUsed: "Semantic Similarity",
-      //   },
-      //   {
-      //     id: "4",
-      //     conceptName: "Myocardial Infarction",
-      //     conceptCode: "22298006",
-      //     matchScore: 0.73,
-      //     source: "ICD-40",
-      //     recommendationBy: "Lettuce",
-      //     metricsUsed: "Semantic Similarity",
-      //   },
-      //   {
-      //     id: "5",
-      //     conceptName: "Chronic Kidney Disease",
-      //     conceptCode: "709044004",
-      //     matchScore: 0.69,
-      //     source: "LOINC",
-      //     recommendationBy: "Lettuce",
-      //     metricsUsed: "Semantic Similarity",
-      //   },
-      // ];
-
-      // await new Promise((resolve) => setTimeout(resolve, 1000));
-      // setSuggestions(mockSuggestions);
-
-      {
-        /* Testing Logic Ends*/
-      }
-
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const recommendations = await getMockRecommendations(value);
+      
+      const formattedSuggestions = recommendations.map(rec => ({
+        conceptCode: rec.conceptCode,
+        conceptName: rec.conceptName,
+        matchScore: rec.matchScore,
+        recommendedBy: rec.recommendedBy,
+        metricsUsed: rec.metricsUsed
+      }));
+      
+      setSuggestions(formattedSuggestions);
       setIsOpen(true);
     } catch (error) {
+      console.error("Error generating suggestions:", error);
       setFetchError("Failed to fetch suggestions. Please try again.");
-      console.error("Error fetching suggestions:", error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Button & Tooltip functionality
-
   const handleApplySuggestion = (suggestion: AISuggestion) => {
     console.log("Applying suggestion:", suggestion);
     setIsOpen(false);
+    // Here you would implement the logic to apply the concept
   };
 
   return (
@@ -124,7 +80,7 @@ export function AISuggestionsButton() {
           </Button>
         </TooltipTrigger>
         <TooltipContent>
-          <p>Get AI-powered Concept Suggestions</p>
+          <p>Get AI-powered Concept Suggestions for "{value}"</p>
         </TooltipContent>
       </Tooltip>
 
@@ -135,15 +91,8 @@ export function AISuggestionsButton() {
         suggestions={suggestions}
         fetchError={fetchError}
         onApplySuggestion={handleApplySuggestion}
+        searchedValue={value}
       />
     </>
   );
 }
-
-// TODO:
-// 1. Add a loading state to the button (Use Suspense).
-// 2. Try to use Portals to display the tooltip (Use React Portals).
-// 3. Make the component pure when fetching the AI Suggestions (side effects)
-// 4. Trigger apply button to use the suggestion and change the concept code (make it as a state hook). 
-// 5. Add error handling (probably an error boundary). 
-// 6. Add error handling for the API call.

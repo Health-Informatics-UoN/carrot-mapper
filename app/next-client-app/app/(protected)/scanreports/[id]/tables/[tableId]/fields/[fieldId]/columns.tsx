@@ -110,7 +110,8 @@ export const columns = (
       enableHiding: true,
       enableSorting: false,
       cell: ({ row }) => {
-        return <AISuggestionsButton />;
+        const { value } = row.original;
+        return <AISuggestionsButton value={value} />;
       },
     });
   }
