@@ -6,7 +6,7 @@ import {
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogTitle,
+  DialogTitle
 } from "../ui/dialog";
 import { toast } from "sonner";
 import { Button } from "../ui/button";
@@ -28,7 +28,7 @@ const DeleteDialog = ({
   redirect = false,
   isOpen,
   setOpen = () => {},
-  needTrigger = false,
+  needTrigger = false
 }: DeleteDialogProps) => {
   const router = useRouter();
 
@@ -47,7 +47,7 @@ const DeleteDialog = ({
     <Dialog open={isOpen} onOpenChange={() => setOpen(false)}>
       {needTrigger && (
         <DialogTrigger asChild>
-          <div className="hover:bg-accent text-destructive relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-destructive data-[disabled]:pointer-events-none data-[disabled]:opacity-50">
+          <div className="text-black dark:text-white hover:text-destructive hover:dark:text-destructive hover:bg-accent relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-destructive data-[disabled]:pointer-events-none data-[disabled]:opacity-50">
             <TrashIcon className="mr-2 size-4" />
             Delete Scan Report
           </div>

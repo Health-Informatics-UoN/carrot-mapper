@@ -44,7 +44,7 @@ export const columns: ColumnDef<ScanReport>[] = [
       const { id, dataset } = row.original;
       return (
         <Link href={`/scanreports/${id}`}>
-          <Button variant={"link"} className="font-bold">
+          <Button variant="link" className="font-bold text-black dark:text-white">
             {dataset}
           </Button>
         </Link>

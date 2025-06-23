@@ -11,7 +11,7 @@ export function EditButton({
   type,
   permissions,
   prePath,
-  generalStatus,
+  generalStatus
 }: {
   scanreportId?: number;
   tableId?: number;
@@ -40,6 +40,11 @@ export function EditButton({
       <Button
         variant={type === "table" || type === "field" ? "secondary" : "default"}
         disabled={canEdit ? false : true}
+        className={cn(
+          type === "table" || type === "field"
+            ? "hover:bg-gray-300 dark:hover:bg-gray-700"
+            : "hover:bg-primary/90"
+        )}
       >
         {type === "table" ? "Edit Table" : type === "field" ? "Edit Field" : ""}
         <Pencil className="ml-2 size-4" />

@@ -22,7 +22,7 @@ export const columns: ColumnDef<ScanReportTable>[] = [
       return (
         <div>
           <Link href={`/scanreports/${scan_report}/tables/${id}`}>
-            <Button variant={"link"} className="font-bold">
+            <Button variant="link" className="font-bold text-black dark:text-white">
               {name}
             </Button>
           </Link>

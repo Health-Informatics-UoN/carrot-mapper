@@ -78,7 +78,7 @@ export const columns: ColumnDef<MappingRule>[] = [
                 <p className="text-destructive">{key}</p>{" "}
                 <ArrowRight size="16px" className="ml-2" />
               </div>
-              <p className="text-success-foreground">
+              <p className="text-success">
                 {term_mapping[key]} {omop_term}
               </p>
             </div>
