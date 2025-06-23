@@ -10,16 +10,16 @@
   --popover-foreground: 222.2 47.4% 11.2%;
   --muted: 210 40% 96.1%;
   --muted-foreground: 215.4 16.3% 46.9%;
-  --success: 142.1 76.2% 36.3%; /* green-600 */
-  --success-foreground: 210 40% 98%; /* white */
-  --destructive: 0 84.2% 60.2%; /* red-500 */
-  --destructive-foreground: 210 40% 98%; /* white */
-  --warning: 38 92% 50%; /* amber-400 */
-  --warning-foreground: 222.2 47.4% 11.2%; /* dark */
+  --success: 142.1 76.2% 36.3%; 
+  --success-foreground: 210 40% 98%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+  --warning: 38 92% 50%; 
+  --warning-foreground: 222.2 47.4% 11.2%;
   --accent: 240 4.8% 95.9%;
   --accent-foreground: 240 10% 3.9%;
   --primary: 227 45% 43%; /* #3C579E */
-  --primary-foreground: 0 0% 100%; /* white */
+  --primary-foreground: 0 0% 100%;
   --secondary: 210 40% 96.1%;
   --secondary-foreground: 222.2 47.4% 11.2%;
   --ring: 227 45% 43%; /* #3C579E */
@@ -31,7 +31,7 @@
   --popover-foreground: 210 40% 98%;
   --muted: 217.2 32.6% 17.5%;
   --muted-foreground: 215 20.2% 65.1%;
-  --success: 142.1 70% 45%; 
+  --success: 142.1 70% 45%;
   --success-foreground: 210 40% 98%;
   --destructive: 0 62.8% 30.6%;
   --destructive-foreground: 210 40% 98%;
@@ -39,13 +39,12 @@
   --warning-foreground: 210 40% 98%;
   --accent: 240 3.7% 15.9%;
   --accent-foreground: 0 0% 98%;
-  --primary: 227 45% 43%; 
-  --primary-foreground: 0 0% 100%; 
+  --primary: 227 45% 43%;
+  --primary-foreground: 0 0% 100%;
   --secondary: 222.2 47.4% 11.2%;
   --secondary-foreground: 210 40% 98%;
 }
 
-/* Show shadcn/ui muted grey background on hover for all circular ghost buttons */
 button.rounded-full:hover,
 button.rounded-full:focus-visible {
   background-color: hsl(var(--muted));
@@ -60,23 +59,27 @@ button.rounded-full:focus-visible {
 
 .my-react-select__option {
   background-color: hsl(var(--popover)) !important;
-  color: hsl(var(--popover-foreground)) !important;
+  color: hsl(var(--foreground)) !important;
   cursor: pointer;
 }
 
 .my-react-select__option--is-focused {
-  background-color: hsl(var(--accent)) !important;
-  color: hsl(var(--accent-foreground)) !important;
+  background-color: hsl(var(--accent)) !important; 
+  color: hsl(var(--foreground)) !important; 
 }
 
 .my-react-select__option--is-selected {
-  background-color: hsl(var(--primary)) !important;
-  color: hsl(var(--primary-foreground)) !important;
+  background-color: hsl(var(--accent)) !important; 
+  color: hsl(var(--foreground)) !important;
+  font-weight: 600;
 }
 
-.my-react-select__control {
-  background-color: hsl(var(--muted));
-  color: hsl(var(--foreground));
+.dark .my-react-select__option--is-selected {
+  background-color: hsl(
+    var(--accent)
+  ) !important; 
+  color: hsl(var(--foreground)) !important;
+  font-weight: 600;
   border: 1px solid hsl(var(--muted-foreground));
 }
 
@@ -86,13 +89,13 @@ button.rounded-full:focus-visible {
 }
 
 .my-react-select__multi-value__remove {
-  color: #ef4444 !important; /* Tailwind's red-500 */
+  color: #ef4444 !important;
   background: transparent !important;
   cursor: pointer;
   transition: color 0.2s;
 }
 .my-react-select__multi-value__remove:hover {
-  color: #b91c1c !important; /* Tailwind's red-700 for hover */
+  color: #b91c1c !important;
   background: transparent !important;
 }
 
@@ -102,8 +105,8 @@ button.rounded-full:focus-visible {
 }
 
 .dark .my-react-select__option--is-selected {
-  background-color: hsl(var(--primary)) !important;
-  color: hsl(var(--primary-foreground)) !important;
+  background-color: hsl(var(--muted)) !important;
+  color: hsl(var(--foreground)) !important;
 }
 
 .avatar-initial {
@@ -116,4 +119,11 @@ button.rounded-full:focus-visible {
     hover:bg-accent hover:text-accent-foreground
     focus:bg-accent focus:text-accent-foreground
     data-[disabled]:pointer-events-none data-[disabled]:opacity-50;
+}
+
+.pagination-btn {
+  @apply size-8 p-0 flex bg-black text-white border border-black ring-1 ring-black;
+}
+.dark .pagination-btn {
+  @apply bg-white text-black border-white ring-white;
 }

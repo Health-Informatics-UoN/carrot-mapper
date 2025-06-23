@@ -104,7 +104,7 @@ export function ScanReportDetailsForm({
                 <Tooltips content="Name of the Scan Report." />
               </h3>
               <Input
-                placeholder={scanreport.dataset}
+                value={values.name}
                 onChange={handleChange}
                 name="name"
                 disabled={!canUpdate}
