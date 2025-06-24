@@ -4,14 +4,14 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger,
+  DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import {
   Pencil2Icon,
   DotsHorizontalIcon,
   EyeNoneIcon,
   EyeOpenIcon,
-  TrashIcon,
+  TrashIcon
 } from "@radix-ui/react-icons";
 import Link from "next/link";
 import { ColumnDef } from "@tanstack/react-table";
@@ -32,7 +32,7 @@ export const columns: ColumnDef<ScanReport>[] = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="id" sortName="id" />
     ),
-    enableHiding: true,
+    enableHiding: true
   },
   {
     id: "Name",
@@ -44,12 +44,15 @@ export const columns: ColumnDef<ScanReport>[] = [
       const { id, dataset } = row.original;
       return (
         <Link href={`/scanreports/${id}`}>
-          <Button variant="link" className="font-bold text-black dark:text-white">
+          <Button
+            variant="link"
+            className="font-bold text-black dark:text-white"
+          >
             {dataset}
           </Button>
         </Link>
       );
-    },
+    }
   },
   {
     id: "Dataset",
@@ -61,7 +64,7 @@ export const columns: ColumnDef<ScanReport>[] = [
         sortName="parent_dataset"
       />
     ),
-    enableHiding: true,
+    enableHiding: true
   },
   {
     id: "Data Partner",
@@ -70,7 +73,7 @@ export const columns: ColumnDef<ScanReport>[] = [
       <DataTableColumnHeader column={column} title="Data Partner" />
     ),
     enableHiding: true,
-    enableSorting: false,
+    enableSorting: false
   },
   {
     id: "Author",
@@ -79,7 +82,7 @@ export const columns: ColumnDef<ScanReport>[] = [
       <DataTableColumnHeader column={column} title="Author" />
     ),
     enableHiding: true,
-    enableSorting: true,
+    enableSorting: true
   },
   {
     id: "Uploaded",
@@ -96,7 +99,7 @@ export const columns: ColumnDef<ScanReport>[] = [
     cell: ({ row }) => {
       const date = new Date(row.original.created_at);
       return format(date, "MMM dd, yyyy h:mm a");
-    },
+    }
   },
   {
     id: "Upload Status",
@@ -112,7 +115,7 @@ export const columns: ColumnDef<ScanReport>[] = [
           status={upload_status || { value: "IN_PROGRESS" }}
         />
       );
-    },
+    }
   },
   {
     id: "Mapping Status",
@@ -133,7 +136,7 @@ export const columns: ColumnDef<ScanReport>[] = [
           />
         </div>
       );
-    },
+    }
   },
   {
     id: "Actions",
@@ -163,7 +166,7 @@ export const columns: ColumnDef<ScanReport>[] = [
                     id: id,
                     hidden: hidden,
                     ObjName: dataset,
-                    type: "scanreports",
+                    type: "scanreports"
                   })
                 }
               >
@@ -176,15 +179,16 @@ export const columns: ColumnDef<ScanReport>[] = [
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => setOpen(true)}
-                className="text-destructive"
+                className="text-black hover:text-destructive focus:text-destructive"
               >
-                Delete <TrashIcon className="ml-auto" />
+                Delete{" "}
+                <TrashIcon className="ml-auto group-hover:text-destructive group-focus:text-destructive" />
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
           <DeleteDialog id={id} isOpen={isOpen} setOpen={setOpen} />
         </>
       );
-    },
-  },
+    }
+  }
 ];

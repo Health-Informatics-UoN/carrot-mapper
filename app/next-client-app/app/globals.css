@@ -86,6 +86,20 @@ button.rounded-full:focus-visible {
   color: hsl(var(--foreground));
 }
 
+.my-react-select__multi-value {
+  background-color: hsl(var(--primary)) !important;
+  border-radius: 0.375rem !important;
+}
+
+.my-react-select__multi-value__label {
+  color: hsl(var(--primary-foreground)) !important;
+  font-weight: 600;
+  max-width: none !important;
+  overflow: visible !important;
+  text-overflow: unset !important;
+  white-space: normal !important;
+}
+
 .my-react-select__multi-value__remove {
   color: #ef4444 !important;
   background: transparent !important;
@@ -142,4 +156,18 @@ button.rounded-full:focus-visible {
 [data-sonner-toast][data-type="warning"] {
   background: hsl(var(--warning)) !important;
   color: hsl(var(--warning-foreground)) !important;
+}
+
+/* Make file input text visible in dark mode */
+input[type="file"]::file-selector-button {
+  color: hsl(var(--foreground));
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  cursor: pointer;
+}
+
+.dark input[type="file"]::file-selector-button {
+  color: hsl(var(--success-foreground));
+  background: hsl(var(--muted));
+  border: none;
 }
