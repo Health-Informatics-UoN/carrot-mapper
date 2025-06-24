@@ -1,13 +1,22 @@
 "use client";
 import { useState } from "react";
 import { Button } from "../ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 import { Sparkles, Loader2 } from "lucide-react";
 import { AISuggestionDialog } from "./ai-suggestions-dialog";
 import { getConceptRecommendationsUnison } from "@/api/recommendations";
 import { UnisonConceptItem } from "@/types/recommendation";
 import { addConcept } from "@/api/concepts";
 import { toast } from "sonner";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { vocabularies } from "@/constants/vocabularies";
+import { DropdownMenuItem } from "@radix-ui/react-dropdown-menu";
+import { Tooltips } from "../core/Tooltips";
 
 export function AISuggestionsButton({
   value,
@@ -21,21 +30,23 @@ export function AISuggestionsButton({
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [suggestions, setSuggestions] = useState<UnisonConceptItem[]>([]);
-  const [fetchError, setFetchError] = useState<string | null>(null);
+  const [vocabularyId, setVocabularyId] = useState<string>("");
 
   // Fetches AI suggestions from the API
-  const handleClick = async () => {
+  const handleClick = async (vocabularyId: string) => {
     if (!value) {
-      setFetchError("No value provided to search for recommendations");
+      toast.error("No value provided to search for recommendations");
       return;
     }
 
     setIsLoading(true);
-    setFetchError(null);
 
     try {
       // Call the getConceptRecommendations function
-      const recommendations = await getConceptRecommendationsUnison(value);
+      const recommendations = await getConceptRecommendationsUnison(
+        value,
+        vocabularyId
+      );
       // Filter to get only unique concept IDs
       const uniqueRecommendations = recommendations.items.filter(
         (item, index, array) =>
@@ -46,7 +57,7 @@ export function AISuggestionsButton({
       setIsOpen(true);
     } catch (error) {
       console.error("Error generating suggestions:", error);
-      setFetchError("Failed to fetch suggestions. Please try again.");
+      toast.error("Failed to fetch suggestions. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -74,13 +85,12 @@ export function AISuggestionsButton({
 
   return (
     <>
-      <Tooltip>
-        <TooltipTrigger asChild>
+      <DropdownMenu>
+        <DropdownMenuTrigger className="flex focus:outline-none">
           <Button
             variant="outline"
             size="sm"
             className="gap-2 border-purple-400 hover:bg-purple-100 hover:text-black"
-            onClick={handleClick}
             disabled={isLoading}
           >
             {isLoading ? (
@@ -90,11 +100,32 @@ export function AISuggestionsButton({
             )}
             Use AI Assistant
           </Button>
-        </TooltipTrigger>
-        <TooltipContent>
-          <p>Get AI-powered Concept Suggestions for "{value}"</p>
-        </TooltipContent>
-      </Tooltip>
+          <Tooltips content="Get AI-powered Concept Suggestions for your value" />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent
+          align="end"
+          className="w-48 overflow-y-auto max-h-96"
+        >
+          <DropdownMenuLabel className="text-black font-semibold text-center">
+            Select Vocabulary
+          </DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          {vocabularies.map((vocabulary) => {
+            return (
+              <DropdownMenuItem
+                key={vocabulary.id}
+                className="cursor-pointer hover:bg-blue-100 hover:text-black focus:outline-none mt-1 p-1"
+                onClick={() => {
+                  setVocabularyId(vocabulary.id);
+                  handleClick(vocabulary.id);
+                }}
+              >
+                {vocabulary.name}
+              </DropdownMenuItem>
+            );
+          })}
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       <AISuggestionDialog
         open={isOpen}
@@ -104,6 +135,7 @@ export function AISuggestionsButton({
         searchedValue={value}
         tableId={tableId}
         rowId={rowId}
+        vocabularyId={vocabularyId}
       />
     </>
   );
