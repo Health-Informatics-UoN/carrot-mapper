@@ -62,7 +62,7 @@ const AISuggestionDialog = React.forwardRef<
                 {recommendation_service_name.charAt(0).toUpperCase() +
                   recommendation_service_name.slice(1)}{" "}
                 |<span className="font-semibold ml-2">Metrics Used:</span>{" "}
-                Accuracy
+                Semantic Similarity
               </>
             ) : (
               "Loading recommendation details..."
