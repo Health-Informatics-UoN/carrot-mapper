@@ -6,13 +6,13 @@ import AddConcept from "@/components/concepts/add-concept";
 import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import CopyButton from "@/components/core/CopyButton";
-import { Button } from "@/components/ui/button";
-import { AISuggestionsButton } from "@/components/ui/ai-suggesions-button";
+import { AISuggestionsButton } from "@/components/recommendations/ai-suggesions-button";
 
 // Get the env var for enable AI suggestions column
-const isAIFeatureEnabled = process.env.NEXT_PUBLIC_AI_FEATURE_RECOMMENDATION === 'true';
+const isAIFeatureEnabled =
+  process.env.NEXT_PUBLIC_ENABLE_AI_RECOMMENDATION === "true";
 
-// All Standard Columns 
+// All Standard Columns
 export const columns = (
   addSR: (concept: ScanReportConcept, c: Concept) => void,
   deleteSR: (id: number) => void,
@@ -117,4 +117,4 @@ export const columns = (
   }
 
   return baseColumns;
-}
+};

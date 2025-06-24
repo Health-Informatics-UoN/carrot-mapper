@@ -76,8 +76,9 @@ services:
       - NODE_ENV=development
       - WATCHPACK_POLLING=true
       - NEXT_PUBLIC_ENABLE_REUSE_TRIGGER_OPTION=true
-      - NEXT_PUBLIC_AI_FEATURE_RECOMMENDATION=true
-      - NEXT_PUBLIC_AI_RECOMMENDATION_SERVICE_URL=http://host.docker.internal:5001
+      - NEXT_PUBLIC_ENABLE_AI_RECOMMENDATION=true
+      - RECOMMENDATION_SERVICE=unison
+      - UNISON_API_KEY=unison-api-key
     volumes:
       - ./app/next-client-app:/app
       - /app/node_modules
