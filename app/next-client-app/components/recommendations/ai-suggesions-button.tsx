@@ -1,50 +1,38 @@
 "use client";
 import { useState } from "react";
-import { Button } from "./button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "./tooltip";
+import { Button } from "../ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 import { Sparkles, Loader2 } from "lucide-react";
 import { AISuggestionDialog } from "./ai-suggestions-dialog";
-import type { AISuggestion } from "./ai-suggestions-dialog";
-import { getConceptRecommendations, getMockRecommendations } from "@/lib/api/recommendations";
+import { getConceptRecommendationsUnison } from "@/api/recommendations";
+import { UnisonConceptItem } from "@/types/recommendation";
 
-interface AISuggestionsButtonProps {
-  value: string;
-}
-
-export function AISuggestionsButton({ value }: AISuggestionsButtonProps) {
+export function AISuggestionsButton({ value }: { value: string }) {
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
-  const [suggestions, setSuggestions] = useState<AISuggestion[]>([]);
+  const [suggestions, setSuggestions] = useState<UnisonConceptItem[]>([]);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
   // Fetches AI suggestions from the API
   const handleClick = async () => {
-    console.log('=== AI Suggestions Button Clicked ===');
-    console.log('Value from row:', value);
-    
     if (!value) {
       setFetchError("No value provided to search for recommendations");
       return;
     }
-    
+
     setIsLoading(true);
     setFetchError(null);
-    
+
     try {
       // Call the getConceptRecommendations function
+      const recommendations = await getConceptRecommendationsUnison(value);
+      // Filter to get only unique concept IDs
+      const uniqueRecommendations = recommendations.items.filter(
+        (item, index, array) =>
+          array.findIndex((i) => i.conceptId === item.conceptId) === index
+      );
 
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      const recommendations = await getMockRecommendations(value);
-      
-      const formattedSuggestions = recommendations.map(rec => ({
-        conceptCode: rec.conceptCode,
-        conceptName: rec.conceptName,
-        matchScore: rec.matchScore,
-        recommendedBy: rec.recommendedBy,
-        metricsUsed: rec.metricsUsed
-      }));
-      
-      setSuggestions(formattedSuggestions);
+      setSuggestions(uniqueRecommendations);
       setIsOpen(true);
     } catch (error) {
       console.error("Error generating suggestions:", error);
@@ -54,7 +42,7 @@ export function AISuggestionsButton({ value }: AISuggestionsButtonProps) {
     }
   };
 
-  const handleApplySuggestion = (suggestion: AISuggestion) => {
+  const handleApplySuggestion = (suggestion: UnisonConceptItem) => {
     console.log("Applying suggestion:", suggestion);
     setIsOpen(false);
     // Here you would implement the logic to apply the concept
