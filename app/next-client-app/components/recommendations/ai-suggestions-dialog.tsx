@@ -26,25 +26,19 @@ interface AISuggestionDialogProps {
 }
 
 // Main dialog component combining all parts
-const AISuggestionDialog = React.forwardRef<
-  HTMLDivElement,
-  AISuggestionDialogProps
->(
-  (
-    {
-      open,
-      onOpenChange,
-      suggestions,
-      onApplySuggestion,
-      searchedValue,
-      tableId,
-      rowId,
-      vocabularyId,
-    },
-    ref
-  ) => (
+export default function AISuggestionDialog({
+  open,
+  onOpenChange,
+  suggestions,
+  onApplySuggestion,
+  searchedValue,
+  tableId,
+  rowId,
+  vocabularyId,
+}: AISuggestionDialogProps) {
+  return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent ref={ref} className="max-w-screen-xl overflow-auto h-1/2">
+      <DialogContent className="max-w-screen-xl overflow-auto h-1/2">
         <DialogHeader>
           <DialogTitle className="text-xl text-center">
             AI Mapping Suggestions
@@ -57,7 +51,7 @@ const AISuggestionDialog = React.forwardRef<
               className="py-1 md:py-0 md:pr-3"
             />
             <InfoItem
-              label="Vocabulary"
+              label="Target Vocabulary"
               value={vocabularyId}
               className="py-1 md:py-0 md:px-3"
             />
@@ -69,11 +63,6 @@ const AISuggestionDialog = React.forwardRef<
                     recommendation_service_name.slice(1)
                   : "Unknown AI Model"
               }
-              className="py-1 md:py-0 md:px-3"
-            />
-            <InfoItem
-              label="Metrics Used"
-              value="Semantic Similarity"
               className="py-1 md:py-0 md:px-3"
             />
           </div>
@@ -93,8 +82,5 @@ const AISuggestionDialog = React.forwardRef<
         )}
       </DialogContent>
     </Dialog>
-  )
-);
-AISuggestionDialog.displayName = "AISuggestionDialog";
-
-export { AISuggestionDialog };
+  );
+}
