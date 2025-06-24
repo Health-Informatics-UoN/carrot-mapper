@@ -179,10 +179,9 @@ export const columns: ColumnDef<ScanReport>[] = [
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => setOpen(true)}
-                className="text-black hover:text-destructive focus:text-destructive"
+                className="text-black dark:text-white hover:text-destructive focus:text-destructive dark:hover:text-destructive dark:focus:text-destructive"
               >
-                Delete{" "}
-                <TrashIcon className="ml-auto group-hover:text-destructive group-focus:text-destructive" />
+                Delete <TrashIcon className="ml-auto" />
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
