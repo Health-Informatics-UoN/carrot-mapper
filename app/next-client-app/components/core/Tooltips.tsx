@@ -20,7 +20,7 @@ export function Tooltips({
         <TooltipTrigger asChild>
           <InfoIcon className="ml-1 size-4 text-carrot" />
         </TooltipTrigger>
-        <TooltipContent>
+        <TooltipContent className="max-w-96 text-center">
           <p>
             {content}
             {link && (
