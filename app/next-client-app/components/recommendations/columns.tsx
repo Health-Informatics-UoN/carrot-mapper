@@ -4,6 +4,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { DataTableColumnHeader } from "@/components/data-table/DataTableColumnHeader";
 import { UnisonConceptItem } from "@/types/recommendation";
 import { Button } from "../ui/button";
+import { Tooltips } from "../core/Tooltips";
 
 export const columns = (
   tableId: string,
@@ -21,7 +22,10 @@ export const columns = (
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Concept Name" />
     ),
-    accessorKey: "conceptName",
+    cell: ({ row }) => {
+      const { conceptName } = row.original;
+      return <div className="w-[500px]">{conceptName}</div>;
+    },
     enableSorting: false,
     enableHiding: true,
   },
@@ -47,15 +51,6 @@ export const columns = (
     enableHiding: true,
   },
   {
-    id: "Vocabulary",
-    accessorKey: "vocabulary",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Vocabulary" />
-    ),
-    enableSorting: false,
-    enableHiding: true,
-  },
-  {
     id: "Domain",
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Domain" />
@@ -63,6 +58,29 @@ export const columns = (
     enableSorting: false,
     enableHiding: true,
     accessorKey: "domain",
+  },
+  {
+    id: "Accuracy",
+    header: ({ column }) => (
+      <div className="text-center w-full">
+        <DataTableColumnHeader column={column} title="Accuracy/Confidence" />
+      </div>
+    ),
+    enableSorting: false,
+    enableHiding: true,
+    cell: ({ row }) => {
+      const { accuracy, explanation } = row.original;
+      return (
+        <div className="text-center w-full flex items-center justify-center gap-1">
+          {accuracy}
+          <Tooltips
+            content={`Explanation: ${
+              accuracy === 100 ? "Exact Match" : explanation
+            }`}
+          />
+        </div>
+      );
+    },
   },
   {
     id: "Action",
@@ -73,7 +91,7 @@ export const columns = (
       const { conceptId } = row.original;
       return (
         <Button
-          variant="outline"
+          variant="secondary"
           size="sm"
           onClick={() => {
             onApplySuggestion({
