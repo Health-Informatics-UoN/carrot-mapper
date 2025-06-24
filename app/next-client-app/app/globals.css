@@ -10,16 +10,16 @@
   --popover-foreground: 222.2 47.4% 11.2%;
   --muted: 210 40% 96.1%;
   --muted-foreground: 215.4 16.3% 46.9%;
-  --success: 142.1 76.2% 36.3%; 
+  --success: 142.1 76.2% 36.3%;
   --success-foreground: 210 40% 98%;
   --destructive: 0 84.2% 60.2%;
   --destructive-foreground: 210 40% 98%;
-  --warning: 38 92% 50%; 
+  --warning: 38 92% 50%;
   --warning-foreground: 222.2 47.4% 11.2%;
   --accent: 240 4.8% 95.9%;
   --accent-foreground: 240 10% 3.9%;
-  --primary: 227 45% 43%; /* #3C579E */
-  --primary-foreground: 0 0% 100%;
+  --primary: 0 0% 0%; /* black */
+  --primary-foreground: 0 0% 100%; /* white */
   --secondary: 210 40% 96.1%;
   --secondary-foreground: 222.2 47.4% 11.2%;
   --ring: 227 45% 43%; /* #3C579E */
@@ -39,8 +39,8 @@
   --warning-foreground: 210 40% 98%;
   --accent: 240 3.7% 15.9%;
   --accent-foreground: 0 0% 98%;
-  --primary: 227 45% 43%;
-  --primary-foreground: 0 0% 100%;
+  --primary: 0 0% 0%; /* black */
+  --primary-foreground: 0 0% 100%; /* white */
   --secondary: 222.2 47.4% 11.2%;
   --secondary-foreground: 210 40% 98%;
 }
@@ -64,20 +64,18 @@ button.rounded-full:focus-visible {
 }
 
 .my-react-select__option--is-focused {
-  background-color: hsl(var(--accent)) !important; 
-  color: hsl(var(--foreground)) !important; 
+  background-color: hsl(var(--accent)) !important;
+  color: hsl(var(--foreground)) !important;
 }
 
 .my-react-select__option--is-selected {
-  background-color: hsl(var(--accent)) !important; 
+  background-color: hsl(var(--accent)) !important;
   color: hsl(var(--foreground)) !important;
   font-weight: 600;
 }
 
 .dark .my-react-select__option--is-selected {
-  background-color: hsl(
-    var(--accent)
-  ) !important; 
+  background-color: hsl(var(--accent)) !important;
   color: hsl(var(--foreground)) !important;
   font-weight: 600;
   border: 1px solid hsl(var(--muted-foreground));
@@ -126,4 +124,22 @@ button.rounded-full:focus-visible {
 }
 .dark .pagination-btn {
   @apply bg-white text-black border-white ring-white;
+}
+
+/* Sonner toast global styles */
+[data-sonner-toast][data-type="success"] {
+  background: hsl(var(--success)) !important;
+  color: hsl(var(--success-foreground)) !important;
+}
+[data-sonner-toast][data-type="error"] {
+  background: hsl(var(--destructive)) !important;
+  color: hsl(var(--destructive-foreground)) !important;
+}
+[data-sonner-toast][data-type="info"] {
+  background: hsl(var(--primary)) !important;
+  color: hsl(var(--primary-foreground)) !important;
+}
+[data-sonner-toast][data-type="warning"] {
+  background: hsl(var(--warning)) !important;
+  color: hsl(var(--warning-foreground)) !important;
 }

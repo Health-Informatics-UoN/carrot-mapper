@@ -11,7 +11,7 @@ export default async function ScanReports() {
   return (
     <>
       <div className="flex font-semibold text-xl items-center">
-        <FileScan className="mr-2" />
+        <FileScan className="mr-2 text-green-700" />
         <Link href="/scanreports">
           <h2 className="text-muted-foreground">Scan Reports</h2>
         </Link>
