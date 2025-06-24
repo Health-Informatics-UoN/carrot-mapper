@@ -10,20 +10,20 @@ interface RequestOptions {
   download?: boolean;
   cache?: RequestCache;
   next?: { revalidate: number };
-  requireAuth?: boolean;
+  authMode?: "token" | "apiKey";
   baseUrl?: string;
 }
 
 const request = async <T>(url: string, options: RequestOptions = {}) => {
   // Set Default to requiring auth for backward compatibility (Django)
-  
-  const requireAuth = options.requireAuth ?? true; 
+
+  const authMode = options.authMode ?? "token";
   const baseUrl = options.baseUrl ?? `${apiUrl}/api`;
-  
+
   let headers: Record<string, string> = { ...(options.headers || {}) };
 
   // Only add auth if required (for Django backend)
-  if (requireAuth) {
+  if (authMode === "token") {
     const session = await getServerSession(authOptions);
     const token = session?.access_token;
     if (token) {
