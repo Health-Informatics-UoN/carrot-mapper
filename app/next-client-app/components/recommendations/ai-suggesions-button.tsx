@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Button } from "../ui/button";
 import { Sparkles, Loader2 } from "lucide-react";
-import { AISuggestionDialog } from "./ai-suggestions-dialog";
+import AISuggestionDialog from "./ai-suggestions-dialog";
 import { getConceptRecommendationsUnison } from "@/api/recommendations";
 import { UnisonConceptItem } from "@/types/recommendation";
 import { addConcept } from "@/api/concepts";
@@ -14,7 +14,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { vocabularies } from "@/constants/vocabularies";
+import { domains } from "@/constants/domains";
 import { DropdownMenuItem } from "@radix-ui/react-dropdown-menu";
 import { Tooltips } from "../core/Tooltips";
 
@@ -30,10 +30,10 @@ export function AISuggestionsButton({
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [suggestions, setSuggestions] = useState<UnisonConceptItem[]>([]);
-  const [vocabularyId, setVocabularyId] = useState<string>("");
+  const [domainId, setDomainId] = useState<string>("");
 
   // Fetches AI suggestions from the API
-  const handleClick = async (vocabularyId: string) => {
+  const handleClick = async (domainId: string) => {
     if (!value) {
       toast.error("No value provided to search for recommendations");
       return;
@@ -45,7 +45,7 @@ export function AISuggestionsButton({
       // Call the getConceptRecommendations function
       const recommendations = await getConceptRecommendationsUnison(
         value,
-        vocabularyId
+        domainId
       );
       // Filter to get only unique concept IDs
       const uniqueRecommendations = recommendations.items.filter(
@@ -86,41 +86,43 @@ export function AISuggestionsButton({
   return (
     <>
       <DropdownMenu>
-        <DropdownMenuTrigger className="flex focus:outline-none">
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-2 border-purple-400 hover:bg-purple-100 hover:text-black"
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Sparkles className="h-4 w-4 text-purple-500" />
-            )}
-            Use AI Assistant
-          </Button>
-          <Tooltips content="Get AI-powered Concept Suggestions for your value" />
+        <DropdownMenuTrigger asChild>
+          <div className="flex focus:outline-none">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2 border-purple-400 hover:bg-purple-100 hover:text-black"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Sparkles className="h-4 w-4 text-purple-500" />
+              )}
+              Use AI Assistant
+            </Button>
+            <Tooltips content="Get AI-powered Standard Concept Suggestions for your value. To get the better results, select the most relevant domain." />
+          </div>
         </DropdownMenuTrigger>
         <DropdownMenuContent
-          align="end"
-          className="w-48 overflow-y-auto max-h-96"
+          align="start"
+          className="w-52 overflow-y-auto max-h-96"
         >
           <DropdownMenuLabel className="text-black font-semibold text-center">
-            Select Vocabulary
+            Select Relevant Domain
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
-          {vocabularies.map((vocabulary) => {
+          {domains.map((domain) => {
             return (
               <DropdownMenuItem
-                key={vocabulary.id}
+                key={domain.id}
                 className="cursor-pointer hover:bg-blue-100 hover:text-black focus:outline-none mt-1 p-1"
                 onClick={() => {
-                  setVocabularyId(vocabulary.id);
-                  handleClick(vocabulary.id);
+                  setDomainId(domain.id);
+                  handleClick(domain.id);
                 }}
               >
-                {vocabulary.name}
+                {domain.id}
               </DropdownMenuItem>
             );
           })}
@@ -135,7 +137,7 @@ export function AISuggestionsButton({
         searchedValue={value}
         tableId={tableId}
         rowId={rowId}
-        vocabularyId={vocabularyId}
+        domainId={domainId}
       />
     </>
   );

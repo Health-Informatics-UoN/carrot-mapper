@@ -22,7 +22,7 @@ interface AISuggestionDialogProps {
   searchedValue: string;
   tableId: string;
   rowId: number;
-  vocabularyId: string;
+  domainId: string;
 }
 
 // Main dialog component combining all parts
@@ -34,7 +34,7 @@ export default function AISuggestionDialog({
   searchedValue,
   tableId,
   rowId,
-  vocabularyId,
+  domainId,
 }: AISuggestionDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -51,8 +51,8 @@ export default function AISuggestionDialog({
               className="py-1 md:py-0 md:pr-3"
             />
             <InfoItem
-              label="Target Vocabulary"
-              value={vocabularyId}
+              label="Domain Chosen"
+              value={domainId}
               className="py-1 md:py-0 md:px-3"
             />
             <InfoItem
@@ -78,7 +78,7 @@ export default function AISuggestionDialog({
             overflow={false}
           />
         ) : (
-          "Retrieving Jobs"
+          "No suggestions found"
         )}
       </DialogContent>
     </Dialog>

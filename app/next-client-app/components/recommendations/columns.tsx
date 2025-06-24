@@ -51,13 +51,13 @@ export const columns = (
     enableHiding: true,
   },
   {
-    id: "Domain",
+    id: "Vocabulary",
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Domain" />
+      <DataTableColumnHeader column={column} title="Vocabulary" />
     ),
     enableSorting: false,
     enableHiding: true,
-    accessorKey: "domain",
+    accessorKey: "vocabulary",
   },
   {
     id: "Accuracy",

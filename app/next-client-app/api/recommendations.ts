@@ -12,11 +12,11 @@ export const getConceptRecommendationsUnison = async (
   // Unison can query by concept name, or concept code (exact match).
   // The latter is used first in searching, then the former.
   queryValue: string,
-  vocabularyId: string
+  domainId: string
 ): Promise<UnisonConceptResponse> => {
   try {
     if (recommendation_service === "unison") {
-      const endpoint = `${queryValue}?apiKey=${api_key_Unison}&vocabulary=${vocabularyId}`;
+      const endpoint = `${queryValue}?apiKey=${api_key_Unison}&domain=${domainId}`;
       return await request<UnisonConceptResponse>(endpoint, {
         baseUrl: unison_base_url,
         headers: {
