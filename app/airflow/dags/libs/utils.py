@@ -195,6 +195,15 @@ def _validate_dag_params(
             if value is None or value.strip() == "":
                 errors.append(f"Missing required parameter: {param}")
                 continue
+            if param == "file_type":
+                if value == "application/json":
+                    value = "json"
+                elif value == "text/csv":
+                    value = "csv"
+                else:
+                    errors.append(
+                        f"Invalid {param}: {value}. Must be application/json or text/csv."
+                    )
             validated_params[param] = value
 
     # Validate boolean parameters

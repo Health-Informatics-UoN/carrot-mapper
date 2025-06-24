@@ -7,6 +7,21 @@ from shared_code.logger import logger
 from shared_code.models import ScanReportFieldDict, ScanReportValueDict
 
 
+ALLOWED_DOMAINS = [
+    "gender",
+    "race",
+    "ethnicity",
+    "measurement",
+    "condition",
+    "observation",
+    "drug",
+    "procedure",
+    "device",
+    "specimen",
+    "specanatomic site",
+]
+
+
 def unwrap_message(msg: func.QueueMessage) -> Tuple[str, str, str, str]:
     """
     Unwraps a queue message for further processing.

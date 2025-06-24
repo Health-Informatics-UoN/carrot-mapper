@@ -7,6 +7,7 @@ from airflow.providers.postgres.hooks.postgres import PostgresHook
 from libs.SR_processing.helpers import default_zero
 from libs.enums import JobStageType, StageStatusType
 from libs.utils import update_job_status
+from libs.settings import AIRFLOW_DEBUG_MODE
 
 # PostgreSQL connection hook
 pg_hook = PostgresHook(postgres_conn_id="postgres_db_conn")
@@ -49,30 +50,15 @@ def create_field_entries(
                 field_name = str(row[1].value) if row[1].value is not None else ""
                 description = str(row[2].value) if row[2].value is not None else ""
                 type_column = str(row[3].value) if row[3].value is not None else ""
-                max_length = row[4].value
-                nrows = row[5].value
-                nrows_checked = row[6].value
 
-                # Calculate fractions with default values
-                fraction_empty = round(default_zero(row[7].value), 2)
-                nunique_values = row[8].value
-                fraction_unique = round(default_zero(row[9].value), 2)
-
-                # Execute the query and get the returned ID
                 pg_hook.run(
                     create_fields_query,
                     parameters={
                         # table[1] is table id
                         "scan_report_table_id": table[1],
-                        "name": field_name.replace("\ufeff", ""),
+                        "name": field_name,  # NOTE: without BOM removal to keep the consistency with Azure functions
                         "description_column": description,
                         "type_column": type_column,
-                        "max_length": max_length,
-                        "nrows": nrows,
-                        "nrows_checked": nrows_checked,
-                        "fraction_empty": fraction_empty,
-                        "nunique_values": nunique_values,
-                        "fraction_unique": fraction_unique,
                     },
                 )
 
@@ -237,6 +223,8 @@ def delete_temp_tables(scan_report_id: int, table_pairs: List[Tuple[str, int]]) 
         table_pairs: A list of tuples containing the table name and ID
     """
     try:
+        if AIRFLOW_DEBUG_MODE == "true":
+            return
         pg_hook.run(f"DROP TABLE IF EXISTS temp_data_dictionary_{scan_report_id}")
         for _, table_id in table_pairs:
             pg_hook.run(f"DROP TABLE IF EXISTS temp_field_values_{table_id}")

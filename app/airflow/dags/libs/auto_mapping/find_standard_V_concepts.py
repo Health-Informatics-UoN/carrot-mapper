@@ -96,7 +96,7 @@ def find_standard_concepts(**kwargs) -> None:
         # Process each field-vocabulary pair
         for pair in field_vocab_pairs:
             sr_field_id = pair["sr_field_id"]
-            vocabulary_id = pair["vocabulary_id"]
+            vocabulary_id = pair["vocabulary_id"].upper()
 
             if not sr_field_id or not vocabulary_id:
                 raise AirflowException(
@@ -120,7 +120,7 @@ def find_standard_concepts(**kwargs) -> None:
             FROM mapping_scanreportvalue AS sr_value
             JOIN omop.concept AS src_concept ON
                 src_concept.concept_code = sr_value.value AND
-                src_concept.vocabulary_id = %(vocabulary_id)s
+                UPPER(src_concept.vocabulary_id) = %(vocabulary_id)s
             JOIN omop.concept_relationship AS concept_relationship ON
                 concept_relationship.concept_id_1 = src_concept.concept_id AND
                 concept_relationship.relationship_id = 'Maps to'
@@ -199,18 +199,18 @@ def create_standard_concepts(**kwargs) -> None:
                 -- TODO: when we can distinguish between source and standard concepts, we can add value to this column
                 -- temp_std_concepts.source_concept_id,
                 temp_std_concepts.standard_concept_id,
-                23             -- content_type_id for scanreportvalue
+                (SELECT id FROM django_content_type WHERE app_label = 'mapping' AND model = 'scanreportvalue')
             FROM temp_standard_concepts_%(table_id)s AS temp_std_concepts
             WHERE NOT EXISTS (
                 -- Check if the concept already exists
                 SELECT 1 FROM mapping_scanreportconcept
                 WHERE object_id = temp_std_concepts.sr_value_id
                 AND concept_id = temp_std_concepts.standard_concept_id
-                AND content_type_id = 23
+                AND content_type_id = (
+                    SELECT id FROM django_content_type 
+                    WHERE app_label = 'mapping' AND model = 'scanreportvalue'
+                )
             );
-
-            -- Drop the temp table holding the temp standard concepts data after creating the V concepts
-            DROP TABLE IF EXISTS temp_standard_concepts_%(table_id)s;
             """
         try:
             pg_hook.run(create_concept_query, parameters={"table_id": table_id})

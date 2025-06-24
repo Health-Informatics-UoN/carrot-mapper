@@ -165,25 +165,22 @@ class Command(BaseCommand):
     def _create_minio_resources(self):
         """
         Creates the required MinIO resources such as MinIO
-        Buckets and Azure Queues to run Carrot-Mapper.
+        Buckets to run Carrot-Mapper.
 
-        Uses MinIO as a storage and Blob Queue as a queue.
+        Uses MinIO as a storage.
 
         Args:
             None
 
         Returns:
             - Creates bucket if it doesn't exist
-            - Creates Azure Queues if they don't exist
             - If the bucket exists, it will skip and return a message.
-            - If the Azure Queues exist, it will skip and return a message.
         """
         if not all(
             [
                 self.MINIO_ENDPOINT,
                 self.MINIO_ACCESS_KEY,
                 self.MINIO_SECRET_KEY,
-                self.AZURE_CONN_STRING,
             ]
         ):
             self.stdout.write(
@@ -200,13 +197,7 @@ class Command(BaseCommand):
                 secure=False,
             )
 
-            # Creates Azure Queue Connection
-            queue_service = QueueServiceClient.from_connection_string(
-                self.AZURE_CONN_STRING
-            )
-
-            # Create Azure Queues and MinIO Buckets
-            self._create_azure_queues(queue_service)
+            # Create MinIO Buckets
             self._create_minio_buckets(minio_client)
 
             self.stdout.write(self.style.SUCCESS("MinIO Storage setup complete."))

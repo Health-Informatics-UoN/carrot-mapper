@@ -5,6 +5,7 @@ from shared.mapping.models import (
     ScanReportField,
     ScanReportValue,
     ScanReportTable,
+    Concept,
 )
 from shared_code import db
 from shared_code.logger import logger
@@ -13,11 +14,7 @@ from shared_code.models import (
     ScanReportFieldDict,
     ScanReportValueDict,
 )
-from shared_code.db import (
-    update_job,
-    JobStageType,
-    StageStatusType,
-)
+from shared_code.helpers import ALLOWED_DOMAINS
 
 """
 Functions for finding, mapping, and creation of reusable Scan Report Concepts.
@@ -343,18 +340,17 @@ def select_concepts_to_post(
                 str(new_content_detail["description"]),
                 str(new_content_detail["field_name"]),
             )
-        else:
-            update_job(
-                JobStageType.REUSE_CONCEPTS,
-                StageStatusType.FAILED,
-                scan_report_table=table,
-                details=f"Reusing concepts failed: Unsupported content_type: {content_type}",
-            )
-            raise ValueError(f"Unsupported content_type: {content_type}")
 
         try:
             existing_content_id, concept_ids = details_to_id_and_concept_ids_map[key]
             for concept_id in concept_ids:
+                if content_type == ScanReportConceptContentType.VALUE:
+                    try:
+                        concept_obj = Concept.objects.get(pk=concept_id)
+                        if concept_obj.domain_id.lower() not in ALLOWED_DOMAINS:
+                            continue  # Skip this concept if it is not in the allowed domains
+                    except Concept.DoesNotExist:
+                        continue  # If concept doesn't exist, skip
                 logger.info(
                     f"Found existing {'field' if content_type == ScanReportConceptContentType.FIELD else 'value'} with id: {existing_content_id} "
                     f"with existing concept mapping: {concept_id} which matches new {'field' if content_type == ScanReportConceptContentType.FIELD else 'value'} id: {new_content_detail['id']}"

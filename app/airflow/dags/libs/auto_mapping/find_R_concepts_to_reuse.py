@@ -10,6 +10,8 @@ from libs.queries import (
     find_reusing_value_query,
     find_reusing_field_query,
     find_object_id_query,
+    validate_reused_value_query,
+    create_concept_query,
 )
 
 # PostgreSQL connection hook
@@ -19,45 +21,48 @@ pg_hook = PostgresHook(postgres_conn_id="postgres_db_conn")
 def delete_R_concepts(**kwargs) -> None:
     """
     To make sure the eligble concepts for reusing is up-to-date, we will refresh the R concepts
-    by deleting all reused concepts for a given scan report table with creation type 'R' (Reused).
+    by deleting all reused concepts for a given scan report table with creation type 'R' (Reused),
+    in both cases of trigger_reuse_concepts is True or False.
+
     Validated param needed is:
     - table_id (int): The ID of the scan report table to process
     """
     # Get validated parameters from XCom
     validated_params = pull_validated_params(kwargs, "validate_params_auto_mapping")
-    trigger_reuse_concepts = validated_params["trigger_reuse_concepts"]
 
-    if trigger_reuse_concepts:
-        try:
-            table_id = validated_params["table_id"]
+    try:
+        table_id = validated_params["table_id"]
+        delete_reused_concepts = """
+            DELETE FROM mapping_scanreportconcept
+            WHERE creation_type = 'R' 
+            AND (
+                -- Delete concepts for fields in this table
+                (content_type_id = (
+                    SELECT id FROM django_content_type 
+                    WHERE app_label = 'mapping' AND model = 'scanreportfield'
+                ) AND object_id IN (
+                    SELECT srf.id 
+                    FROM mapping_scanreportfield AS srf
+                    WHERE srf.scan_report_table_id = %(table_id)s
+                ))
+                OR 
+                -- Delete concepts for values in this table
+                (content_type_id = (
+                    SELECT id FROM django_content_type 
+                    WHERE app_label = 'mapping' AND model = 'scanreportvalue'
+                ) AND object_id IN (
+                    SELECT srv.id
+                    FROM mapping_scanreportvalue AS srv
+                    JOIN mapping_scanreportfield AS srf ON srv.scan_report_field_id = srf.id
+                    WHERE srf.scan_report_table_id = %(table_id)s
+                ))
+            );
+        """
+        pg_hook.run(delete_reused_concepts, parameters={"table_id": table_id})
 
-            delete_reused_concepts = """
-                DELETE FROM mapping_scanreportconcept
-                WHERE creation_type = 'R' 
-                AND (
-                    -- Delete concepts for fields in this table
-                    (content_type_id = 22 AND object_id IN (
-                        SELECT srf.id 
-                        FROM mapping_scanreportfield AS srf
-                        WHERE srf.scan_report_table_id = %(table_id)s
-                    ))
-                    OR 
-                    -- Delete concepts for values in this table
-                    (content_type_id = 23 AND object_id IN (
-                        SELECT srv.id
-                        FROM mapping_scanreportvalue AS srv
-                        JOIN mapping_scanreportfield AS srf ON srv.scan_report_field_id = srf.id
-                        WHERE srf.scan_report_table_id = %(table_id)s
-                    ))
-                );
-            """
-            pg_hook.run(delete_reused_concepts, parameters={"table_id": table_id})
-
-        except Exception as e:
-            logging.error(f"Error in delete_mapping_rules: {str(e)}")
-            raise
-    else:
-        logging.info("Skipping delete_R_concepts as trigger_reuse_concepts is False")
+    except Exception as e:
+        logging.error(f"Error in delete_R_concepts: {str(e)}")
+        raise e
 
 
 def find_matching_value(**kwargs):
@@ -135,13 +140,13 @@ def find_matching_value(**kwargs):
         # because that is the job of V concepts DAG
         field_vocab_pairs = validated_params["field_vocab_pairs"]
         exclude_v_concepts_condition = (
-            "AND eligible_sr_concept.creation_type != 'V'" if field_vocab_pairs else ""
+            "AND eligible_concept.creation_type != 'V'" if field_vocab_pairs else ""
         )
 
         try:
             # NOTE: parameterizing the query is not working for the exclude_v_concepts_condition, so we are using string interpolation instead
             pg_hook.run(
-                find_reusing_value_query
+                (find_reusing_value_query + validate_reused_value_query)
                 % {
                     "table_id": table_id,
                     "parent_dataset_id": parent_dataset_id,
@@ -225,21 +230,21 @@ def find_matching_field(**kwargs):
         logging.info("Skipping find_matching_field as trigger_reuse_concepts is False")
 
 
-def find_object_id(**kwargs):
+def create_reusing_concepts(**kwargs):
     """
-    Find object ids for reusing concepts.
+    Find object ids for reusing concepts and create R concepts for a given scan report table.
     Validated param needed is:
     - table_id (int): The ID of the scan report table to process
     - scan_report_id (int): The ID of the scan report to process
     """
-    # Get validated parameters from XCom
+
     validated_params = pull_validated_params(kwargs, "validate_params_auto_mapping")
     trigger_reuse_concepts = validated_params["trigger_reuse_concepts"]
+    scan_report_id = validated_params["scan_report_id"]
+    table_id = validated_params["table_id"]
 
     if trigger_reuse_concepts:
-        scan_report_id = validated_params["scan_report_id"]
-        table_id = validated_params["table_id"]
-
+        #  Find object ids for reusing concepts
         try:
             pg_hook.run(
                 find_object_id_query,
@@ -249,52 +254,7 @@ def find_object_id(**kwargs):
         except Exception as e:
             logging.error(f"Failed to find object ids for reusing concepts: {str(e)}")
             raise
-    else:
-        logging.info("Skipping find_object_id as trigger_reuse_concepts is False")
-
-
-def create_reusing_concepts(**kwargs):
-    """
-    Create R concepts for a given scan report table.
-    Validated param needed is:
-    - table_id (int): The ID of the scan report table to process
-    - scan_report_id (int): The ID of the scan report to process
-    """
-
-    validated_params = pull_validated_params(kwargs, "validate_params_auto_mapping")
-    trigger_reuse_concepts = validated_params["trigger_reuse_concepts"]
-
-    if trigger_reuse_concepts:
-        table_id = validated_params["table_id"]
-        scan_report_id = validated_params["scan_report_id"]
-
-        # TODO: when source_concept_id is added to the model SCANREPORTCONCEPT, we need to update the query belowto solve the issue #1006
-        create_concept_query = """
-            -- Insert standard concepts for field values (only if they don't already exist)
-            INSERT INTO mapping_scanreportconcept (
-                created_at,
-                updated_at,
-                object_id,
-                creation_type,
-                -- TODO: Will have the standard_concept_id (nullable) here
-                concept_id,
-                content_type_id
-            )
-            SELECT
-                NOW(),
-                NOW(),
-                temp_reuse_concepts.object_id,
-                'R',       -- Creation type: Reused
-                -- TODO: if standard_concept_id is null then we need to use the source_concept_id
-                -- TODO: add standard_concept_id here for the newly creted SR concepts
-                temp_reuse_concepts.source_concept_id,
-                temp_reuse_concepts.content_type_id -- content_type_id for scanreportvalue
-            FROM temp_reuse_concepts_%(table_id)s AS temp_reuse_concepts;
-
-            -- Drop the temp table holding the temp reusing concepts data after creating the R concepts
-            DROP TABLE IF EXISTS temp_reuse_concepts_%(table_id)s;
-            """
-
+        #  Create R concepts
         try:
             pg_hook.run(create_concept_query, parameters={"table_id": table_id})
             logging.info("Successfully created R (Reused) concepts")

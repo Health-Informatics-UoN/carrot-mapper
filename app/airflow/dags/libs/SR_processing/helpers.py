@@ -18,7 +18,9 @@ def get_unique_table_names(worksheet: Worksheet) -> List[str]:
     table_names = []
     # Iterate over cells in the first column, but because we're in ReadOnly mode we
     # can't do that in the simplest manner.
-    worksheet.calculate_dimension()
+    worksheet.reset_dimensions()  # type: ignore
+    worksheet.calculate_dimension(force=True)  # type: ignore
+
     for row in worksheet.iter_rows(min_row=2, max_row=worksheet.max_row):
         cell_value = row[0].value
         if cell_value and isinstance(cell_value, str) and cell_value not in table_names:
@@ -85,7 +87,8 @@ def transform_scan_report_sheet_table(sheet: Worksheet) -> defaultdict[Any, List
     """
     logging.debug("Start process_scan_report_sheet_table")
 
-    sheet.calculate_dimension()
+    sheet.reset_dimensions()  # type: ignore
+    sheet.calculate_dimension(force=True)  # type: ignore
     # Get header entries (skipping every second column which is just 'Frequency')
     # So sheet_headers = ['a', 'b']
     first_row = sheet[1]
