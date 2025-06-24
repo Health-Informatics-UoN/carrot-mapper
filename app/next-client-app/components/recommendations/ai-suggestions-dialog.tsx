@@ -1,17 +1,12 @@
 "use client";
 
 import * as React from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "../ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { DataTable } from "../data-table";
 import { UnisonConceptItem } from "@/types/recommendation";
 import { columns } from "./columns";
 import { recommendation_service_name } from "@/constants";
+import { InfoItem } from "../core/InfoItem";
 
 interface AISuggestionDialogProps {
   open: boolean;
@@ -27,6 +22,7 @@ interface AISuggestionDialogProps {
   searchedValue: string;
   tableId: string;
   rowId: number;
+  vocabularyId: string;
 }
 
 // Main dialog component combining all parts
@@ -43,31 +39,44 @@ const AISuggestionDialog = React.forwardRef<
       searchedValue,
       tableId,
       rowId,
+      vocabularyId,
     },
     ref
   ) => (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent ref={ref} className="max-w-screen-xl overflow-auto h-1/2">
         <DialogHeader>
-          <DialogTitle className="text-lg">
-            AI Mapping Suggestions 🥕
+          <DialogTitle className="text-xl text-center">
+            AI Mapping Suggestions
           </DialogTitle>
-          <DialogDescription>
-            <div className="mb-2">
-              <span className="font-semibold">Value:</span> {searchedValue}
-            </div>
-            {suggestions.length > 0 && recommendation_service_name ? (
-              <>
-                <span className="font-semibold">Recommendation AI Model:</span>{" "}
-                {recommendation_service_name.charAt(0).toUpperCase() +
-                  recommendation_service_name.slice(1)}{" "}
-                |<span className="font-semibold ml-2">Metrics Used:</span>{" "}
-                Semantic Similarity
-              </>
-            ) : (
-              "Loading recommendation details..."
-            )}
-          </DialogDescription>
+
+          <div className="flex flex-col md:flex-row md:items-center h-7 justify-center space-y-2 md:space-y-0 divide-y md:divide-y-0 md:divide-x divide-gray-300">
+            <InfoItem
+              label="Value queried"
+              value={searchedValue}
+              className="py-1 md:py-0 md:pr-3"
+            />
+            <InfoItem
+              label="Vocabulary"
+              value={vocabularyId}
+              className="py-1 md:py-0 md:px-3"
+            />
+            <InfoItem
+              label="Recommendation AI Model"
+              value={
+                recommendation_service_name
+                  ? recommendation_service_name.charAt(0).toUpperCase() +
+                    recommendation_service_name.slice(1)
+                  : "Unknown AI Model"
+              }
+              className="py-1 md:py-0 md:px-3"
+            />
+            <InfoItem
+              label="Metrics Used"
+              value="Semantic Similarity"
+              className="py-1 md:py-0 md:px-3"
+            />
+          </div>
         </DialogHeader>
 
         {suggestions.length > 0 ? (
