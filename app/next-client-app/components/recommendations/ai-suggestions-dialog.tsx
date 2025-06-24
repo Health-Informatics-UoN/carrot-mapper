@@ -16,11 +16,17 @@ import { recommendation_service_name } from "@/constants";
 interface AISuggestionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  isLoading: boolean;
   suggestions: UnisonConceptItem[];
-  fetchError: string | null;
-  onApplySuggestion: (suggestion: UnisonConceptItem) => void;
+  onApplySuggestion: (data: {
+    concept: number;
+    object_id: number;
+    content_type: string;
+    creation_type: string;
+    table_id: string;
+  }) => void;
   searchedValue: string;
+  tableId: string;
+  rowId: number;
 }
 
 // Main dialog component combining all parts
@@ -32,11 +38,11 @@ const AISuggestionDialog = React.forwardRef<
     {
       open,
       onOpenChange,
-      isLoading,
       suggestions,
-      fetchError,
       onApplySuggestion,
       searchedValue,
+      tableId,
+      rowId,
     },
     ref
   ) => (
@@ -66,7 +72,7 @@ const AISuggestionDialog = React.forwardRef<
 
         {suggestions.length > 0 ? (
           <DataTable
-            columns={columns}
+            columns={columns(tableId, rowId, onApplySuggestion)}
             data={suggestions}
             count={suggestions.length}
             paginated={false}

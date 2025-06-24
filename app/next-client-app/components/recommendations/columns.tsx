@@ -3,8 +3,19 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { DataTableColumnHeader } from "@/components/data-table/DataTableColumnHeader";
 import { UnisonConceptItem } from "@/types/recommendation";
+import { Button } from "../ui/button";
 
-export const columns: ColumnDef<UnisonConceptItem>[] = [
+export const columns = (
+  tableId: string,
+  rowId: number,
+  onApplySuggestion: (data: {
+    concept: number;
+    object_id: number;
+    content_type: string;
+    creation_type: string;
+    table_id: string;
+  }) => void
+): ColumnDef<UnisonConceptItem>[] => [
   {
     id: "Concept Name",
     header: ({ column }) => (
@@ -25,6 +36,7 @@ export const columns: ColumnDef<UnisonConceptItem>[] = [
       return (
         <a
           className="text-blue-500 underline"
+          target="_blank"
           href={`https://athena.ohdsi.org/search-terms/terms/${conceptId}`}
         >
           {conceptId}
@@ -53,11 +65,30 @@ export const columns: ColumnDef<UnisonConceptItem>[] = [
     accessorKey: "domain",
   },
   {
-    id: "Concept Class",
+    id: "Action",
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Concept Class" />
+      <DataTableColumnHeader column={column} title="Action" />
     ),
-    accessorKey: "conceptClass",
+    cell: ({ row }) => {
+      const { conceptId } = row.original;
+      return (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            onApplySuggestion({
+              concept: conceptId,
+              object_id: rowId,
+              content_type: "scanreportvalue",
+              creation_type: "M",
+              table_id: tableId,
+            });
+          }}
+        >
+          Add
+        </Button>
+      );
+    },
     enableSorting: false,
     enableHiding: true,
   },
