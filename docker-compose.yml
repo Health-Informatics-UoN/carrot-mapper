@@ -77,6 +77,7 @@ services:
       - WATCHPACK_POLLING=true
       - NEXT_PUBLIC_ENABLE_REUSE_TRIGGER_OPTION=true
       - NEXT_PUBLIC_ENABLE_AI_RECOMMENDATION=true
+      - NEXT_PUBLIC_RECOMMENDATION_SERVICE_NAME=unison
       - RECOMMENDATION_SERVICE=unison
       - UNISON_API_KEY=unison-api-key
     volumes:
