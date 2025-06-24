@@ -9,14 +9,16 @@ import {
 import { UnisonConceptResponse } from "@/types/recommendation";
 
 export const getConceptRecommendationsUnison = async (
-  vocabCode: string
+  // Unison can query by concept name, or concept code (exact match).
+  // The latter is used first in searching, then the former.
+  queryValue: string,
+  vocabularyId: string
 ): Promise<UnisonConceptResponse> => {
   try {
     if (recommendation_service === "unison") {
-      const endpoint = `${vocabCode}?apiKey=${api_key_Unison}`;
+      const endpoint = `${queryValue}?apiKey=${api_key_Unison}&vocabulary=${vocabularyId}`;
       return await request<UnisonConceptResponse>(endpoint, {
         baseUrl: unison_base_url,
-        cache: "no-store",
         headers: {
           Accept: "application/json",
         },
