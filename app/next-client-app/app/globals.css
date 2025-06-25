@@ -22,7 +22,7 @@
   --primary-foreground: 0 0% 100%; /* white */
   --secondary: 210 40% 96.1%;
   --secondary-foreground: 222.2 47.4% 11.2%;
-  --ring: 227 45% 43%; /* #3C579E */
+  --ring: 0 0% 0%; /* black */
 }
 .dark {
   --background: 0 0% 7%;
@@ -43,6 +43,7 @@
   --primary-foreground: 0 0% 100%; /* white */
   --secondary: 222.2 47.4% 11.2%;
   --secondary-foreground: 210 40% 98%;
+  --ring: 215 100% 65%; /* #60a5fa, a visible blue */
 }
 
 button.rounded-full:hover,
@@ -187,8 +188,8 @@ input[type="file"]::file-selector-button {
 }
 
 .my-react-select-container .my-react-select__control--is-focused {
-  border-color: hsl(var(--primary)) !important;
-  box-shadow: 0 0 0 1px hsl(var(--primary)) !important;
+  border-color: hsl(var(--ring)) !important;
+  box-shadow: 0 0 0 2px hsl(var(--ring)) !important;
 }
 
 /* Make radix switch visible when off */
@@ -207,6 +208,6 @@ input[type="file"]::file-selector-button {
 }
 
 input[data-slot="input"]:focus-visible {
-  border-color: hsl(var(--primary)) !important;
-  box-shadow: 0 0 0 1px hsl(var(--primary)) !important;
+  border-color: hsl(var(--ring)) !important;
+  box-shadow: 0 0 0 2px hsl(var(--ring)) !important;
 }
