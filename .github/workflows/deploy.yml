@@ -80,6 +80,8 @@ jobs:
   build-and-publish-next-app:
     runs-on: ubuntu-latest
     environment: dev
+    env:
+      BACKEND_ORIGIN: ${{ secrets.BACKEND_ORIGIN }}
 
     steps:
       - uses: actions/checkout@v4
@@ -106,10 +108,6 @@ jobs:
         run: npm run build --workspaces=false
         working-directory: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
         env:
-          BACKEND_ORIGIN: ${{ secrets.BACKEND_ORIGIN }}
-          UNISON_API_KEY: ${{ secrets.UNISON_API_KEY }}
-          UNISON_BASE_URL: ${{ vars.UNISON_BASE_URL }}
-          RECOMMENDATION_SERVICE: ${{ vars.RECOMMENDATION_SERVICE }}
           BODY_SIZE_LIMIT: ${{ vars.BODY_SIZE_LIMIT }}
 
       - name: Copy Static Assets
