@@ -1,7 +1,7 @@
 import {
   addConcept,
   getAllConceptsFiltered,
-  getAllScanReportConcepts,
+  getAllScanReportConcepts
 } from "@/api/concepts";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,7 +21,7 @@ export default function AddConcept({
   tableId,
   contentType,
   disabled,
-  addSR,
+  addSR
 }: AddConceptProps) {
   const handleSubmit = async (conceptCode: number) => {
     try {
@@ -30,24 +30,24 @@ export default function AddConcept({
         object_id: rowId,
         content_type: contentType,
         creation_type: "M",
-        table_id: tableId,
+        table_id: tableId
       });
 
       if (response) {
         toast.error(`Adding concept failed. ${response.errorMessage}`);
       } else {
         const newConcepts = await getAllScanReportConcepts(
-          `object_id=${rowId}`,
+          `object_id=${rowId}`
         );
         const filteredConcepts = await getAllConceptsFiltered(
-          newConcepts?.map((item) => item.concept).join(","),
+          newConcepts?.map((item) => item.concept).join(",")
         );
         // Filter the concept and concept filter
         const newConcept = newConcepts.filter(
-          (c) => c.concept == conceptCode,
+          (c) => c.concept == conceptCode
         )[0];
         const filteredConcept = filteredConcepts.filter(
-          (c) => c.concept_id == conceptCode,
+          (c) => c.concept_id == conceptCode
         )[0];
 
         addSR(newConcept, filteredConcept);
@@ -80,7 +80,11 @@ export default function AddConcept({
                 pattern="\d*"
               />
             </div>
-            <Button type="submit" disabled={disabled}>
+            <Button
+              type="submit"
+              disabled={disabled}
+              className="bg-primary text-primary-foreground dark:bg-[hsl(var(--secondary))] dark:text-white hover:bg-gray-300 dark:hover:bg-gray-700"
+            >
               Add
             </Button>
           </div>
