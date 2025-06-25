@@ -139,6 +139,12 @@ button.rounded-full:focus-visible {
 .dark .pagination-btn {
   @apply bg-white text-black border-white ring-white;
 }
+.dark .pagination-btn:hover,
+.dark .pagination-btn:focus-visible {
+  background-color: hsl(var(--muted)) !important;
+  color: hsl(var(--foreground)) !important;
+  border-color: hsl(var(--muted-foreground)) !important;
+}
 
 /* Sonner toast global styles */
 [data-sonner-toast][data-type="success"] {
