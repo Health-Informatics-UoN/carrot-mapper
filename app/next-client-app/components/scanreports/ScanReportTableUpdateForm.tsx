@@ -11,7 +11,7 @@ import { Label } from "../ui/label";
 import { Tooltips } from "../core/Tooltips";
 import { useRouter } from "next/navigation";
 import { Checkbox } from "../ui/checkbox";
-import { env } from "next-runtime-env";
+import { enable_reuse_trigger_option } from "@/constants";
 
 interface FormData {
   personId: number | null;
@@ -32,9 +32,6 @@ export function ScanReportTableUpdateForm({
   personId: ScanReportField;
   dateEvent: ScanReportField;
 }) {
-  const NEXT_PUBLIC_ENABLE_REUSE_TRIGGER_OPTION = env(
-    "NEXT_PUBLIC_ENABLE_REUSE_TRIGGER_OPTION"
-  );
   const router = useRouter();
   const canUpdate =
     permissions.includes("CanEdit") || permissions.includes("CanAdmin");
@@ -114,7 +111,7 @@ export function ScanReportTableUpdateForm({
                 isDisabled={!canUpdate}
               />
             </div>
-            {NEXT_PUBLIC_ENABLE_REUSE_TRIGGER_OPTION === "true" && (
+            {enable_reuse_trigger_option === "true" && (
               <div className="flex gap-2 mt-2 items-center">
                 <h3 className="flex">
                   Do you want to trigger the reuse of existing concepts?

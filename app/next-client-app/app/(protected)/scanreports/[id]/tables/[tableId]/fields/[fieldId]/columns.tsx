@@ -8,10 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import CopyButton from "@/components/core/CopyButton";
 import { AISuggestionsButton } from "@/components/recommendations/ai-suggesions-button";
 import { Tooltips } from "@/components/core/Tooltips";
-
-// Get the env var for enable AI suggestions column
-const isAIFeatureEnabled =
-  process.env.NEXT_PUBLIC_ENABLE_AI_RECOMMENDATION === "true";
+import { enable_ai_recommendation } from "@/constants";
 
 // All Standard Columns
 export const columns = (
@@ -108,7 +105,7 @@ export const columns = (
   ];
 
   // AI Suggestions Column & setting as 4th Column
-  if (isAIFeatureEnabled) {
+  if (enable_ai_recommendation === "true") {
     baseColumns.splice(3, 0, {
       id: "AI Suggestions",
       header: ({ column }) => (
