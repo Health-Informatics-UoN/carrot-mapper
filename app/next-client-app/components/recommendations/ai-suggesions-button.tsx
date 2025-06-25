@@ -99,9 +99,8 @@ export function AISuggestionsButton({
               ) : (
                 <Sparkles className="h-4 w-4 text-purple-500" />
               )}
-              Use AI Assistant
+              Get Suggestions
             </Button>
-            <Tooltips content="Get AI-powered Standard Concept Suggestions for your value. To get the better results, select the most relevant domain." />
           </div>
         </DropdownMenuTrigger>
         <DropdownMenuContent
@@ -116,7 +115,7 @@ export function AISuggestionsButton({
             return (
               <DropdownMenuItem
                 key={domain.id}
-                className="cursor-pointer hover:bg-blue-100 hover:text-black focus:outline-none mt-1 p-1"
+                className="cursor-pointer hover:bg-blue-100 hover:text-black focus:outline-none p-1"
                 onClick={() => {
                   setDomainId(domain.id);
                   handleClick(domain.id);
