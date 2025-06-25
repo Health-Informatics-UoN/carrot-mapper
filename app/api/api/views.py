@@ -63,7 +63,6 @@ from drf_spectacular.utils import extend_schema
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter
 from shared.mapping.permissions import get_user_permissions_on_scan_report
-from shared.services.azurequeue import add_message
 from shared.services.rules import (
     _find_destination_table,
     save_mapping_rules,
@@ -1037,7 +1036,7 @@ class ScanReportConceptListV2(
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
-
+        # Create serializer and validate
         serializer = self.get_serializer(data=body, many=isinstance(body, list))
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
@@ -1054,6 +1053,12 @@ class ScanReportConceptListV2(
         return Response(
             serializer.data, status=status.HTTP_201_CREATED, headers=headers
         )
+
+    def perform_create(self, serializer):
+        """
+        Override perform_create to set the created_by field to the current user.
+        """
+        serializer.save(created_by=self.request.user)
 
 
 class ScanReportConceptDetailV2(GenericAPIView, DestroyModelMixin):
