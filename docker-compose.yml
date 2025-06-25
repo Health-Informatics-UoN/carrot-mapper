@@ -80,6 +80,7 @@ services:
       - NEXT_PUBLIC_RECOMMENDATION_SERVICE_NAME=unison
       - RECOMMENDATION_SERVICE=unison
       - UNISON_API_KEY=unison-api-key
+      - UNISON_BASE_URL=https://api.hyperunison.com/api/public/suggester/generate
     volumes:
       - ./app/next-client-app:/app
       - /app/node_modules
