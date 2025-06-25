@@ -7,6 +7,7 @@ import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import CopyButton from "@/components/core/CopyButton";
 import { AISuggestionsButton } from "@/components/recommendations/ai-suggesions-button";
+import { Tooltips } from "@/components/core/Tooltips";
 
 // Get the env var for enable AI suggestions column
 const isAIFeatureEnabled =
@@ -32,7 +33,13 @@ export const columns = (
 
         return (
           <div className="flex items-center gap-2">
-            <span className="font-bold">{value}</span>
+            <a
+              className="font-bold underline underline-offset-2"
+              href={`https://athena.ohdsi.org/search-terms/terms?query=${value}`}
+              target="_blank"
+            >
+              {value}
+            </a>
             <CopyButton textToCopy={value} />
           </div>
         );
@@ -105,7 +112,10 @@ export const columns = (
     baseColumns.splice(3, 0, {
       id: "AI Suggestions",
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="AI Suggestions" />
+        <div className="flex items-center">
+          <DataTableColumnHeader column={column} title="AI Suggestions" />
+          <Tooltips content="Get AI-powered Standard Concept Suggestions for your value. To get the better results, please select the most relevant domain." />
+        </div>
       ),
       enableHiding: true,
       enableSorting: false,
