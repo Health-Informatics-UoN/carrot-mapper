@@ -3,7 +3,7 @@
 import request from "@/lib/api/request";
 import {
   unison_base_url,
-  api_key_Unison,
+  unison_api_key,
   recommendation_service,
 } from "@/constants";
 import { UnisonConceptResponse } from "@/types/recommendation";
@@ -16,7 +16,7 @@ export const getConceptRecommendationsUnison = async (
 ): Promise<UnisonConceptResponse> => {
   try {
     if (recommendation_service === "unison") {
-      const endpoint = `${queryValue}?apiKey=${api_key_Unison}&domain=${domainId}`;
+      const endpoint = `${queryValue}?apiKey=${unison_api_key}&domain=${domainId}`;
       return await request<UnisonConceptResponse>(endpoint, {
         baseUrl: unison_base_url,
         headers: {
