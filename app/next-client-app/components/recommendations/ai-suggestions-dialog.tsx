@@ -23,6 +23,7 @@ interface AISuggestionDialogProps {
   tableId: string;
   rowId: number;
   domainId: string;
+  contentType: string;
 }
 
 // Main dialog component combining all parts
@@ -35,6 +36,7 @@ export default function AISuggestionDialog({
   tableId,
   rowId,
   domainId,
+  contentType,
 }: AISuggestionDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -70,7 +72,7 @@ export default function AISuggestionDialog({
 
         {suggestions.length > 0 ? (
           <DataTable
-            columns={columns(tableId, rowId, onApplySuggestion)}
+            columns={columns(tableId, rowId, onApplySuggestion, contentType)}
             data={suggestions}
             count={suggestions.length}
             paginated={false}

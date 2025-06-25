@@ -119,7 +119,12 @@ export const columns = (
       cell: ({ row }) => {
         const { value, id } = row.original;
         return (
-          <AISuggestionsButton value={value} tableId={tableId} rowId={id} />
+          <AISuggestionsButton
+            value={value}
+            tableId={tableId}
+            rowId={id}
+            contentType="scanreportvalue"
+          />
         );
       },
     });

@@ -21,10 +21,12 @@ export function AISuggestionsButton({
   value,
   tableId,
   rowId,
+  contentType,
 }: {
   value: string;
   tableId: string;
   rowId: number;
+  contentType: string;
 }) {
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
@@ -136,6 +138,7 @@ export function AISuggestionsButton({
         tableId={tableId}
         rowId={rowId}
         domainId={domainId}
+        contentType={contentType}
       />
     </>
   );

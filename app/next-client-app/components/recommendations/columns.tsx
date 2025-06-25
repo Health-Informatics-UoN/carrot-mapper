@@ -15,7 +15,8 @@ export const columns = (
     content_type: string;
     creation_type: string;
     table_id: string;
-  }) => void
+  }) => void,
+  contentType: string
 ): ColumnDef<UnisonConceptItem>[] => [
   {
     id: "Concept Name",
@@ -98,7 +99,7 @@ export const columns = (
             onApplySuggestion({
               concept: conceptId,
               object_id: rowId,
-              content_type: "scanreportvalue",
+              content_type: contentType,
               creation_type: "M",
               table_id: tableId,
             });

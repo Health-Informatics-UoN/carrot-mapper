@@ -129,6 +129,7 @@ export const columns = (
             value={name}
             tableId={scan_report_table.toString()}
             rowId={id}
+            contentType="scanreportfield"
           />
         );
       },
