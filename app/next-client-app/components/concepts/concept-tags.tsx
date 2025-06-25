@@ -52,7 +52,7 @@ export const ConceptTags = React.memo(function ConceptTags({
         >
           <Tooltip id="badge-tooltip" />
           <LazyBadge
-            className={`flex items-center gap-2 pr-0 ${
+            className={`flex items-center gap-2 pr-1 ${
               concept.creation_type === "V"
                 ? "bg-carrot-vocab hover:bg-carrot-vocab dark:bg-carrot-vocab dark:text-white"
                 : concept.creation_type === "M"
@@ -70,7 +70,7 @@ export const ConceptTags = React.memo(function ConceptTags({
               onClick={async () =>
                 await handleDelete(concept.scan_report_concept_id ?? 0)
               }
-              className="text-destructive hover:text-red-700 m-0 p-0 rounded-none"
+              className="text-destructive hover:text-red-700 p-0"
             >
               <Cross2Icon />
             </Button>
