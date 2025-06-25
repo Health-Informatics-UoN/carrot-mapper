@@ -16,7 +16,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { domains } from "@/constants/domains";
 import { DropdownMenuItem } from "@radix-ui/react-dropdown-menu";
-import { Tooltips } from "../core/Tooltips";
 
 export function AISuggestionsButton({
   value,
