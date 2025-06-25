@@ -50,7 +50,6 @@ class MappingStatus(models.Model):
     display_name = models.CharField(max_length=64)
 
 
-
 class DataPartner(BaseModel):
     """
     Model for a DataPartner.

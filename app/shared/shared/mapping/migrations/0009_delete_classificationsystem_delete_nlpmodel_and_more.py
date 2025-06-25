@@ -6,53 +6,53 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('mapping', '0008_remove_scanreportfield_fraction_empty_and_more'),
+        ("mapping", "0008_remove_scanreportfield_fraction_empty_and_more"),
     ]
 
     operations = [
         migrations.DeleteModel(
-            name='ClassificationSystem',
+            name="ClassificationSystem",
         ),
         migrations.DeleteModel(
-            name='NLPModel',
+            name="NLPModel",
         ),
         migrations.RemoveField(
-            model_name='mappingrule',
-            name='source_table',
+            model_name="mappingrule",
+            name="source_table",
         ),
         migrations.RemoveField(
-            model_name='scanreport',
-            name='file',
+            model_name="scanreport",
+            name="file",
         ),
         migrations.RemoveField(
-            model_name='scanreportconcept',
-            name='nlp_concept_code',
+            model_name="scanreportconcept",
+            name="nlp_concept_code",
         ),
         migrations.RemoveField(
-            model_name='scanreportconcept',
-            name='nlp_confidence',
+            model_name="scanreportconcept",
+            name="nlp_confidence",
         ),
         migrations.RemoveField(
-            model_name='scanreportconcept',
-            name='nlp_entity',
+            model_name="scanreportconcept",
+            name="nlp_entity",
         ),
         migrations.RemoveField(
-            model_name='scanreportconcept',
-            name='nlp_entity_type',
+            model_name="scanreportconcept",
+            name="nlp_entity_type",
         ),
         migrations.RemoveField(
-            model_name='scanreportconcept',
-            name='nlp_processed_string',
+            model_name="scanreportconcept",
+            name="nlp_processed_string",
         ),
         migrations.RemoveField(
-            model_name='scanreportconcept',
-            name='nlp_vocabulary',
+            model_name="scanreportconcept",
+            name="nlp_vocabulary",
         ),
         migrations.RemoveField(
-            model_name='scanreportfield',
-            name='concept_id',
+            model_name="scanreportfield",
+            name="concept_id",
         ),
         migrations.DeleteModel(
-            name='ScanReportAssertion',
+            name="ScanReportAssertion",
         ),
     ]
