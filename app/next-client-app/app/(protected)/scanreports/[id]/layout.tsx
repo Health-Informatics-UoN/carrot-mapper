@@ -150,8 +150,6 @@ export default async function ScanReportLayout(
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
-              <DropdownMenuItem>
-              </DropdownMenuItem>
               <ExportScanReport
                 scanReportId={params.id}
                 scanReportName={scanreport.dataset}
