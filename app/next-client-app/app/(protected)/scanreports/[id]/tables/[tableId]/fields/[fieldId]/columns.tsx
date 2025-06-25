@@ -111,7 +111,7 @@ export const columns = (
       header: ({ column }) => (
         <div className="flex items-center">
           <DataTableColumnHeader column={column} title="AI Suggestions" />
-          <Tooltips content="Get AI-powered Standard Concept Suggestions for your value. To get the better results, please select the most relevant domain." />
+          <Tooltips content="Get AI-powered Standard Concept Suggestions for the value. To get the better results, please select the most relevant domain." />
         </div>
       ),
       enableHiding: true,
