@@ -171,3 +171,17 @@ input[type="file"]::file-selector-button {
   background: hsl(var(--muted));
   border: none;
 }
+
+.my-react-select-container {
+  border-color: hsl(var(--primary)) !important;
+}
+
+.my-react-select-container .my-react-select__control {
+  border-color: hsl(var(--primary)) !important;
+  box-shadow: none;
+}
+
+.my-react-select-container .my-react-select__control--is-focused {
+  border-color: hsl(var(--primary)) !important;
+  box-shadow: 0 0 0 2px hsl(var(--primary)) !important;
+}
