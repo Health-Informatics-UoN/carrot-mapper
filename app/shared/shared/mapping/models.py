@@ -146,6 +146,12 @@ class ScanReportConcept(BaseModel):
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     object_id = models.PositiveIntegerField()
     content_object = GenericForeignKey()
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        blank=True,
+        null=True,
+    )
 
     # save how the mapping rule was created
     creation_type = models.CharField(
