@@ -112,7 +112,6 @@ class MappingRuleAdmin(admin.ModelAdmin):
     raw_id_fields = (
         "scan_report",
         "omop_field",
-        "source_table",
         "source_field",
         "concept",
     )
