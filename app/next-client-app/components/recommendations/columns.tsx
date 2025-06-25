@@ -77,6 +77,7 @@ export const columns = (
             content={`Explanation: ${
               accuracy === 100 ? "Exact Match" : explanation
             }`}
+            side="bottom"
           />
         </div>
       );
