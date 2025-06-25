@@ -83,7 +83,7 @@ export default function AddConcept({
             <Button
               type="submit"
               disabled={disabled}
-              className="bg-primary text-primary-foreground dark:bg-[hsl(var(--secondary))] dark:text-white hover:bg-gray-300 dark:hover:bg-gray-700"
+              className="bg-primary text-primary-foreground dark:bg-[hsl(var(--primary-foreground))] dark:text-primary hover:bg-gray-700 dark:hover:bg-gray-700"
             >
               Add
             </Button>
