@@ -38,8 +38,8 @@ export function ScanReportDetailsForm({
   // Permissions
   const canUpdate = permissions.includes("CanAdmin") || isAuthor;
   // State control for viewers fields
-  const [publicVisibility, setPublicVisibility] = useState<boolean>(
-    scanreport.visibility === "PUBLIC" ? true : false
+  const [sharedVisibility, setSharedVisibility] = useState<boolean>(
+    scanreport.visibility === "SHARED" ? true : false
   );
 
   // Making options suitable for React Select
@@ -131,7 +131,7 @@ export function ScanReportDetailsForm({
               <h3 className="flex">
                 Visibility
                 <Tooltips
-                  content="To see the contents of the Scan Report, the Scan Report must be PUBLIC, or users must be an author/editor/viewer of the Scan Report."
+                  content="To see the contents of the Scan Report, the Scan Report must be SHARED, or users must be an author/editor/viewer of the Scan Report."
                   link="https://carrot4omop.ac.uk/Carrot-Mapper/projects-datasets-and-scanreports/#access-controls"
                 />
               </h3>
@@ -140,21 +140,21 @@ export function ScanReportDetailsForm({
                   handleChange({
                     target: {
                       name: "visibility",
-                      value: checked ? "PUBLIC" : "RESTRICTED",
+                      value: checked ? "SHARED" : "RESTRICTED",
                     },
                   });
-                  setPublicVisibility(checked);
+                  setSharedVisibility(checked);
                 }}
                 defaultChecked={
-                  scanreport.visibility === "PUBLIC" ? true : false
+                  scanreport.visibility === "SHARED" ? true : false
                 }
                 disabled={!canUpdate}
               />
               <Label className="text-lg">
-                {values.visibility === "PUBLIC" ? "PUBLIC" : "RESTRICTED"}
+                {values.visibility === "SHARED" ? "SHARED" : "RESTRICTED"}
               </Label>
             </div>
-            {!publicVisibility && (
+            {!sharedVisibility && (
               <div className="flex flex-col gap-2">
                 <h3 className="flex">
                   {" "}

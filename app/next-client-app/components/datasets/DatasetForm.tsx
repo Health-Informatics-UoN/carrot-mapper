@@ -39,8 +39,8 @@ export function DatasetForm({
   // Permissions
   const canUpdate = permissions.includes("CanAdmin");
   // State control for viewers fields
-  const [publicVisibility, setPublicVisibility] = useState<boolean>(
-    dataset.visibility === "PUBLIC" ? true : false
+  const [sharedVisibility, setSharedVisibility] = useState<boolean>(
+    dataset.visibility === "SHARED" ? true : false
   );
 
   // Making options suitable for React Select
@@ -127,26 +127,26 @@ export function DatasetForm({
             <div className="flex items-center space-x-3">
               <h3 className="flex">
                 Visibility
-                <Tooltips content="If a Dataset is PUBLIC, then all users with access to any project associated to the Dataset can see them." />
+                <Tooltips content="If a Dataset is SHARED, then all users with access to any project associated to the Dataset can see them." />
               </h3>
               <Switch
                 onCheckedChange={(checked) => {
                   handleChange({
                     target: {
                       name: "visibility",
-                      value: checked ? "PUBLIC" : "RESTRICTED",
+                      value: checked ? "SHARED" : "RESTRICTED",
                     },
                   });
-                  setPublicVisibility(checked);
+                  setSharedVisibility(checked);
                 }}
-                defaultChecked={dataset.visibility === "PUBLIC" ? true : false}
+                defaultChecked={dataset.visibility === "SHARED" ? true : false}
                 disabled={!canUpdate}
               />
               <Label className="text-lg">
-                {values.visibility === "PUBLIC" ? "PUBLIC" : "RESTRICTED"}
+                {values.visibility === "SHARED" ? "SHARED" : "RESTRICTED"}
               </Label>
             </div>
-            {!publicVisibility && (
+            {!sharedVisibility && (
               <div className="flex flex-col gap-2">
                 <h3 className="flex">
                   {" "}

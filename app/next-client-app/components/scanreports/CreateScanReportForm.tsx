@@ -38,7 +38,7 @@ export function CreateScanReportForm({
   const partnerOptions = FormDataFilter<DataPartner>(dataPartners);
   const [reloadDataset, setReloadDataset] = useState(false);
   // State to hide/show the viewers field
-  const [publicVisibility, setPublicVisibility] = useState<boolean>(true);
+  const [sharedVisibility, setSharedVisibility] = useState<boolean>(true);
 
   const handleSubmit = async (data: FormData) => {
     const formData = new FormData();
@@ -94,7 +94,7 @@ export function CreateScanReportForm({
           dataset: 0,
           viewers: [],
           editors: [],
-          visibility: "PUBLIC",
+          visibility: "SHARED",
           name: "",
           scan_report_file: null,
           Data_dict: null
@@ -189,23 +189,23 @@ export function CreateScanReportForm({
                     handleChange({
                       target: {
                         name: "visibility",
-                        value: checked ? "PUBLIC" : "RESTRICTED"
+                        value: checked ? "SHARED" : "RESTRICTED"
                       }
                     });
-                    setPublicVisibility(checked);
+                    setSharedVisibility(checked);
                   }}
                   defaultChecked
                 />
                 <Label className="text-lg">
-                  {values.visibility === "PUBLIC" ? "PUBLIC" : "RESTRICTED"}
+                  {values.visibility === "SHARED" ? "SHARED" : "RESTRICTED"}
                 </Label>
               </div>
-              {!publicVisibility && (
+              {!sharedVisibility && (
                 <div className="flex flex-col gap-2">
                   <h3 className="flex">
                     {" "}
                     Viewers
-                    <Tooltips content="If the Scan Report is PUBLIC, then all users with access to the Dataset have viewer access to the Scan Report. Additionally, Dataset admins and editors have viewer access to the Scan Report in all cases." />
+                    <Tooltips content="If the Scan Report is SHARED, then all users with access to the Dataset have viewer access to the Scan Report. Additionally, Dataset admins and editors have viewer access to the Scan Report in all cases." />
                   </h3>
                   {/* Viewers field uses the same logic and data as Editors field */}
                   <FormikSelectEditors

@@ -38,7 +38,7 @@ export function CreateDatasetForm({
   setDialogOpened: (dialogOpened: boolean) => void;
   setReloadDataset?: (reloadDataset: boolean) => void;
 }) {
-  const [publicVisibility, setPublicVisibility] = useState<boolean>(true);
+  const [sharedVisibility, setsharedVisibility] = useState<boolean>(true);
 
   const partnerOptions = FormDataFilter<DataPartner>(dataPartnerList || []);
   const projectOptions = FormDataFilter<Project>(projectList || []);
@@ -101,7 +101,7 @@ export function CreateDatasetForm({
           viewers: [],
           editors: [],
           admins: [],
-          visibility: "PUBLIC",
+          visibility: "SHARED",
           name: "",
           projects: 0,
         }}
@@ -169,7 +169,7 @@ export function CreateDatasetForm({
                 <h3 className="flex">
                   Visibility
                   <Tooltips
-                    content="If a Dataset is PUBLIC, then all users with access to any project associated to the Dataset will have Dataset viewer permissions."
+                    content="If a Dataset is SHARED, then all users with access to any project associated to the Dataset will have Dataset viewer permissions."
                     link="https://carrot4omop.ac.uk/Carrot-Mapper/projects-datasets-and-scanreports/#access-controls"
                   />
                 </h3>
@@ -178,18 +178,18 @@ export function CreateDatasetForm({
                     handleChange({
                       target: {
                         name: "visibility",
-                        value: checked ? "PUBLIC" : "RESTRICTED",
+                        value: checked ? "SHARED" : "RESTRICTED",
                       },
                     });
-                    setPublicVisibility(checked);
+                    setsharedVisibility(checked);
                   }}
                   defaultChecked
                 />
                 <Label className="text-lg">
-                  {values.visibility === "PUBLIC" ? "PUBLIC" : "RESTRICTED"}
+                  {values.visibility === "SHARED" ? "SHARED" : "RESTRICTED"}
                 </Label>
               </div>
-              {!publicVisibility && (
+              {!sharedVisibility && (
                 <div className="flex flex-col gap-2">
                   <h3 className="flex">
                     {" "}
