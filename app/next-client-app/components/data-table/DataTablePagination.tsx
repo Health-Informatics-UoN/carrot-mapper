@@ -2,14 +2,14 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   DoubleArrowLeftIcon,
-  DoubleArrowRightIcon,
+  DoubleArrowRightIcon
 } from "@radix-ui/react-icons";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
+  SelectValue
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -24,7 +24,7 @@ interface DataTablePaginationProps<TData> {
 export function DataTablePagination<TData>({
   count,
   defaultPageSize = 10,
-  pageSizeOptions = [10, 20, 30, 40, 50],
+  pageSizeOptions = [10, 20, 30, 40, 50]
 }: DataTablePaginationProps<TData>) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -74,10 +74,10 @@ but it also means that we need to change many other API endpoints as well. So it
               changePageSize(Number(value));
             }}
           >
-            <SelectTrigger className="h-8 w-[4.5rem]">
+            <SelectTrigger className="h-8 w-[4.5rem] bg-background text-foreground">
               <SelectValue placeholder={pageSize} />
             </SelectTrigger>
-            <SelectContent side="top">
+            <SelectContent side="top" className="bg-popover">
               {pageSizeOptions.map((pageSize) => (
                 <SelectItem key={pageSize} value={`${pageSize}`}>
                   {pageSize}
@@ -92,35 +92,47 @@ but it also means that we need to change many other API endpoints as well. So it
         <div className="flex items-center space-x-2">
           <Button
             aria-label="Go to first page"
-            className="size-8 p-0 flex"
+            className="pagination-btn"
             onClick={() => navigateToPage(1)}
             disabled={canNotGoToPreviousPage()}
           >
-            <DoubleArrowLeftIcon className="size-4" aria-hidden="true" />
+            <DoubleArrowLeftIcon
+              className="size-4"
+              aria-hidden="true"
+            />
           </Button>
           <Button
             aria-label="Go to previous page"
-            className="size-8 p-0 flex"
+            className="pagination-btn"
             onClick={() => navigateToPage(currentPage - 1)}
             disabled={canNotGoToPreviousPage()}
           >
-            <ChevronLeftIcon className="size-4" aria-hidden="true" />
+            <ChevronLeftIcon
+              className="size-4"
+              aria-hidden="true"
+            />
           </Button>
           <Button
             aria-label="Go to next page"
-            className="size-8 p-0 flex"
+            className="pagination-btn"
             onClick={() => navigateToPage(currentPage + 1)}
             disabled={canNotGoToNextPage()}
           >
-            <ChevronRightIcon className="size-4" aria-hidden="true" />
+            <ChevronRightIcon
+              className="size-4"
+              aria-hidden="true"
+            />
           </Button>
           <Button
             aria-label="Go to last page"
-            className="size-8 p-0 flex"
+            className="pagination-btn"
             onClick={() => navigateToPage(numberOfPages)}
             disabled={canNotGoToNextPage()}
           >
-            <DoubleArrowRightIcon className="size-4" aria-hidden="true" />
+            <DoubleArrowRightIcon
+              className="size-4"
+              aria-hidden="true"
+            />
           </Button>
         </div>
       </div>

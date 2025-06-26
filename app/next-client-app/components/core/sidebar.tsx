@@ -11,6 +11,7 @@ import { Drawer, DrawerContent, DrawerTrigger } from "../ui/drawer";
 import { useEffect, useState } from "react";
 import { ModeToggle } from "./mode-toggle";
 import { sidebarItems } from "./menuItems";
+import { cn } from "@/lib/utils";
 
 export function Sidebar({ userName }: { userName?: string }) {
   const pathname = usePathname();
@@ -62,7 +63,10 @@ export function Sidebar({ userName }: { userName?: string }) {
                             pathname === link.href ? "secondary" : "ghost"
                           }
                           icon={link.icon}
-                          className="w-full"
+                          className={cn(
+                            "w-full",
+                            "hover:bg-muted hover:text-foreground transition-colors"
+                          )}
                         >
                           {link.label}
                         </SidebarButton>

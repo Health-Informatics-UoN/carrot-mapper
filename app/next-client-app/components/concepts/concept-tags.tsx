@@ -12,7 +12,7 @@ const LazyBadge = lazy(() =>
 // Using react.memo and react.lazy to prevent loading unnecessary tags
 export const ConceptTags = React.memo(function ConceptTags({
   concepts,
-  deleteSR,
+  deleteSR
 }: {
   concepts: Concept[];
   deleteSR: any;
@@ -52,7 +52,7 @@ export const ConceptTags = React.memo(function ConceptTags({
         >
           <Tooltip id="badge-tooltip" />
           <LazyBadge
-            className={`${
+            className={`flex items-center gap-2 pr-1 ${
               concept.creation_type === "V"
                 ? "bg-carrot-vocab hover:bg-carrot-vocab dark:bg-carrot-vocab dark:text-white"
                 : concept.creation_type === "M"
@@ -60,17 +60,17 @@ export const ConceptTags = React.memo(function ConceptTags({
                 : concept.creation_type === "R"
                 ? "bg-carrot-reuse hover:bg-carrot-reuse dark:bg-carrot-reuse dark:text-white"
                 : ""
-            } ${concepts.length > 1 && "my-[1px]"}`}
+            } ${concepts.length > 1 ? "my-[1px]" : ""}`}
             key={concept.concept_code}
           >
-            <p className="pl-2 pr-1 py-1">{`${concept.concept_id} ${concept.concept_name} (${concept.creation_type})`}</p>
+            <p className="py-0.5 m-0">{`${concept.concept_id} ${concept.concept_name} (${concept.creation_type})`}</p>
             <Button
               size="icon"
               variant="ghost"
               onClick={async () =>
                 await handleDelete(concept.scan_report_concept_id ?? 0)
               }
-              className="dark:text-white"
+              className="text-destructive hover:text-red-700 p-0"
             >
               <Cross2Icon />
             </Button>

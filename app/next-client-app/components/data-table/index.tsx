@@ -6,7 +6,7 @@ import {
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
-  useReactTable,
+  useReactTable
 } from "@tanstack/react-table";
 
 import {
@@ -15,7 +15,7 @@ import {
   TableCell,
   TableHead,
   TableHeader,
-  TableRow,
+  TableRow
 } from "@/components/ui/table";
 import React from "react";
 import { Button } from "@/components/ui/button";
@@ -25,7 +25,7 @@ import {
   DropdownMenuContent,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuTrigger,
+  DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import { DataTablePagination } from "./DataTablePagination";
 import { Columns3 } from "lucide-react";
@@ -57,7 +57,7 @@ export function DataTable<TData, TValue>({
   paginated = true,
   overflow = true,
   RefreshButton,
-  defaultPageSize,
+  defaultPageSize
 }: DataTableProps<TData, TValue>) {
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({});
@@ -72,8 +72,8 @@ export function DataTable<TData, TValue>({
     manualSorting: true,
     onColumnVisibilityChange: setColumnVisibility,
     state: {
-      columnVisibility,
-    },
+      columnVisibility
+    }
   });
 
   const handleRowClick = (id: string) => {
@@ -104,7 +104,7 @@ export function DataTable<TData, TValue>({
               <Button
                 aria-label="Toggle columns"
                 variant="outline"
-                className="ml-auto hidden lg:flex"
+                className="ml-auto hidden lg:flex hover:bg-muted transition-colors"
               >
                 <Columns3 className="mr-2 size-4" />
                 Columns
@@ -138,19 +138,21 @@ export function DataTable<TData, TValue>({
         <Table overflow={overflow}>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => {
-                  return (
-                    <TableHead key={header.id}>
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                    </TableHead>
-                  );
-                })}
+              <TableRow
+                key={headerGroup.id}
+                className="group hover:bg-muted transition-colors"
+              >
+                {headerGroup.headers.map((header) => (
+                  <TableHead
+                    key={header.id}
+                    className="group-hover:bg-muted transition-colors cursor-pointer"
+                  >
+                    {flexRender(
+                      header.column.columnDef.header,
+                      header.getContext()
+                    )}
+                  </TableHead>
+                ))}
               </TableRow>
             ))}
           </TableHeader>
@@ -160,6 +162,7 @@ export function DataTable<TData, TValue>({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
+                  className="hover:bg-muted transition-colors"
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>

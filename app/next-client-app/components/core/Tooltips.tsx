@@ -2,14 +2,14 @@ import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
-  TooltipTrigger,
+  TooltipTrigger
 } from "@/components/ui/tooltip";
 
 import { InfoIcon } from "lucide-react";
 
 export function Tooltips({
   content,
-  link,
+  link
 }: {
   content: string;
   link?: string;
@@ -18,7 +18,7 @@ export function Tooltips({
     <TooltipProvider delayDuration={100}>
       <Tooltip>
         <TooltipTrigger asChild>
-          <InfoIcon className="ml-1 size-4 text-carrot" />
+          <InfoIcon className="ml-1 h-4 w-4 text-muted-foreground" />
         </TooltipTrigger>
         <TooltipContent>
           <p>
@@ -29,8 +29,9 @@ export function Tooltips({
                 Find out more{" "}
                 <a
                   href={link}
-                  style={{ textDecoration: "underline" }}
+                  className="underline"
                   target="_blank"
+                  rel="noopener noreferrer"
                 >
                   here
                 </a>

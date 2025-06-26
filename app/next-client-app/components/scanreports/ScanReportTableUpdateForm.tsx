@@ -141,7 +141,7 @@ export function ScanReportTableUpdateForm({
             <div className="flex mt-3">
               <Button
                 type="submit"
-                className="px-4 py-2 bg-carrot text-white rounded text-lg"
+                className="px-4 py-2 text-lg border border-input"
                 disabled={!canUpdate}
               >
                 Save <Save className="ml-2" />
