@@ -11,7 +11,7 @@ import { Label } from "../ui/label";
 import { Tooltips } from "../core/Tooltips";
 import { useRouter } from "next/navigation";
 import { Checkbox } from "../ui/checkbox";
-import { enable_reuse_trigger_option } from "@/constants";
+import { enableReuseTriggerOption } from "@/constants";
 
 interface FormData {
   personId: number | null;
@@ -111,7 +111,7 @@ export function ScanReportTableUpdateForm({
                 isDisabled={!canUpdate}
               />
             </div>
-            {enable_reuse_trigger_option === "true" && (
+            {enableReuseTriggerOption === "true" && (
               <div className="flex gap-2 mt-2 items-center">
                 <h3 className="flex">
                   Do you want to trigger the reuse of existing concepts?

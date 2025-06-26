@@ -2,20 +2,20 @@ import { env } from "next-runtime-env";
 
 export const apiUrl = process.env.BACKEND_URL;
 
-export const recommendation_service = process.env.RECOMMENDATION_SERVICE;
+export const recommendationService = process.env.RECOMMENDATION_SERVICE;
 
-export const unison_base_url = process.env.UNISON_BASE_URL;
+export const unisonBaseUrl = process.env.UNISON_BASE_URL;
 
-export const unison_api_key = process.env.UNISON_API_KEY;
+export const unisonApiKey = process.env.UNISON_API_KEY;
 
-export const enable_reuse_trigger_option = env(
+export const enableReuseTriggerOption = env(
   "NEXT_PUBLIC_ENABLE_REUSE_TRIGGER_OPTION"
 );
 
-export const enable_ai_recommendation = env(
+export const enableAIRecommendation = env(
   "NEXT_PUBLIC_ENABLE_AI_RECOMMENDATION"
 );
 
-export const recommendation_service_name = env(
+export const recommendationServiceName = env(
   "NEXT_PUBLIC_RECOMMENDATION_SERVICE_NAME"
 );

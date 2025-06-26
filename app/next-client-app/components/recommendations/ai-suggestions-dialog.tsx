@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { DataTable } from "../data-table";
 import { UnisonConceptItem } from "@/types/recommendation";
 import { columns } from "./columns";
-import { recommendation_service_name } from "@/constants";
+import { recommendationServiceName } from "@/constants";
 import { InfoItem } from "../core/InfoItem";
 
 interface AISuggestionDialogProps {
@@ -60,9 +60,9 @@ export default function AISuggestionDialog({
             <InfoItem
               label="Recommendation AI Model"
               value={
-                recommendation_service_name
-                  ? recommendation_service_name.charAt(0).toUpperCase() +
-                    recommendation_service_name.slice(1)
+                recommendationServiceName
+                  ? recommendationServiceName.charAt(0).toUpperCase() +
+                    recommendationServiceName.slice(1)
                   : "Unknown AI Model"
               }
               className="py-1 md:py-0 md:px-3"

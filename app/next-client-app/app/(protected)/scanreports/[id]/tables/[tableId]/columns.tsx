@@ -11,7 +11,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import CopyButton from "@/components/core/CopyButton";
-import { enable_ai_recommendation } from "@/constants";
+import { enableAIRecommendation } from "@/constants";
 import { Tooltips } from "@/components/core/Tooltips";
 import { AISuggestionsButton } from "@/components/recommendations/ai-suggesions-button";
 
@@ -111,7 +111,7 @@ export const columns = (
   ];
 
   // AI Suggestions Column & setting as 4th Column
-  if (enable_ai_recommendation === "true") {
+  if (enableAIRecommendation === "true") {
     baseColumns.splice(3, 0, {
       id: "AI Suggestions",
       header: ({ column }) => (
