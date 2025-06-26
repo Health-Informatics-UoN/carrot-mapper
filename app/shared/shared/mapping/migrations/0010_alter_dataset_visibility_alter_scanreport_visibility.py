@@ -6,18 +6,26 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('mapping', '0009_delete_classificationsystem_delete_nlpmodel_and_more'),
+        ("mapping", "0009_delete_classificationsystem_delete_nlpmodel_and_more"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='dataset',
-            name='visibility',
-            field=models.CharField(choices=[('SHARED', 'Shared'), ('RESTRICTED', 'Restricted')], default='SHARED', max_length=10),
+            model_name="dataset",
+            name="visibility",
+            field=models.CharField(
+                choices=[("SHARED", "Shared"), ("RESTRICTED", "Restricted")],
+                default="SHARED",
+                max_length=10,
+            ),
         ),
         migrations.AlterField(
-            model_name='scanreport',
-            name='visibility',
-            field=models.CharField(choices=[('SHARED', 'Shared'), ('RESTRICTED', 'Restricted')], default='SHARED', max_length=10),
+            model_name="scanreport",
+            name="visibility",
+            field=models.CharField(
+                choices=[("SHARED", "Shared"), ("RESTRICTED", "Restricted")],
+                default="SHARED",
+                max_length=10,
+            ),
         ),
     ]
