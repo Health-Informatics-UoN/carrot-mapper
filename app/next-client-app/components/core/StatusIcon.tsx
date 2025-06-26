@@ -20,10 +20,12 @@ export function StatusIcon({
   statusOptions,
   status,
   statusDetails = "",
+  disableTooltip = false,
 }: {
   statusOptions: StatusOption[];
   status: { value: string };
-  statusDetails?: string; // This is for the details of the FAILED status of upload SR
+  statusDetails?: string;
+  disableTooltip?: boolean;
 }) {
   const statusInfo = statusOptions.find(
     (option) => option.value === status.value
@@ -40,20 +42,27 @@ export function StatusIcon({
   if (!Icon) {
     return null;
   }
+
+  const iconElement = (
+    <div className="flex justify-center">
+      <Icon
+        className={cn(
+          statusInfo?.color,
+          "size-4",
+          Icon === Loader2 && "animate-spin"
+        )}
+      />
+    </div>
+  );
+
+  if (disableTooltip) {
+    return iconElement;
+  }
+
   return (
     <TooltipProvider delayDuration={100}>
       <Tooltip>
-        <TooltipTrigger asChild>
-          <div className="flex justify-center">
-            <Icon
-              className={cn(
-                statusInfo?.color,
-                "size-4",
-                Icon === Loader2 && "animate-spin"
-              )}
-            />
-          </div>
-        </TooltipTrigger>
+        <TooltipTrigger asChild>{iconElement}</TooltipTrigger>
         <TooltipContent className="max-w-[500px] text-center">
           <p>
             {status.value === "FAILED" && statusDetails !== ""
