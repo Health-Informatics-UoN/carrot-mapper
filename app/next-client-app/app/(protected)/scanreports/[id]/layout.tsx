@@ -79,21 +79,21 @@ export default async function ScanReportLayout(
       {/* Details line */}
       <div className="flex font-semibold text-xl items-center space-x-2">
         <Link href={`/datasets/${scanreport.parent_dataset.id}`}>
-          <h2 className="text-gray-500 dark:text-gray-400 flex items-center">
-            <Folders className="text-gray-500 mr-2" />
+          <h2 className="flex items-center text-muted-foreground">
+            <Folders className="mr-2" />
             {scanreport.parent_dataset.name}
           </h2>
         </Link>
-        <h2 className="text-gray-500 dark:text-gray-400">{"/"}</h2>
+        <h2 className="text-muted-foreground">{"/"}</h2>
         <Link href={`/scanreports/${scanreport.id}`}>
           <h2 className="flex items-center">
-            <FileScan className="text-green-700 mr-2" />
+            <FileScan className="mr-2 text-green-700" />
             {scanreport.dataset}
           </h2>
         </Link>
       </div>
 
-      <div className="flex flex-col md:flex-row md:items-center h-7 text-sm space-y-2 md:space-y-0 divide-y md:divide-y-0 md:divide-x divide-gray-300">
+      <div className="flex flex-col md:flex-row md:items-center h-7 text-sm space-y-2 md:space-y-0 divide-y md:divide-y-0 md:divide-x">
         <InfoItem
           label="Data Partner"
           value={scanreport.data_partner}
@@ -150,8 +150,6 @@ export default async function ScanReportLayout(
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
-              <DropdownMenuItem>
-              </DropdownMenuItem>
               <ExportScanReport
                 scanReportId={params.id}
                 scanReportName={scanreport.dataset}

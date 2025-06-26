@@ -104,11 +104,11 @@ export function ScanReportDetailsForm({
                 <Tooltips content="Name of the Scan Report." />
               </h3>
               <Input
-                placeholder={scanreport.dataset}
+                value={values.name}
                 onChange={handleChange}
                 name="name"
                 disabled={!canUpdate}
-                className="text-lg text-carrot"
+                className="text-lg"
               />
             </div>
             <div className="flex flex-col gap-2">
@@ -207,7 +207,7 @@ export function ScanReportDetailsForm({
             <div className="flex mt-3">
               <Button
                 type="submit"
-                className="px-4 py-2 bg-carrot text-white rounded text-lg"
+                className="px-4 py-2 text-lg border border-input"
                 disabled={!canUpdate}
               >
                 Save <Save className="ml-2" />
