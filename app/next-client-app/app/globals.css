@@ -207,6 +207,11 @@ input[type="file"]::file-selector-button {
   background-color: #3b82f6 !important; /* Tailwind blue-500 */
 }
 
+[data-slot="switch"][data-state="checked"]:hover,
+[data-slot="switch"][data-state="checked"]:focus-visible {
+  background-color: #94a3b8 !important; /* Tailwind gray-300, darker than before */
+}
+
 input[data-slot="input"]:focus-visible {
   border-color: hsl(var(--ring)) !important;
   box-shadow: 0 0 0 2px hsl(var(--ring)) !important;
