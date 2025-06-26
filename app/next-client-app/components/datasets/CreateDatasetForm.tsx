@@ -38,7 +38,7 @@ export function CreateDatasetForm({
   setDialogOpened: (dialogOpened: boolean) => void;
   setReloadDataset?: (reloadDataset: boolean) => void;
 }) {
-  const [sharedVisibility, setsharedVisibility] = useState<boolean>(true);
+  const [sharedVisibility, setSharedVisibility] = useState<boolean>(true);
 
   const partnerOptions = FormDataFilter<DataPartner>(dataPartnerList || []);
   const projectOptions = FormDataFilter<Project>(projectList || []);
@@ -181,7 +181,7 @@ export function CreateDatasetForm({
                         value: checked ? "SHARED" : "RESTRICTED",
                       },
                     });
-                    setsharedVisibility(checked);
+                    setSharedVisibility(checked);
                   }}
                   defaultChecked
                 />
