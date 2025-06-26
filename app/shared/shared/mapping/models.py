@@ -190,6 +190,7 @@ class ScanReport(BaseModel):
     name = models.CharField(max_length=256)  # TODO: rename to `file_name`
     dataset = models.CharField(max_length=128)  # TODO: rename to `name`
     hidden = models.BooleanField(default=False)
+    file = models.FileField()  # TODO: Delete.
     upload_status = models.ForeignKey(
         "UploadStatus",
         null=True,
