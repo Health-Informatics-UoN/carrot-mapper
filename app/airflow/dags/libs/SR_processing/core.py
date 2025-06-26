@@ -204,8 +204,9 @@ def process_and_create_scan_report_entries(**kwargs) -> None:
         logging.info("No tables found in the scan report, skipping processing")
         update_job_status(
             stage=JobStageType.UPLOAD_SCAN_REPORT,
-            status=StageStatusType.IN_PROGRESS,
+            status=StageStatusType.FAILED,
             scan_report=scan_report_id,
+            details="Scan report processing failed: No tables found in the scan report",
         )
     # Remove the temp file after processing
     # TODO: double check with KubernetesExecutor if this is the best way to do this
