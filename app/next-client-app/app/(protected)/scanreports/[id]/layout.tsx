@@ -30,9 +30,7 @@ export default async function ScanReportLayout(
 ) {
   const params = await props.params;
 
-  const {
-    children
-  } = props;
+  const { children } = props;
 
   const permissions = await getScanReportPermissions(params.id);
   const requiredPermissions: Permission[] = ["CanAdmin", "CanEdit", "CanView"];
@@ -50,7 +48,9 @@ export default async function ScanReportLayout(
     { name: "Downloads", slug: "downloads", iconName: "Download" },
   ];
 
-  {/* Pushed the Edit button to the Items above so it appears on same level */}
+  {
+    /* Pushed the Edit button to the Items above so it appears on same level */
+  }
   if (canEdit) {
     items.push({
       name: "Edit Details",
@@ -114,6 +114,7 @@ export default async function ScanReportLayout(
           <StatusIcon
             statusOptions={UploadStatusOptions}
             status={scanreport.upload_status || { value: "IN_PROGRESS" }}
+            statusDetails={scanreport.upload_status_details}
           />
         </div>
         <div className="py-1 md:py-0 md:px-3 h-5">
@@ -122,7 +123,9 @@ export default async function ScanReportLayout(
             mapping_status={scanreport.mapping_status || { value: "PENDING" }}
             dataset={scanreport.dataset}
             className="w-[180px] h-5"
-            disabled={!canEdit || scanreport.upload_status?.value !== "COMPLETE"}
+            disabled={
+              !canEdit || scanreport.upload_status?.value !== "COMPLETE"
+            }
           />
         </div>
       </div>
@@ -150,8 +153,6 @@ export default async function ScanReportLayout(
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
-              <DropdownMenuItem>
-              </DropdownMenuItem>
               <ExportScanReport
                 scanReportId={params.id}
                 scanReportName={scanreport.dataset}

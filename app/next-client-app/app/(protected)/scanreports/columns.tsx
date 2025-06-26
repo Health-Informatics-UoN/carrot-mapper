@@ -105,11 +105,12 @@ export const columns: ColumnDef<ScanReport>[] = [
     enableHiding: true,
     enableSorting: false,
     cell: ({ row }) => {
-      const { upload_status } = row.original;
+      const { upload_status, upload_status_details } = row.original;
       return (
         <StatusIcon
           statusOptions={UploadStatusOptions}
           status={upload_status || { value: "IN_PROGRESS" }}
+          statusDetails={upload_status_details}
         />
       );
     },
