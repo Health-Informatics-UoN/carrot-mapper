@@ -164,7 +164,7 @@ def find_matching_value(**kwargs):
                 scan_report_table=table_id,
                 stage=JobStageType.REUSE_CONCEPTS,
                 status=StageStatusType.FAILED,
-                details=f"Error when finding eligible concepts for reuse at the value level",
+                details=f"Error when finding eligible concepts for reuse at the value level: {str(e)}",
             )
             raise
     else:
@@ -223,7 +223,7 @@ def find_matching_field(**kwargs):
                 scan_report_table=table_id,
                 stage=JobStageType.REUSE_CONCEPTS,
                 status=StageStatusType.FAILED,
-                details=f"Error when finding eligible concepts for reuse at the field level",
+                details=f"Error when finding eligible concepts for reuse at the field level: {str(e)}",
             )
             raise
     else:
@@ -272,7 +272,7 @@ def create_reusing_concepts(**kwargs):
                 scan_report_table=table_id,
                 stage=JobStageType.REUSE_CONCEPTS,
                 status=StageStatusType.FAILED,
-                details=f"Error when creating R (Reused) concepts",
+                details=f"Error when creating R (Reused) concepts: {str(e)}",
             )
             raise
     else:

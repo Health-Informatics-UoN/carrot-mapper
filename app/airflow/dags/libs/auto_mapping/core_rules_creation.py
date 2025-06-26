@@ -101,6 +101,6 @@ def create_mapping_rules(**kwargs) -> None:
             scan_report_table=table_id,
             stage=JobStageType.GENERATE_RULES,
             status=StageStatusType.FAILED,
-            details=f"Error when creating mapping rules for existing concepts",
+            details=f"Error when creating mapping rules for existing concepts: {str(e)}",
         )
         raise AirflowException(f"Database error in create_mapping_rules: {str(e)}")
