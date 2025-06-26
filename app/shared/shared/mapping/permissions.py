@@ -79,7 +79,7 @@ def has_viewership(obj: Any, request: Request) -> bool:
     # Permission checks to perform
     checks = {
         Dataset: lambda x: Dataset.objects.filter(
-            Q(visibility=VisibilityChoices.PUBLIC)
+            Q(visibility=VisibilityChoices.SHARED)
             | Q(viewers__id=request.user.id, visibility=VisibilityChoices.RESTRICTED)
             | Q(editors__id=request.user.id, visibility=VisibilityChoices.RESTRICTED)
             | Q(admins__id=request.user.id, visibility=VisibilityChoices.RESTRICTED),
@@ -87,45 +87,45 @@ def has_viewership(obj: Any, request: Request) -> bool:
             id=x.id,
         ).exists(),
         ScanReport: lambda x: ScanReport.objects.filter(
-            # parent dataset and SR are public checks
+            # parent dataset and SR are shared checks
             Q(
-                # parent dataset and SR are public
-                parent_dataset__visibility=VisibilityChoices.PUBLIC,
-                visibility=VisibilityChoices.PUBLIC,
+                # parent dataset and SR are shared
+                parent_dataset__visibility=VisibilityChoices.SHARED,
+                visibility=VisibilityChoices.SHARED,
             )
-            # parent dataset is public but SR restricted checks
+            # parent dataset is shared but SR restricted checks
             | Q(
-                # parent dataset is public
+                # parent dataset is shared
                 # SR is restricted and user is in SR viewers
-                parent_dataset__visibility=VisibilityChoices.PUBLIC,
+                parent_dataset__visibility=VisibilityChoices.SHARED,
                 viewers=request.user.id,
                 visibility=VisibilityChoices.RESTRICTED,
             )
             | Q(
-                # parent dataset is public
+                # parent dataset is shared
                 # SR is restricted and user is in SR editors
-                parent_dataset__visibility=VisibilityChoices.PUBLIC,
+                parent_dataset__visibility=VisibilityChoices.SHARED,
                 editors=request.user.id,
                 visibility=VisibilityChoices.RESTRICTED,
             )
             | Q(
-                # parent dataset is public
+                # parent dataset is shared
                 # SR is restricted and user is SR author
-                parent_dataset__visibility=VisibilityChoices.PUBLIC,
+                parent_dataset__visibility=VisibilityChoices.SHARED,
                 author=request.user.id,
                 visibility=VisibilityChoices.RESTRICTED,
             )
             | Q(
-                # parent dataset is public
+                # parent dataset is shared
                 # SR is restricted and user is in parent dataset editors
-                parent_dataset__visibility=VisibilityChoices.PUBLIC,
+                parent_dataset__visibility=VisibilityChoices.SHARED,
                 parent_dataset__editors=request.user.id,
                 visibility=VisibilityChoices.RESTRICTED,
             )
             | Q(
-                # parent dataset is public
+                # parent dataset is shared
                 # SR is restricted and user is in parent dataset admins
-                parent_dataset__visibility=VisibilityChoices.PUBLIC,
+                parent_dataset__visibility=VisibilityChoices.SHARED,
                 parent_dataset__admins=request.user.id,
                 visibility=VisibilityChoices.RESTRICTED,
             )
@@ -165,27 +165,27 @@ def has_viewership(obj: Any, request: Request) -> bool:
                 parent_dataset__editors=request.user.id,
                 visibility=VisibilityChoices.RESTRICTED,
             )
-            # parent dataset is restricted but SR is public checks
+            # parent dataset is restricted but SR is shared checks
             | Q(
-                # parent dataset is restricted and SR public
+                # parent dataset is restricted and SR shared
                 # user is in parent dataset editors
                 parent_dataset__visibility=VisibilityChoices.RESTRICTED,
                 parent_dataset__editors=request.user.id,
-                visibility=VisibilityChoices.PUBLIC,
+                visibility=VisibilityChoices.SHARED,
             )
             | Q(
-                # parent dataset is restricted and SR public
+                # parent dataset is restricted and SR shared
                 # user is in parent dataset admins
                 parent_dataset__visibility=VisibilityChoices.RESTRICTED,
                 parent_dataset__admins=request.user.id,
-                visibility=VisibilityChoices.PUBLIC,
+                visibility=VisibilityChoices.SHARED,
             )
             | Q(
-                # parent dataset is restricted and SR public
+                # parent dataset is restricted and SR shared
                 # user is in parent dataset viewers
                 parent_dataset__visibility=VisibilityChoices.RESTRICTED,
                 parent_dataset__viewers=request.user.id,
-                visibility=VisibilityChoices.PUBLIC,
+                visibility=VisibilityChoices.SHARED,
             ),
             parent_dataset__project__members=request.user.id,
             id=x.id,
@@ -340,7 +340,7 @@ class CanView(permissions.BasePermission):
         Return `True` in any of the following cases:
             - the User is the `AZ_FUNCTION_USER`
             - the Object is 'RESTRICTED' and the User is an Object viewer
-            - the Object is 'PUBLIC' and the User is a member of a Project
+            - the Object is 'SHARED' and the User is a member of a Project
             that the Object is in.
         """
 

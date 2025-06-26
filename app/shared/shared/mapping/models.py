@@ -20,7 +20,7 @@ class CreationType(models.TextChoices):
 
 
 class VisibilityChoices(models.TextChoices):
-    PUBLIC = "PUBLIC", "Public"
+    SHARED = "SHARED", "Shared"
     RESTRICTED = "RESTRICTED", "Restricted"
 
 
@@ -198,7 +198,7 @@ class ScanReport(BaseModel):
     visibility = models.CharField(
         max_length=10,
         choices=VisibilityChoices.choices,
-        default=VisibilityChoices.PUBLIC,
+        default=VisibilityChoices.SHARED,
     )
     viewers = models.ManyToManyField(
         settings.AUTH_USER_MODEL,
@@ -383,7 +383,7 @@ class Dataset(BaseModel):
     visibility = models.CharField(
         max_length=10,
         choices=VisibilityChoices.choices,
-        default=VisibilityChoices.PUBLIC,
+        default=VisibilityChoices.SHARED,
     )
     viewers = models.ManyToManyField(
         settings.AUTH_USER_MODEL,

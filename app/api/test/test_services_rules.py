@@ -31,7 +31,7 @@ class TestMisalignedMappings(TestCase):
         # Create Dataset
         self.data_partner = DataPartner.objects.create(name="Data Partner")
         self.dataset1 = Dataset.objects.create(
-            name="Dataset", visibility="PUBLIC", data_partner=self.data_partner
+            name="Dataset", visibility="SHARED", data_partner=self.data_partner
         )
         # Create Project
         self.project1 = Project.objects.create(name="Project")

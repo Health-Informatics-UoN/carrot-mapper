@@ -90,13 +90,13 @@ class DatasetIndex(GenericAPIView, ListModelMixin, CreateModelMixin):
         If the User is the `AZ_FUNCTION_USER`, return all Datasets.
 
         Else, return only the Datasets which are on projects a user is a member,
-        which are "PUBLIC", or "RESTRICTED" Datasets that a user is a viewer of.
+        which are "SHARED", or "RESTRICTED" Datasets that a user is a viewer of.
         """
         if self.request.user.username == os.getenv("AZ_FUNCTION_USER"):
             return Dataset.objects.all().distinct()
 
         return Dataset.objects.filter(
-            Q(visibility=VisibilityChoices.PUBLIC)
+            Q(visibility=VisibilityChoices.SHARED)
             | Q(
                 viewers=self.request.user.id,
                 visibility=VisibilityChoices.RESTRICTED,
@@ -144,7 +144,7 @@ class DatasetAndDataPartnerListView(GenericAPIView, ListModelMixin):
             level:
             - If the user is the `AZ_FUNCTION_USER`, all datasets are
               returned.
-            - Otherwise, only datasets that are public, restricted
+            - Otherwise, only datasets that are shared, restricted
               datasets the user has access to, or datasets in projects
               the user is a member of are returned.
     """
@@ -169,7 +169,7 @@ class DatasetAndDataPartnerListView(GenericAPIView, ListModelMixin):
         If the User is the `AZ_FUNCTION_USER`, return all Datasets.
 
         Else, return only the Datasets which are on projects a user is a member,
-        which are "PUBLIC", or "RESTRICTED" Datasets that a user is a viewer of.
+        which are "SHARED", or "RESTRICTED" Datasets that a user is a viewer of.
         """
 
         if self.request.user.username == os.getenv("AZ_FUNCTION_USER"):
@@ -177,7 +177,7 @@ class DatasetAndDataPartnerListView(GenericAPIView, ListModelMixin):
 
         return (
             Dataset.objects.filter(
-                Q(visibility=VisibilityChoices.PUBLIC)
+                Q(visibility=VisibilityChoices.SHARED)
                 | Q(
                     viewers=self.request.user.id,
                     visibility=VisibilityChoices.RESTRICTED,

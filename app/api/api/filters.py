@@ -46,11 +46,11 @@ class ScanReportAccessFilter(filters.BaseFilterBackend):
         project_members = f"{relationship}parent_dataset__project__members"
 
         return Q(
-            # Public dataset and public scan report
-            Q(**{dataset_visibility: VisibilityChoices.PUBLIC})
-            & Q(**{scan_report_visibility: VisibilityChoices.PUBLIC})
-            | Q(  # Public dataset and restricted scan report
-                **{dataset_visibility: VisibilityChoices.PUBLIC}
+            # Shared dataset and shared scan report
+            Q(**{dataset_visibility: VisibilityChoices.SHARED})
+            & Q(**{scan_report_visibility: VisibilityChoices.SHARED})
+            | Q(  # Shared dataset and restricted scan report
+                **{dataset_visibility: VisibilityChoices.SHARED}
             )
             & (
                 Q(**{scan_report_viewers: user_id})
@@ -71,7 +71,7 @@ class ScanReportAccessFilter(filters.BaseFilterBackend):
                 | Q(**{dataset_editors: user_id})
             )
             & Q(**{scan_report_visibility: VisibilityChoices.RESTRICTED})
-            | Q(  # Restricted dataset and public scan report
+            | Q(  # Restricted dataset and shared scan report
                 **{dataset_visibility: VisibilityChoices.RESTRICTED}
             )
             & (
@@ -79,5 +79,5 @@ class ScanReportAccessFilter(filters.BaseFilterBackend):
                 | Q(**{dataset_admins: user_id})
                 | Q(**{dataset_viewers: user_id})
             )
-            & Q(**{scan_report_visibility: VisibilityChoices.PUBLIC})
+            & Q(**{scan_report_visibility: VisibilityChoices.SHARED})
         ) & Q(**{project_members: user_id})

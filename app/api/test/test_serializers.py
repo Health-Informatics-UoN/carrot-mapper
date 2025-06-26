@@ -38,9 +38,9 @@ class TestScanReportEditSerializer(TestCase):
             self.editor_user,
         )
         self.data_partner = DataPartner.objects.create(name="Silvan Elves")
-        self.public_dataset = Dataset.objects.create(
+        self.shared_dataset = Dataset.objects.create(
             name="Places in Middle Earth",
-            visibility=VisibilityChoices.PUBLIC,
+            visibility=VisibilityChoices.SHARED,
             data_partner=self.data_partner,
         )
         self.restricted_dataset = Dataset.objects.create(
@@ -48,12 +48,12 @@ class TestScanReportEditSerializer(TestCase):
             visibility=VisibilityChoices.RESTRICTED,
             data_partner=self.data_partner,
         )
-        self.public_dataset.admins.add(self.admin_user)
-        self.project.datasets.add(self.public_dataset, self.restricted_dataset)
-        self.public_scanreport = ScanReport.objects.create(
+        self.shared_dataset.admins.add(self.admin_user)
+        self.project.datasets.add(self.shared_dataset, self.restricted_dataset)
+        self.shared_scanreport = ScanReport.objects.create(
             dataset="The Shire",
-            visibility=VisibilityChoices.PUBLIC,
-            parent_dataset=self.public_dataset,
+            visibility=VisibilityChoices.SHARED,
+            parent_dataset=self.shared_dataset,
             author=self.author_user,
         )
         self.restricted_scanreport = ScanReport.objects.create(
@@ -70,7 +70,7 @@ class TestScanReportEditSerializer(TestCase):
             "/the/path/to/isengard", data={"editors": [new_editor]}
         )
         serializer = ScanReportEditSerializer(
-            self.public_scanreport,
+            self.shared_scanreport,
             data={"editors": [new_editor]},
             context={"request": request},
         )
@@ -119,7 +119,7 @@ class TestScanReportEditSerializer(TestCase):
             "/the/path/to/isengard", data={"viewers": [new_viewer]}
         )
         serializer = ScanReportEditSerializer(
-            self.public_scanreport,
+            self.shared_scanreport,
             data={"viewers": [new_viewer]},
             context={"request": request},
         )
@@ -168,7 +168,7 @@ class TestScanReportEditSerializer(TestCase):
             "/the/path/to/isengard", data={"author": new_author}
         )
         serializer = ScanReportEditSerializer(
-            self.public_scanreport,
+            self.shared_scanreport,
             data={"author": new_author},
             context={"request": request},
         )
