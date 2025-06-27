@@ -8,34 +8,58 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('mapping', '0009_delete_classificationsystem_delete_nlpmodel_and_more'),
+        ("mapping", "0009_delete_classificationsystem_delete_nlpmodel_and_more"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='scanreportconcept',
-            name='confidence',
-            field=models.DecimalField(blank=True, decimal_places=2, help_text='Confidence score for the mapping rule', max_digits=3, null=True),
+            model_name="scanreportconcept",
+            name="confidence",
+            field=models.DecimalField(
+                blank=True,
+                decimal_places=2,
+                help_text="Confidence score for the mapping rule",
+                max_digits=3,
+                null=True,
+            ),
         ),
         migrations.AddField(
-            model_name='scanreportconcept',
-            name='created_by',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL),
+            model_name="scanreportconcept",
+            name="created_by",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
         migrations.AddField(
-            model_name='scanreportconcept',
-            name='description',
-            field=models.TextField(blank=True, help_text='Description of the mapping rule', null=True),
+            model_name="scanreportconcept",
+            name="description",
+            field=models.TextField(
+                blank=True, help_text="Description of the mapping rule", null=True
+            ),
         ),
         migrations.AddField(
-            model_name='scanreportconcept',
-            name='mapping_tool',
-            field=models.CharField(blank=True, default='carrot-mapper', help_text='Name of the tool used to create this mapping', max_length=128, null=True),
+            model_name="scanreportconcept",
+            name="mapping_tool",
+            field=models.CharField(
+                blank=True,
+                default="carrot-mapper",
+                help_text="Name of the tool used to create this mapping",
+                max_length=128,
+                null=True,
+            ),
         ),
         migrations.AddField(
-            model_name='scanreportconcept',
-            name='mapping_tool_version',
-            field=models.CharField(blank=True, help_text='Version of the mapping tool used', max_length=128, null=True),
+            model_name="scanreportconcept",
+            name="mapping_tool_version",
+            field=models.CharField(
+                blank=True,
+                help_text="Version of the mapping tool used",
+                max_length=128,
+                null=True,
+            ),
         ),
     ]
