@@ -133,6 +133,7 @@ def update_temp_data_dictionary_table(
             stage=JobStageType.UPLOAD_SCAN_REPORT,
             status=StageStatusType.FAILED,
             scan_report=scan_report_id,
+            details=f"Upload failed: {str(e)}",
         )
         raise e
 

@@ -92,7 +92,8 @@ def update_job_status(
         SET upload_status_id = (
             SELECT id FROM mapping_uploadstatus 
             WHERE value = %(status_value)s
-        )
+        ),
+        upload_status_details = %(details)s
         WHERE id = %(scan_report)s
     """
 

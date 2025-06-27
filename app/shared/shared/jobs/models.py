@@ -41,4 +41,4 @@ class Job(BaseModel):
         on_delete=models.DO_NOTHING,
         related_name="stage_status",
     )
-    details = models.CharField(max_length=256, null=True, blank=True)
+    details = models.TextField(null=True, blank=True)

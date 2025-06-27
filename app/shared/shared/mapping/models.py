@@ -203,6 +203,7 @@ class ScanReport(BaseModel):
         on_delete=models.DO_NOTHING,
         related_name="upload_status",
     )
+    upload_status_details = models.TextField(null=True, blank=True)
     mapping_status = models.ForeignKey(
         "MappingStatus",
         null=True,

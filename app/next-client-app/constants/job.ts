@@ -45,7 +45,7 @@ export const StageStatus = [
     label: "Job Failed",
     icon: "X",
     value: "FAILED",
-    color: "text-red-900",
+    color: "text-red-500",
   },
   {
     label: "Job In Progress",

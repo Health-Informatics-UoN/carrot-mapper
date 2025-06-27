@@ -1,8 +1,13 @@
 "use client";
 
-import { cn } from "@/lib/utils";
 import { Loader2, LucideIcon, Check, X, CircleSlash } from "lucide-react";
-import { Tooltip } from "react-tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 
 export interface StatusOption {
   label: string;
@@ -14,9 +19,13 @@ export interface StatusOption {
 export function StatusIcon({
   statusOptions,
   status,
+  statusDetails = "",
+  disableTooltip = false,
 }: {
   statusOptions: StatusOption[];
   status: { value: string };
+  statusDetails?: string;
+  disableTooltip?: boolean;
 }) {
   const statusInfo = statusOptions.find(
     (option) => option.value === status.value
@@ -34,14 +43,8 @@ export function StatusIcon({
     return null;
   }
 
-  return (
-    <a
-      data-tooltip-id="icon-tooltip"
-      data-tooltip-content={`${statusInfo?.label}`}
-      data-tooltip-place="top"
-      className="flex justify-center"
-    >
-      <Tooltip id="icon-tooltip" />
+  const iconElement = (
+    <div className="flex justify-center">
       <Icon
         className={cn(
           statusInfo?.color,
@@ -49,6 +52,25 @@ export function StatusIcon({
           Icon === Loader2 && "animate-spin"
         )}
       />
-    </a>
+    </div>
+  );
+
+  if (disableTooltip) {
+    return iconElement;
+  }
+
+  return (
+    <TooltipProvider delayDuration={100}>
+      <Tooltip>
+        <TooltipTrigger asChild>{iconElement}</TooltipTrigger>
+        <TooltipContent className="max-w-[500px] text-center">
+          <p>
+            {status.value === "FAILED" && statusDetails !== ""
+              ? statusDetails
+              : statusInfo?.label}
+          </p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 }
