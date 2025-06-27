@@ -50,20 +50,6 @@ class MappingStatus(models.Model):
     display_name = models.CharField(max_length=64)
 
 
-class ClassificationSystem(BaseModel):
-    """
-    Class for 'classification system', i.e. SNOMED or ICD-10 etc.
-    """
-
-    name = models.CharField(max_length=64)
-
-    class Meta:
-        app_label = "mapping"
-
-    def __str__(self):
-        return str(self.id)
-
-
 class DataPartner(BaseModel):
     """
     Model for a DataPartner.
@@ -131,17 +117,6 @@ class ScanReportConcept(BaseModel):
     It uses a generic relation to connect it to a ScanReportValue or ScanReportValue
     """
 
-    nlp_entity = models.CharField(max_length=64, null=True, blank=True)
-    nlp_entity_type = models.CharField(max_length=64, null=True, blank=True)
-    nlp_confidence = models.DecimalField(
-        max_digits=3,
-        decimal_places=2,
-        null=True,
-        blank=True,
-    )
-    nlp_vocabulary = models.CharField(max_length=64, null=True, blank=True)
-    nlp_concept_code = models.CharField(max_length=64, null=True, blank=True)
-    nlp_processed_string = models.CharField(max_length=256, null=True, blank=True)
     concept = models.ForeignKey(Concept, on_delete=models.DO_NOTHING)
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     object_id = models.PositiveIntegerField()
@@ -190,7 +165,6 @@ class ScanReport(BaseModel):
     name = models.CharField(max_length=256)  # TODO: rename to `file_name`
     dataset = models.CharField(max_length=128)  # TODO: rename to `name`
     hidden = models.BooleanField(default=False)
-    file = models.FileField()  # TODO: Delete.
     upload_status = models.ForeignKey(
         "UploadStatus",
         null=True,
@@ -308,29 +282,8 @@ class ScanReportField(BaseModel):
     is_ignore = models.BooleanField(default=False)
     classification_system = models.CharField(max_length=64, blank=True, null=True)
     pass_from_source = models.BooleanField(default=True)
-    concept_id = models.IntegerField(
-        default=-1,
-        blank=True,
-        null=True,
-        # This field is not used anymore
-    )
     field_description = models.CharField(max_length=256, blank=True, null=True)
     concepts = GenericRelation(ScanReportConcept)
-
-    class Meta:
-        app_label = "mapping"
-
-    def __str__(self):
-        return str(self.id)
-
-
-class ScanReportAssertion(BaseModel):
-    """
-    Model for a Scan Report Assertion.
-    """
-
-    scan_report = models.ForeignKey(ScanReport, on_delete=models.CASCADE)
-    negative_assertion = models.CharField(max_length=64, null=True, blank=True)
 
     class Meta:
         app_label = "mapping"
@@ -350,11 +303,6 @@ class MappingRule(BaseModel):
     # connect the rule to a destination_field (and therefore destination_table)
     # e.g. condition_concept_id
     omop_field = models.ForeignKey(OmopField, on_delete=models.CASCADE)
-
-    # TODO --- STOP USING THIS
-    source_table = models.ForeignKey(
-        ScanReportTable, on_delete=models.CASCADE, blank=True, null=True
-    )
 
     # connect the rule with a source_field (and therefore source_table)
     source_field = models.ForeignKey(
@@ -413,22 +361,6 @@ class DataDictionary(BaseModel):
     """
 
     name = models.CharField(max_length=256, blank=True, null=True)
-
-    class Meta:
-        app_label = "mapping"
-
-    def __str__(self):
-        return str(self.id)
-
-
-class NLPModel(models.Model):
-    """
-    A temporary model to hold the results from NLP string searches
-    Created for Sprint 14
-    """
-
-    user_string = models.TextField(max_length=1024)
-    json_response = models.TextField(max_length=4096, blank=True, null=True)
 
     class Meta:
         app_label = "mapping"
