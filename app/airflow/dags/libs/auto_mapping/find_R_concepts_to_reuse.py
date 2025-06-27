@@ -253,7 +253,14 @@ def create_reusing_concepts(**kwargs):
             logging.info(f"Successfully found object ids for reusing concepts")
         except Exception as e:
             logging.error(f"Failed to find object ids for reusing concepts: {str(e)}")
-            raise
+            update_job_status(
+                scan_report=scan_report_id,
+                scan_report_table=table_id,
+                stage=JobStageType.REUSE_CONCEPTS,
+                status=StageStatusType.FAILED,
+                details=f"Error when finding object ids for reusing concepts: {str(e)}",
+            )
+            raise e
         #  Create R concepts
         try:
             pg_hook.run(create_concept_query, parameters={"table_id": table_id})
@@ -274,7 +281,7 @@ def create_reusing_concepts(**kwargs):
                 status=StageStatusType.FAILED,
                 details=f"Error when creating R (Reused) concepts: {str(e)}",
             )
-            raise
+            raise e
     else:
         update_job_status(
             scan_report=scan_report_id,
