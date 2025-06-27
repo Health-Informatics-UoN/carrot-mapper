@@ -3,7 +3,7 @@ import { ReceiptText, ShieldQuestion } from "lucide-react";
 
 const Footer = () => {
   return (
-    <footer className="lg:mt-24 mt-20 mb-5 bg-white rounded-lg shadow dark:bg-gray-900">
+    <footer className="lg:mt-24 mt-20 mb-5 rounded-lg shadow bg-background">
       <div className="w-full max-w-screen-xl mx-auto p-4 md:py-8">
         <div className="sm:flex sm:items-center sm:justify-between">
           <Link href={"https://www.nottingham.ac.uk/"}>
@@ -18,7 +18,7 @@ const Footer = () => {
               alt="UoN Logo"
             />
           </Link>
-          <ul className="flex flex-wrap mt-3 sm:mt-0 items-center mb-6 text-sm font-medium text-gray-500 sm:mb-0 dark:text-gray-400">
+          <ul className="flex flex-wrap mt-3 sm:mt-0 items-center mb-6 text-sm font-medium text-muted-foreground sm:mb-0">
             <li>
               <a
                 href="https://www.nottingham.ac.uk/utilities/privacy/privacy.aspx"
@@ -38,8 +38,8 @@ const Footer = () => {
             </li>
           </ul>
         </div>
-        <hr className="my-6 border-gray-200 sm:mx-auto dark:border-gray-700 lg:my-8" />
-        <span className="text-pretty block text-sm text-gray-500 sm:text-center dark:text-gray-400">
+        <hr className="my-6 border-border sm:mx-auto lg:my-8" />
+        <span className="text-pretty block text-sm text-muted-foreground sm:text-center">
           &copy; {new Date().getFullYear()}{" "}
           <a href="https://www.nottingham.ac.uk/" className="hover:underline">
             University of Nottingham

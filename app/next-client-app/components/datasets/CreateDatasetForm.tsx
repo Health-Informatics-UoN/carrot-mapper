@@ -143,7 +143,7 @@ export function CreateDatasetForm({
                 <Input
                   onChange={handleChange}
                   name="name"
-                  className="text-lg text-carrot"
+                  className="text-lg"
                   required
                 />
               </div>
@@ -254,7 +254,7 @@ export function CreateDatasetForm({
               <div className="mb-5">
                 <Button
                   type="submit"
-                  className="px-4 py-2 mt-3 bg-carrot text-white rounded text-lg"
+                  className="px-4 py-2 mt-3 text-lg border border-input"
                   disabled={
                     values.dataPartner === 0 ||
                     values.name === "" ||

@@ -1171,7 +1171,6 @@ class MappingRulesList(APIView):
                 "concept",
                 "omop_field__table",
                 "omop_field__field",
-                "source_table__name",
                 "source_field__name",
             )
 

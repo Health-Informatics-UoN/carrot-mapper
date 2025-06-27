@@ -5,24 +5,33 @@ import { options as authOptions } from "@/auth/options";
 
 interface RequestOptions {
   method?: string;
-  headers?: HeadersInit;
+  headers?: Record<string, string>;
   body?: BodyInit;
   download?: boolean;
   cache?: RequestCache;
   next?: { revalidate: number };
+  authMode?: "token" | "apiKey";
+  baseUrl?: string;
 }
 
 const request = async <T>(url: string, options: RequestOptions = {}) => {
-  // Auth with Django
-  const session = await getServerSession(authOptions);
-  const token = session?.access_token;
+  // Set Default to requiring auth for backward compatibility (Django)
 
-  const headers: HeadersInit = {
-    Authorization: `JWT ${token}`,
-    ...(options.headers || {}),
-  };
+  const authMode = options.authMode ?? "token";
+  const baseUrl = options.baseUrl ?? `${apiUrl}/api`;
 
-  const response = await fetch(`${apiUrl}/api/${url}`, {
+  let headers: Record<string, string> = { ...(options.headers || {}) };
+
+  // Only add auth if required (for Django backend)
+  if (authMode === "token") {
+    const session = await getServerSession(authOptions);
+    const token = session?.access_token;
+    if (token) {
+      headers.Authorization = `JWT ${token}`;
+    }
+  }
+
+  const response = await fetch(`${baseUrl}/${url}`, {
     method: options.method || "GET",
     headers: headers,
     body: options.body,

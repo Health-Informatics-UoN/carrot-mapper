@@ -1,16 +1,13 @@
 from django.contrib import admin
 from shared.mapping.models import (
-    ClassificationSystem,
     DataDictionary,
     DataPartner,
     Dataset,
     MappingRule,
-    NLPModel,
     OmopField,
     OmopTable,
     Project,
     ScanReport,
-    ScanReportAssertion,
     ScanReportConcept,
     ScanReportField,
     ScanReportTable,
@@ -115,7 +112,6 @@ class MappingRuleAdmin(admin.ModelAdmin):
     raw_id_fields = (
         "scan_report",
         "omop_field",
-        "source_table",
         "source_field",
         "concept",
     )
@@ -212,13 +208,10 @@ admin.site.register(ScanReport, ScanReportAdmin)
 admin.site.register(ScanReportTable, ScanReportTableAdmin)
 admin.site.register(ScanReportField, ScanReportFieldAdmin)
 admin.site.register(ScanReportValue, ScanReportValueAdmin)
-admin.site.register(ScanReportAssertion)
-admin.site.register(ClassificationSystem)
 admin.site.register(OmopTable, OmopTableAdmin)
 admin.site.register(OmopField, OmopFieldAdmin)
 admin.site.register(MappingRule, MappingRuleAdmin)
 admin.site.register(DataDictionary, DataDictionaryAdmin)
-admin.site.register(NLPModel)
 admin.site.register(ScanReportConcept, ScanReportConceptAdmin)
 admin.site.register(Dataset, DatasetAdmin)
 admin.site.register(Project, ProjectAdmin)
