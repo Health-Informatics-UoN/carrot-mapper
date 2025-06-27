@@ -74,6 +74,7 @@ from shared.services.rules_export import (
 )
 from shared.services.storage_service import StorageService
 from shared.services.worker_service import get_worker_service
+from importlib.metadata import version
 
 storage_service = StorageService()
 worker_service = get_worker_service()
@@ -1058,7 +1059,11 @@ class ScanReportConceptListV2(
         """
         Override perform_create to set the created_by field to the current user.
         """
-        serializer.save(created_by=self.request.user)
+        serializer.save(
+            created_by=self.request.user,
+            mapping_tool="carrot-mapper",
+            mapping_tool_version=version("api"),
+        )
 
 
 class ScanReportConceptDetailV2(GenericAPIView, DestroyModelMixin):
