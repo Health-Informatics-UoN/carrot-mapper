@@ -6,13 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('mapping', '0010_scanreportconcept_confidence_and_more'),
+        ("mapping", "0010_scanreportconcept_confidence_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='scanreport',
-            name='upload_status_details',
+            model_name="scanreport",
+            name="upload_status_details",
             field=models.TextField(blank=True, null=True),
         ),
     ]
