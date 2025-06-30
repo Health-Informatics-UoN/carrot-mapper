@@ -9,6 +9,7 @@ interface ScanReport {
   upload_status?: {
     value: string;
   };
+  upload_status_details: string;
   created_at: Date;
   hidden: boolean;
   visibility: string;

@@ -89,7 +89,7 @@ def find_standard_concepts(**kwargs) -> None:
                 scan_report_table=table_id,
                 stage=JobStageType.BUILD_CONCEPTS_FROM_DICT,
                 status=StageStatusType.FAILED,
-                details=f"Error in creating temp_standard_concepts_{table_id} table",
+                details=f"Error in creating temp_standard_concepts_{table_id} table: {str(e)}",
             )
             raise
 
@@ -156,7 +156,7 @@ def find_standard_concepts(**kwargs) -> None:
                     scan_report_table=table_id,
                     stage=JobStageType.BUILD_CONCEPTS_FROM_DICT,
                     status=StageStatusType.FAILED,
-                    details=f"Error in finding standard concepts for field ID {sr_field_id}",
+                    details=f"Error in finding standard concepts for field ID {sr_field_id}: {str(e)}",
                 )
                 raise
 
@@ -229,5 +229,5 @@ def create_standard_concepts(**kwargs) -> None:
                 scan_report_table=table_id,
                 stage=JobStageType.BUILD_CONCEPTS_FROM_DICT,
                 status=StageStatusType.FAILED,
-                details=f"Error when creating standard concepts",
+                details=f"Error when creating standard concepts: {str(e)}",
             )
