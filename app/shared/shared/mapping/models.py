@@ -121,6 +121,37 @@ class ScanReportConcept(BaseModel):
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     object_id = models.PositiveIntegerField()
     content_object = GenericForeignKey()
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        blank=True,
+        null=True,
+    )
+    confidence = models.DecimalField(
+        max_digits=3,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Confidence score for the mapping rule",
+    )
+    description = models.TextField(
+        blank=True,
+        null=True,
+        help_text="Description of the mapping rule",
+    )
+    mapping_tool = models.CharField(
+        max_length=128,
+        blank=True,
+        null=True,
+        default="carrot-mapper",
+        help_text="Name of the tool used to create this mapping",
+    )
+    mapping_tool_version = models.CharField(
+        max_length=128,
+        blank=True,
+        null=True,
+        help_text="Version of the mapping tool used",
+    )
 
     # save how the mapping rule was created
     creation_type = models.CharField(
