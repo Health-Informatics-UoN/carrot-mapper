@@ -37,14 +37,14 @@ export const columns = (
                 prePath.endsWith("/") ? prePath : prePath + "/"
               }fields/${id}`}
             >
-              <Button variant="link" className="font-bold">
+              <Button variant="link" className="font-bold dark:text-white">
                 {name}
               </Button>
             </Link>
             <CopyButton textToCopy={name} />
           </div>
         );
-      },
+      }
     },
     {
       id: "description",
@@ -57,7 +57,7 @@ export const columns = (
         />
       ),
       enableHiding: true,
-      enableSorting: true,
+      enableSorting: true
     },
     {
       id: "Data Type",
@@ -70,7 +70,7 @@ export const columns = (
         />
       ),
       enableHiding: true,
-      enableSorting: true,
+      enableSorting: true
     },
     {
       id: "Concepts",
@@ -88,7 +88,7 @@ export const columns = (
             <ConceptTags concepts={concepts ?? []} deleteSR={deleteSR} />
           </Suspense>
         );
-      },
+      }
     },
     {
       id: "Add Concept",
@@ -106,8 +106,8 @@ export const columns = (
             addSR={addSR}
           />
         );
-      },
-    },
+      }
+    }
   ];
 
   // AI Suggestions Column & setting as 4th Column
@@ -132,7 +132,7 @@ export const columns = (
             contentType="scanreportfield"
           />
         );
-      },
+      }
     });
   } else {
     baseColumns.splice(5, 0, {
@@ -150,7 +150,7 @@ export const columns = (
             permissions={permissions}
           />
         );
-      },
+      }
     });
   }
   return baseColumns;
