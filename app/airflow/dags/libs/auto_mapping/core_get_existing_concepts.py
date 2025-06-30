@@ -83,6 +83,6 @@ def find_existing_concepts(**kwargs) -> None:
             scan_report_table=table_id,
             stage=JobStageType.GENERATE_RULES,
             status=StageStatusType.FAILED,
-            details=f"Error when finding existing concepts",
+            details=f"Error when finding existing concepts: {str(e)}",
         )
         raise

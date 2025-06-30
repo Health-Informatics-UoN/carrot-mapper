@@ -79,9 +79,10 @@ def process_data_dictionary(**kwargs) -> None:
         except Exception as e:
             logging.error(f"Error processing data dictionary: {str(e)}")
             update_job_status(
-                stage=JobStageType.BUILD_CONCEPTS_FROM_DICT,
+                stage=JobStageType.UPLOAD_SCAN_REPORT,
                 status=StageStatusType.FAILED,
                 scan_report=scan_report_id,
+                details=f"Upload failed: {str(e)}",
             )
             raise e
 
@@ -156,6 +157,7 @@ def process_and_create_scan_report_entries(**kwargs) -> None:
                 stage=JobStageType.UPLOAD_SCAN_REPORT,
                 status=StageStatusType.FAILED,
                 scan_report=scan_report_id,
+                details=f"Upload failed: {str(e)}",
             )
             raise e
 
@@ -170,6 +172,7 @@ def process_and_create_scan_report_entries(**kwargs) -> None:
                 stage=JobStageType.UPLOAD_SCAN_REPORT,
                 status=StageStatusType.FAILED,
                 scan_report=scan_report_id,
+                details=f"Upload failed: {str(e)}",
             )
             raise e
 
@@ -191,6 +194,7 @@ def process_and_create_scan_report_entries(**kwargs) -> None:
                 stage=JobStageType.UPLOAD_SCAN_REPORT,
                 status=StageStatusType.FAILED,
                 scan_report=scan_report_id,
+                details=f"Upload failed: {str(e)}",
             )
             raise e
 
@@ -202,6 +206,7 @@ def process_and_create_scan_report_entries(**kwargs) -> None:
             stage=JobStageType.UPLOAD_SCAN_REPORT,
             status=StageStatusType.FAILED,
             scan_report=scan_report_id,
+            details="Scan report processing failed: No tables found in the scan report",
         )
     # Remove the temp file after processing
     # TODO: double check with KubernetesExecutor if this is the best way to do this
