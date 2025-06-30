@@ -12,7 +12,7 @@ import {
   DropdownMenuContent,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuTrigger,
+  DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import { domains } from "@/constants/domains";
 import { DropdownMenuItem } from "@radix-ui/react-dropdown-menu";
@@ -21,7 +21,7 @@ export function AISuggestionsButton({
   value,
   tableId,
   rowId,
-  contentType,
+  contentType
 }: {
   value: string;
   tableId: string;
@@ -92,7 +92,7 @@ export function AISuggestionsButton({
             <Button
               variant="outline"
               size="sm"
-              className="gap-2 border-purple-400 hover:bg-purple-100 hover:text-black"
+              className="gap-2 border-purple-400 hover:bg-purple-100 hover:text-black dark:hover:bg-gray-700 dark:hover:text-white"
               disabled={isLoading}
             >
               {isLoading ? (
@@ -108,7 +108,7 @@ export function AISuggestionsButton({
           align="start"
           className="w-52 overflow-y-auto max-h-96"
         >
-          <DropdownMenuLabel className="text-black font-semibold text-center">
+          <DropdownMenuLabel className="text-black dark:text-white font-semibold text-center">
             Select Relevant Domain
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
