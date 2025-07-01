@@ -27,7 +27,7 @@ export function ScanReportDetailsForm({
   scanreport,
   users,
   permissions,
-  isAuthor,
+  isAuthor
 }: {
   datasetList: DataSetSRList[];
   scanreport: ScanReport;
@@ -65,7 +65,7 @@ export function ScanReportDetailsForm({
       parent_dataset: data.parent_dataset,
       viewers: data.viewers || [],
       editors: data.editors || [],
-      author: data.author,
+      author: data.author
     };
 
     const response = await updateScanReport(
@@ -88,7 +88,7 @@ export function ScanReportDetailsForm({
         author: initialAuthorFilter[0].value,
         viewers: initialViewersFilter.map((viewer) => viewer.value),
         editors: initialEditorsFilter.map((editor) => editor.value),
-        parent_dataset: initialDatasetFilter[0].value,
+        parent_dataset: initialDatasetFilter[0].value
       }}
       onSubmit={(data) => {
         handleSubmit(data);
@@ -140,8 +140,8 @@ export function ScanReportDetailsForm({
                   handleChange({
                     target: {
                       name: "visibility",
-                      value: checked ? "PUBLIC" : "RESTRICTED",
-                    },
+                      value: checked ? "PUBLIC" : "RESTRICTED"
+                    }
                   });
                   setPublicVisibility(checked);
                 }}
