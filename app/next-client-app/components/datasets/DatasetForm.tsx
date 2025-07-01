@@ -40,7 +40,7 @@ export function DatasetForm({
   const canUpdate = permissions.includes("CanAdmin");
   // State control for viewers fields
   const [publicVisibility, setPublicVisibility] = useState<boolean>(
-    dataset.visibility === "PUBLIC" ? true : false
+    dataset.visibility === "shared" ? true : false
   );
 
   // Making options suitable for React Select
@@ -127,23 +127,23 @@ export function DatasetForm({
             <div className="flex items-center space-x-3">
               <h3 className="flex">
                 Visibility
-                <Tooltips content="If a Dataset is PUBLIC, then all users with access to any project associated to the Dataset can see them." />
+                <Tooltips content="If a Dataset is shared, then all users with access to any project associated to the Dataset can see them." />
               </h3>
               <Switch
                 onCheckedChange={(checked) => {
                   handleChange({
                     target: {
                       name: "visibility",
-                      value: checked ? "PUBLIC" : "RESTRICTED",
+                      value: checked ? "shared" : "restricted",
                     },
                   });
                   setPublicVisibility(checked);
                 }}
-                defaultChecked={dataset.visibility === "PUBLIC" ? true : false}
+                defaultChecked={dataset.visibility === "shared" ? true : false}
                 disabled={!canUpdate}
               />
               <Label className="text-lg">
-                {values.visibility === "PUBLIC" ? "PUBLIC" : "RESTRICTED"}
+                {values.visibility === "shared" ? "shared" : "restricted"}
               </Label>
             </div>
             {!publicVisibility && (

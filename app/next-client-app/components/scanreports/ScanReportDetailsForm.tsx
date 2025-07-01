@@ -39,7 +39,7 @@ export function ScanReportDetailsForm({
   const canUpdate = permissions.includes("CanAdmin") || isAuthor;
   // State control for viewers fields
   const [publicVisibility, setPublicVisibility] = useState<boolean>(
-    scanreport.visibility === "PUBLIC" ? true : false
+    scanreport.visibility === "shared" ? true : false
   );
 
   // Making options suitable for React Select
@@ -131,7 +131,7 @@ export function ScanReportDetailsForm({
               <h3 className="flex">
                 Visibility
                 <Tooltips
-                  content="To see the contents of the Scan Report, the Scan Report must be PUBLIC, or users must be an author/editor/viewer of the Scan Report."
+                  content="To see the contents of the Scan Report, the Scan Report must be shared, or users must be an author/editor/viewer of the Scan Report."
                   link="https://carrot4omop.ac.uk/Carrot-Mapper/projects-datasets-and-scanreports/#access-controls"
                 />
               </h3>
@@ -140,18 +140,18 @@ export function ScanReportDetailsForm({
                   handleChange({
                     target: {
                       name: "visibility",
-                      value: checked ? "PUBLIC" : "RESTRICTED",
+                      value: checked ? "shared" : "restricted",
                     },
                   });
                   setPublicVisibility(checked);
                 }}
                 defaultChecked={
-                  scanreport.visibility === "PUBLIC" ? true : false
+                  scanreport.visibility === "shared" ? true : false
                 }
                 disabled={!canUpdate}
               />
               <Label className="text-lg">
-                {values.visibility === "PUBLIC" ? "PUBLIC" : "RESTRICTED"}
+                {values.visibility === "shared" ? "shared" : "restricted"}
               </Label>
             </div>
             {!publicVisibility && (
