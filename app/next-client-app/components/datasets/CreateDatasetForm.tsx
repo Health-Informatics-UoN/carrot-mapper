@@ -101,7 +101,7 @@ export function CreateDatasetForm({
           viewers: [],
           editors: [],
           admins: [],
-          visibility: "shared",
+          visibility: "PUBLIC", // Always use "PUBLIC" or "RESTRICTED" for backend compatibility
           name: "",
           projects: 0,
         }}
@@ -178,7 +178,7 @@ export function CreateDatasetForm({
                     handleChange({
                       target: {
                         name: "visibility",
-                        value: checked ? "shared" : "restricted",
+                        value: checked ? "PUBLIC" : "RESTRICTED",
                       },
                     });
                     setPublicVisibility(checked);
@@ -186,7 +186,8 @@ export function CreateDatasetForm({
                   defaultChecked
                 />
                 <Label className="text-lg">
-                  {values.visibility === "shared" ? "shared" : "restricted"}
+                  {/* Show user-friendly label */}
+                  {values.visibility === "PUBLIC" ? "Shared" : "Restricted"}
                 </Label>
               </div>
               {!publicVisibility && (

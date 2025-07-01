@@ -39,7 +39,7 @@ export function ScanReportDetailsForm({
   const canUpdate = permissions.includes("CanAdmin") || isAuthor;
   // State control for viewers fields
   const [publicVisibility, setPublicVisibility] = useState<boolean>(
-    scanreport.visibility === "shared" ? true : false
+    scanreport.visibility === "PUBLIC" ? true : false
   );
 
   // Making options suitable for React Select
@@ -140,18 +140,17 @@ export function ScanReportDetailsForm({
                   handleChange({
                     target: {
                       name: "visibility",
-                      value: checked ? "shared" : "restricted",
+                      value: checked ? "PUBLIC" : "RESTRICTED",
                     },
                   });
                   setPublicVisibility(checked);
                 }}
-                defaultChecked={
-                  scanreport.visibility === "shared" ? true : false
-                }
+                checked={values.visibility === "PUBLIC"}
                 disabled={!canUpdate}
               />
               <Label className="text-lg">
-                {values.visibility === "shared" ? "shared" : "restricted"}
+                {/* Show user-friendly label */}
+                {values.visibility === "PUBLIC" ? "Shared" : "Restricted"}
               </Label>
             </div>
             {!publicVisibility && (

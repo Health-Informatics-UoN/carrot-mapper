@@ -94,7 +94,7 @@ export function CreateScanReportForm({
           dataset: 0,
           viewers: [],
           editors: [],
-          visibility: "shared",
+          visibility: "PUBLIC",
           name: "",
           scan_report_file: null,
           Data_dict: null
@@ -189,15 +189,16 @@ export function CreateScanReportForm({
                     handleChange({
                       target: {
                         name: "visibility",
-                        value: checked ? "shared" : "restricted"
+                        value: checked ? "PUBLIC" : "RESTRICTED"
                       }
                     });
                     setPublicVisibility(checked);
                   }}
-                  defaultChecked
+                  checked={values.visibility === "PUBLIC"}
                 />
                 <Label className="text-lg">
-                  {values.visibility === "shared" ? "shared" : "restricted"}
+                  {/* Show user-friendly label */}
+                  {values.visibility === "PUBLIC" ? "Shared" : "Restricted"}
                 </Label>
               </div>
               {!publicVisibility && (

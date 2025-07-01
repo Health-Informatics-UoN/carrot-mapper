@@ -40,7 +40,7 @@ export function DatasetForm({
   const canUpdate = permissions.includes("CanAdmin");
   // State control for viewers fields
   const [publicVisibility, setPublicVisibility] = useState<boolean>(
-    dataset.visibility === "shared" ? true : false
+    dataset.visibility === "PUBLIC" ? true : false
   );
 
   // Making options suitable for React Select
@@ -83,7 +83,7 @@ export function DatasetForm({
     <Formik
       initialValues={{
         name: dataset.name,
-        visibility: dataset.visibility,
+        visibility: dataset.visibility, // Should be "PUBLIC" or "RESTRICTED"
         viewers: initialViewersFilter.map((viewer) => viewer.value),
         editors: initialEditorsFilter.map((editor) => editor.value),
         dataPartner: initialPartnerFilter[0].value,
@@ -134,16 +134,17 @@ export function DatasetForm({
                   handleChange({
                     target: {
                       name: "visibility",
-                      value: checked ? "shared" : "restricted",
+                      value: checked ? "PUBLIC" : "RESTRICTED",
                     },
                   });
                   setPublicVisibility(checked);
                 }}
-                defaultChecked={dataset.visibility === "shared" ? true : false}
+                defaultChecked={dataset.visibility === "PUBLIC" ? true : false}
                 disabled={!canUpdate}
               />
               <Label className="text-lg">
-                {values.visibility === "shared" ? "shared" : "restricted"}
+                {/* Show user-friendly label */}
+                {values.visibility === "PUBLIC" ? "Shared" : "Restricted"}
               </Label>
             </div>
             {!publicVisibility && (

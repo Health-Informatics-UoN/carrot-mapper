@@ -69,7 +69,13 @@ export const columns: ColumnDef<DataSet>[] = [
       />
     ),
     enableHiding: true,
-    enableSorting: true
+    enableSorting: true,
+    // Show Shared Visibility or Restricted Visibility
+    cell: ({ row }) => (
+      <span>
+        {row.original.visibility === "PUBLIC" ? "Shared" : "Restricted"}
+      </span>
+    )
   },
 
   {
