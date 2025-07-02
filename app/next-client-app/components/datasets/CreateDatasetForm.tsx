@@ -101,7 +101,7 @@ export function CreateDatasetForm({
           viewers: [],
           editors: [],
           admins: [],
-          visibility: "PUBLIC",
+          visibility: "PUBLIC", // Always use "PUBLIC" or "RESTRICTED" for backend compatibility
           name: "",
           projects: 0,
         }}
@@ -169,7 +169,7 @@ export function CreateDatasetForm({
                 <h3 className="flex">
                   Visibility
                   <Tooltips
-                    content="If a Dataset is PUBLIC, then all users with access to any project associated to the Dataset will have Dataset viewer permissions."
+                    content="If a Dataset is shared, then all users with access to any project associated to the Dataset will have Dataset viewer permissions."
                     link="https://carrot4omop.ac.uk/Carrot-Mapper/projects-datasets-and-scanreports/#access-controls"
                   />
                 </h3>
@@ -186,7 +186,8 @@ export function CreateDatasetForm({
                   defaultChecked
                 />
                 <Label className="text-lg">
-                  {values.visibility === "PUBLIC" ? "PUBLIC" : "RESTRICTED"}
+                  {/* Show user-friendly label */}
+                  {values.visibility === "PUBLIC" ? "Shared" : "Restricted"}
                 </Label>
               </div>
               {!publicVisibility && (

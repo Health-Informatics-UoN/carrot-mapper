@@ -194,10 +194,11 @@ export function CreateScanReportForm({
                     });
                     setPublicVisibility(checked);
                   }}
-                  defaultChecked
+                  checked={values.visibility === "PUBLIC"}
                 />
                 <Label className="text-lg">
-                  {values.visibility === "PUBLIC" ? "PUBLIC" : "RESTRICTED"}
+                  {/* Show user-friendly label */}
+                  {values.visibility === "PUBLIC" ? "Shared" : "Restricted"}
                 </Label>
               </div>
               {!publicVisibility && (
@@ -205,7 +206,7 @@ export function CreateScanReportForm({
                   <h3 className="flex">
                     {" "}
                     Viewers
-                    <Tooltips content="If the Scan Report is PUBLIC, then all users with access to the Dataset have viewer access to the Scan Report. Additionally, Dataset admins and editors have viewer access to the Scan Report in all cases." />
+                    <Tooltips content="If the Scan Report is shared, then all users with access to the Dataset have viewer access to the Scan Report. Additionally, Dataset admins and editors have viewer access to the Scan Report in all cases." />
                   </h3>
                   {/* Viewers field uses the same logic and data as Editors field */}
                   <FormikSelectEditors

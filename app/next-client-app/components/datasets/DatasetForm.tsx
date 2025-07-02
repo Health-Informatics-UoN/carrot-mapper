@@ -83,7 +83,7 @@ export function DatasetForm({
     <Formik
       initialValues={{
         name: dataset.name,
-        visibility: dataset.visibility,
+        visibility: dataset.visibility, // Should be "PUBLIC" or "RESTRICTED"
         viewers: initialViewersFilter.map((viewer) => viewer.value),
         editors: initialEditorsFilter.map((editor) => editor.value),
         dataPartner: initialPartnerFilter[0].value,
@@ -127,7 +127,7 @@ export function DatasetForm({
             <div className="flex items-center space-x-3">
               <h3 className="flex">
                 Visibility
-                <Tooltips content="If a Dataset is PUBLIC, then all users with access to any project associated to the Dataset can see them." />
+                <Tooltips content="If a Dataset is shared, then all users with access to any project associated to the Dataset can see them." />
               </h3>
               <Switch
                 onCheckedChange={(checked) => {
@@ -143,7 +143,8 @@ export function DatasetForm({
                 disabled={!canUpdate}
               />
               <Label className="text-lg">
-                {values.visibility === "PUBLIC" ? "PUBLIC" : "RESTRICTED"}
+                {/* Show user-friendly label */}
+                {values.visibility === "PUBLIC" ? "Shared" : "Restricted"}
               </Label>
             </div>
             {!publicVisibility && (

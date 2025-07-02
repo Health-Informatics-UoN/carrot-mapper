@@ -27,7 +27,7 @@ export function ScanReportDetailsForm({
   scanreport,
   users,
   permissions,
-  isAuthor,
+  isAuthor
 }: {
   datasetList: DataSetSRList[];
   scanreport: ScanReport;
@@ -65,7 +65,7 @@ export function ScanReportDetailsForm({
       parent_dataset: data.parent_dataset,
       viewers: data.viewers || [],
       editors: data.editors || [],
-      author: data.author,
+      author: data.author
     };
 
     const response = await updateScanReport(
@@ -88,7 +88,7 @@ export function ScanReportDetailsForm({
         author: initialAuthorFilter[0].value,
         viewers: initialViewersFilter.map((viewer) => viewer.value),
         editors: initialEditorsFilter.map((editor) => editor.value),
-        parent_dataset: initialDatasetFilter[0].value,
+        parent_dataset: initialDatasetFilter[0].value
       }}
       onSubmit={(data) => {
         handleSubmit(data);
@@ -131,7 +131,7 @@ export function ScanReportDetailsForm({
               <h3 className="flex">
                 Visibility
                 <Tooltips
-                  content="To see the contents of the Scan Report, the Scan Report must be PUBLIC, or users must be an author/editor/viewer of the Scan Report."
+                  content="To see the contents of the Scan Report, the Scan Report must be shared, or users must be an author/editor/viewer of the Scan Report."
                   link="https://carrot4omop.ac.uk/Carrot-Mapper/projects-datasets-and-scanreports/#access-controls"
                 />
               </h3>
@@ -140,18 +140,17 @@ export function ScanReportDetailsForm({
                   handleChange({
                     target: {
                       name: "visibility",
-                      value: checked ? "PUBLIC" : "RESTRICTED",
-                    },
+                      value: checked ? "PUBLIC" : "RESTRICTED"
+                    }
                   });
                   setPublicVisibility(checked);
                 }}
-                defaultChecked={
-                  scanreport.visibility === "PUBLIC" ? true : false
-                }
+                checked={values.visibility === "PUBLIC"}
                 disabled={!canUpdate}
               />
               <Label className="text-lg">
-                {values.visibility === "PUBLIC" ? "PUBLIC" : "RESTRICTED"}
+                {/* Show user-friendly label */}
+                {values.visibility === "PUBLIC" ? "Shared" : "Restricted"}
               </Label>
             </div>
             {!publicVisibility && (
