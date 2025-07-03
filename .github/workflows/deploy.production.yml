@@ -13,15 +13,19 @@ env:
   repo-owner: health-informatics-uon
   registry: ghcr.io
 
+permissions:
+  contents: read # Required to read the repository contents
+  packages: write # Required to publish packages
+
 jobs:
   build-and-publish-workers:
     runs-on: ubuntu-latest
     steps:
       - name: "Checkout GitHub Action"
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Setup Python ${{ env.PYTHON_VERSION }} Environment
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
@@ -45,7 +49,7 @@ jobs:
           popd
 
       - name: Upload artifact for deployment job
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: functionsapp
           path: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
@@ -55,20 +59,20 @@ jobs:
     runs-on: "ubuntu-latest"
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
 
       - name: Log in to registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3.4.0
         with:
           registry: ccomreg.azurecr.io
           username: ${{ secrets.REGISTRY_USERNAME_DEV }}
           password: ${{ secrets.REGISTRY_PASSWORD_DEV }}
 
       - name: Build and push container image to registry
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
         with:
           context: ./app
           push: true
@@ -82,10 +86,10 @@ jobs:
       BACKEND_ORIGIN: ${{ secrets.BACKEND_ORIGIN }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Use Node.js ${{ env.NODE_VERSION }}
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: ${{ env.NODE_VERSION }}
 
@@ -95,7 +99,7 @@ jobs:
         working-directory: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
 
       - name: Cache .next/cache
-        uses: actions/cache@v4
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         env:
           cache-name: cache-node-modules
         with:
@@ -115,7 +119,7 @@ jobs:
         working-directory: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
 
       - name: Publish webapp artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           path: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}/.next/standalone
           name: frontendwebapp
@@ -127,10 +131,10 @@ jobs:
       packages: write
     steps:
       - name: Check out the repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@29109295f81e9208d7d86ff1c6c12d2833863392 # v3.6.0
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@f95db51fddba0c2d1ec667646a06c2ce06100226 # v3.0.0
@@ -148,7 +152,7 @@ jobs:
       # Tag and build webserver of airflow
       - name: Extract webserver Docker metadata
         id: airflow_webserver_meta
-        uses: docker/metadata-action@v5.5.1
+        uses: docker/metadata-action@902fa8ec7d6ecbf8d84d538b9b233a880e428804 # v5.7.0
         with:
           images: ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/airflow-webserver
           tags: |
@@ -157,7 +161,7 @@ jobs:
             ${{ env.RUN_TIMESTAMP }}
 
       - name: Build and push webserver image
-        uses: docker/build-push-action@v5.3.0
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
         with:
           context: ./app/airflow
           file: ./app/airflow/Dockerfile
@@ -169,7 +173,7 @@ jobs:
       # Tag and build scheduler of airflow
       - name: Extract scheduler Docker metadata
         id: scheduler_meta
-        uses: docker/metadata-action@v5.5.1
+        uses: docker/metadata-action@902fa8ec7d6ecbf8d84d538b9b233a880e428804 # v5.7.0
         with:
           images: ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/airflow-scheduler
           tags: |
@@ -178,7 +182,7 @@ jobs:
             ${{ env.RUN_TIMESTAMP }}
 
       - name: Build and push scheduler image
-        uses: docker/build-push-action@v5.3.0
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
         with:
           context: ./app/airflow
           file: ./app/airflow/Dockerfile
@@ -195,13 +199,13 @@ jobs:
 
     steps:
       - name: Download artifact from build job
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           path: functionsapp
           name: functionsapp
 
       - name: "Run Azure Functions Action"
-        uses: Azure/functions-action@v1.5.1
+        uses: Azure/functions-action@0bd707f87c0b6385742bab336c74e1afc61f6369 # v1.5.3
         id: fa
         with:
           app-name: ${{ vars.AZURE_FUNCTIONS_NAME }}
@@ -220,7 +224,7 @@ jobs:
     steps:
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
-        uses: azure/webapps-deploy@v2
+        uses: azure/webapps-deploy@2fdd5c3ebb4e540834e86ecc1f6fdcd5539023ee # v3.0.2
         with:
           app-name: ${{ vars.AZURE_WEBAPP_NAME }}
           slot-name: "production"
@@ -234,16 +238,16 @@ jobs:
     environment: production
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Download artifact from build job
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           path: frontendwebapp
           name: frontendwebapp
 
       - name: Deploy to Azure WebApp
-        uses: azure/webapps-deploy@v2
+        uses: azure/webapps-deploy@2fdd5c3ebb4e540834e86ecc1f6fdcd5539023ee # v3.0.2
         with:
           app-name: ${{ vars.AZURE_WEBAPP_NEXT_NAME }}
           publish-profile: ${{ secrets.AZURE_WEBAPP_NEXT_PUBLISH_PROFILE }}
@@ -262,7 +266,7 @@ jobs:
     steps:
       - name: Deploy to Azure Web App
         id: deploy-airflow-webserver-production
-        uses: azure/webapps-deploy@v2
+        uses: azure/webapps-deploy@2fdd5c3ebb4e540834e86ecc1f6fdcd5539023ee # v3.0.2
         with:
           app-name: ${{ vars.AIRFLOW_WEBSERVER_NAME }}
           publish-profile: ${{ secrets.AIRFLOW_WEBSERVER_PUBLISH_PROFILE }}
@@ -281,7 +285,7 @@ jobs:
     steps:
       - name: Deploy to Azure Web App
         id: deploy-airflow-scheduler-production
-        uses: azure/webapps-deploy@v2
+        uses: azure/webapps-deploy@2fdd5c3ebb4e540834e86ecc1f6fdcd5539023ee # v3.0.2
         with:
           app-name: ${{ vars.AIRFLOW_SCHEDULER_NAME }}
           publish-profile: ${{ secrets.AIRFLOW_SCHEDULER_PUBLISH_PROFILE }}
