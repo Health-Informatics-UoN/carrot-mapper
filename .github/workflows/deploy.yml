@@ -23,13 +23,14 @@ permissions:
 
 jobs:
   dependency-review:
-    # This condition ensures that the following step or job only runs when the workflow is triggered by either a pull request event or a merge group event.
-    # It helps to limit execution to relevant GitHub events, such as when code is proposed for merging or when multiple pull requests are grouped for merging.
     if: github.event_name == 'pull_request' || github.event_name == 'merge_group'
     runs-on: ubuntu-latest
     steps:
       - name: Dependency Review
         uses: actions/dependency-review-action@da24556b548a50705dd671f47852072ea4c105d9 # v4.7.1
+        with:
+          base-ref: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || 'main' }}
+          head-ref: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.ref }}
 
   build-and-publish-workers:
     runs-on: ubuntu-latest
