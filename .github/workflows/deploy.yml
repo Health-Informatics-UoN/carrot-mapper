@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - master
+  pull_request:
+  merge_group:
   workflow_dispatch:
 
 env:
@@ -21,6 +23,7 @@ permissions:
 
 jobs:
   dependency-review:
+    if: github.event_name == 'pull_request' || github.event_name == 'pull_request_target' || github.event_name == 'merge_group'
     runs-on: ubuntu-latest
     steps:
       - name: Dependency Review
