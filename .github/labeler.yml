@@ -3,7 +3,7 @@
   - "app/shared/files/migrations/*"
   - "app/shared/jobs/migrations/*"
 
-dependencies:
+"dependencies":
   - "poetry.lock"
   - "pyproject.toml"
   - "app/workers/poetry.lock"
