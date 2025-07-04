@@ -205,6 +205,7 @@ jobs:
   # Deploy Workers Dev
   deploy-workers-dev:
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master'
     needs: [build-and-publish-workers, build-and-publish-web]
     environment: dev
 
@@ -227,6 +228,7 @@ jobs:
   # Deploy Web App Dev
   deploy-web-dev:
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master'
     needs: [build-and-publish-web, deploy-workers-dev]
     environment:
       name: "dev"
@@ -244,6 +246,7 @@ jobs:
   # Deploy Next.js Client App Dev
   deploy-next-dev:
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master'
     needs: [build-and-publish-next-app, deploy-web-dev]
     environment: dev
 
@@ -364,6 +367,7 @@ jobs:
   # Deploy Web App Test
   deploy-web-test:
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master'
     needs: [deploy-web-dev, deploy-workers-test]
     environment:
       name: "test"
