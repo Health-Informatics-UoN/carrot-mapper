@@ -109,6 +109,7 @@ class ScanReportViewSerializerV2(DynamicFieldsMixin, serializers.ModelSerializer
             "data_partner",
             "mapping_status",
             "upload_status",
+            "upload_status_details",
             "created_at",
             "hidden",
             "author",
