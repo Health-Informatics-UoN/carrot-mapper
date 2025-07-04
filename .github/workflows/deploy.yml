@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - master
+  pull_request:
+  merge_group:
   workflow_dispatch:
 
 env:
@@ -21,6 +23,9 @@ permissions:
 
 jobs:
   dependency-review:
+    # This condition ensures that the following step or job only runs when the workflow is triggered by either a pull request event or a merge group event.
+    # It helps to limit execution to relevant GitHub events, such as when code is proposed for merging or when multiple pull requests are grouped for merging.
+    if: github.event_name == 'pull_request' || github.event_name == 'merge_group'
     runs-on: ubuntu-latest
     steps:
       - name: Dependency Review
