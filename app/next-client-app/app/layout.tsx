@@ -2,6 +2,7 @@ import "./globals.css";
 import { Toaster } from "sonner";
 import { ThemeProvider } from "@/components/core/theme-provider";
 import { Metadata } from "next";
+import { PublicEnvScript } from "next-runtime-env";
 
 export const metadata: Metadata = {
   title: "Carrot Mapper",
@@ -46,6 +47,9 @@ export default async function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <PublicEnvScript />
+      </head>
       <body>
         <ThemeProvider
           attribute="class"
@@ -59,10 +63,10 @@ export default async function RootLayout({
         <Toaster
           toastOptions={{
             classNames: {
-              error: "bg-red-700 text-white",
-              success: "bg-green-700 text-white",
-              warning: "text-yellow-400",
-              info: "bg-blue-800 text-white",
+              error: "bg-destructive text-destructive-foreground",
+              success: "bg-success text-success-foreground",
+              warning: "bg-warning text-warning-foreground",
+              info: "bg-popover text-popover-foreground",
             },
           }}
         />

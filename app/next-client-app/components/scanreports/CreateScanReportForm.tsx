@@ -29,7 +29,7 @@ interface FormData {
 
 export function CreateScanReportForm({
   dataPartners,
-  projects,
+  projects
 }: {
   dataPartners: DataPartner[];
   projects: Project[];
@@ -97,7 +97,7 @@ export function CreateScanReportForm({
           visibility: "PUBLIC",
           name: "",
           scan_report_file: null,
-          Data_dict: null,
+          Data_dict: null
         }}
         onSubmit={(data) => {
           toast.info("Validating ...");
@@ -120,7 +120,7 @@ export function CreateScanReportForm({
                 <Input
                   onChange={handleChange}
                   name="name"
-                  className="text-lg text-carrot"
+                  className="text-lg"
                   required
                 />
               </div>
@@ -189,15 +189,16 @@ export function CreateScanReportForm({
                     handleChange({
                       target: {
                         name: "visibility",
-                        value: checked ? "PUBLIC" : "RESTRICTED",
-                      },
+                        value: checked ? "PUBLIC" : "RESTRICTED"
+                      }
                     });
                     setPublicVisibility(checked);
                   }}
-                  defaultChecked
+                  checked={values.visibility === "PUBLIC"}
                 />
                 <Label className="text-lg">
-                  {values.visibility === "PUBLIC" ? "PUBLIC" : "RESTRICTED"}
+                  {/* Show user-friendly label */}
+                  {values.visibility === "PUBLIC" ? "Shared" : "Restricted"}
                 </Label>
               </div>
               {!publicVisibility && (
@@ -205,7 +206,7 @@ export function CreateScanReportForm({
                   <h3 className="flex">
                     {" "}
                     Viewers
-                    <Tooltips content="If the Scan Report is PUBLIC, then all users with access to the Dataset have viewer access to the Scan Report. Additionally, Dataset admins and editors have viewer access to the Scan Report in all cases." />
+                    <Tooltips content="If the Scan Report is shared, then all users with access to the Dataset have viewer access to the Scan Report. Additionally, Dataset admins and editors have viewer access to the Scan Report in all cases." />
                   </h3>
                   {/* Viewers field uses the same logic and data as Editors field */}
                   <FormikSelectEditors
@@ -244,7 +245,7 @@ export function CreateScanReportForm({
                 <h3 className="flex">
                   <div className="flex items-center gap-2">
                     WhiteRabbit Scan Report{" "}
-                    <span className="text-gray-500 text-sm">(.xlsx file)</span>
+                    <span className="text-muted-foreground text-sm">(.xlsx file)</span>
                   </div>
                   <Tooltips
                     content="Scan Report file generated from White Rabbit application."
@@ -273,7 +274,7 @@ export function CreateScanReportForm({
                 <h3 className="flex">
                   <div className="flex items-center gap-2">
                     Data Dictionary{" "}
-                    <span className="text-gray-500 text-sm">
+                    <span className="text-muted-foreground text-sm">
                       (.csv file, optional)
                     </span>
                   </div>
@@ -298,7 +299,7 @@ export function CreateScanReportForm({
               <div className="mb-5 mt-3 flex">
                 <Button
                   type="submit"
-                  className="px-4 py-2 bg-carrot text-white rounded text-lg"
+                  className="px-4 py-2 text-lg border border-input"
                   disabled={
                     values.dataPartner === 0 ||
                     values.dataset === 0 ||

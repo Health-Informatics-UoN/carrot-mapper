@@ -91,18 +91,21 @@ find_source_field_id_query = """
     UPDATE temp_existing_concepts_%(table_id)s AS temp_table
     SET source_field_data_type = 
         CASE
-            WHEN sr_field.type_column = 'INT' OR
-                sr_field.type_column = 'REAL' OR
-                sr_field.type_column = 'FLOAT' OR
-                sr_field.type_column = 'NUMERIC' OR
-                sr_field.type_column = 'DECIMAL' OR
-                sr_field.type_column = 'DOUBLE'
+            WHEN UPPER(sr_field.type_column) = 'INT' OR
+                UPPER(sr_field.type_column) = 'TINYINT' OR
+                UPPER(sr_field.type_column) = 'SMALLINT' OR
+                UPPER(sr_field.type_column) = 'BIGINT' OR
+                UPPER(sr_field.type_column) = 'REAL' OR
+                UPPER(sr_field.type_column) = 'FLOAT' OR
+                UPPER(sr_field.type_column) = 'NUMERIC' OR
+                UPPER(sr_field.type_column) = 'DECIMAL' OR
+                UPPER(sr_field.type_column) = 'DOUBLE'
             THEN 'numeric'
-            WHEN sr_field.type_column = 'VARCHAR' OR
-                sr_field.type_column = 'NVARCHAR' OR
-                sr_field.type_column = 'TEXT' OR
-                sr_field.type_column = 'STRING' OR
-                sr_field.type_column = 'CHAR'
+            WHEN UPPER(sr_field.type_column) = 'VARCHAR' OR
+                UPPER(sr_field.type_column) = 'NVARCHAR' OR
+                UPPER(sr_field.type_column) = 'TEXT' OR
+                UPPER(sr_field.type_column) = 'STRING' OR
+                UPPER(sr_field.type_column) = 'CHAR'
             THEN 'string'
             ELSE sr_field.type_column
         END
@@ -522,16 +525,12 @@ create_values_query = """
 
 create_fields_query = """
     INSERT INTO mapping_scanreportfield (
-        scan_report_table_id, name, description_column, type_column,
-        max_length, nrows, nrows_checked, fraction_empty,
-        nunique_values, fraction_unique, created_at, updated_at,
+        scan_report_table_id, name, description_column, type_column, created_at, updated_at,
         is_patient_id, is_ignore, pass_from_source
     )
     VALUES (
         %(scan_report_table_id)s, %(name)s, %(description_column)s, %(type_column)s,
-        %(max_length)s, %(nrows)s, %(nrows_checked)s, %(fraction_empty)s,
-        %(nunique_values)s, %(fraction_unique)s, NOW(), NOW(), False, False,
-        True
+        NOW(), NOW(), False, False, True
     )
 """
 

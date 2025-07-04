@@ -22,6 +22,7 @@ m_allowed_tables = [
     "drug_exposure",
     "procedure_occurrence",
     "device_exposure",
+    "specimen",
 ]
 
 # look up of date-events in all the allowed (destination) tables
@@ -36,6 +37,7 @@ m_date_field_mapper = {
         "device_exposure_start_datetime",
         "device_exposure_end_datetime",
     ],
+    "specimen": ["specimen_datetime"],
 }
 
 
@@ -292,6 +294,9 @@ def _find_destination_table(concept: Concept) -> Optional[OmopTable]:
     # if the domain is "meas value" then point directly to its field and table
     if domain == "meas value":
         omop_field = _get_omop_field("value_as_concept_id", "measurement")
+    #  if the domain is "specimen" or "spec anatomic site" then point directly to one field in the table "specimen"
+    elif domain == "specimen" or domain == "spec anatomic site":
+        omop_field = _get_omop_field("specimen_concept_id", "specimen")
     else:
         omop_field = _get_omop_field(f"{domain}_source_concept_id")
 
@@ -329,6 +334,9 @@ def save_mapping_rules(
     type_column = source_field.type_column.lower()
     domain = concept.domain_id.lower()
 
+    # Convert "spec anatomic site" to "anatomic_site" to match the name in OMOP CDM
+    if domain == "spec anatomic site":
+        domain = "anatomic_site"
     # start looking up what table we're looking at
     destination_table = _find_destination_table(concept)
     if destination_table is None:
@@ -382,14 +390,15 @@ def save_mapping_rules(
     #  - for this destination_field and source_field
     #  - do_term_mapping is set to true:
     #    - all term mapping rules associated need to be applied
-    rule_domain_source_concept_id, created = MappingRule.objects.update_or_create(
-        scan_report=scan_report,
-        omop_field=_get_omop_field(f"{domain}_source_concept_id"),
-        source_field=source_field,
-        concept=scan_report_concept,
-        approved=True,
-    )
-    rules.append(rule_domain_source_concept_id)
+    if domain != "anatomic_site" and domain != "specimen":
+        rule_domain_source_concept_id, created = MappingRule.objects.update_or_create(
+            scan_report=scan_report,
+            omop_field=_get_omop_field(f"{domain}_source_concept_id"),
+            source_field=source_field,
+            concept=scan_report_concept,
+            approved=True,
+        )
+        rules.append(rule_domain_source_concept_id)
 
     # create/update a model for the domain concept_id
     #  - for this destination_field and source_field
@@ -423,7 +432,12 @@ def save_mapping_rules(
     # When the concept has the domain "Observation", one more mapping rule to the OMOP field
     # "value_as_number"/"value_as_string" will be added based on the field's datatype
     if domain == "observation" and (
-        type_column == "int" or type_column == "real" or type_column == "float"
+        type_column == "int"
+        or type_column == "real"
+        or type_column == "float"
+        or type_column == "tinyint"
+        or type_column == "smallint"
+        or type_column == "bigint"
     ):
         # create/update a model for the domain value_as_number
         #  - for this destination_field and source_field

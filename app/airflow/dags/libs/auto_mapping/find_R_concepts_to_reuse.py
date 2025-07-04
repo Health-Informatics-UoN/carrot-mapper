@@ -21,51 +21,48 @@ pg_hook = PostgresHook(postgres_conn_id="postgres_db_conn")
 def delete_R_concepts(**kwargs) -> None:
     """
     To make sure the eligble concepts for reusing is up-to-date, we will refresh the R concepts
-    by deleting all reused concepts for a given scan report table with creation type 'R' (Reused).
+    by deleting all reused concepts for a given scan report table with creation type 'R' (Reused),
+    in both cases of trigger_reuse_concepts is True or False.
+
     Validated param needed is:
     - table_id (int): The ID of the scan report table to process
     """
     # Get validated parameters from XCom
     validated_params = pull_validated_params(kwargs, "validate_params_auto_mapping")
-    trigger_reuse_concepts = validated_params["trigger_reuse_concepts"]
 
-    if trigger_reuse_concepts:
-        try:
-            table_id = validated_params["table_id"]
+    try:
+        table_id = validated_params["table_id"]
+        delete_reused_concepts = """
+            DELETE FROM mapping_scanreportconcept
+            WHERE creation_type = 'R' 
+            AND (
+                -- Delete concepts for fields in this table
+                (content_type_id = (
+                    SELECT id FROM django_content_type 
+                    WHERE app_label = 'mapping' AND model = 'scanreportfield'
+                ) AND object_id IN (
+                    SELECT srf.id 
+                    FROM mapping_scanreportfield AS srf
+                    WHERE srf.scan_report_table_id = %(table_id)s
+                ))
+                OR 
+                -- Delete concepts for values in this table
+                (content_type_id = (
+                    SELECT id FROM django_content_type 
+                    WHERE app_label = 'mapping' AND model = 'scanreportvalue'
+                ) AND object_id IN (
+                    SELECT srv.id
+                    FROM mapping_scanreportvalue AS srv
+                    JOIN mapping_scanreportfield AS srf ON srv.scan_report_field_id = srf.id
+                    WHERE srf.scan_report_table_id = %(table_id)s
+                ))
+            );
+        """
+        pg_hook.run(delete_reused_concepts, parameters={"table_id": table_id})
 
-            delete_reused_concepts = """
-                DELETE FROM mapping_scanreportconcept
-                WHERE creation_type = 'R' 
-                AND (
-                    -- Delete concepts for fields in this table
-                    (content_type_id = (
-                        SELECT id FROM django_content_type 
-                        WHERE app_label = 'mapping' AND model = 'scanreportfield'
-                    ) AND object_id IN (
-                        SELECT srf.id 
-                        FROM mapping_scanreportfield AS srf
-                        WHERE srf.scan_report_table_id = %(table_id)s
-                    ))
-                    OR 
-                    -- Delete concepts for values in this table
-                    (content_type_id = (
-                        SELECT id FROM django_content_type 
-                        WHERE app_label = 'mapping' AND model = 'scanreportvalue'
-                    ) AND object_id IN (
-                        SELECT srv.id
-                        FROM mapping_scanreportvalue AS srv
-                        JOIN mapping_scanreportfield AS srf ON srv.scan_report_field_id = srf.id
-                        WHERE srf.scan_report_table_id = %(table_id)s
-                    ))
-                );
-            """
-            pg_hook.run(delete_reused_concepts, parameters={"table_id": table_id})
-
-        except Exception as e:
-            logging.error(f"Error in delete_mapping_rules: {str(e)}")
-            raise
-    else:
-        logging.info("Skipping delete_R_concepts as trigger_reuse_concepts is False")
+    except Exception as e:
+        logging.error(f"Error in delete_R_concepts: {str(e)}")
+        raise e
 
 
 def find_matching_value(**kwargs):
@@ -167,7 +164,7 @@ def find_matching_value(**kwargs):
                 scan_report_table=table_id,
                 stage=JobStageType.REUSE_CONCEPTS,
                 status=StageStatusType.FAILED,
-                details=f"Error when finding eligible concepts for reuse at the value level",
+                details=f"Error when finding eligible concepts for reuse at the value level: {str(e)}",
             )
             raise
     else:
@@ -226,7 +223,7 @@ def find_matching_field(**kwargs):
                 scan_report_table=table_id,
                 stage=JobStageType.REUSE_CONCEPTS,
                 status=StageStatusType.FAILED,
-                details=f"Error when finding eligible concepts for reuse at the field level",
+                details=f"Error when finding eligible concepts for reuse at the field level: {str(e)}",
             )
             raise
     else:
@@ -256,7 +253,14 @@ def create_reusing_concepts(**kwargs):
             logging.info(f"Successfully found object ids for reusing concepts")
         except Exception as e:
             logging.error(f"Failed to find object ids for reusing concepts: {str(e)}")
-            raise
+            update_job_status(
+                scan_report=scan_report_id,
+                scan_report_table=table_id,
+                stage=JobStageType.REUSE_CONCEPTS,
+                status=StageStatusType.FAILED,
+                details=f"Error when finding object ids for reusing concepts: {str(e)}",
+            )
+            raise e
         #  Create R concepts
         try:
             pg_hook.run(create_concept_query, parameters={"table_id": table_id})
@@ -275,9 +279,9 @@ def create_reusing_concepts(**kwargs):
                 scan_report_table=table_id,
                 stage=JobStageType.REUSE_CONCEPTS,
                 status=StageStatusType.FAILED,
-                details=f"Error when creating R (Reused) concepts",
+                details=f"Error when creating R (Reused) concepts: {str(e)}",
             )
-            raise
+            raise e
     else:
         update_job_status(
             scan_report=scan_report_id,

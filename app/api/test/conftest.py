@@ -7,7 +7,7 @@ from django.core.management import call_command
 from django.db import connection
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 from pytest_django import DjangoDbBlocker
-from shared.data.models import Concept
+from shared.data.models import Concept, ConceptRelationship
 
 
 def run_sql(db: str, sql: str):
@@ -43,10 +43,10 @@ def django_db_setup(
     django_db_keepdb: bool,
 ) -> Generator[None, None, None]:
     """
-    Override Pytest db setup, to create the "omop.Concept" table.
+    Override Pytest db setup, to create the OMOP schema and tables.
 
-    This is necessary for the migrations to run succesfully in test,
-    as the migrations depend on this schema/table existing.
+    This is necessary for the migrations to run successfully in test,
+    as the migrations depend on this schema/tables existing.
     """
     # Set the default db to the test one for ease.
     db_name = settings.DATABASES["default"]["TEST"]["NAME"]
@@ -59,10 +59,13 @@ def django_db_setup(
     # Set the default to test for ease
     settings.DATABASES["default"]["NAME"] = db_name
 
-    # Create the omop.Concept table
+    # Create all the OMOP tables that might be referenced during tests
+    omop_models = [Concept, ConceptRelationship]
+
     with django_db_blocker.unblock():
         with connection.schema_editor() as schema_editor:
-            schema_editor.create_model(Concept)
+            for model in omop_models:
+                schema_editor.create_model(model)
 
         # run the rest of the migrations
         call_command("migrate", "--noinput")

@@ -25,7 +25,7 @@ export const columns: ColumnDef<MappingRule>[] = [
           <Button variant="outline">{source_table.name}</Button>
         </Link>
       );
-    },
+    }
   },
   {
     id: "Source Field",
@@ -52,7 +52,7 @@ export const columns: ColumnDef<MappingRule>[] = [
           <Button variant="outline">{source_field.name}</Button>
         </Link>
       );
-    },
+    }
   },
   {
     id: "Term Map",
@@ -65,7 +65,7 @@ export const columns: ColumnDef<MappingRule>[] = [
       const { omop_term, term_mapping } = row.original;
       if (typeof term_mapping === "number") {
         return (
-          <p className="text-green-700">
+          <p className="text-success">
             {term_mapping} {omop_term}
           </p>
         );
@@ -75,10 +75,10 @@ export const columns: ColumnDef<MappingRule>[] = [
           {Object.keys(term_mapping).map((key, index) => (
             <div key={index}>
               <div className="flex">
-                <p className="text-red-500">{key}</p>{" "}
+                <p className="text-destructive">{key}</p>{" "}
                 <ArrowRight size="16px" className="ml-2" />
               </div>
-              <p className="text-green-700">
+              <p className="text-success">
                 {term_mapping[key]} {omop_term}
               </p>
             </div>
@@ -87,7 +87,7 @@ export const columns: ColumnDef<MappingRule>[] = [
       ) : (
         <></>
       );
-    },
+    }
   },
   {
     id: "Destination Field",
@@ -99,7 +99,7 @@ export const columns: ColumnDef<MappingRule>[] = [
     cell: ({ row }) => {
       const { destination_field } = row.original;
       return destination_field.name;
-    },
+    }
   },
   {
     id: "Destination Table",
@@ -111,7 +111,7 @@ export const columns: ColumnDef<MappingRule>[] = [
     cell: ({ row }) => {
       const { destination_table } = row.original;
       return destination_table.name;
-    },
+    }
   },
   {
     id: "Creation Type",
@@ -138,6 +138,6 @@ export const columns: ColumnDef<MappingRule>[] = [
         default:
           return "";
       }
-    },
-  },
+    }
+  }
 ];

@@ -89,14 +89,14 @@ def find_standard_concepts(**kwargs) -> None:
                 scan_report_table=table_id,
                 stage=JobStageType.BUILD_CONCEPTS_FROM_DICT,
                 status=StageStatusType.FAILED,
-                details=f"Error in creating temp_standard_concepts_{table_id} table",
+                details=f"Error in creating temp_standard_concepts_{table_id} table: {str(e)}",
             )
             raise
 
         # Process each field-vocabulary pair
         for pair in field_vocab_pairs:
             sr_field_id = pair["sr_field_id"]
-            vocabulary_id = pair["vocabulary_id"]
+            vocabulary_id = pair["vocabulary_id"].upper()
 
             if not sr_field_id or not vocabulary_id:
                 raise AirflowException(
@@ -120,7 +120,7 @@ def find_standard_concepts(**kwargs) -> None:
             FROM mapping_scanreportvalue AS sr_value
             JOIN omop.concept AS src_concept ON
                 src_concept.concept_code = sr_value.value AND
-                src_concept.vocabulary_id = %(vocabulary_id)s
+                UPPER(src_concept.vocabulary_id) = %(vocabulary_id)s
             JOIN omop.concept_relationship AS concept_relationship ON
                 concept_relationship.concept_id_1 = src_concept.concept_id AND
                 concept_relationship.relationship_id = 'Maps to'
@@ -156,7 +156,7 @@ def find_standard_concepts(**kwargs) -> None:
                     scan_report_table=table_id,
                     stage=JobStageType.BUILD_CONCEPTS_FROM_DICT,
                     status=StageStatusType.FAILED,
-                    details=f"Error in finding standard concepts for field ID {sr_field_id}",
+                    details=f"Error in finding standard concepts for field ID {sr_field_id}: {str(e)}",
                 )
                 raise
 
@@ -229,5 +229,5 @@ def create_standard_concepts(**kwargs) -> None:
                 scan_report_table=table_id,
                 stage=JobStageType.BUILD_CONCEPTS_FROM_DICT,
                 status=StageStatusType.FAILED,
-                details=f"Error when creating standard concepts",
+                details=f"Error when creating standard concepts: {str(e)}",
             )

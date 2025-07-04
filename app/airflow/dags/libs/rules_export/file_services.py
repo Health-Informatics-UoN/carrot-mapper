@@ -78,7 +78,7 @@ def build_rules_json(scan_report_name: str, scan_report_id: int) -> BytesIO:
             scan_report=scan_report_id,
             stage=JobStageType.DOWNLOAD_RULES,
             status=StageStatusType.FAILED,
-            details=f"Error building rules JSON for scan report {scan_report_id}",
+            details=f"Error building rules JSON for scan report {scan_report_id}: {str(e)}",
         )
         raise e
 
@@ -207,6 +207,6 @@ def build_rules_csv(scan_report_id: int) -> BytesIO:
             scan_report=scan_report_id,
             stage=JobStageType.DOWNLOAD_RULES,
             status=StageStatusType.FAILED,
-            details=f"Error building rules CSV for scan report {scan_report_id}",
+            details=f"Error building rules CSV for scan report {scan_report_id}: {str(e)}",
         )
         raise e

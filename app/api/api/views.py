@@ -75,6 +75,7 @@ from shared.services.rules_export import (
 )
 from shared.services.storage_service import StorageService
 from shared.services.worker_service import get_worker_service
+from importlib.metadata import version
 
 storage_service = StorageService()
 worker_service = get_worker_service()
@@ -1062,6 +1063,9 @@ class ScanReportConceptListV2(
         if domain == "observation" and field_datatype.lower() not in [
             "real",
             "int",
+            "tinyint",
+            "smallint",
+            "bigint",
             "varchar",
             "nvarchar",
             "float",
@@ -1095,7 +1099,7 @@ class ScanReportConceptListV2(
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
-
+        # Create serializer and validate
         serializer = self.get_serializer(data=body, many=isinstance(body, list))
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
@@ -1111,6 +1115,16 @@ class ScanReportConceptListV2(
         headers = self.get_success_headers(serializer.data)
         return Response(
             serializer.data, status=status.HTTP_201_CREATED, headers=headers
+        )
+
+    def perform_create(self, serializer):
+        """
+        Override perform_create to set the created_by field to the current user.
+        """
+        serializer.save(
+            created_by=self.request.user,
+            mapping_tool="carrot-mapper",
+            mapping_tool_version=version("api"),
         )
 
 
@@ -1224,7 +1238,6 @@ class MappingRulesList(APIView):
                 "concept",
                 "omop_field__table",
                 "omop_field__field",
-                "source_table__name",
                 "source_field__name",
             )
 

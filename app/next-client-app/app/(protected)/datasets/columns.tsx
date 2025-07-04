@@ -8,7 +8,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger,
+  DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import { EyeNoneIcon, EyeOpenIcon, Pencil2Icon } from "@radix-ui/react-icons";
 import { format } from "date-fns/format";
@@ -22,7 +22,7 @@ export const columns: ColumnDef<DataSet>[] = [
       <DataTableColumnHeader column={column} title="ID" sortName="id" />
     ),
     enableHiding: false,
-    enableSorting: true,
+    enableSorting: true
   },
   {
     id: "Name",
@@ -35,12 +35,15 @@ export const columns: ColumnDef<DataSet>[] = [
       const { id, name } = row.original;
       return (
         <Link href={`/datasets/${id}/`}>
-          <Button variant={"link"} className="font-bold">
+          <Button
+            variant="link"
+            className="font-bold text-black dark:text-white"
+          >
             {name}
           </Button>
         </Link>
       );
-    },
+    }
   },
   {
     id: "Data Partner",
@@ -54,7 +57,7 @@ export const columns: ColumnDef<DataSet>[] = [
       />
     ),
     enableHiding: true,
-    enableSorting: true,
+    enableSorting: true
   },
   {
     accessorKey: "visibility",
@@ -67,6 +70,12 @@ export const columns: ColumnDef<DataSet>[] = [
     ),
     enableHiding: true,
     enableSorting: true,
+    // Show Shared Visibility or Restricted Visibility
+    cell: ({ row }) => (
+      <span>
+        {row.original.visibility === "PUBLIC" ? "Shared" : "Restricted"}
+      </span>
+    )
   },
 
   {
@@ -84,7 +93,7 @@ export const columns: ColumnDef<DataSet>[] = [
     cell: ({ row }) => {
       const date = new Date(row.original.created_at);
       return format(date, "MMM dd, yyyy h:mm a");
-    },
+    }
   },
   {
     id: "actions",
@@ -111,7 +120,7 @@ export const columns: ColumnDef<DataSet>[] = [
                   id: id,
                   hidden: hidden,
                   ObjName: row.original.name,
-                  type: "datasets",
+                  type: "datasets"
                 })
               }
             >
@@ -132,6 +141,6 @@ export const columns: ColumnDef<DataSet>[] = [
       );
     },
     header: "Actions",
-    enableHiding: false,
-  },
+    enableHiding: false
+  }
 ];

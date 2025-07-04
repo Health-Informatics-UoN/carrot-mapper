@@ -26,7 +26,7 @@ class Command(BaseCommand):
         os.getenv("WORKERS_UPLOAD_NAME"),
     ]
 
-    CONTAINERS = ["scan-reports", "data-dictionaries", "rules-exports"]
+    CONTAINERS = ["scan-reports", "data-dictionaries", "rules-exports", "airflow-logs"]
 
     def _create_azure_queues(self, queue_service: str):
         """

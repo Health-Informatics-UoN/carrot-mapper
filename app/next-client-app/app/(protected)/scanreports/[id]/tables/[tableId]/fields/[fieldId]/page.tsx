@@ -69,11 +69,11 @@ export default async function ScanReportsValue(props: ScanReportsValueProps) {
       <div className="gap-2 flex">
         {" "}
         <Link href={`/scanreports/${id}/tables/${tableId}`}>
-          <Button variant={"secondary"} className="mb-3">
+          <Button variant="secondary" className="mb-3 bg-muted text-foreground">
             Table: {table.name}
           </Button>
         </Link>
-        <Button variant={"secondary"} className="mb-3">
+        <Button variant="secondary" className="mb-3 bg-muted text-foreground">
           Field: {field.name}
         </Button>
       </div>

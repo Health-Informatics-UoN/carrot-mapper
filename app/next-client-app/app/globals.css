@@ -1,77 +1,218 @@
 @tailwind base;
 @tailwind utilities;
+@tailwind components;
 
-/* The code block below control the styles of react-select components in light/dark modes */
-@tailwind components {
-  @layer components {
-    .my-react-select-container .my-react-select__control {
-      @apply bg-white dark:bg-carrot-950 rounded-md border border-carrot-200 dark:border-carrot-800 hover:border-carrot-600 dark:hover:border-carrot-400;
-    }
+/* shadcn/ui color tokens for dialogs and backgrounds */
+:root {
+  --background: 0 0% 100%;
+  --foreground: 222.2 47.4% 11.2%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222.2 47.4% 11.2%;
+  --muted: 210 40% 96.1%;
+  --muted-foreground: 215.4 16.3% 46.9%;
+  --success: 142.1 76.2% 36.3%;
+  --success-foreground: 210 40% 98%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+  --warning: 38 92% 50%;
+  --warning-foreground: 222.2 47.4% 11.2%;
+  --accent: 240 4.8% 95.9%;
+  --accent-foreground: 240 10% 3.9%;
+  --primary: 0 0% 0%; /* black */
+  --primary-foreground: 0 0% 100%; /* white */
+  --secondary: 210 40% 96.1%;
+  --secondary-foreground: 222.2 47.4% 11.2%;
+  --ring: 0 0% 0%; /* black */
+}
+.dark {
+  --background: 0 0% 7%;
+  --foreground: 210 40% 98%;
+  --popover: 220 14.3% 17.9%;
+  --popover-foreground: 210 40% 98%;
+  --muted: 217.2 32.6% 17.5%;
+  --muted-foreground: 215 20.2% 65.1%;
+  --success: 142.1 70% 45%;
+  --success-foreground: 210 40% 98%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+  --warning: 38 92% 50%;
+  --warning-foreground: 210 40% 98%;
+  --accent: 240 3.7% 15.9%;
+  --accent-foreground: 0 0% 98%;
+  --primary: 0 0% 0%; /* black */
+  --primary-foreground: 0 0% 100%; /* white */
+  --secondary: 222.2 47.4% 11.2%;
+  --secondary-foreground: 210 40% 98%;
+  --ring: 215 100% 65%; /* #60a5fa, a visible blue */
+}
 
-    .my-react-select-container .my-react-select__control--is-disabled {
-      @apply bg-neutral-200 dark:bg-carrot-900 border-carrot-300 dark:border-carrot-700 cursor-not-allowed;
-    }
+button.rounded-full:hover,
+button.rounded-full:focus-visible {
+  background-color: hsl(var(--muted));
+  transition: background-color 0.2s;
+}
 
-    .my-react-select-container .my-react-select__control--is-focused {
-      @apply ring-2 ring-carrot-950 ring-offset-2 hover:border-carrot-500 dark:border-carrot-400 dark:hover:border-carrot-400 shadow-none;
-    }
+/* React Select using shadcn/ui tokens */
+.my-react-select__menu {
+  background-color: hsl(var(--popover)) !important;
+  color: hsl(var(--popover-foreground)) !important;
+}
 
-    .my-react-select-container .my-react-select__menu {
-      @apply bg-white dark:bg-carrot-950 border-2 border-carrot-300 dark:border-carrot-600;
-    }
+.my-react-select__option {
+  background-color: hsl(var(--popover)) !important;
+  color: hsl(var(--foreground)) !important;
+  cursor: pointer;
+}
 
-    .my-react-select-container .my-react-select__option {
-      @apply dark:text-white/90 text-black bg-white hover:bg-carrot-200 dark:bg-carrot-950 dark:hover:bg-carrot-800;
-    }
+.my-react-select__option--is-focused {
+  background-color: hsl(var(--accent)) !important;
+  color: hsl(var(--foreground)) !important;
+}
 
-    .my-react-select-container .my-react-select__indicator-separator {
-      @apply bg-carrot-400;
-    }
+.my-react-select__option--is-selected {
+  background-color: hsl(var(--accent)) !important;
+  color: hsl(var(--foreground)) !important;
+  font-weight: 600;
+}
 
-    .my-react-select-container .my-react-select__input-container,
-    .my-react-select-container .my-react-select__placeholder,
-    .my-react-select-container .my-react-select__single-value {
-      @apply text-carrot-950 dark:text-white/90;
-    }
+.dark .my-react-select__option--is-selected {
+  background-color: hsl(var(--accent)) !important;
+  color: hsl(var(--foreground)) !important;
+  font-weight: 600;
+  border: 1px solid hsl(var(--muted-foreground));
+}
 
-    /* Multi-value container and labels */
-    .my-react-select-container .my-react-select__multi-value {
-      @apply bg-carrot dark:bg-carrot-600 rounded-lg;
-    }
+.my-react-select__single-value,
+.my-react-select__multi-value__label {
+  color: hsl(var(--foreground));
+}
 
-    .my-react-select-container .my-react-select__multi-value__label {
-      @apply text-white/90 dark:text-carrot-100;
-    }
+.my-react-select__multi-value {
+  background-color: hsl(var(--primary)) !important;
+  border-radius: 0.375rem !important;
+}
 
-    /* Multi-value remove button and SVG */
-    .my-react-select-container .my-react-select__multi-value__remove {
-      @apply bg-carrot dark:bg-carrot-600 hover:bg-carrot-600 dark:hover:bg-carrot-800 rounded-lg;
-    }
+.my-react-select__multi-value__label {
+  color: hsl(var(--primary-foreground)) !important;
+  font-weight: 600;
+  max-width: none !important;
+  overflow: visible !important;
+  text-overflow: unset !important;
+  white-space: normal !important;
+}
 
-    .my-react-select-container
-      .my-react-select__multi-value__remove
-      .css-tj5bde-Svg {
-      @apply text-carrot-200 dark:text-carrot-400;
-    }
+.my-react-select__multi-value__remove {
+  color: #ef4444 !important;
+  background: transparent !important;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.my-react-select__multi-value__remove:hover {
+  color: #b91c1c !important;
+  background: transparent !important;
+}
 
-    /* Clear and dropdown indicator */
-    .my-react-select-container .my-react-select__clear-indicator,
-    .my-react-select-container .my-react-select__dropdown-indicator {
-      @apply text-carrot-400 dark:text-carrot-600;
-    }
+.dark .my-react-select__option--is-focused {
+  background-color: hsl(var(--muted)) !important;
+  color: hsl(var(--foreground)) !important;
+}
 
-    .my-react-select-container .my-react-select__clear-indicator:hover,
-    .my-react-select-container .my-react-select__dropdown-indicator:hover {
-      @apply text-carrot-500 dark:text-carrot-500;
-    }
+.dark .my-react-select__option--is-selected {
+  background-color: hsl(var(--muted)) !important;
+  color: hsl(var(--foreground)) !important;
+}
 
-    .my-react-select-container
-      .my-react-select__clear-indicator
-      .css-tj5bde-Svg,
-    .my-react-select-container
-      .my-react-select__dropdown-indicator
-      .css-tj5bde-Svg {
-      @apply fill-current;
-    }
-  }
+.avatar-initial {
+  background-color: #f98109 !important;
+  color: #fff !important;
+}
+
+.shadcn-dropdown-item {
+  @apply relative flex select-none items-center rounded-sm py-1.5 text-sm outline-none transition-colors
+    hover:bg-accent hover:text-accent-foreground
+    focus:bg-accent focus:text-accent-foreground
+    data-[disabled]:pointer-events-none data-[disabled]:opacity-50;
+}
+
+.pagination-btn {
+  @apply size-8 p-0 flex bg-black text-white border border-black ring-1 ring-black;
+}
+.dark .pagination-btn {
+  @apply bg-white text-black border-white ring-white;
+}
+.dark .pagination-btn:hover,
+.dark .pagination-btn:focus-visible {
+  background-color: hsl(var(--muted)) !important;
+  color: hsl(var(--foreground)) !important;
+  border-color: hsl(var(--muted-foreground)) !important;
+}
+
+/* Sonner toast global styles */
+[data-sonner-toast][data-type="success"] {
+  background: hsl(var(--success)) !important;
+  color: hsl(var(--success-foreground)) !important;
+}
+[data-sonner-toast][data-type="error"] {
+  background: hsl(var(--destructive)) !important;
+  color: hsl(var(--destructive-foreground)) !important;
+}
+[data-sonner-toast][data-type="info"] {
+  background: hsl(var(--primary)) !important;
+  color: hsl(var(--primary-foreground)) !important;
+}
+[data-sonner-toast][data-type="warning"] {
+  background: hsl(var(--warning)) !important;
+  color: hsl(var(--warning-foreground)) !important;
+}
+
+/* Make file input text visible in dark mode */
+input[type="file"]::file-selector-button {
+  color: hsl(var(--foreground));
+  border-radius: 0.375rem;
+  cursor: pointer;
+}
+
+.dark input[type="file"]::file-selector-button {
+  color: hsl(var(--success-foreground));
+  background: hsl(var(--muted));
+  border: none;
+}
+
+.my-react-select-container {
+  border-color: hsl(var(--primary)) !important;
+}
+
+.my-react-select-container .my-react-select__control {
+  border-color: hsl(var(--primary)) !important;
+  box-shadow: none;
+}
+
+.my-react-select-container .my-react-select__control--is-focused {
+  border-color: hsl(var(--ring)) !important;
+  box-shadow: 0 0 0 2px hsl(var(--ring)) !important;
+}
+
+/* Make radix switch visible when off */
+[data-slot="switch"][data-state="unchecked"] {
+  background-color: hsl(var(--muted-foreground)) !important;
+}
+
+/* Dark mode: much lighter for visibility */
+.dark [data-slot="switch"][data-state="unchecked"] {
+  background-color: #374151 !important; /* Tailwind gray-700 */
+}
+
+/* Optional: make the "on" state more visible in dark mode */
+.dark [data-slot="switch"][data-state="checked"] {
+  background-color: #3b82f6 !important; /* Tailwind blue-500 */
+}
+
+[data-slot="switch"][data-state="checked"]:hover,
+[data-slot="switch"][data-state="checked"]:focus-visible {
+  background-color: #94a3b8 !important; /* Tailwind gray-300, darker than before */
+}
+
+input[data-slot="input"]:focus-visible {
+  border-color: hsl(var(--ring)) !important;
+  box-shadow: 0 0 0 2px hsl(var(--ring)) !important;
 }

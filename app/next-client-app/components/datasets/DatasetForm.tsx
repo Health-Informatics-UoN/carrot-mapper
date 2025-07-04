@@ -83,7 +83,7 @@ export function DatasetForm({
     <Formik
       initialValues={{
         name: dataset.name,
-        visibility: dataset.visibility,
+        visibility: dataset.visibility, // Should be "PUBLIC" or "RESTRICTED"
         viewers: initialViewersFilter.map((viewer) => viewer.value),
         editors: initialEditorsFilter.map((editor) => editor.value),
         dataPartner: initialPartnerFilter[0].value,
@@ -108,7 +108,7 @@ export function DatasetForm({
                 onChange={handleChange}
                 name="name"
                 disabled={!canUpdate}
-                className="text-lg text-carrot"
+                className="text-lg"
               />
             </div>
             <div className="flex flex-col gap-2">
@@ -127,7 +127,7 @@ export function DatasetForm({
             <div className="flex items-center space-x-3">
               <h3 className="flex">
                 Visibility
-                <Tooltips content="If a Dataset is PUBLIC, then all users with access to any project associated to the Dataset can see them." />
+                <Tooltips content="If a Dataset is shared, then all users with access to any project associated to the Dataset can see them." />
               </h3>
               <Switch
                 onCheckedChange={(checked) => {
@@ -143,7 +143,8 @@ export function DatasetForm({
                 disabled={!canUpdate}
               />
               <Label className="text-lg">
-                {values.visibility === "PUBLIC" ? "PUBLIC" : "RESTRICTED"}
+                {/* Show user-friendly label */}
+                {values.visibility === "PUBLIC" ? "Shared" : "Restricted"}
               </Label>
             </div>
             {!publicVisibility && (
@@ -207,7 +208,7 @@ export function DatasetForm({
             <div className="flex mt-3">
               <Button
                 type="submit"
-                className="px-4 py-2 bg-carrot text-white rounded text-lg"
+                className="px-4 py-2 text-lg border border-input"
                 disabled={!canUpdate}
               >
                 Save <Save className="ml-2" />

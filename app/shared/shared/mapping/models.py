@@ -46,22 +46,8 @@ class UploadStatus(models.Model):
 
 
 class MappingStatus(models.Model):
-    value = models.CharField(max_length=64)
+    value = models.CharField(max_length=64, db_index=True)
     display_name = models.CharField(max_length=64)
-
-
-class ClassificationSystem(BaseModel):
-    """
-    Class for 'classification system', i.e. SNOMED or ICD-10 etc.
-    """
-
-    name = models.CharField(max_length=64)
-
-    class Meta:
-        app_label = "mapping"
-
-    def __str__(self):
-        return str(self.id)
 
 
 class DataPartner(BaseModel):
@@ -94,7 +80,7 @@ class OmopTable(BaseModel):
         table: Name of the linking table.
     """
 
-    table = models.CharField(max_length=64)
+    table = models.CharField(max_length=64, db_index=True)
 
     class Meta:
         app_label = "mapping"
@@ -117,6 +103,9 @@ class OmopField(BaseModel):
 
     class Meta:
         app_label = "mapping"
+        indexes = [
+            models.Index(fields=["table", "field"], name="idx_omop_table_field"),
+        ]
 
     def __str__(self):
         return str(self.id)
@@ -128,31 +117,66 @@ class ScanReportConcept(BaseModel):
     It uses a generic relation to connect it to a ScanReportValue or ScanReportValue
     """
 
-    nlp_entity = models.CharField(max_length=64, null=True, blank=True)
-    nlp_entity_type = models.CharField(max_length=64, null=True, blank=True)
-    nlp_confidence = models.DecimalField(
-        max_digits=3,
-        decimal_places=2,
-        null=True,
-        blank=True,
-    )
-    nlp_vocabulary = models.CharField(max_length=64, null=True, blank=True)
-    nlp_concept_code = models.CharField(max_length=64, null=True, blank=True)
-    nlp_processed_string = models.CharField(max_length=256, null=True, blank=True)
     concept = models.ForeignKey(Concept, on_delete=models.DO_NOTHING)
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     object_id = models.PositiveIntegerField()
     content_object = GenericForeignKey()
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        blank=True,
+        null=True,
+    )
+    confidence = models.DecimalField(
+        max_digits=3,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Confidence score for the mapping rule",
+    )
+    description = models.TextField(
+        blank=True,
+        null=True,
+        help_text="Description of the mapping rule",
+    )
+    mapping_tool = models.CharField(
+        max_length=128,
+        blank=True,
+        null=True,
+        default="carrot-mapper",
+        help_text="Name of the tool used to create this mapping",
+    )
+    mapping_tool_version = models.CharField(
+        max_length=128,
+        blank=True,
+        null=True,
+        help_text="Version of the mapping tool used",
+    )
 
     # save how the mapping rule was created
     creation_type = models.CharField(
         max_length=1,
         choices=CreationType.choices,
         default=CreationType.Manual,
+        db_index=True,
     )
 
     class Meta:
         app_label = "mapping"
+        indexes = [
+            models.Index(
+                fields=["object_id", "content_type"],
+                name="idx_sr_concept_obj_content",
+            ),
+            models.Index(
+                fields=["object_id", "content_type", "concept"],
+                name="idx_src_obj_content_concept",
+            ),
+            models.Index(
+                fields=["creation_type", "content_type"],
+                name="idx_src_creation_content",
+            ),
+        ]
 
     def __str__(self):
         return str(self.id)
@@ -172,7 +196,6 @@ class ScanReport(BaseModel):
     name = models.CharField(max_length=256)  # TODO: rename to `file_name`
     dataset = models.CharField(max_length=128)  # TODO: rename to `name`
     hidden = models.BooleanField(default=False)
-    file = models.FileField()  # TODO: Delete.
     upload_status = models.ForeignKey(
         "UploadStatus",
         null=True,
@@ -180,6 +203,7 @@ class ScanReport(BaseModel):
         on_delete=models.DO_NOTHING,
         related_name="upload_status",
     )
+    upload_status_details = models.TextField(null=True, blank=True)
     mapping_status = models.ForeignKey(
         "MappingStatus",
         null=True,
@@ -223,6 +247,16 @@ class ScanReport(BaseModel):
 
     class Meta:
         app_label = "mapping"
+        indexes = [
+            models.Index(
+                fields=["parent_dataset", "hidden"],
+                name="idx_sr_dataset_hidden",
+            ),
+            models.Index(
+                fields=["parent_dataset", "hidden", "mapping_status"],
+                name="idx_sr_dataset_status",
+            ),
+        ]
 
     def __str__(self):
         return str(self.id)
@@ -234,7 +268,7 @@ class ScanReportTable(BaseModel):
     """
 
     scan_report = models.ForeignKey(ScanReport, on_delete=models.CASCADE)
-    name = models.CharField(max_length=256)
+    name = models.CharField(max_length=256, db_index=True)
 
     # Quick notes:
     # - "ScanReportField", instead of ScanReportField,
@@ -271,43 +305,16 @@ class ScanReportField(BaseModel):
     """
 
     scan_report_table = models.ForeignKey(ScanReportTable, on_delete=models.CASCADE)
-    name = models.CharField(max_length=512)
+    name = models.CharField(max_length=512, db_index=True)
     description_column = models.CharField(max_length=512)
     type_column = models.CharField(max_length=32)
-    max_length = models.IntegerField()
-    nrows = models.IntegerField()
-    nrows_checked = models.IntegerField()
-    fraction_empty = models.DecimalField(decimal_places=2, max_digits=10)
-    nunique_values = models.IntegerField()
-    fraction_unique = models.DecimalField(decimal_places=2, max_digits=10)
     ignore_column = models.CharField(max_length=64, blank=True, null=True)
     is_patient_id = models.BooleanField(default=False)
     is_ignore = models.BooleanField(default=False)
     classification_system = models.CharField(max_length=64, blank=True, null=True)
     pass_from_source = models.BooleanField(default=True)
-    concept_id = models.IntegerField(
-        default=-1,
-        blank=True,
-        null=True,
-        # This field is not used anymore
-    )
     field_description = models.CharField(max_length=256, blank=True, null=True)
     concepts = GenericRelation(ScanReportConcept)
-
-    class Meta:
-        app_label = "mapping"
-
-    def __str__(self):
-        return str(self.id)
-
-
-class ScanReportAssertion(BaseModel):
-    """
-    Model for a Scan Report Assertion.
-    """
-
-    scan_report = models.ForeignKey(ScanReport, on_delete=models.CASCADE)
-    negative_assertion = models.CharField(max_length=64, null=True, blank=True)
 
     class Meta:
         app_label = "mapping"
@@ -328,11 +335,6 @@ class MappingRule(BaseModel):
     # e.g. condition_concept_id
     omop_field = models.ForeignKey(OmopField, on_delete=models.CASCADE)
 
-    # TODO --- STOP USING THIS
-    source_table = models.ForeignKey(
-        ScanReportTable, on_delete=models.CASCADE, blank=True, null=True
-    )
-
     # connect the rule with a source_field (and therefore source_table)
     source_field = models.ForeignKey(
         ScanReportField, on_delete=models.CASCADE, null=True, blank=True
@@ -342,6 +344,16 @@ class MappingRule(BaseModel):
 
     class Meta:
         app_label = "mapping"
+        indexes = [
+            models.Index(
+                fields=["scan_report", "concept"],
+                name="idx_mappingrule_sr_concept",
+            ),
+            models.Index(
+                fields=["omop_field", "source_field"],
+                name="idx_maprule_omop_scr_fields",
+            ),
+        ]
 
     def __str__(self):
         return str(self.id)
@@ -353,14 +365,22 @@ class ScanReportValue(BaseModel):
     """
 
     scan_report_field = models.ForeignKey(ScanReportField, on_delete=models.CASCADE)
-    value = models.CharField(max_length=128)
+    value = models.CharField(max_length=128, db_index=True)
     frequency = models.IntegerField()
     conceptID = models.IntegerField(default=-1)  # TODO rename it to concept_id
     concepts = GenericRelation(ScanReportConcept)
-    value_description = models.CharField(max_length=512, blank=True, null=True)
+    value_description = models.CharField(
+        max_length=512, blank=True, null=True, db_index=True
+    )
 
     class Meta:
         app_label = "mapping"
+        indexes = [
+            models.Index(
+                fields=["scan_report_field", "value"],
+                name="idx_sr_value_field_value",
+            ),
+        ]
 
     def __str__(self):
         return str(self.id)
@@ -372,22 +392,6 @@ class DataDictionary(BaseModel):
     """
 
     name = models.CharField(max_length=256, blank=True, null=True)
-
-    class Meta:
-        app_label = "mapping"
-
-    def __str__(self):
-        return str(self.id)
-
-
-class NLPModel(models.Model):
-    """
-    A temporary model to hold the results from NLP string searches
-    Created for Sprint 14
-    """
-
-    user_string = models.TextField(max_length=1024)
-    json_response = models.TextField(max_length=4096, blank=True, null=True)
 
     class Meta:
         app_label = "mapping"
@@ -431,7 +435,7 @@ class Dataset(BaseModel):
         related_query_name="dataset_editor",
         blank=True,
     )
-    hidden = models.BooleanField(default=False)
+    hidden = models.BooleanField(default=False, db_index=True)
     # `projects` field added by M2M field in `Project`
     # `scan_reports` field added by FK field in `ScanReport`
 

@@ -11,6 +11,7 @@ import { Label } from "../ui/label";
 import { Tooltips } from "../core/Tooltips";
 import { useRouter } from "next/navigation";
 import { Checkbox } from "../ui/checkbox";
+import { enableReuseTriggerOption } from "@/constants";
 
 interface FormData {
   personId: number | null;
@@ -110,7 +111,7 @@ export function ScanReportTableUpdateForm({
                 isDisabled={!canUpdate}
               />
             </div>
-            {process.env.NEXT_PUBLIC_ENABLE_REUSE_TRIGGER_OPTION == "true" && (
+            {enableReuseTriggerOption === "true" && (
               <div className="flex gap-2 mt-2 items-center">
                 <h3 className="flex">
                   Do you want to trigger the reuse of existing concepts?
@@ -137,7 +138,7 @@ export function ScanReportTableUpdateForm({
             <div className="flex mt-3">
               <Button
                 type="submit"
-                className="px-4 py-2 bg-carrot text-white rounded text-lg"
+                className="px-4 py-2 text-lg border border-input"
                 disabled={!canUpdate}
               >
                 Save <Save className="ml-2" />

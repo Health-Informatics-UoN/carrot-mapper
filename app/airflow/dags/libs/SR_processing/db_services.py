@@ -50,14 +50,6 @@ def create_field_entries(
                 field_name = str(row[1].value) if row[1].value is not None else ""
                 description = str(row[2].value) if row[2].value is not None else ""
                 type_column = str(row[3].value) if row[3].value is not None else ""
-                max_length = row[4].value
-                nrows = row[5].value
-                nrows_checked = row[6].value
-
-                # Calculate fractions with default values
-                fraction_empty = round(default_zero(row[7].value), 2)
-                nunique_values = row[8].value
-                fraction_unique = round(default_zero(row[9].value), 2)
 
                 pg_hook.run(
                     create_fields_query,
@@ -67,12 +59,6 @@ def create_field_entries(
                         "name": field_name,  # NOTE: without BOM removal to keep the consistency with Azure functions
                         "description_column": description,
                         "type_column": type_column,
-                        "max_length": max_length,
-                        "nrows": nrows,
-                        "nrows_checked": nrows_checked,
-                        "fraction_empty": fraction_empty,
-                        "nunique_values": nunique_values,
-                        "fraction_unique": fraction_unique,
                     },
                 )
 
@@ -147,6 +133,7 @@ def update_temp_data_dictionary_table(
             stage=JobStageType.UPLOAD_SCAN_REPORT,
             status=StageStatusType.FAILED,
             scan_report=scan_report_id,
+            details=f"Upload failed: {str(e)}",
         )
         raise e
 
