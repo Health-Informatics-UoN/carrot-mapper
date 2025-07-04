@@ -18,6 +18,7 @@ from api.serializers import (
     ScanReportTableEditSerializer,
     ScanReportTableListSerializerV2,
     ScanReportValueViewSerializerV2,
+    ScanReportValueViewSerializerV3,
     ScanReportViewSerializerV2,
     UserSerializer,
 )
@@ -867,10 +868,71 @@ class ScanReportValueListV2(ScanReportPermissionMixin, GenericAPIView, ListModel
         return self.list(request, *args, **kwargs)
 
     def get_queryset(self):
+        return ScanReportValue.objects.filter(scan_report_field=self.field).order_by(
+            "id"
+        )
+
+    @method_decorator(cache_page(60 * 15))
+    @method_decorator(vary_on_cookie)
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
+
+
+class ScanReportValueListV3(ScanReportPermissionMixin, GenericAPIView, ListModelMixin):
+    """
+    A view for listing ScanReportValue objects associated with a
+    specific ScanReportField. This view provides filtering,
+    pagination, and caching capabilities for the ScanReportValue
+    objects. It uses DjangoFilterBackend for filtering and a custom
+    pagination class for paginated responses. The view also caches the
+    list response for 15 minutes.
+
+    Attributes:
+        filterset_fields (dict): Specifies the fields and lookup types
+            available for filtering.
+        filter_backends (list): Specifies the filter backends to be
+            used.
+        pagination_class (class): Specifies the pagination class to be
+            used.
+        serializer_class (class): Specifies the serializer class to be
+            used for the response.
+
+    Methods:
+        get(request, *args, **kwargs):
+            Handles GET requests and retrieves the ScanReportField
+            object based on the provided field_pk. Returns the list of
+            ScanReportValue objects associated with the field.
+
+        get_queryset():
+            Returns the queryset of ScanReportValue objects filtered by
+            the associated ScanReportField. The queryset is ordered by
+            ID and only includes specific fields.
+
+        list(request, *args, **kwargs):
+            Overrides the default list method to add caching and
+            vary-on-cookie functionality. Returns the paginated list of
+            ScanReportValue objects.
+    """
+
+    filterset_fields = {
+        "value": ["in", "icontains"],
+    }
+    filter_backends = [DjangoFilterBackend]
+    pagination_class = CustomPagination
+    serializer_class = ScanReportValueViewSerializerV3
+
+    @extend_schema(responses=ScanReportValueViewSerializerV3)
+    def get(self, request, *args, **kwargs):
+        self.field = get_object_or_404(ScanReportField, pk=kwargs["field_pk"])
+
+        return self.list(request, *args, **kwargs)
+
+    def get_queryset(self):
         return (
             ScanReportValue.objects.filter(scan_report_field=self.field)
             .order_by("id")
-            .only("id", "value", "frequency", "value_description", "scan_report_field")
+            .select_related("scan_report_field")
+            .prefetch_related("concepts", "concepts__concept")
         )
 
     @method_decorator(cache_page(60 * 15))
