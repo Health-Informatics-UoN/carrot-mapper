@@ -98,6 +98,11 @@ urlpatterns = [
         views.ScanReportValueListV2.as_view(),
         name="scan-report-values",
     ),
+    path(
+        "v3/scanreports/<int:pk>/tables/<int:table_pk>/fields/<int:field_pk>/values/",
+        views.ScanReportValueListV3.as_view(),
+        name="scan-report-values",
+    ),
     path(r"user/me/", views.UserDetailView.as_view(), name="currentuser"),
     path(r"v2/users/", views.UserViewSet.as_view(), name="users-list"),
     path(r"v2/usersfilter/", views.UserFilterViewSet.as_view(), name="usersfilter"),
