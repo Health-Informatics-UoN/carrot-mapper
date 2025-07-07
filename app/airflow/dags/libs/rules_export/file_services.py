@@ -202,7 +202,9 @@ def build_rules_json_v2(scan_report_name: str, scan_report_id: int) -> BytesIO:
 
                         # Group by term mapping value to organize mappings
                         value_mappings: Dict[str, List[Dict[str, List[int]]]] = {}
-                        field_level_mappings: Dict[str, int] = {}
+                        # TODO: if only allow one concept_id per field, then we can use the following line instead
+                        # field_level_mappings: Dict[str, int] = {}
+                        field_level_mappings: Dict[str, List[int]] = {}
 
                         for _, row in source_field_group.iterrows():
                             dest_field = row["dest_field"]
@@ -220,7 +222,12 @@ def build_rules_json_v2(scan_report_name: str, scan_report_id: int) -> BytesIO:
                             else:
                                 # Field-level mapping
                                 if dest_field.endswith("_concept_id"):
-                                    field_level_mappings[dest_field] = concept_id
+                                    # Initialize the list if the key doesn't exist
+                                    if dest_field not in field_level_mappings:
+                                        field_level_mappings[dest_field] = []
+                                    field_level_mappings[dest_field].append(concept_id)
+                                    # TODO: if only allow one concept_id per field, then we can use the following line instead
+                                    # field_level_mappings[dest_field] = concept_id
 
                         # Add field_level_mapping for measurement/observation tables
                         if is_measurement_observation and field_level_mappings:
