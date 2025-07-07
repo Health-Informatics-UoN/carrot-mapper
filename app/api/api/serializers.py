@@ -707,7 +707,6 @@ class ScanReportFieldListSerializerV2(DynamicFieldsMixin, serializers.ModelSeria
 
 
 class ScanReportTableListSerializerV2(DynamicFieldsMixin, serializers.ModelSerializer):
-
     date_event = ScanReportFieldListSerializerV2()
     person_id = ScanReportFieldListSerializerV2()
 
@@ -752,6 +751,29 @@ class ScanReportFieldEditSerializer(DynamicFieldsMixin, serializers.ModelSeriali
     class Meta:
         model = ScanReportField
         fields = "__all__"
+
+
+class ScanReportConceptSerializerV2(DynamicFieldsMixin, serializers.ModelSerializer):
+    concept = ConceptSerializerV2()
+
+    class Meta:
+        model = ScanReportConcept
+        fields = ["id", "object_id", "creation_type", "content_type", "concept"]
+
+
+class ScanReportValueViewSerializerV3(serializers.ModelSerializer):
+    concepts = ScanReportConceptSerializerV2(many=True, read_only=True)
+
+    class Meta:
+        model = ScanReportValue
+        fields = [
+            "id",
+            "value",
+            "frequency",
+            "value_description",
+            "scan_report_field",
+            "concepts",
+        ]
 
 
 class ScanReportValueViewSerializerV2(serializers.ModelSerializer):
