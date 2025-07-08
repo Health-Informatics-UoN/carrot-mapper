@@ -83,19 +83,22 @@ def build_rules_json_v2(scan_report_name: str, scan_report_id: int) -> BytesIO:
                             only_field_mappings = False
                             if term_mapping_value not in value_level_mappings:
                                 value_level_mappings[term_mapping_value] = {}
-                            if (
-                                dest_field
-                                not in value_level_mappings[term_mapping_value]
-                            ):
+                            if dest_field.endswith("_concept_id"):
+                                # initialize the dest_field if not exists
+                                if (
+                                    dest_field
+                                    not in value_level_mappings[term_mapping_value]
+                                ):
+                                    value_level_mappings[term_mapping_value][
+                                        dest_field
+                                    ] = []
                                 value_level_mappings[term_mapping_value][
                                     dest_field
-                                ] = []
-                            value_level_mappings[term_mapping_value][dest_field].append(
-                                concept_id
-                            )
+                                ].append(concept_id)
                         else:
                             only_value_mappings = False
                             if dest_field.endswith("_concept_id"):
+                                # initialize the dest_field if not exists
                                 if dest_field not in field_level_mappings:
                                     field_level_mappings[dest_field] = []
                                 field_level_mappings[dest_field].append(concept_id)
