@@ -10,6 +10,7 @@ import io
 import csv
 from datetime import date
 import logging
+from libs.rules_export.helper import clean_concept_mappings
 
 # PostgreSQL connection hook
 pg_hook = PostgresHook(postgres_conn_id="postgres_db_conn")
@@ -211,10 +212,16 @@ def build_rules_json_v2(scan_report_name: str, scan_report_id: int) -> BytesIO:
                                 if dest_field.endswith("_concept_id"):
                                     value_as_concept_mappings[val] = ids[0]
                                     break
-                        if value_as_concept_mappings:
+                        if value_as_concept_mappings and is_measurement_observation:
                             concept_mapping["field_level_mapping"][
                                 "value_as_concept_id"
                             ] = value_as_concept_mappings
+
+                        if not is_measurement_observation:
+                            concept_mapping["value_level_mapping"] = (
+                                value_level_mappings
+                            )
+
                         concept_mapping["original_value"] = [
                             f for f in dest_fields if f.endswith("_source_value")
                         ]
@@ -243,9 +250,24 @@ def build_rules_json_v2(scan_report_name: str, scan_report_id: int) -> BytesIO:
                         "concept_mappings"
                     ] = concept_mappings
 
+                    # Remove date_mapping and person_id_mapping
+                    # (which are done in the previous steps) from concept_mappings
+                    result[dest_table_str][source_table_clean]["concept_mappings"].pop(
+                        result[dest_table_str][source_table_clean]["date_mapping"][
+                            "source_field"
+                        ],
+                        None,
+                    )
+                    result[dest_table_str][source_table_clean]["concept_mappings"].pop(
+                        result[dest_table_str][source_table_clean]["person_id_mapping"][
+                            "source_field"
+                        ],
+                        None,
+                    )
+
         cdm = {
             "metadata": metadata,
-            "cdm": result,
+            "cdm": clean_concept_mappings(result),
         }
 
         json_data = json.dumps(cdm, indent=2)
