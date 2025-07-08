@@ -84,24 +84,12 @@ def build_rules_json(scan_report_name: str, scan_report_id: int) -> BytesIO:
 
 
 def build_rules_json_v2(scan_report_name: str, scan_report_id: int) -> BytesIO:
-    """
-    Builds the rules in JSON format version 2 with optimized structure.
-
-    Args:
-        - scan_report_name: str, the name of the scan report
-        - scan_report_id: int, the id of the scan report
-
-    Returns:
-        - BytesIO, the rules in JSON format v2
-    """
     try:
-        # Build the metadata for the JSON file
         metadata = {
             "date_created": datetime.now(timezone.utc).isoformat(),
             "dataset": scan_report_name,
         }
 
-        # Get all processed rules from the temp table as dataframe in Pandas
         processed_rules = pg_hook.get_pandas_df(
             "SELECT * FROM temp_rules_export_%(scan_report_id)s_json ORDER BY dest_table, source_table, source_field;",
             parameters={"scan_report_id": scan_report_id},
@@ -109,40 +97,32 @@ def build_rules_json_v2(scan_report_name: str, scan_report_id: int) -> BytesIO:
 
         result: Dict[str, Any] = {}
 
-        # Group by destination table: all mapping rules with the same destination table
         for dest_table, dest_table_group in processed_rules.groupby("dest_table"):
             dest_table_str = str(dest_table)
             result[dest_table_str] = {}
 
-            # Group by source table: all mapping rules with the same source table
             for source_table, source_table_group in dest_table_group.groupby(
                 "source_table"
             ):
                 source_table_clean = str(source_table).replace("\ufeff", "")
                 result[dest_table_str][source_table_clean] = {}
 
-                # Initialize mappings structure
                 person_id_mappings = {}
                 date_mappings = {}
                 concept_mappings = {}
 
-                # Group by source field: all mapping rules with the same source field
                 for source_field, source_field_group in source_table_group.groupby(
                     "source_field"
                 ):
-                    # the source field name
                     source_field_clean = str(source_field).replace("\ufeff", "")
-                    # the destination fields of the mapping rules with the same source field
                     dest_fields = source_field_group["dest_field"].dropna().unique()
 
-                    # Person ID mapping if any dest_field is exactly 'person_id'
                     if "person_id" in [d.lower() for d in dest_fields]:
                         person_id_mappings = {
                             "source_field": source_field_clean,
                             "dest_field": "person_id",
                         }
 
-                    # Date/datetime mapping if any dest_field ends with date/datetime (case-insensitive)
                     date_like_fields = [
                         d
                         for d in dest_fields
@@ -154,41 +134,15 @@ def build_rules_json_v2(scan_report_name: str, scan_report_id: int) -> BytesIO:
                             "dest_field": date_like_fields,
                         }
 
-                    # Handle concept mappings
-                    concept_mapping = {}
-
-                    # Get original value fields
-                    original_value_fields = (
-                        source_field_group[
-                            source_field_group["dest_field"].isin(
-                                [
-                                    "observation_source_value",
-                                    "value_as_string",
-                                    "value_as_number",
-                                    "measurement_source_value",
-                                    # TODO: add other original value fields here
-                                    # TODO: only have value_as_string/number if no value_as_concept_id
-                                ]
-                            )
-                        ]["dest_field"]
-                        .unique()
-                        .tolist()
-                    )
-
-                    if original_value_fields:
-                        concept_mapping["original_value"] = original_value_fields
-
-                    # Determine if this is measurement/observation table
                     is_measurement_observation = dest_table_str in [
                         "measurement",
                         "observation",
                     ]
-
-                    # Group by term mapping value to organize mappings
-                    value_mappings: Dict[str, List[Dict[str, List[int]]]] = {}
-                    # TODO: if only allow one concept_id per field, then we can use the following line instead
-                    # field_level_mappings: Dict[str, int] = {}
                     field_level_mappings: Dict[str, List[int]] = {}
+                    value_level_mappings: Dict[str, Dict[str, List[int]]] = {}
+
+                    only_field_mappings = True
+                    only_value_mappings = True
 
                     for _, row in source_field_group.iterrows():
                         dest_field = row["dest_field"]
@@ -196,53 +150,84 @@ def build_rules_json_v2(scan_report_name: str, scan_report_id: int) -> BytesIO:
                         term_mapping_value = row.get("term_mapping_value")
 
                         if pd.notnull(term_mapping_value):
-                            # Value-level mapping
-                            if term_mapping_value not in value_mappings:
-                                value_mappings[term_mapping_value] = []
-
-                            value_mappings[term_mapping_value].append(
-                                {dest_field: [concept_id]}
+                            only_field_mappings = False
+                            if term_mapping_value not in value_level_mappings:
+                                value_level_mappings[term_mapping_value] = {}
+                            if (
+                                dest_field
+                                not in value_level_mappings[term_mapping_value]
+                            ):
+                                value_level_mappings[term_mapping_value][
+                                    dest_field
+                                ] = []
+                            value_level_mappings[term_mapping_value][dest_field].append(
+                                concept_id
                             )
                         else:
-                            # Field-level mapping
+                            only_value_mappings = False
                             if dest_field.endswith("_concept_id"):
-                                # Initialize the list if the key doesn't exist
                                 if dest_field not in field_level_mappings:
                                     field_level_mappings[dest_field] = []
                                 field_level_mappings[dest_field].append(concept_id)
-                                # TODO: if only allow one concept_id per field, then we can use the following line instead
-                                # field_level_mappings[dest_field] = concept_id
 
-                    # Add field_level_mapping for measurement/observation tables
-                    if is_measurement_observation and field_level_mappings:
+                    concept_mapping: Dict[str, Any] = {}
+
+                    # Detect block type
+                    if only_field_mappings:
                         concept_mapping["field_level_mapping"] = field_level_mappings
+                        concept_mapping["original_value"] = [
+                            f for f in dest_fields if f.endswith("_source_value")
+                        ]
+                        if is_measurement_observation:
+                            if "value_as_string" in dest_fields:
+                                concept_mapping["original_value"].append(
+                                    "value_as_string"
+                                )
+                            if "value_as_number" in dest_fields:
+                                concept_mapping["original_value"].append(
+                                    "value_as_number"
+                                )
 
-                        # Add value_as_concept_id mapping if there are value mappings
-                        if value_mappings:
-                            value_as_concept_mappings: Dict[str, int] = {}
-                            for value, mappings in value_mappings.items():
-                                # Extract concept_id from the mappings for value_as_concept_id
-                                for mapping in mappings:
-                                    for field_name, concept_ids in mapping.items():
-                                        if field_name.endswith("_concept_id"):
-                                            value_as_concept_mappings[value] = (
-                                                concept_ids[0]
-                                            )
-                                            break
+                    elif only_value_mappings:
+                        concept_mapping["value_level_mapping"] = value_level_mappings
+                        concept_mapping["original_value"] = [
+                            f for f in dest_fields if f.endswith("_source_value")
+                        ]
+                        if is_measurement_observation:
+                            if "value_as_string" in dest_fields:
+                                concept_mapping["original_value"].append(
+                                    "value_as_string"
+                                )
+                            if "value_as_number" in dest_fields:
+                                concept_mapping["original_value"].append(
+                                    "value_as_number"
+                                )
 
-                            if value_as_concept_mappings:
-                                concept_mapping["field_level_mapping"][
-                                    "value_as_concept_id"
-                                ] = value_as_concept_mappings
+                    else:
+                        concept_mapping["field_level_mapping"] = field_level_mappings
+                        value_as_concept_mappings = {}
+                        for val, mappings in value_level_mappings.items():
+                            for dest_field, ids in mappings.items():
+                                if dest_field.endswith("_concept_id"):
+                                    value_as_concept_mappings[val] = ids[0]
+                                    break
+                        if value_as_concept_mappings:
+                            concept_mapping["field_level_mapping"][
+                                "value_as_concept_id"
+                            ] = value_as_concept_mappings
+                        concept_mapping["original_value"] = [
+                            f for f in dest_fields if f.endswith("_source_value")
+                        ]
 
-                    # Add value_level_mapping for non-measurement/observation tables
-                    if not is_measurement_observation and value_mappings:
-                        concept_mapping["value_level_mapping"] = value_mappings
+                    # Clean up: remove duplicates from original_value
+                    if "original_value" in concept_mapping:
+                        concept_mapping["original_value"] = list(
+                            set(concept_mapping["original_value"])
+                        )
 
                     if concept_mapping:
                         concept_mappings[source_field_clean] = concept_mapping
 
-                # Add mappings to result if they exist
                 if person_id_mappings:
                     result[dest_table_str][source_table_clean][
                         "person_id_mapping"
