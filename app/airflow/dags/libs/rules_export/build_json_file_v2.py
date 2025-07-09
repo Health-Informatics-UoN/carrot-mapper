@@ -105,69 +105,69 @@ def build_rules_json_v2(scan_report_name: str, scan_report_id: int) -> BytesIO:
 
                     concept_mapping: Dict[str, Any] = {}
 
-                    # Detect block type
+                    # NEW IMPROVED LOGIC
                     if only_field_mappings:
-                        concept_mapping["field_level_mapping"] = field_level_mappings
-                        concept_mapping["original_value"] = [
+                        # Field-only mappings: put everything under "*" key
+                        concept_mapping["*"] = field_level_mappings
+
+                        # Add original_value field (no value_as_concept_id, so add value_as_string/number)
+                        original_values = [
                             f for f in dest_fields if f.endswith("_source_value")
                         ]
                         if is_measurement_observation:
                             if "value_as_string" in dest_fields:
-                                concept_mapping["original_value"].append(
-                                    "value_as_string"
-                                )
+                                original_values.append("value_as_string")
                             if "value_as_number" in dest_fields:
-                                concept_mapping["original_value"].append(
-                                    "value_as_number"
-                                )
+                                original_values.append("value_as_number")
+                        concept_mapping["original_value"] = list(set(original_values))
 
                     elif only_value_mappings:
-                        concept_mapping["value_level_mapping"] = value_level_mappings
-                        concept_mapping["original_value"] = [
+                        # Value-only mappings: put each value as direct key
+                        for value, mappings in value_level_mappings.items():
+                            concept_mapping[value] = mappings
+
+                        # Add original_value field (check if any value has value_as_concept_id)
+                        has_value_as_concept = any(
+                            "value_as_concept_id" in mappings
+                            for mappings in value_level_mappings.values()
+                        )
+                        original_values = [
                             f for f in dest_fields if f.endswith("_source_value")
                         ]
-                        if is_measurement_observation:
+                        if is_measurement_observation and not has_value_as_concept:
                             if "value_as_string" in dest_fields:
-                                concept_mapping["original_value"].append(
-                                    "value_as_string"
-                                )
+                                original_values.append("value_as_string")
                             if "value_as_number" in dest_fields:
-                                concept_mapping["original_value"].append(
-                                    "value_as_number"
-                                )
+                                original_values.append("value_as_number")
+                        concept_mapping["original_value"] = list(set(original_values))
 
                     else:
-                        concept_mapping["field_level_mapping"] = field_level_mappings
-                        value_as_concept_mappings = {}
-                        for val, mappings in value_level_mappings.items():
-                            for dest_field, ids in mappings.items():
+                        # Mixed mappings: "*" key for field-level + individual value keys
+                        concept_mapping["*"] = field_level_mappings
+
+                        # For each value, create its own mapping
+                        for value, value_mappings in value_level_mappings.items():
+                            concept_mapping[value] = {}
+
+                            # Add the same field-level concept IDs to this value
+                            for field_key, field_ids in field_level_mappings.items():
+                                concept_mapping[value][field_key] = field_ids
+
+                            # Add value_as_concept_id: take the first concept ID from value-level mappings
+                            for dest_field, ids in value_mappings.items():
                                 if dest_field.endswith("_concept_id"):
-                                    value_as_concept_mappings[val] = ids[0]
+                                    concept_mapping[value]["value_as_concept_id"] = ids[
+                                        0
+                                    ]
                                     break
-                        if value_as_concept_mappings and is_measurement_observation:
-                            concept_mapping["field_level_mapping"][
-                                "value_as_concept_id"
-                            ] = value_as_concept_mappings
 
-                        if not is_measurement_observation:
-                            concept_mapping["value_level_mapping"] = (
-                                value_level_mappings
-                            )
-
-                        concept_mapping["original_value"] = [
+                        # Add original_value field (mixed mappings have value_as_concept_id, so don't add value_as_string/number)
+                        original_values = [
                             f for f in dest_fields if f.endswith("_source_value")
                         ]
+                        concept_mapping["original_value"] = list(set(original_values))
 
-                    # Clean up: remove duplicates from original_value
-                    if "original_value" in concept_mapping:
-                        concept_mapping["original_value"] = list(
-                            set(concept_mapping["original_value"])
-                        )
-
-                    if (
-                        "original_value" in concept_mapping
-                        and concept_mapping["original_value"]
-                    ):
+                    if concept_mapping and "original_value" in concept_mapping:
                         concept_mappings[source_field_clean] = concept_mapping
 
                 if person_id_mappings:
