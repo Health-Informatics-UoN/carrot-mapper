@@ -8,8 +8,8 @@ import { Boundary } from "@/components/core/boundary";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger
+  DropdownMenuTrigger,
+  DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
 import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -159,6 +159,7 @@ export default async function ScanReportLayout(
                 scanReportId={params.id}
                 scanReportName={scanreport.dataset}
               />
+              <DropdownMenuSeparator />
               <DeleteDialog id={Number(params.id)} redirect needTrigger />
             </DropdownMenuContent>
           </DropdownMenu>

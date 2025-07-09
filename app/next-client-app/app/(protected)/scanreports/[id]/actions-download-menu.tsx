@@ -1,7 +1,10 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
+import {
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuGroup
+} from "@/components/ui/dropdown-menu";
 import { FileJson, FileSpreadsheet } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -25,7 +28,8 @@ export function ActionsDownloadMenu({ scanreportId }: Props) {
   };
 
   return (
-    <>
+    <DropdownMenuGroup>
+      <DropdownMenuLabel>Downloads</DropdownMenuLabel>
       <DropdownMenuItem onSelect={() => handleDownload("application/json")}>
         <FileJson className="mr-2 size-4" />
         Download Mapping JSON
@@ -34,6 +38,6 @@ export function ActionsDownloadMenu({ scanreportId }: Props) {
         <FileSpreadsheet className="mr-2 size-4" />
         Download Mapping CSV
       </DropdownMenuItem>
-    </>
+    </DropdownMenuGroup>
   );
 }
