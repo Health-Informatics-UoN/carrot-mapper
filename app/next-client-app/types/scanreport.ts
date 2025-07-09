@@ -59,8 +59,16 @@ interface ScanReportField {
 interface ScanReportConcept {
   id: number;
   object_id: number;
-  creation_type: string;
+  creation_type: "V" | "M" | "R";
   concept: Concept | number;
+  content_type: number;
+}
+
+interface ScanReportConceptV3 {
+  id: number;
+  object_id: number;
+  creation_type: "V" | "M" | "R";
+  concept: Concept;
   content_type: number;
 }
 
@@ -73,4 +81,13 @@ interface ScanReportValue {
   // TODO: These should be added in a inherited type, as they are not returned from the API.
   concepts?: Concept[];
   permissions: Permission[];
+}
+
+interface ScanReportValueV3 {
+  id: number;
+  value: string;
+  frequency: number;
+  value_description: string;
+  scan_report_field: number;
+  concepts: ScanReportConceptV3[];
 }
