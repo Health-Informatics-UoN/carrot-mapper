@@ -13,6 +13,7 @@ from shared.mapping.models import (
     ScanReportTable,
     ScanReportValue,
     MappingTool,
+    MappingRecommendation,
 )
 
 
@@ -212,6 +213,23 @@ class MappingToolAdmin(admin.ModelAdmin):
     )
 
 
+class MappingRecommendationAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "created_at",
+        "get_scan_report_value",
+        "concept",
+        "score",
+        "tool",
+    )
+    raw_id_fields = ("concept", "tool")
+
+    def get_scan_report_value(self, obj):
+        return obj.scan_report_value
+
+    get_scan_report_value.short_description = "Scan Report Value/Field"
+
+
 admin.site.register(DataPartner, DataPartnerAdmin)
 admin.site.register(ScanReport, ScanReportAdmin)
 admin.site.register(ScanReportTable, ScanReportTableAdmin)
@@ -225,3 +243,4 @@ admin.site.register(ScanReportConcept, ScanReportConceptAdmin)
 admin.site.register(Dataset, DatasetAdmin)
 admin.site.register(Project, ProjectAdmin)
 admin.site.register(MappingTool, MappingToolAdmin)
+admin.site.register(MappingRecommendation, MappingRecommendationAdmin)
