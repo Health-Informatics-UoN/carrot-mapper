@@ -20,12 +20,6 @@ permissions:
   packages: write # Required to publish packages
 
 jobs:
-  dependency-review:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Dependency Review
-        uses: actions/dependency-review-action@da24556b548a50705dd671f47852072ea4c105d9 # v4.7.1
-
   build-and-publish-workers:
     runs-on: ubuntu-latest
     steps:
