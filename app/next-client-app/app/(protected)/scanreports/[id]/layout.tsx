@@ -154,12 +154,12 @@ export default async function ScanReportLayout(
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
+              <ActionsDownloadMenu scanreportId={params.id} />
               <ExportScanReport
                 scanReportId={params.id}
                 scanReportName={scanreport.dataset}
               />
               <DeleteDialog id={Number(params.id)} redirect needTrigger />
-              <ActionsDownloadMenu scanreportId={params.id} />
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
