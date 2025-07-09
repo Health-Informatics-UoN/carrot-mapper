@@ -468,3 +468,24 @@ class Project(BaseModel):
 
     def __str__(self) -> str:
         return str(self.id)
+
+
+class MappingTool(BaseModel):
+    """
+    Model for a Mapping Tool.
+
+    Attributes:
+        name (CharField): The name of the mapping tool.
+        version (CharField): The version of the mapping tool.
+    """
+
+    name = models.CharField(max_length=128)
+    version = models.CharField(max_length=64)
+
+    class Meta:
+        app_label = "mapping"
+        verbose_name = "Mapping Tool"
+        verbose_name_plural = "Mapping Tools"
+
+    def __str__(self):
+        return f"{self.name} v{self.version}"

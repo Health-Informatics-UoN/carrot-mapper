@@ -12,6 +12,7 @@ from shared.mapping.models import (
     ScanReportField,
     ScanReportTable,
     ScanReportValue,
+    MappingTool,
 )
 
 
@@ -203,6 +204,14 @@ class ProjectAdmin(admin.ModelAdmin):
     )
 
 
+class MappingToolAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "name",
+        "version",
+    )
+
+
 admin.site.register(DataPartner, DataPartnerAdmin)
 admin.site.register(ScanReport, ScanReportAdmin)
 admin.site.register(ScanReportTable, ScanReportTableAdmin)
@@ -215,3 +224,4 @@ admin.site.register(DataDictionary, DataDictionaryAdmin)
 admin.site.register(ScanReportConcept, ScanReportConceptAdmin)
 admin.site.register(Dataset, DatasetAdmin)
 admin.site.register(Project, ProjectAdmin)
+admin.site.register(MappingTool, MappingToolAdmin)
