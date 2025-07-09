@@ -9,7 +9,9 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuTrigger,
-  DropdownMenuSeparator
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
+
 } from "@/components/ui/dropdown-menu";
 import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -155,11 +157,13 @@ export default async function ScanReportLayout(
             </DropdownMenuTrigger>
             <DropdownMenuContent>
               <ActionsDownloadMenu scanreportId={params.id} />
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel>Scan Report</DropdownMenuLabel>
               <ExportScanReport
                 scanReportId={params.id}
                 scanReportName={scanreport.dataset}
               />
-              <DropdownMenuSeparator />
+              
               <DeleteDialog id={Number(params.id)} redirect needTrigger />
             </DropdownMenuContent>
           </DropdownMenu>

@@ -3,7 +3,7 @@
 import { downloadFile } from "@/api/files";
 import { toast } from "sonner";
 import { saveAs } from "file-saver";
-import { Download } from "lucide-react";
+import { HardDriveDownload } from "lucide-react";
 import { convertBase64toBlob } from "@/lib/client-utils";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 
@@ -30,8 +30,8 @@ const ExportScanReport = ({ scanReportId, scanReportName }: ExportProps) => {
   };
   return (
     <DropdownMenuItem onSelect={handleDownload}>
-      <Download className="mr-2 size-4" />
-      Export Scan Report
+      <HardDriveDownload className="mr-2 size-4" />
+      Export
     </DropdownMenuItem>
   );
 };

@@ -56,8 +56,8 @@ const DeleteDialog = ({
       transition-colors
     "
           >
-            <TrashIcon className="mr-2 size-4 group-hover:text-destructive transition-colors" />
-            Delete Scan Report
+            <TrashIcon className="mr-2 size-4 group" />
+            Delete
           </DropdownMenuItem>
         </DialogTrigger>
       )}
