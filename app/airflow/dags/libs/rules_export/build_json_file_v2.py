@@ -155,7 +155,10 @@ def build_rules_json_v2(scan_report_name: str, scan_report_id: int) -> BytesIO:
 
                             # Add value_as_concept_id: take the first concept ID from value-level mappings
                             for dest_field, ids in value_mappings.items():
-                                if dest_field.endswith("_concept_id"):
+                                if (
+                                    dest_field.endswith("_concept_id")
+                                    and is_measurement_observation
+                                ):
                                     concept_mapping[value]["value_as_concept_id"] = ids[
                                         0
                                     ]
