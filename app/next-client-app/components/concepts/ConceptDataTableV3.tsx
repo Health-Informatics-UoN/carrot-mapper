@@ -35,24 +35,6 @@ export function ConceptDataTableV3<
 }: CustomDataTableProps<T>) {
   const filter = <DataTableFilter filter={filterCol} filterText={filterText} />;
 
-  // const deleteConcept = (id: number) => {
-  //   // filter it out.
-  //   const updatedConcepts = neededConcepts.filter(
-  //     (concept) => concept.id !== id
-  //   );
-  //   setNeededConcepts(updatedConcepts);
-  // };
-
-  // const addConcept = (newConcept: ScanReportConcept, newConFilter: Concept) => {
-  //   // merge it.
-
-  //   const updatedConcepts = [...neededConcepts, newConcept];
-  //   setNeededConcepts(updatedConcepts);
-
-  //   const updatedConceptFilters = [...neededConceptFilter, newConFilter];
-  //   setNeededConceptFilter(updatedConceptFilters);
-  // };
-
   return (
     <div>
       <DataTable
