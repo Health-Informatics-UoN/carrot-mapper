@@ -71,7 +71,7 @@ export const columns = (
             concepts={concepts}
             scanReportId={"11"}
             tableId={tableId}
-            fieldId={row.scan_report_field}
+            fieldId={row.original.scan_report_field}
           />
         </Suspense>
       );
@@ -90,7 +90,7 @@ export const columns = (
           contentType="scanreportvalue"
           disabled={!canEdit}
           scanReportId={"11"}
-          fieldId={row.scan_report_field}
+          fieldId={row.original.scan_report_field}
         />
       );
     },

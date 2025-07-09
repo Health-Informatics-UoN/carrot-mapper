@@ -12,7 +12,7 @@ import {
     contentType: "scanreportvalue" | "scanreportfield";
     disabled: boolean;
     scanReportId: string;
-    fieldId: string;
+    fieldId: number;
   }
   
   export default function AddConceptV3({

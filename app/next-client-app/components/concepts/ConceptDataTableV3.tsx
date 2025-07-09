@@ -9,8 +9,6 @@ interface CustomDataTableProps<T> {
   count: number;
   defaultPageSize: 10 | 20 | 30 | 40 | 50;
   columns: (
-    // addConcept: (newConcept: ScanReportConcept, newConFilter: Concept) => void,
-    // deleteConcept: (id: number) => void,
     tableId: string,
     canEdit: boolean,
   ) => any;

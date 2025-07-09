@@ -18,7 +18,7 @@ export function ConceptTagsV3({
   concepts: ScanReportConceptV3[];
   scanReportId: string;
   tableId: string;
-  fieldId: string;
+  fieldId: number;
 }) {
   const [optimisticConcepts, setOptimisticConcepts] = useOptimistic(
     concepts,
