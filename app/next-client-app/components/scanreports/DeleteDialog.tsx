@@ -1,5 +1,4 @@
 "use client";
-import React, { useState } from "react";
 import {
   Dialog,
   DialogClose,
@@ -12,6 +11,7 @@ import {
 import { toast } from "sonner";
 import { Button } from "../ui/button";
 import { deleteScanReport } from "@/api/scanreports";
+import { DialogTrigger } from "@radix-ui/react-dialog";
 import { useRouter } from "next/navigation";
 import { TrashIcon } from "lucide-react";
 import { DropdownMenuItem } from "../ui/dropdown-menu";
@@ -27,11 +27,10 @@ interface DeleteDialogProps {
 const DeleteDialog = ({
   id,
   redirect = false,
-  isOpen: controlledOpen,
-  setOpen: setControlledOpen,
+  isOpen,
+  setOpen = () => {},
   needTrigger = false
 }: DeleteDialogProps) => {
-  const [open, setOpen] = useState(false);
   const router = useRouter();
 
   const handleDelete = async () => {
@@ -42,31 +41,21 @@ const DeleteDialog = ({
       toast.success("Scan Report successfully deleted");
     }
     setOpen(false);
-    if (setControlledOpen) setControlledOpen(false);
     if (redirect) router.push("/scanreports/");
   };
 
-  const dialogOpen = controlledOpen !== undefined ? controlledOpen : open;
-  const setDialogOpen = setControlledOpen || setOpen;
-
   return (
-    <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+    <Dialog open={isOpen} onOpenChange={() => setOpen(false)}>
       {needTrigger && (
-        <DropdownMenuItem
-          className="
-            group
-            text-black dark:text-white
-            hover:!text-destructive focus:!text-destructive
-            transition-colors
-          "
-          onSelect={(e) => {
-            e.preventDefault();
-            setDialogOpen(true);
-          }}
-        >
-          <TrashIcon className="mr-2 size-4 group-hover:text-destructive transition-colors" />
-          Delete
-        </DropdownMenuItem>
+        <DialogTrigger asChild>
+          <DropdownMenuItem
+            variant="destructive"
+            onSelect={(e) => e.preventDefault()}
+          >
+            <TrashIcon className="mr-2 size-4" />
+            Delete
+          </DropdownMenuItem>
+        </DialogTrigger>
       )}
       <DialogContent>
         <DialogHeader className="text-start">

@@ -18,7 +18,7 @@ export function ActionsDownloadMenu({ scanreportId }: Props) {
   const handleDownload = async (fileType: FileTypeFormat) => {
     const resp = await requestFile(Number(scanreportId), fileType);
     if (resp.success) {
-      router.push(`downloads`);
+      router.push(`/scanreports/${scanreportId}/downloads`);
       toast.success("File requested.");
     } else {
       toast.error(
