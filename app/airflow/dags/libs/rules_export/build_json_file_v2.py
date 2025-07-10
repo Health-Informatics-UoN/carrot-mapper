@@ -109,8 +109,12 @@ def build_rules_json_v2(scan_report_name: str, scan_report_id: int) -> BytesIO:
                     if (
                         date_source_field or person_id_source_field
                     ) and is_measurement_observation_table:
-                        only_field_mappings = False
-                        only_value_mappings = True
+                        if value_level_mappings:
+                            only_field_mappings = False
+                            only_value_mappings = True
+                        elif field_level_mappings:
+                            only_field_mappings = True
+                            only_value_mappings = False
 
                     concept_mapping: Dict[str, Any] = {}
 
@@ -152,6 +156,12 @@ def build_rules_json_v2(scan_report_name: str, scan_report_id: int) -> BytesIO:
                                 original_values.append("value_as_string")
                             if "value_as_number" in dest_fields:
                                 original_values.append("value_as_number")
+                        #  mixed case of mappings in date/person source field
+                        if field_level_mappings and (
+                            date_source_field or person_id_source_field
+                        ):
+                            concept_mapping["*"] = field_level_mappings
+
                         concept_mapping["original_value"] = list(set(original_values))
 
                     else:
