@@ -216,3 +216,22 @@ input[data-slot="input"]:focus-visible {
   border-color: hsl(var(--ring)) !important;
   box-shadow: 0 0 0 2px hsl(var(--ring)) !important;
 }
+
+/* DropdownMenuSeparator: black in light mode, white in dark mode */
+[data-radix-dropdown-menu-separator],
+.dropdown-menu-separator,
+[role="separator"] {
+  display: block !important;
+  height: 0.5px !important;
+  width: 100% !important;
+  background-color: #000 !important; /* Black for light mode */
+  margin: 8px 0 !important;
+  border: none !important;
+  opacity: 1 !important;
+}
+
+.dark [data-radix-dropdown-menu-separator],
+.dark .dropdown-menu-separator,
+.dark [role="separator"] {
+  background-color: #fff !important; /* White for dark mode */
+}

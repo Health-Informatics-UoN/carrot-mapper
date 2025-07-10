@@ -3,8 +3,9 @@
 import { downloadFile } from "@/api/files";
 import { toast } from "sonner";
 import { saveAs } from "file-saver";
-import { Download } from "lucide-react";
+import { HardDriveDownload } from "lucide-react";
 import { convertBase64toBlob } from "@/lib/client-utils";
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 
 interface ExportProps {
   scanReportId: string;
@@ -18,7 +19,7 @@ const ExportScanReport = ({ scanReportId, scanReportName }: ExportProps) => {
       // Convert back Base64 to Blob
       const blobArray = convertBase64toBlob(response.data);
       const blob = new Blob([blobArray], {
-        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
       });
       saveAs(blob, `${scanReportName.replace(/[^a-zA-Z0-9]/g, "_")}.xlsx`);
     } else {
@@ -28,14 +29,10 @@ const ExportScanReport = ({ scanReportId, scanReportName }: ExportProps) => {
     }
   };
   return (
-    <div
-      role="button"
-      onClick={handleDownload}
-      className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50"
-    >
-      <Download className="mr-2 size-4" />
-      Export Scan Report
-    </div>
+    <DropdownMenuItem onSelect={handleDownload}>
+      <HardDriveDownload className="mr-2 size-4" />
+      Export
+    </DropdownMenuItem>
   );
 };
 
