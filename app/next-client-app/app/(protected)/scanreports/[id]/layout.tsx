@@ -8,8 +8,10 @@ import { Boundary } from "@/components/core/boundary";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
+
 } from "@/components/ui/dropdown-menu";
 import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -21,6 +23,7 @@ import { MappingStatus } from "@/components/scanreports/MappingStatus";
 import { StatusIcon } from "@/components/core/StatusIcon";
 import { UploadStatusOptions } from "@/constants/scanReportStatus";
 import ExportScanReport from "@/components/scanreports/ExportScanReport";
+import { ActionsDownloadMenu } from "./actions-download-menu";
 
 export default async function ScanReportLayout(
   props: Readonly<{
@@ -41,11 +44,11 @@ export default async function ScanReportLayout(
   const items = [
     {
       name: "Tables",
-      iconName: "TableProperties",
+      iconName: "TableProperties"
     },
     { name: "Rules", slug: "mapping_rules", iconName: "Waypoints" },
     { name: "Review Rules", slug: "review_rules", iconName: "SearchCheck" },
-    { name: "Downloads", slug: "downloads", iconName: "Download" },
+    { name: "Downloads", slug: "downloads", iconName: "Download" }
   ];
 
   {
@@ -55,7 +58,7 @@ export default async function ScanReportLayout(
     items.push({
       name: "Edit Details",
       slug: "details",
-      iconName: "Edit",
+      iconName: "Edit"
     });
   }
 
@@ -138,8 +141,8 @@ export default async function ScanReportLayout(
               ...items.map((x) => ({
                 text: x.name,
                 slug: x.slug,
-                iconName: x.iconName,
-              })),
+                iconName: x.iconName
+              }))
             ]}
           />
         </div>
@@ -153,10 +156,14 @@ export default async function ScanReportLayout(
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
+              <ActionsDownloadMenu scanreportId={params.id} />
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel>Scan Report</DropdownMenuLabel>
               <ExportScanReport
                 scanReportId={params.id}
                 scanReportName={scanreport.dataset}
               />
+              
               <DeleteDialog id={Number(params.id)} redirect needTrigger />
             </DropdownMenuContent>
           </DropdownMenu>
