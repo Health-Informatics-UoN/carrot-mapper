@@ -140,7 +140,35 @@ def build_rules_json_v2(scan_report_name: str, scan_report_id: int) -> BytesIO:
                             if mappings:
                                 concept_mapping[value] = mappings
 
-                        # Add original_value field (check if any value has value_as_concept_id)
+                        #  mixed case of mappings in date/person source field
+                        if field_level_mappings and (
+                            date_source_field or person_id_source_field
+                        ):
+                            concept_mapping["*"] = field_level_mappings
+
+                            # For each value, create its own mapping
+                            for value, value_mappings in value_level_mappings.items():
+                                if value_mappings:
+                                    concept_mapping[value] = {}
+
+                                # Add the same field-level concept IDs to this value
+                                for (
+                                    field_key,
+                                    field_ids,
+                                ) in field_level_mappings.items():
+                                    concept_mapping[value][field_key] = field_ids
+
+                                # Add value_as_concept_id: take the first concept ID from value-level mappings
+                                for dest_field, ids in value_mappings.items():
+                                    if (
+                                        dest_field.endswith("_concept_id")
+                                        and is_measurement_observation_table
+                                    ):
+                                        concept_mapping[value][
+                                            "value_as_concept_id"
+                                        ] = ids[0]
+                                        break
+                        # Add original_value field (check if any value has value_as_concept_id first)
                         has_value_as_concept = any(
                             "value_as_concept_id" in mappings
                             for mappings in value_level_mappings.values()
@@ -156,11 +184,6 @@ def build_rules_json_v2(scan_report_name: str, scan_report_id: int) -> BytesIO:
                                 original_values.append("value_as_string")
                             if "value_as_number" in dest_fields:
                                 original_values.append("value_as_number")
-                        #  mixed case of mappings in date/person source field
-                        if field_level_mappings and (
-                            date_source_field or person_id_source_field
-                        ):
-                            concept_mapping["*"] = field_level_mappings
 
                         concept_mapping["original_value"] = list(set(original_values))
 
@@ -173,22 +196,27 @@ def build_rules_json_v2(scan_report_name: str, scan_report_id: int) -> BytesIO:
                             if value_mappings:
                                 concept_mapping[value] = {}
 
-                            # Add the same field-level concept IDs to this value
-                            for field_key, field_ids in field_level_mappings.items():
-                                concept_mapping[value][field_key] = field_ids
+                                # For measurement/observation tables, add field-level mappings + value_as_concept_id
+                                if is_measurement_observation_table:
+                                    # Add the same field-level concept IDs to this value
+                                    for (
+                                        field_key,
+                                        field_ids,
+                                    ) in field_level_mappings.items():
+                                        concept_mapping[value][field_key] = field_ids
 
-                            # Add value_as_concept_id: take the first concept ID from value-level mappings
-                            for dest_field, ids in value_mappings.items():
-                                if (
-                                    dest_field.endswith("_concept_id")
-                                    and is_measurement_observation_table
-                                ):
-                                    concept_mapping[value]["value_as_concept_id"] = ids[
-                                        0
-                                    ]
-                                    break
+                                    # Add value_as_concept_id: take the first concept ID from value-level mappings
+                                    for dest_field, ids in value_mappings.items():
+                                        if dest_field.endswith("_concept_id"):
+                                            concept_mapping[value][
+                                                "value_as_concept_id"
+                                            ] = ids[0]
+                                            break
+                                else:
+                                    # For other tables, only add the value-specific mappings
+                                    concept_mapping[value] = value_mappings
 
-                        # Add original_value field (mixed mappings have value_as_concept_id, so don't add value_as_string/number)
+                        # Add original_value field
                         original_values = [
                             f for f in dest_fields if f.endswith("_source_value")
                         ]
