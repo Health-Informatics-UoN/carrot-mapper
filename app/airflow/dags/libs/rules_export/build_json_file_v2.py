@@ -6,7 +6,6 @@ import pandas as pd
 from datetime import datetime, timezone
 from io import BytesIO
 import logging
-from libs.rules_export.helper import clean_concept_mappings
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 
 # PostgreSQL connection hook
@@ -46,8 +45,11 @@ def build_rules_json_v2(scan_report_name: str, scan_report_id: int) -> BytesIO:
                 ):
                     source_field_clean = str(source_field).replace("\ufeff", "")
                     dest_fields = source_field_group["dest_field"].dropna().unique()
+                    date_source_field = False
+                    person_id_source_field = False
 
                     if "person_id" in [d.lower() for d in dest_fields]:
+                        person_id_source_field = True
                         person_id_mappings = {
                             "source_field": source_field_clean,
                             "dest_field": "person_id",
@@ -59,12 +61,13 @@ def build_rules_json_v2(scan_report_name: str, scan_report_id: int) -> BytesIO:
                         if d and d.lower().endswith(("date", "datetime"))
                     ]
                     if date_like_fields:
+                        date_source_field = True
                         date_mappings = {
                             "source_field": source_field_clean,
                             "dest_field": date_like_fields,
                         }
 
-                    is_measurement_observation = dest_table_str in [
+                    is_measurement_observation_table = dest_table_str in [
                         "measurement",
                         "observation",
                     ]
@@ -103,6 +106,12 @@ def build_rules_json_v2(scan_report_name: str, scan_report_id: int) -> BytesIO:
                                     field_level_mappings[dest_field] = []
                                 field_level_mappings[dest_field].append(concept_id)
 
+                    if (
+                        date_source_field or person_id_source_field
+                    ) and is_measurement_observation_table:
+                        only_field_mappings = False
+                        only_value_mappings = True
+
                     concept_mapping: Dict[str, Any] = {}
 
                     # NEW IMPROVED LOGIC
@@ -114,7 +123,7 @@ def build_rules_json_v2(scan_report_name: str, scan_report_id: int) -> BytesIO:
                         original_values = [
                             f for f in dest_fields if f.endswith("_source_value")
                         ]
-                        if is_measurement_observation:
+                        if is_measurement_observation_table:
                             if "value_as_string" in dest_fields:
                                 original_values.append("value_as_string")
                             if "value_as_number" in dest_fields:
@@ -124,7 +133,8 @@ def build_rules_json_v2(scan_report_name: str, scan_report_id: int) -> BytesIO:
                     elif only_value_mappings:
                         # Value-only mappings: put each value as direct key
                         for value, mappings in value_level_mappings.items():
-                            concept_mapping[value] = mappings
+                            if mappings:
+                                concept_mapping[value] = mappings
 
                         # Add original_value field (check if any value has value_as_concept_id)
                         has_value_as_concept = any(
@@ -134,7 +144,10 @@ def build_rules_json_v2(scan_report_name: str, scan_report_id: int) -> BytesIO:
                         original_values = [
                             f for f in dest_fields if f.endswith("_source_value")
                         ]
-                        if is_measurement_observation and not has_value_as_concept:
+                        if (
+                            is_measurement_observation_table
+                            and not has_value_as_concept
+                        ):
                             if "value_as_string" in dest_fields:
                                 original_values.append("value_as_string")
                             if "value_as_number" in dest_fields:
@@ -147,7 +160,8 @@ def build_rules_json_v2(scan_report_name: str, scan_report_id: int) -> BytesIO:
 
                         # For each value, create its own mapping
                         for value, value_mappings in value_level_mappings.items():
-                            concept_mapping[value] = {}
+                            if value_mappings:
+                                concept_mapping[value] = {}
 
                             # Add the same field-level concept IDs to this value
                             for field_key, field_ids in field_level_mappings.items():
@@ -157,7 +171,7 @@ def build_rules_json_v2(scan_report_name: str, scan_report_id: int) -> BytesIO:
                             for dest_field, ids in value_mappings.items():
                                 if (
                                     dest_field.endswith("_concept_id")
-                                    and is_measurement_observation
+                                    and is_measurement_observation_table
                                 ):
                                     concept_mapping[value]["value_as_concept_id"] = ids[
                                         0
@@ -170,7 +184,7 @@ def build_rules_json_v2(scan_report_name: str, scan_report_id: int) -> BytesIO:
                         ]
                         concept_mapping["original_value"] = list(set(original_values))
 
-                    if concept_mapping and "original_value" in concept_mapping:
+                    if concept_mapping and concept_mapping.get("original_value"):
                         concept_mappings[source_field_clean] = concept_mapping
 
                 if person_id_mappings:
@@ -190,7 +204,7 @@ def build_rules_json_v2(scan_report_name: str, scan_report_id: int) -> BytesIO:
 
         cdm = {
             "metadata": metadata,
-            "cdm": clean_concept_mappings(result),
+            "cdm": result,
         }
 
         json_data = json.dumps(cdm, indent=2)
