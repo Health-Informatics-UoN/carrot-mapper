@@ -375,7 +375,6 @@ class ScanReportValue(BaseModel):
     )
     mapping_recommendations = GenericRelation("MappingRecommendation")
 
-
     class Meta:
         app_label = "mapping"
         indexes = [
