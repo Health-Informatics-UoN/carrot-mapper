@@ -315,6 +315,7 @@ class ScanReportField(BaseModel):
     pass_from_source = models.BooleanField(default=True)
     field_description = models.CharField(max_length=256, blank=True, null=True)
     concepts = GenericRelation(ScanReportConcept)
+    mapping_recommendations = GenericRelation("MappingRecommendation")
 
     class Meta:
         app_label = "mapping"
@@ -372,6 +373,7 @@ class ScanReportValue(BaseModel):
     value_description = models.CharField(
         max_length=512, blank=True, null=True, db_index=True
     )
+    mapping_recommendations = GenericRelation("MappingRecommendation")
 
     class Meta:
         app_label = "mapping"
@@ -468,3 +470,38 @@ class Project(BaseModel):
 
     def __str__(self) -> str:
         return str(self.id)
+
+
+class MappingTool(BaseModel):
+    """
+    Model for a Mapping Tool.
+
+    Attributes:
+        name (CharField): The name of the mapping tool.
+        version (CharField): The version of the mapping tool.
+    """
+
+    name = models.CharField(max_length=128)
+    version = models.CharField(max_length=64)
+
+    class Meta:
+        app_label = "mapping"
+        verbose_name = "Mapping Tool"
+        verbose_name_plural = "Mapping Tools"
+
+    def __str__(self):
+        return f"{self.name} v{self.version}"
+
+
+class MappingRecommendation(BaseModel):
+    # These two fields are required for a generic relation
+    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    object_id = models.PositiveIntegerField()
+    scan_report_value = GenericForeignKey("content_type", "object_id")
+
+    concept = models.ForeignKey(Concept, on_delete=models.CASCADE)
+    score = models.FloatField(null=True, blank=True)
+    tool = models.ForeignKey(MappingTool, on_delete=models.CASCADE)
+
+    class Meta:
+        app_label = "mapping"
