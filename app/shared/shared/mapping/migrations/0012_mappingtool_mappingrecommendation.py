@@ -45,6 +45,9 @@ class Migration(migrations.Migration):
                 "verbose_name_plural": "Mapping Tools",
             },
         ),
+        migrations.RunPython(
+            create_search_mapping_tool, reverse_create_search_mapping_tool
+        ),
         migrations.CreateModel(
             name="MappingRecommendation",
             fields=[
@@ -82,8 +85,5 @@ class Migration(migrations.Migration):
                     ),
                 ),
             ],
-        ),
-        migrations.RunPython(
-            create_search_mapping_tool, reverse_create_search_mapping_tool
         ),
     ]
