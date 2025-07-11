@@ -63,7 +63,7 @@ class Migration(migrations.Migration):
                 ("created_at", models.DateTimeField(auto_now_add=True)),
                 ("updated_at", models.DateTimeField(auto_now=True)),
                 ("object_id", models.PositiveIntegerField()),
-                ("score", models.FloatField()),
+                ("score", models.FloatField(blank=True, null=True)),
                 (
                     "concept",
                     models.ForeignKey(

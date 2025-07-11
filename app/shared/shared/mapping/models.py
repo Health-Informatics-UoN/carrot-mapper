@@ -500,7 +500,7 @@ class MappingRecommendation(BaseModel):
     scan_report_value = GenericForeignKey("content_type", "object_id")
 
     concept = models.ForeignKey(Concept, on_delete=models.CASCADE)
-    score = models.FloatField()
+    score = models.FloatField(null=True, blank=True)
     tool = models.ForeignKey(MappingTool, on_delete=models.CASCADE)
 
     class Meta:
