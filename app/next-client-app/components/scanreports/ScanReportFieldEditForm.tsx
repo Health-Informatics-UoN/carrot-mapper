@@ -2,9 +2,8 @@
 
 import { Button } from "@/components/ui/button";
 import { Save } from "lucide-react";
-import { Label } from "@/components/ui/label";
-import { Form, Formik } from "formik";
-import { Tooltips } from "../core/Tooltips";
+import { FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription } from "@/components/ui/form";
+import { Formik } from "formik";
 import { Checkbox } from "../ui/checkbox";
 import { Textarea } from "../ui/textarea";
 import { updateScanReportField } from "@/api/scanreports";
@@ -67,58 +66,96 @@ export function ScanReportFieldEditForm({
         }}
       >
         {({ values, handleChange, handleSubmit }) => (
-          <Form className="w-full" onSubmit={handleSubmit}>
-            <div className="flex flex-col gap-3 text-lg">
-              <div className="flex items-center space-x-3">
-                <Checkbox
-                  onCheckedChange={(checked) => {
-                    handleChange({
-                      target: {
-                        name: "isIgnore",
-                        value: checked ? true : false,
-                      },
-                    });
-                  }}
-                  defaultChecked={scanReportField?.is_ignore}
-                  disabled={!canUpdate}
-                />
-                <Label className="text-lg">Is ignore</Label>
-              </div>
-              <div className="flex items-center space-x-3">
-                <Checkbox
-                  onCheckedChange={(checked) => {
-                    handleChange({
-                      target: {
-                        name: "fromSource",
-                        value: checked ? true : false,
-                      },
-                    });
-                  }}
-                  defaultChecked={scanReportField?.pass_from_source}
-                  disabled={!canUpdate}
-                />
-                <Label className="text-lg">Pass from source</Label>
-              </div>
-              <div className="flex flex-col gap-2">
-                <h3>Description Column</h3>
-                <Textarea
-                  name="description"
-                  onChange={handleChange}
-                  value={values.description}
-                  placeholder={scanReportField.description_column}
-                />
-              </div>
+          <form className="w-full max-w-2xl" onSubmit={handleSubmit}>
+            <div className="flex flex-col gap-3">
+
+              <FormField name="isIgnore">
+                {({ field }) => (
+                  <FormItem>
+                    <div className="flex items-center space-x-3">
+                      <FormControl>
+                        <Checkbox
+                          onCheckedChange={(checked) => {
+                            handleChange({
+                              target: {
+                                name: "isIgnore",
+                                value: checked ? true : false,
+                              },
+                            });
+                          }}
+                          defaultChecked={scanReportField?.is_ignore}
+                          disabled={!canUpdate}
+                        />
+                      </FormControl>
+                      <FormLabel>Is ignore</FormLabel>
+                    </div>
+                    <FormDescription>
+                      When checked, this field will be ignored during the mapping process.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              </FormField>
+
+              <FormField name="fromSource">
+                {({ field }) => (
+                  <FormItem>
+                    <div className="flex items-center space-x-3">
+                      <FormControl>
+                        <Checkbox
+                          onCheckedChange={(checked) => {
+                            handleChange({
+                              target: {
+                                name: "fromSource",
+                                value: checked ? true : false,
+                              },
+                            });
+                          }}
+                          defaultChecked={scanReportField?.pass_from_source}
+                          disabled={!canUpdate}
+                        />
+                      </FormControl>
+                      <FormLabel>Pass from source</FormLabel>
+                    </div>
+                    <FormDescription>
+                      When checked, this field will be passed through from the source data without modification.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              </FormField>
+
+              <FormField name="description">
+                {({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description Column</FormLabel>
+                    <FormDescription>
+                      Additional description or notes for this field.
+                    </FormDescription>
+                    <FormControl>
+                      <Textarea
+                        {...field}
+                        name="description"
+                        onChange={handleChange}
+                        value={values.description}
+                        placeholder={scanReportField.description_column}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              </FormField>
+
               <div>
                 <Button
                   type="submit"
-                  className="px-4 py-2 mt-3 text-lg"
                   disabled={!canUpdate}
                 >
-                  Save <Save className="ml-2" />
+                  Save <Save className="ml-2 h-4 w-4" />
                 </Button>
               </div>
             </div>
-          </Form>
+          </form>
         )}
       </Formik>
     );
