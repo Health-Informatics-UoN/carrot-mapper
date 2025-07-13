@@ -80,20 +80,6 @@ const CustomSelect = ({
       classNamePrefix="my-react-select"
       isDisabled={isDisabled}
       components={animatedComponents}
-      styles={{
-        multiValueLabel: (base) => ({
-          ...base,
-          fontSize: "17px",
-        }),
-        multiValueRemove: (base) => ({
-          ...base,
-          fontSize: "17px",
-        }),
-        singleValue: (base) => ({
-          ...base,
-          fontSize: "17px",
-        }),
-      }}
     />
   );
 };

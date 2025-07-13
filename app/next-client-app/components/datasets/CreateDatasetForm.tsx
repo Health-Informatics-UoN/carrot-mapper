@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { AlertCircle, SquarePlus } from "lucide-react";
+import { AlertCircle, Plus, SquarePlus } from "lucide-react";
 import { FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription } from "@/components/ui/form";
 import { Switch } from "@/components/ui/switch";
 import { Formik } from "formik";
@@ -111,8 +111,29 @@ export function CreateDatasetForm({
       >
         {({ values, handleChange, handleSubmit }) => (
           <form className="w-full" onSubmit={handleSubmit}>
-            <div className="flex flex-col gap-3 text-lg">
-                            {!dataPartnerID && (
+            <div className="flex flex-col gap-3">
+
+                <FormField name="name">
+                  {({ field }) => (
+                    <FormItem>
+                      <FormLabel>Dataset Name</FormLabel>
+                      <FormDescription>
+                        Name of the new Dataset.
+                      </FormDescription>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          onChange={handleChange}
+                          name="name"
+                          required
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                </FormField>
+
+                {!dataPartnerID && (
                 <FormItem>
                   <FormLabel>Data Partner</FormLabel>
                   <FormDescription>
@@ -131,26 +152,6 @@ export function CreateDatasetForm({
                 </FormItem>
               )}
               
-              <FormField name="name">
-                {({ field }) => (
-                  <FormItem>
-                    <FormLabel>Dataset Name</FormLabel>
-                    <FormDescription>
-                      Name of the new Dataset.
-                    </FormDescription>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        onChange={handleChange}
-                        name="name"
-                        required
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              </FormField>
-
               <FormItem>
                 <FormLabel>Projects</FormLabel>
                 <FormDescription>
@@ -187,7 +188,7 @@ export function CreateDatasetForm({
                           defaultChecked
                         />
                       </FormControl>
-                      <span className="text-lg">
+                      <span>
                         {/* Show user-friendly label */}
                         {values.visibility === "PUBLIC" ? "Shared" : "Restricted"}
                       </span>
@@ -262,7 +263,6 @@ export function CreateDatasetForm({
               <div className="mb-5">
                 <Button
                   type="submit"
-                  className="px-4 py-2 mt-3 text-lg border border-input"
                   disabled={
                     values.dataPartner === 0 ||
                     values.name === "" ||
@@ -270,7 +270,7 @@ export function CreateDatasetForm({
                   }
                 >
                   Create Dataset
-                  <SquarePlus className="ml-2" />
+                  <Plus className="ml-2 h-4 w-4" />
                 </Button>
               </div>
             </div>
