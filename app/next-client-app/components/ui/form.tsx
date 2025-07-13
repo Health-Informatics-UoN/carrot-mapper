@@ -53,12 +53,12 @@ const useFormField = () => {
   const { id } = itemContext
   const fieldName = fieldContext.name
   
-  // Get field state from Formik
+  // Get field state from Formik with proper typing
   const fieldState = {
-    error: formik.errors[fieldName] as string | undefined,
-    invalid: !!(formik.errors[fieldName] && formik.touched[fieldName]),
+    error: (formik.errors as Record<string, string>)[fieldName] as string | undefined,
+    invalid: !!((formik.errors as Record<string, string>)[fieldName] && (formik.touched as Record<string, boolean>)[fieldName]),
     isDirty: formik.dirty,
-    isTouched: formik.touched[fieldName] as boolean | undefined,
+    isTouched: (formik.touched as Record<string, boolean>)[fieldName] as boolean | undefined,
   }
 
   return {
