@@ -109,7 +109,7 @@ export function CreateScanReportForm({
             onSubmit={handleSubmit}
             encType="multipart/form-data"
           >
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-5">
 
               <FormField name="name">
                 {({ field }) => (

@@ -75,7 +75,7 @@ export function ScanReportTableUpdateForm({
     >
       {({ handleSubmit, values, setFieldValue }) => (
         <form className="w-full max-w-2xl" onSubmit={handleSubmit}>
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-5">
 
             <FormItem>
               <FormLabel>Person ID</FormLabel>

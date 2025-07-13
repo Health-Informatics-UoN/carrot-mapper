@@ -95,7 +95,7 @@ export function DatasetForm({
     >
       {({ values, handleChange, handleSubmit }) => (
         <form className="w-full max-w-2xl" onSubmit={handleSubmit}>
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-5">
 
             <FormField name="name">
               {({ field }) => (

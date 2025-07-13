@@ -46,14 +46,12 @@ export default async function ScanreportDetails(props: ScanReportDetailsProps) {
   }
 
   return (
-    <div>
-      <ScanReportDetailsForm
-        scanreport={scanreport}
-        datasetList={datasetList}
-        users={users}
-        permissions={permissionsDS.permissions}
-        isAuthor={isAuthor}
-      />
-    </div>
+    <ScanReportDetailsForm
+      scanreport={scanreport}
+      datasetList={datasetList}
+      users={users}
+      permissions={permissionsDS.permissions}
+      isAuthor={isAuthor}
+    />
   );
 }
