@@ -49,7 +49,7 @@ export default async function UpdateTable(props: UpdateTableProps) {
         </Button>
       </Link>
       {(table.date_event === null || table.person_id === null) && (
-        <Alert className="flex items-center gap-3 bg-accent text-accent-foreground mt-3 w-1/2">
+        <Alert className="flex items-center gap-3 bg-accent text-accent-foreground mt-3 w-full max-w-2xl">
           <div>
             <AlertCircleIcon />
           </div>
