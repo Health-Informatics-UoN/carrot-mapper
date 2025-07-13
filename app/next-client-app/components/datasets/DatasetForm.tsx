@@ -4,12 +4,11 @@ import { updateDatasetDetails } from "@/api/datasets";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Save } from "lucide-react";
-import { Label } from "@/components/ui/label";
+import { FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription } from "@/components/ui/form";
 import { Switch } from "@/components/ui/switch";
-import { Form, Formik } from "formik";
+import { Formik } from "formik";
 import { toast } from "sonner";
 import { FindAndFormat, FormDataFilter } from "../form-components/FormikUtils";
-import { Tooltips } from "../core/Tooltips";
 import { FormikSelect } from "../form-components/FormikSelect";
 import { useState } from "react";
 
@@ -95,131 +94,155 @@ export function DatasetForm({
       }}
     >
       {({ values, handleChange, handleSubmit }) => (
-        <Form className="w-full" onSubmit={handleSubmit}>
-          <div className="flex flex-col gap-3 text-lg">
-            <div className="flex items-center space-x-3">
-              <h3 className="flex">
-                {" "}
-                Name
-                <Tooltips content="Name of the dataset." />
-              </h3>
-              <Input
-                placeholder={dataset.name}
-                onChange={handleChange}
-                name="name"
-                disabled={!canUpdate}
-                className="text-lg"
-              />
-            </div>
-            <div className="flex flex-col gap-2">
-              <h3 className="flex">
-                Data Partner{" "}
-                <Tooltips content="The data partner that owns the dataset." />
-              </h3>
-              <FormikSelect
-                options={partnerOptions}
-                name="dataPartner"
-                placeholder="Choose an Data Partner"
-                isMulti={false}
-                isDisabled={!canUpdate}
-              />
-            </div>
-            <div className="flex items-center space-x-3">
-              <h3 className="flex">
-                Visibility
-                <Tooltips content="If a Dataset is shared, then all users with access to any project associated to the Dataset can see them." />
-              </h3>
-              <Switch
-                onCheckedChange={(checked) => {
-                  handleChange({
-                    target: {
-                      name: "visibility",
-                      value: checked ? "PUBLIC" : "RESTRICTED",
-                    },
-                  });
-                  setPublicVisibility(checked);
-                }}
-                defaultChecked={dataset.visibility === "PUBLIC" ? true : false}
-                disabled={!canUpdate}
-              />
-              <Label className="text-lg">
-                {/* Show user-friendly label */}
-                {values.visibility === "PUBLIC" ? "Shared" : "Restricted"}
-              </Label>
-            </div>
+        <form className="w-full max-w-2xl" onSubmit={handleSubmit}>
+          <div className="flex flex-col gap-3">
+
+            <FormField name="name">
+              {({ field }) => (
+                <FormItem>
+                  <FormLabel>Name</FormLabel>
+                  <FormDescription>
+                    Name of the dataset.
+                  </FormDescription>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      placeholder={dataset.name}
+                      onChange={handleChange}
+                      name="name"
+                      disabled={!canUpdate}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            </FormField>
+
+            <FormItem>
+              <FormLabel>Data Partner</FormLabel>
+              <FormDescription>
+                The data partner that owns the dataset.
+              </FormDescription>
+              <FormControl>
+                <FormikSelect
+                  options={partnerOptions}
+                  name="dataPartner"
+                  placeholder="Choose an Data Partner"
+                  isMulti={false}
+                  isDisabled={!canUpdate}
+                />
+              </FormControl>
+            </FormItem>
+
+            <FormField name="visibility">
+              {({ field }) => (
+                <FormItem>
+                  <div className="flex items-center space-x-3">
+                    <FormLabel>Visibility</FormLabel>
+                    <FormControl>
+                      <Switch
+                        onCheckedChange={(checked) => {
+                          handleChange({
+                            target: {
+                              name: "visibility",
+                              value: checked ? "PUBLIC" : "RESTRICTED",
+                            },
+                          });
+                          setPublicVisibility(checked);
+                        }}
+                        defaultChecked={dataset.visibility === "PUBLIC" ? true : false}
+                        disabled={!canUpdate}
+                      />
+                    </FormControl>
+                    <span>
+                      {/* Show user-friendly label */}
+                      {values.visibility === "PUBLIC" ? "Shared" : "Restricted"}
+                    </span>
+                  </div>
+                  <FormDescription>
+                    If a Dataset is shared, then all users with access to any project associated to the Dataset can see them.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            </FormField>
+
             {!publicVisibility && (
-              <div className="flex flex-col gap-2">
-                <h3 className="flex">
-                  {" "}
-                  Viewers
-                  <Tooltips content="All Dataset admins and editors also have Dataset viewer permissions." />
-                </h3>
+              <FormItem>
+                <FormLabel>Viewers</FormLabel>
+                <FormDescription>
+                  All Dataset admins and editors also have Dataset viewer permissions.
+                </FormDescription>
+                <FormControl>
+                  <FormikSelect
+                    options={userOptions}
+                    name="viewers"
+                    placeholder="Choose viewers"
+                    isMulti={true}
+                    isDisabled={!canUpdate}
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+
+            <FormItem>
+              <FormLabel>Editors</FormLabel>
+              <FormDescription>
+                Dataset editors also have Scan Report editor permissions.
+              </FormDescription>
+              <FormControl>
                 <FormikSelect
                   options={userOptions}
-                  name="viewers"
-                  placeholder="Choose viewers"
+                  name="editors"
+                  placeholder="Choose editors"
                   isMulti={true}
                   isDisabled={!canUpdate}
                 />
-              </div>
-            )}
-            <div className="flex flex-col gap-2">
-              <h3 className="flex">
-                {" "}
-                Editors
-                <Tooltips content="Dataset editors also have Scan Report editor permissions." />
-              </h3>
-              <FormikSelect
-                options={userOptions}
-                name="editors"
-                placeholder="Choose editors"
-                isMulti={true}
-                isDisabled={!canUpdate}
-              />
-            </div>
-            <div className="flex flex-col gap-2">
-              <h3 className="flex">
-                {" "}
-                Admins
-                <Tooltips content="All Dataset admins also have Dataset editor permissions. Dataset admins also have Scan Report editor permissions." />
-              </h3>
-              <FormikSelect
-                options={userOptions}
-                name="admins"
-                placeholder="Choose admins"
-                isMulti={true}
-                isDisabled={!canUpdate}
-              />
-            </div>
-            <div className="flex flex-col gap-2">
-              <h3 className="flex">
-                {" "}
-                Project
-                <Tooltips content="The project that the dataset belongs to." />
-              </h3>
-              <FormikSelect
-                options={projectOptions}
-                name="projects"
-                placeholder="Choose projects"
-                isMulti={true}
-                isDisabled={!canUpdate}
-              />
-            </div>
+              </FormControl>
+            </FormItem>
+
+            <FormItem>
+              <FormLabel>Admins</FormLabel>
+              <FormDescription>
+                All Dataset admins also have Dataset editor permissions. Dataset admins also have Scan Report editor permissions.
+              </FormDescription>
+              <FormControl>
+                <FormikSelect
+                  options={userOptions}
+                  name="admins"
+                  placeholder="Choose admins"
+                  isMulti={true}
+                  isDisabled={!canUpdate}
+                />
+              </FormControl>
+            </FormItem>
+
+            <FormItem>
+              <FormLabel>Projects</FormLabel>
+              <FormDescription>
+                The project that the dataset belongs to.
+              </FormDescription>
+              <FormControl>
+                <FormikSelect
+                  options={projectOptions}
+                  name="projects"
+                  placeholder="Choose projects"
+                  isMulti={true}
+                  isDisabled={!canUpdate}
+                />
+              </FormControl>
+            </FormItem>
+
             <div className="flex mt-3">
               <Button
                 type="submit"
-                className="px-4 py-2 text-lg border border-input"
                 disabled={!canUpdate}
               >
-                Save <Save className="ml-2" />
+                Save <Save className="ml-2 h-4 w-4" />
               </Button>
-              <Tooltips
-                content="You must be an admin of the this dataset
-                    to update its details."
-              />
             </div>
           </div>
-        </Form>
+        </form>
       )}
     </Formik>
   );
