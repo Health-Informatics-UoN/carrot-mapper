@@ -52,9 +52,7 @@ export const NavButton = ({
       <Button
         variant="ghost"
         className={cn(
-          "rounded-md px-3 py-1 transition-colors",
-          "hover:bg-muted hover:text-foreground",
-          isActive && "bg-muted text-foreground"
+          isActive && "bg-muted"
         )}
       >
         {Icon && <Icon className="mr-2 size-4" />}

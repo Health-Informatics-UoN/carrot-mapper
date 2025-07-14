@@ -58,7 +58,7 @@ export default async function ScanReportsField(props: ScanReportsFieldProps) {
 
   return (
     <div>
-      <Button variant={"secondary"} className="mb-3 bg-muted text-foreground-3">
+      <Button variant={"secondary"} className="mb-3">
         Table: {tableName.name}
       </Button>
       <div>
