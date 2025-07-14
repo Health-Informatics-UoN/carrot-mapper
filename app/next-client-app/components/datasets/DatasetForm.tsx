@@ -238,7 +238,8 @@ export function DatasetForm({
                 type="submit"
                 disabled={!canUpdate}
               >
-                Save <Save className="ml-2 h-4 w-4" />
+                <Save />
+                Save
               </Button>
             </div>
           </div>

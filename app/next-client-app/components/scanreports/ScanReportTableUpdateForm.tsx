@@ -143,7 +143,8 @@ export function ScanReportTableUpdateForm({
                 type="submit"
                 disabled={!canUpdate}
               >
-                Save <Save className="ml-2 h-4 w-4" />
+                <Save className="h-4 w-4" />
+                Save
               </Button>
             </div>
           </div>

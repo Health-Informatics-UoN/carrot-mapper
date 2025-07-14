@@ -269,8 +269,8 @@ export function CreateDatasetForm({
                     values.projects === 0
                   }
                 >
+                  <Plus />
                   Create Dataset
-                  <Plus className="ml-2 h-4 w-4" />
                 </Button>
               </div>
             </div>

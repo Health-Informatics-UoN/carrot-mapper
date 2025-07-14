@@ -327,7 +327,7 @@ export function CreateScanReportForm({
                     values.name === ""
                   }
                 >
-                  <Upload className="mr-2 h-4 w-4" />
+                  <Upload />
                   Upload Scan Report
                 </Button>
               </div>
