@@ -54,7 +54,7 @@ export const NavButton = ({
         className={cn(
           "rounded-md px-3 py-1 transition-colors",
           "hover:bg-muted hover:text-foreground",
-          isActive && "bg-muted text-foreground underline"
+          isActive && "bg-muted text-foreground"
         )}
       >
         {Icon && <Icon className="mr-2 size-4" />}
