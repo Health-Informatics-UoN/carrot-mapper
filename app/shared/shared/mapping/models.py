@@ -326,25 +326,6 @@ class MappingRecommendation(BaseModel):
             ),
         ]
 
-    @classmethod
-    def create_with_tool_info(cls, tool_name, tool_version, **kwargs):
-        """
-        Create a mapping recommendation with tool information.
-
-        Usage:
-            MappingRecommendation.create_with_tool_info(
-                tool_name="Lettuce",
-                tool_version="2.1.0",
-                concept=concept,
-                score=0.95,
-                content_type=content_type,
-                object_id=object_id
-            )
-        """
-        return cls.objects.create(
-            tool_name=tool_name, tool_version=tool_version, **kwargs
-        )
-
 
 class ScanReportField(BaseModel):
     """
