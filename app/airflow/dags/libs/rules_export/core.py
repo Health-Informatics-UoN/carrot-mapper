@@ -5,8 +5,8 @@ from libs.types import FileHandlerConfig
 from libs.rules_export.file_services import (
     build_rules_json,
     build_rules_csv,
+    build_rules_json_v2,
 )
-from libs.rules_export.build_json_file_v2 import build_rules_json_v2
 from typing import Dict
 from datetime import datetime
 from libs.queries import create_update_temp_rules_table_query, create_file_entry_query
