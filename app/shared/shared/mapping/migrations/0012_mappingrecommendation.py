@@ -7,27 +7,63 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('contenttypes', '0002_remove_content_type_name'),
-        ('data', '__first__'),
-        ('mapping', '0011_scanreport_upload_status_details'),
+        ("contenttypes", "0002_remove_content_type_name"),
+        ("data", "__first__"),
+        ("mapping", "0011_scanreport_upload_status_details"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='MappingRecommendation',
+            name="MappingRecommendation",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('object_id', models.PositiveIntegerField()),
-                ('score', models.FloatField(blank=True, null=True)),
-                ('tool_name', models.CharField(help_text='Name of the AI tool that generated this recommendation', max_length=128)),
-                ('tool_version', models.CharField(help_text='Version of the AI tool that generated this recommendation', max_length=64)),
-                ('concept', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='data.concept')),
-                ('content_type', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='contenttypes.contenttype')),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                ("object_id", models.PositiveIntegerField()),
+                ("score", models.FloatField(blank=True, null=True)),
+                (
+                    "tool_name",
+                    models.CharField(
+                        help_text="Name of the AI tool that generated this recommendation",
+                        max_length=128,
+                    ),
+                ),
+                (
+                    "tool_version",
+                    models.CharField(
+                        help_text="Version of the AI tool that generated this recommendation",
+                        max_length=64,
+                    ),
+                ),
+                (
+                    "concept",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, to="data.concept"
+                    ),
+                ),
+                (
+                    "content_type",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="contenttypes.contenttype",
+                    ),
+                ),
             ],
             options={
-                'indexes': [models.Index(fields=['tool_name', 'tool_version'], name='idx_mappingrec_tool_info')],
+                "indexes": [
+                    models.Index(
+                        fields=["tool_name", "tool_version"],
+                        name="idx_mappingrec_tool_info",
+                    )
+                ],
             },
         ),
     ]
