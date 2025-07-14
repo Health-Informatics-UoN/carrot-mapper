@@ -45,23 +45,21 @@ def build_rules_json_v2(scan_report_name: str, scan_report_id: int) -> BytesIO:
                 ):
                     source_field_clean = str(source_field).replace("\ufeff", "")
                     dest_fields = source_field_group["dest_field"].dropna().unique()
-                    date_source_field = False
-                    person_id_source_field = False
 
+                    # forming the person_id_mapping
                     if "person_id" in [d.lower() for d in dest_fields]:
-                        person_id_source_field = True
                         person_id_mappings = {
                             "source_field": source_field_clean,
                             "dest_field": "person_id",
                         }
 
+                    # forming the date_mapping
                     date_like_fields = [
                         d
                         for d in dest_fields
                         if d and d.lower().endswith(("date", "datetime"))
                     ]
                     if date_like_fields:
-                        date_source_field = True
                         date_mappings = {
                             "source_field": source_field_clean,
                             "dest_field": date_like_fields,
@@ -82,6 +80,7 @@ def build_rules_json_v2(scan_report_name: str, scan_report_id: int) -> BytesIO:
                         concept_id = row["concept_id"]
                         term_mapping_value = row.get("term_mapping_value")
 
+                        # Solved #1006 here
                         if pd.notnull(term_mapping_value):
                             only_field_mappings = False
                             if term_mapping_value not in value_level_mappings:
@@ -106,19 +105,9 @@ def build_rules_json_v2(scan_report_name: str, scan_report_id: int) -> BytesIO:
                                     field_level_mappings[dest_field] = []
                                 field_level_mappings[dest_field].append(concept_id)
 
-                    if (
-                        date_source_field or person_id_source_field
-                    ) and is_measurement_observation_table:
-                        if value_level_mappings:
-                            only_field_mappings = False
-                            only_value_mappings = True
-                        elif field_level_mappings:
-                            only_field_mappings = True
-                            only_value_mappings = False
-
                     concept_mapping: Dict[str, Any] = {}
 
-                    # NEW IMPROVED LOGIC
+                    # Forming the concept_mapping based on the mapping types
                     if only_field_mappings:
                         # Field-only mappings: put everything under "*" key
                         concept_mapping["*"] = field_level_mappings
@@ -129,19 +118,10 @@ def build_rules_json_v2(scan_report_name: str, scan_report_id: int) -> BytesIO:
                             if mappings:
                                 concept_mapping[value] = mappings
 
-                        #  mixed case of mappings in date/person source field
-                        if field_level_mappings and (
-                            date_source_field or person_id_source_field
-                        ):
-                            concept_mapping["*"] = field_level_mappings
-
-                            # For each value, create its own mapping
-                            for value, value_mappings in value_level_mappings.items():
-                                if value_mappings:
-                                    concept_mapping[value] = value_mappings
-
                     else:
                         # Mixed mappings: "*" key for field-level + individual value keys
+                        # NOTE: If there are mappings at the date/pseron field, it will be mixed mappings automatically, which will cause issues
+                        # so we need to have a way to add this mixed case in one of the above types
                         concept_mapping["*"] = field_level_mappings
 
                         # For each value, create its own mapping
@@ -149,15 +129,17 @@ def build_rules_json_v2(scan_report_name: str, scan_report_id: int) -> BytesIO:
                             if value_mappings:
                                 concept_mapping[value] = value_mappings
 
-                    # Add original_value field (add value_as_string/number)
+                    # Forming the original_value field
                     original_values = [
                         f for f in dest_fields if f.endswith("_source_value")
                     ]
+                    # Add value_as_string/number for tables observation and measurement
                     if is_measurement_observation_table:
                         if "value_as_string" in dest_fields:
                             original_values.append("value_as_string")
                         if "value_as_number" in dest_fields:
                             original_values.append("value_as_number")
+                    # Add original_value field with unique values
                     concept_mapping["original_value"] = list(set(original_values))
 
                     # for a mappings of a source field group to be appear in the result, it must have original_value
@@ -165,6 +147,7 @@ def build_rules_json_v2(scan_report_name: str, scan_report_id: int) -> BytesIO:
                     if concept_mapping and concept_mapping.get("original_value"):
                         concept_mappings[source_field_clean] = concept_mapping
 
+                # Adding the person_id_mapping, date_mapping, concept_mapping to the result
                 if person_id_mappings:
                     result[dest_table_str][source_table_clean][
                         "person_id_mapping"
