@@ -19,6 +19,8 @@
   --accent: 240 4.8% 95.9%;
   --accent-foreground: 240 10% 3.9%;
   --primary: 0 0% 0%; /* black */
+  /* --input: oklch(0.922 0 0); */
+  --input: 320 0% 90%;
   --primary-foreground: 0 0% 100%; /* white */
   --secondary: 210 40% 96.1%;
   --secondary-foreground: 222.2 47.4% 11.2%;
@@ -44,6 +46,7 @@
   --secondary: 222.2 47.4% 11.2%;
   --secondary-foreground: 210 40% 98%;
   --ring: 215 100% 65%; /* #60a5fa, a visible blue */
+  --input: 300 50% 100% / 0.15;
 }
 
 button.rounded-full:hover,
@@ -64,7 +67,7 @@ button.rounded-full:focus-visible {
 }
 
 .my-react-select-container .my-react-select__control {
-  border: 1px solid hsl(var(--border)) !important;
+  border: 1px solid hsl(var(--input)) !important;
   border-radius: 0.5rem !important;
   background-color: hsl(var(--background)) !important;
   color: hsl(var(--foreground)) !important;
@@ -196,11 +199,11 @@ button.rounded-full:focus-visible {
 
 /* Dark mode adjustments */
 .dark .my-react-select-container {
-  border-color: hsl(var(--border)) !important;
+  border-color: hsl(var(--input)) !important;
 }
 
 .dark .my-react-select-container .my-react-select__control {
-  border-color: hsl(var(--border)) !important;
+  border-color: hsl(var(--input)) !important;
   background-color: hsl(var(--background)) !important;
 }
 
