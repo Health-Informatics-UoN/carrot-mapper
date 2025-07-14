@@ -111,8 +111,8 @@ export function ScanReportsTableFilter({
       </div>
       <div>
         <Link href="/scanreports/create" prefetch={false}>
-          <Button variant={"outline-solid"} className="ml-auto mr-4">
-            <Upload className="mr-2 h-4 w-4" />
+          <Button variant={"outline"} className="ml-auto mr-4">
+            <Upload />
             Upload Scan Report
           </Button>
         </Link>

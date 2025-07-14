@@ -3,6 +3,7 @@ import React from "react";
 import { getServerSession } from "next-auth";
 import { options } from "@/auth/options";
 import { MenuBar } from "@/components/core/menubar";
+import Footer from "@/components/core/footer";
 
 export default async function ProtectedLayout({
   children,
@@ -14,10 +15,11 @@ export default async function ProtectedLayout({
 
   return (
     <>
-      <section className="container mb-5">
+      <section className="container flex flex-col min-h-svh">
         <MenuBar user={user} />
         {children}
       </section>
+      <Footer />
     </>
   );
 }

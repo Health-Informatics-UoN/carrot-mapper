@@ -107,8 +107,8 @@ export const columns: ColumnDef<FileDownload>[] = [
         }
       };
       return (
-        <Button variant={"outline-solid"} onClick={handleDownload}>
-          Download <Download className="ml-2 size-4" />
+        <Button variant={"outline"} onClick={handleDownload}>
+          Download <Download />
         </Button>
       );
     },

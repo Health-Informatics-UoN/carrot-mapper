@@ -31,8 +31,8 @@ export function CreateDatasetDialog({
   return (
     <Dialog open={dialogOpened} onOpenChange={setDialogOpened}>
       <DialogTrigger asChild>
-        <Button variant={"outline-solid"} className="ml-4 flex">
-          New Dataset <Plus className="ml-2 h-4 w-4" />
+        <Button variant={"outline"} className="ml-4 flex">
+          New Dataset <Plus />
         </Button>
       </DialogTrigger>
       <DialogContent className="w-full bg-background text-foreground">

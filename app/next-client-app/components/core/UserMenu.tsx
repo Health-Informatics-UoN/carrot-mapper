@@ -40,24 +40,24 @@ export async function UserMenu({ username }: { username?: string }) {
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-56 bg-white dark:bg-gray-900 dark:text-white">
-        <DropdownMenuLabel className="dark:text-white">
+      <DropdownMenuContent className="w-56">
+        <DropdownMenuLabel>
           My Account
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
           <Link href="/password-reset" passHref>
             <DropdownMenuItem asChild>
-              <button className="flex items-center w-full dark:text-white">
-                <Settings className="icon-md mr-2 dark:text-white" />
+              <button className="flex items-center w-full">
+                <Settings />
                 <span>Reset Password</span>
               </button>
             </DropdownMenuItem>
           </Link>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem className="dark:text-white">
-          <LogOut className="icon-md mr-2 dark:text-white" />
+        <DropdownMenuItem>
+          <LogOut />
           <LogoutButton />
         </DropdownMenuItem>
       </DropdownMenuContent>
