@@ -60,7 +60,7 @@ export const ConceptTags = React.memo(function ConceptTags({
                 : concept.creation_type === "R"
                 ? "bg-carrot-reuse hover:bg-carrot-reuse dark:bg-carrot-reuse dark:text-white"
                 : ""
-            } ${concepts.length > 1 ? "my-[1px]" : ""}`}
+            } ${concepts.length > 1 ? "my-px" : ""}`}
             key={concept.concept_code}
           >
             <p className="py-0.5 m-0">{`${concept.concept_id} ${concept.concept_name} (${concept.creation_type})`}</p>

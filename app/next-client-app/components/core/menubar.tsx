@@ -9,7 +9,7 @@ export const MenuBar = ({ user }: { user?: User | null }) => {
   return (
     <>
       <Sidebar userName={user?.username} />
-      <div className="hidden lg:flex lg:items-center sticky top-0 z-50 backdrop-blur border-b border-border justify-between p-4 mb-4">
+      <div className="hidden lg:flex lg:items-center sticky top-0 z-50 backdrop-blur-sm border-b border-border justify-between p-4 mb-4">
         <Link href={"/"}>
           <div className="text-2xl flex items-center font-semibold">
             <img
