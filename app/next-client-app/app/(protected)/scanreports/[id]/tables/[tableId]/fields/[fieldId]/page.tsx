@@ -14,7 +14,7 @@ import { ConceptDataTable } from "@/components/concepts/ConceptDataTable";
 import { columns } from "./columns";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { Breadcrumb, BreadcrumbItem, BreadcrumbList, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
+import { Breadcrumb, BreadcrumbItem, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 
 interface ScanReportsValueProps {
   params: Promise<{
@@ -77,9 +77,9 @@ export default async function ScanReportsValue(props: ScanReportsValueProps) {
             <Link href={`/scanreports/${id}/tables/${tableId}`}>Table: {table.name}</Link>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
-          <BreadcrumbItem>
+          <BreadcrumbPage>
             <Link href={`/scanreports/${id}/tables/${tableId}/fields/${fieldId}`}>Field: {field.name}</Link>
-          </BreadcrumbItem>
+          </BreadcrumbPage>
         </BreadcrumbList>
       </Breadcrumb>
       <div>

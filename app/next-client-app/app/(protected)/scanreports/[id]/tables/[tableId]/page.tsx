@@ -12,7 +12,7 @@ import {
 } from "@/api/concepts";
 import { ConceptDataTable } from "@/components/concepts/ConceptDataTable";
 import { Button } from "@/components/ui/button";
-import { Breadcrumb, BreadcrumbItem, BreadcrumbList, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
+import { Breadcrumb, BreadcrumbItem, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import Link from "next/link";
 
 interface ScanReportsFieldProps {
@@ -66,9 +66,9 @@ export default async function ScanReportsField(props: ScanReportsFieldProps) {
             <Link href={`/scanreports/${id}`}>Tables</Link>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
-          <BreadcrumbItem>
+          <BreadcrumbPage>
             <Link href={`/scanreports/${id}/tables/${tableId}`}>Table: {tableName.name}</Link>
-          </BreadcrumbItem>
+          </BreadcrumbPage>
         </BreadcrumbList>
       </Breadcrumb>
       <div>
