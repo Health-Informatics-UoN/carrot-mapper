@@ -7,7 +7,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { ChevronDownIcon } from "lucide-react";
-import { getScanReportTables } from "@/api/scanreports";
+import { getScanReportFields, getScanReportTables } from "@/api/scanreports";
 
 interface TableBreadcrumbsProps {
   id: string;
@@ -28,6 +28,15 @@ export async function TableBreadcrumbs({
 }: TableBreadcrumbsProps) {
 
   const tables = await getScanReportTables(id, undefined);
+  let fields: PaginatedResponse<ScanReportField> = {
+    count: 0,
+    next: null,
+    previous: null,
+    results: [],
+  };
+  if (tableId) {
+    fields = await getScanReportFields(id, tableId, undefined);
+  }
 
   return (
     <Breadcrumb className="mb-3">
@@ -83,7 +92,23 @@ export async function TableBreadcrumbs({
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbPage>
-              <Link href={`/scanreports/${id}/tables/${tableId}/fields/${fieldId}`}>Field: {fieldName}</Link>
+              <span className="flex items-center gap-1">
+                <Link href={`/scanreports/${id}/tables/${tableId}/fields/${fieldId}`}>Field: {fieldName}</Link>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <span tabIndex={0} role="button" aria-label="Show field list">
+                      <ChevronDownIcon size={16} />
+                    </span>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start">
+                    {fields.results.map((field) => (
+                      <DropdownMenuItem key={field.id}>
+                        <Link href={`/scanreports/${id}/tables/${tableId}/fields/${field.id}`}>{field.name}</Link>
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </span>
             </BreadcrumbPage>
           </>
         )}
