@@ -23,7 +23,6 @@ export function SidebarButton({
       className={cn(
         "gap-2 justify-start focus-visible:ring-0 dark:focus-visible:ring-offset-0",
         "hover:text-foreground transition-colors",
-        "text-black dark:text-white",
         className
       )}
       {...props}
