@@ -18,6 +18,52 @@ interface TableBreadcrumbsProps {
   variant: "table" | "field" | "fieldUpdate";
 }
 
+// Helper: Table breadcrumb with dropdown
+function TableBreadcrumbWithDropdown({ id, tableId, tableName, tables }: { id: string, tableId: string, tableName: string, tables: any }) {
+  return (
+    <span className="flex items-center gap-1">
+      <Link href={`/scanreports/${id}/tables/${tableId}`}>Table: {tableName}</Link>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <span tabIndex={0} role="button" aria-label="Show table list">
+            <ChevronDownIcon size={16} />
+          </span>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start">
+          {tables.results.map((table: any) => (
+            <DropdownMenuItem key={table.id}>
+              <Link href={`/scanreports/${id}/tables/${table.id}`}>{table.name}</Link>
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </span>
+  );
+}
+
+// Helper: Field breadcrumb with dropdown
+function FieldBreadcrumbWithDropdown({ id, tableId, fieldId, fieldName, fields }: { id: string, tableId: string, fieldId: string, fieldName: string, fields: any }) {
+  return (
+    <span className="flex items-center gap-1">
+      <Link href={`/scanreports/${id}/tables/${tableId}/fields/${fieldId}`}>Field: {fieldName}</Link>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <span tabIndex={0} role="button" aria-label="Show field list">
+            <ChevronDownIcon size={16} />
+          </span>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start">
+          {fields.results.map((field: any) => (
+            <DropdownMenuItem key={field.id}>
+              <Link href={`/scanreports/${id}/tables/${tableId}/fields/${field.id}`}>{field.name}</Link>
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </span>
+  );
+}
+
 export async function TableBreadcrumbs({
   id,
   tableId,
@@ -26,14 +72,8 @@ export async function TableBreadcrumbs({
   fieldName,
   variant,
 }: TableBreadcrumbsProps) {
-
   const tables = await getScanReportTables(id, undefined);
-  let fields: PaginatedResponse<ScanReportField> = {
-    count: 0,
-    next: null,
-    previous: null,
-    results: [],
-  };
+  let fields: any = { count: 0, next: null, previous: null, results: [] };
   if (tableId) {
     fields = await getScanReportFields(id, tableId, undefined);
   }
@@ -48,23 +88,7 @@ export async function TableBreadcrumbs({
           <>
             <BreadcrumbSeparator />
             <BreadcrumbPage>
-              <span className="flex items-center gap-1">
-                <Link href={`/scanreports/${id}/tables/${tableId}`}>Table: {tableName}</Link>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <span tabIndex={0} role="button" aria-label="Show table list">
-                      <ChevronDownIcon size={16} />
-                    </span>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start">
-                    {tables.results.map((table) => (
-                      <DropdownMenuItem key={table.id}>
-                        <Link href={`/scanreports/${id}/tables/${table.id}`}>{table.name}</Link>
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </span>
+              <TableBreadcrumbWithDropdown id={id} tableId={tableId} tableName={tableName} tables={tables} />
             </BreadcrumbPage>
           </>
         )}
@@ -72,43 +96,11 @@ export async function TableBreadcrumbs({
           <>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              <span className="flex items-center gap-1">
-                <Link href={`/scanreports/${id}/tables/${tableId}`}>Table: {tableName}</Link>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <span tabIndex={0} role="button" aria-label="Show table list">
-                      <ChevronDownIcon size={16} />
-                    </span>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start">
-                    {tables.results.map((table) => (
-                      <DropdownMenuItem key={table.id}>
-                        <Link href={`/scanreports/${id}/tables/${table.id}`}>{table.name}</Link>
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </span>
+              <TableBreadcrumbWithDropdown id={id} tableId={tableId} tableName={tableName} tables={tables} />
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbPage>
-              <span className="flex items-center gap-1">
-                <Link href={`/scanreports/${id}/tables/${tableId}/fields/${fieldId}`}>Field: {fieldName}</Link>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <span tabIndex={0} role="button" aria-label="Show field list">
-                      <ChevronDownIcon size={16} />
-                    </span>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start">
-                    {fields.results.map((field) => (
-                      <DropdownMenuItem key={field.id}>
-                        <Link href={`/scanreports/${id}/tables/${tableId}/fields/${field.id}`}>{field.name}</Link>
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </span>
+              <FieldBreadcrumbWithDropdown id={id} tableId={tableId} fieldId={fieldId} fieldName={fieldName} fields={fields} />
             </BreadcrumbPage>
           </>
         )}
@@ -116,7 +108,7 @@ export async function TableBreadcrumbs({
           <>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              <Link href={`/scanreports/${id}/tables/${tableId}`}>Table: {tableName}</Link>
+              <TableBreadcrumbWithDropdown id={id} tableId={tableId} tableName={tableName} tables={tables} />
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbPage>
