@@ -5,8 +5,6 @@ import {
   getScanReportTable,
 } from "@/api/scanreports";
 import { ScanReportFieldEditForm } from "@/components/scanreports/ScanReportFieldEditForm";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import { notFound } from "next/navigation";
 import { TableBreadcrumbs } from "@/components/scanreports/TableBreadcrumbs";
 

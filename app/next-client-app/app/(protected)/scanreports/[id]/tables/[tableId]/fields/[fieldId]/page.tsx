@@ -12,8 +12,6 @@ import {
 } from "@/api/concepts";
 import { ConceptDataTable } from "@/components/concepts/ConceptDataTable";
 import { columns } from "./columns";
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
 import { TableBreadcrumbs } from "@/components/scanreports/TableBreadcrumbs";
 
 interface ScanReportsValueProps {
