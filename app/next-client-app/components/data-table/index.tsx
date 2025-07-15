@@ -135,7 +135,7 @@ export function DataTable<TData, TValue>({
         )}
       </div>
       <div className="rounded-md border">
-        <Table overflow={overflow}>
+        <Table overflow={overflow.toString()}>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow
