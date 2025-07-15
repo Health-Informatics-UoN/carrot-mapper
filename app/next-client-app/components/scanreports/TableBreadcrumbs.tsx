@@ -39,21 +39,23 @@ export async function TableBreadcrumbs({
           <>
             <BreadcrumbSeparator />
             <BreadcrumbPage>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <span className="flex items-center gap-1">
-                    <Link href={`/scanreports/${id}/tables/${tableId}`}>Table: {tableName}</Link>
-                    <ChevronDownIcon size={16} />
-                  </span>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start">
-                  {tables.results.map((table) => (
-                    <DropdownMenuItem key={table.id}>
-                      <Link href={`/scanreports/${id}/tables/${table.id}`}>{table.name}</Link>
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <span className="flex items-center gap-1">
+                <Link href={`/scanreports/${id}/tables/${tableId}`}>Table: {tableName}</Link>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <span tabIndex={0} role="button" aria-label="Show table list">
+                      <ChevronDownIcon size={16} />
+                    </span>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start">
+                    {tables.results.map((table) => (
+                      <DropdownMenuItem key={table.id}>
+                        <Link href={`/scanreports/${id}/tables/${table.id}`}>{table.name}</Link>
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </span>
             </BreadcrumbPage>
           </>
         )}
@@ -61,21 +63,23 @@ export async function TableBreadcrumbs({
           <>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <span className="flex items-center gap-1">
-                    <Link href={`/scanreports/${id}/tables/${tableId}`}>Table: {tableName}</Link>
-                    <ChevronDownIcon size={16} />
-                  </span>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start">
-                  {tables.results.map((table) => (
-                    <DropdownMenuItem key={table.id}>
-                      <Link href={`/scanreports/${id}/tables/${table.id}`}>{table.name}</Link>
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <span className="flex items-center gap-1">
+                <Link href={`/scanreports/${id}/tables/${tableId}`}>Table: {tableName}</Link>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <span tabIndex={0} role="button" aria-label="Show table list">
+                      <ChevronDownIcon size={16} />
+                    </span>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start">
+                    {tables.results.map((table) => (
+                      <DropdownMenuItem key={table.id}>
+                        <Link href={`/scanreports/${id}/tables/${table.id}`}>{table.name}</Link>
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </span>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbPage>
