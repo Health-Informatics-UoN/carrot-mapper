@@ -31,7 +31,7 @@ function TableBreadcrumbWithDropdown({ id, tableId, tableName, tables }: { id: s
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start">
           {tables.results.map((table: any) => (
-            <DropdownMenuItem key={table.id}>
+            <DropdownMenuItem asChild key={table.id}>
               <Link href={`/scanreports/${id}/tables/${table.id}`}>{table.name}</Link>
             </DropdownMenuItem>
           ))}
@@ -54,7 +54,7 @@ function FieldBreadcrumbWithDropdown({ id, tableId, fieldId, fieldName, fields }
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start">
           {fields.results.map((field: any) => (
-            <DropdownMenuItem key={field.id}>
+            <DropdownMenuItem asChild key={field.id}>
               <Link href={`/scanreports/${id}/tables/${tableId}/fields/${field.id}`}>{field.name}</Link>
             </DropdownMenuItem>
           ))}
