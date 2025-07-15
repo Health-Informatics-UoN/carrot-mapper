@@ -14,6 +14,7 @@ import { ConceptDataTable } from "@/components/concepts/ConceptDataTable";
 import { columns } from "./columns";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { Breadcrumb, BreadcrumbItem, BreadcrumbList, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 
 interface ScanReportsValueProps {
   params: Promise<{
@@ -66,17 +67,21 @@ export default async function ScanReportsValue(props: ScanReportsValueProps) {
       : [];
   return (
     <div>
-      <div className="gap-2 flex">
-        {" "}
-        <Link href={`/scanreports/${id}/tables/${tableId}`}>
-          <Button variant="secondary" className="mb-3">
-            Table: {table.name}
-          </Button>
-        </Link>
-        <Button variant="secondary" className="mb-3">
-          Field: {field.name}
-        </Button>
-      </div>
+      <Breadcrumb className="mb-3">
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <Link href={`/scanreports/${id}`}>Tables</Link>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <Link href={`/scanreports/${id}/tables/${tableId}`}>Table: {table.name}</Link>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <Link href={`/scanreports/${id}/tables/${tableId}/fields/${fieldId}`}>Field: {field.name}</Link>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
       <div>
         <ConceptDataTable
           count={scanReportsValues.count}
