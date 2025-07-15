@@ -8,7 +8,7 @@ import { ScanReportFieldEditForm } from "@/components/scanreports/ScanReportFiel
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { notFound } from "next/navigation";
-import { Breadcrumb, BreadcrumbItem, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
+import { TableBreadcrumbs } from "@/components/scanreports/TableBreadcrumbs";
 
 interface ScanReportsEditFieldProps {
   params: Promise<{
@@ -38,21 +38,14 @@ export default async function ScanReportsEditField(props: ScanReportsEditFieldPr
 
   return (
     <div>
-      <Breadcrumb className="mb-3">
-        <BreadcrumbList>
-          <BreadcrumbItem>
-            <Link href={`/scanreports/${id}`}>Tables</Link>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <Link href={`/scanreports/${id}/tables/${tableId}`}>Table: {table.name}</Link>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbPage>
-            <Link href={`/scanreports/${id}/tables/${tableId}/fields/${fieldId}/update`}>Update Field: {field.name}</Link>
-          </BreadcrumbPage>
-        </BreadcrumbList>
-      </Breadcrumb>
+      <TableBreadcrumbs
+        id={id}
+        tableId={tableId}
+        fieldId={fieldId}
+        tableName={table.name}
+        fieldName={field.name}
+        variant="fieldUpdate"
+      />
       <div className="mt-2">
         <ScanReportFieldEditForm
           scanreportId={scanReport.id}
