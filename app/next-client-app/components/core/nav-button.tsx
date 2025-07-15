@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useSelectedLayoutSegment } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { Item } from "./nav-group";
 import { Button } from "../ui/button";
 import { cn } from "@/lib/utils";
@@ -26,14 +26,18 @@ export const NavButton = ({
   parallelRoutesKey?: string;
   item: Item;
 }) => {
-  const segment = useSelectedLayoutSegment(parallelRoutesKey);
+  const pathname = usePathname();
   const href = item.slug ? path + "/" + item.slug : path;
-  const isActive =
-    // Example home pages e.g. `/layouts`
-    (!item.slug && segment === null) ||
-    segment === item.segment ||
-    // Nested pages e.g. `/layouts/electronics`
-    segment === item.slug;
+  const isActive = item.slug
+    ? pathname === href || pathname.startsWith(href + "/")
+    : (
+        pathname === path ||
+        pathname === path + "/" ||
+        (item.matchPrefixes &&
+          item.matchPrefixes.some(prefix =>
+            pathname.startsWith(path + "/" + prefix)
+          ))
+      );
   const iconMap: { [key: string]: LucideIcon } = {
     SearchCheck,
     Waypoints,
