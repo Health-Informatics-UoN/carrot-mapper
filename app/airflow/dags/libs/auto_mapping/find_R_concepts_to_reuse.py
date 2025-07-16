@@ -9,8 +9,7 @@ import logging
 from libs.queries import (
     create_temp_reuse_table_query,
     find_m_concepts_query,
-    find_object_id_for_reuse_query,
-    find_reusing_field_query,
+    find_m_concepts_query_field_level,
     find_object_id_query,
     validate_reused_value_query,
     create_reuse_concept_query,
@@ -136,11 +135,6 @@ def find_matching_value(**kwargs):
             logging.info(
                 f"Successfully found M-type concepts for reuse at the value level"
             )
-            # Find the object_id for each reuse concept by matching with current table values
-            pg_hook.run(
-                find_object_id_for_reuse_query, parameters={"table_id": table_id}
-            )
-            logging.info(f"Successfully found object IDs for reuse concepts")
         except Exception as e:
             logging.error(
                 f"Failed to find M-type concepts for reuse at the value level: {str(e)}"
@@ -191,27 +185,38 @@ def find_matching_field(**kwargs):
         )
 
         try:
+            # Get the current table name to find matching tables in eligible scan reports
+            get_current_table_name_query = """
+            SELECT name FROM mapping_scanreporttable WHERE id = %(table_id)s;
+            """
+            current_table_name = pg_hook.get_first(
+                get_current_table_name_query, parameters={"table_id": table_id}
+            )[0]
+            # Find M-type concepts for reuse at the field level
             pg_hook.run(
-                find_reusing_field_query,
+                find_m_concepts_query_field_level,
                 parameters={
                     "table_id": table_id,
                     "parent_dataset_id": parent_dataset_id,
                     "scan_report_id": scan_report_id,
+                    "current_table_name": current_table_name,
                 },
             )
-            logging.info(f"Successfully found reusing concepts at the field level")
+            logging.info(
+                f"Successfully found M-type concepts for reuse at the field level"
+            )
         except Exception as e:
             logging.error(
-                f"Failed to find reusing concepts at the value level: {str(e)}"
+                f"Failed to find M-type concepts for reuse at the field level: {str(e)}"
             )
             update_job_status(
                 scan_report=scan_report_id,
                 scan_report_table=table_id,
                 stage=JobStageType.REUSE_CONCEPTS,
                 status=StageStatusType.FAILED,
-                details=f"Error when finding eligible concepts for reuse at the field level: {str(e)}",
+                details=f"Error when finding M-type concepts for reuse at the field level: {str(e)}",
             )
-            raise
+            raise e
     else:
         logging.info("Skipping find_matching_field as trigger_reuse_concepts is False")
 
