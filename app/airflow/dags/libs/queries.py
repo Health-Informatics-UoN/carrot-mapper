@@ -323,61 +323,6 @@ FROM values_with_m_concepts;
 """
 
 
-# Find the object_id for each reuse concept by matching with current table values
-find_object_id_for_reuse_query = """
-UPDATE temp_reuse_concepts_%(table_id)s AS temp_table
-SET object_id = sr_value.id
-FROM mapping_scanreportvalue AS sr_value
-JOIN mapping_scanreportfield AS sr_field ON sr_value.scan_report_field_id = sr_field.id
-JOIN mapping_scanreporttable AS sr_table ON sr_field.scan_report_table_id = sr_table.id
-WHERE sr_table.id = %(table_id)s
-    AND sr_value.value = temp_table.matching_value_name
-    AND sr_field.name = temp_table.matching_field_name
-    AND sr_table.name = temp_table.matching_table_name
-    AND (
-        (sr_value.value_description = temp_table.matching_value_description)
-        OR (sr_value.value_description IS NULL AND temp_table.matching_value_description IS NULL)
-    );
-"""
-
-validate_reused_value_query = """
-DELETE FROM temp_reuse_concepts_%(table_id)s AS temp_table
-USING temp_reuse_concepts_%(table_id)s AS temp_table_duplicate, omop.concept AS omop_concept
-WHERE (
-    -- Remove duplicates at the value level, keeping the one with the lowest source_scanreport_id
-    (
-        temp_table.matching_value_name = temp_table_duplicate.matching_value_name
-        AND temp_table.concept_id = temp_table_duplicate.concept_id
-        -- TODO: add standard_concept_id matching check (future) here
-        AND temp_table.content_type_id = (SELECT id FROM django_content_type WHERE app_label = 'mapping' AND model = 'scanreportvalue')
-        AND temp_table.source_scanreport_id > temp_table_duplicate.source_scanreport_id
-    )
-    OR
-    -- Remove duplicates at the field level, keeping the one with the lowest source_scanreport_id
-    (    
-        temp_table.matching_field_name = temp_table_duplicate.matching_field_name
-        AND temp_table.matching_table_name = temp_table_duplicate.matching_table_name
-        AND temp_table.concept_id = temp_table_duplicate.concept_id
-        -- TODO: add standard_concept_id matching check (future) here
-        AND temp_table.content_type_id = (
-            SELECT id FROM django_content_type 
-            WHERE app_label = 'mapping' AND model = 'scanreportfield'
-        )
-        AND temp_table.source_scanreport_id > temp_table_duplicate.source_scanreport_id
-    )
-    OR
-    -- Remove concepts whose domain is not in the allowed domains
-    (
-        temp_table.concept_id = omop_concept.concept_id
-        AND omop_concept.domain_id NOT IN (
-            'Condition', 'Drug', 'Procedure', 'Specimen', 'Device',
-            'Measurement', 'Observation', 'Gender', 'Race', 'Ethnicity', 'Spec Anatomic Site'
-        )
-    )
-);
-"""
-
-
 # Find fields with M-type concepts in eligible scan reports
 find_m_concepts_query_field_level = """
 WITH
@@ -426,38 +371,6 @@ SELECT
 FROM fields_with_m_concepts;
 """
 
-
-# Find the object_id for each reuse concept by matching with current table fields
-find_object_id_for_reuse_query_field_level = """
-UPDATE temp_reuse_concepts_%(table_id)s AS temp_table
-SET object_id = sr_field.id
-FROM mapping_scanreportfield AS sr_field
-JOIN mapping_scanreporttable AS sr_table ON sr_field.scan_report_table_id = sr_table.id
-WHERE sr_table.id = %(table_id)s
-    AND sr_field.name = temp_table.matching_field_name
-    AND sr_table.name = temp_table.matching_table_name
-    AND temp_table.matching_value_name IS NULL;
-"""
-
-
-validate_reused_field_query = """
--- After finding eligible matching field, we need to delete (matching_field_name, standard_concept_id (future) , source_concept_id) duplicates, 
---only get the occurence with the lowest source_scanreport_id
-DELETE FROM temp_reuse_concepts_%(table_id)s AS temp_table
-USING temp_reuse_concepts_%(table_id)s AS temp_table_duplicate
-WHERE
-    temp_table.matching_field_name = temp_table_duplicate.matching_field_name
-    AND temp_table.matching_table_name = temp_table_duplicate.matching_table_name
-    AND temp_table.concept_id = temp_table_duplicate.concept_id
-    -- TODO: add standard_concept_id matching check (future) here
-    AND temp_table.content_type_id = (
-        SELECT id FROM django_content_type 
-        WHERE app_label = 'mapping' AND model = 'scanreportfield'
-    )
-    AND temp_table.source_scanreport_id > temp_table_duplicate.source_scanreport_id;
-"""
-
-
 find_object_id_query = """
     UPDATE temp_reuse_concepts_%(table_id)s AS temp_table
         SET object_id = 
@@ -469,7 +382,7 @@ find_object_id_query = """
                     (SELECT sr_field.id 
                     FROM mapping_scanreportfield AS sr_field 
                     JOIN mapping_scanreporttable AS sr_table ON sr_field.scan_report_table_id = sr_table.id
-                    WHERE sr_table.scan_report_id = %(scan_report_id)s AND sr_table.id = %(table_id)s
+                    WHERE sr_table.id = %(table_id)s
                     AND sr_field.name = temp_table.matching_field_name
                     AND sr_table.name = temp_table.matching_table_name
                     LIMIT 1)
@@ -481,24 +394,58 @@ find_object_id_query = """
                     FROM mapping_scanreportvalue AS sr_value
                     JOIN mapping_scanreportfield AS sr_field ON sr_value.scan_report_field_id = sr_field.id
                     JOIN mapping_scanreporttable AS sr_table ON sr_field.scan_report_table_id = sr_table.id
-                    WHERE sr_table.scan_report_id = %(scan_report_id)s AND sr_table.id = %(table_id)s
+                    WHERE sr_table.id = %(table_id)s
                     AND sr_value.value = temp_table.matching_value_name
                     AND sr_field.name = temp_table.matching_field_name
                     AND sr_table.name = temp_table.matching_table_name
+                    AND (
+                            (sr_value.value_description = temp_table.matching_value_description)
+                            OR (sr_value.value_description IS NULL AND temp_table.matching_value_description IS NULL)
+                        )
                     LIMIT 1)
                 ELSE NULL
-            END
-        WHERE (temp_table.content_type_id = (
+            END;
+"""
+
+
+validate_reused_concepts_query = """
+DELETE FROM temp_reuse_concepts_%(table_id)s AS temp_table
+USING temp_reuse_concepts_%(table_id)s AS temp_table_duplicate, omop.concept AS omop_concept
+WHERE (
+    -- Remove duplicates at the value level, keeping the one with the lowest source_scanreport_id
+    (
+        temp_table.object_id = temp_table_duplicate.object_id
+        AND temp_table.concept_id = temp_table_duplicate.concept_id
+        -- TODO: add standard_concept_id matching check (future) here
+        AND temp_table.content_type_id = (SELECT id FROM django_content_type WHERE app_label = 'mapping' AND model = 'scanreportvalue')
+        AND temp_table.source_scanreport_id > temp_table_duplicate.source_scanreport_id
+    )
+    OR
+    -- Remove duplicates at the field level, keeping the one with the lowest source_scanreport_id
+    (    
+        temp_table.object_id = temp_table_duplicate.object_id
+        AND temp_table.concept_id = temp_table_duplicate.concept_id
+        -- TODO: add standard_concept_id matching check (future) here
+        AND temp_table.content_type_id = (
             SELECT id FROM django_content_type 
             WHERE app_label = 'mapping' AND model = 'scanreportfield'
-        ) AND temp_table.matching_field_name IS NOT NULL)
-        OR (temp_table.content_type_id = (
-            SELECT id FROM django_content_type 
-            WHERE app_label = 'mapping' AND model = 'scanreportvalue'
-        ) AND temp_table.matching_value_name IS NOT NULL);
+        )
+        AND temp_table.source_scanreport_id > temp_table_duplicate.source_scanreport_id
+    )
+    OR
+    -- Remove concepts whose domain is not in the allowed domains
+    (
+        temp_table.concept_id = omop_concept.concept_id
+        AND omop_concept.domain_id NOT IN (
+            'Condition', 'Drug', 'Procedure', 'Specimen', 'Device',
+            'Measurement', 'Observation', 'Gender', 'Race', 'Ethnicity', 'Spec Anatomic Site'
+        )
+    )
+);
 
-    DELETE FROM temp_reuse_concepts_%(table_id)s
-    WHERE object_id IS NULL;
+-- Delete concepts that have no object_id
+DELETE FROM temp_reuse_concepts_%(table_id)s
+WHERE object_id IS NULL;
 """
 
 

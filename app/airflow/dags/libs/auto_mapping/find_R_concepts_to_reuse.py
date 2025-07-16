@@ -11,7 +11,7 @@ from libs.queries import (
     find_m_concepts_query,
     find_m_concepts_query_field_level,
     find_object_id_query,
-    validate_reused_value_query,
+    validate_reused_concepts_query,
     create_reuse_concept_query,
 )
 
@@ -239,7 +239,7 @@ def create_reusing_concepts(**kwargs):
         try:
             pg_hook.run(
                 find_object_id_query,
-                parameters={"table_id": table_id, "scan_report_id": scan_report_id},
+                parameters={"table_id": table_id},
             )
             logging.info(f"Successfully found object ids for reusing concepts")
         except Exception as e:
@@ -250,6 +250,23 @@ def create_reusing_concepts(**kwargs):
                 stage=JobStageType.REUSE_CONCEPTS,
                 status=StageStatusType.FAILED,
                 details=f"Error when finding object ids for reusing concepts: {str(e)}",
+            )
+            raise e
+        #  Validate reused concepts
+        try:
+            pg_hook.run(
+                validate_reused_concepts_query,
+                parameters={"table_id": table_id},
+            )
+            logging.info(f"Successfully validated reused concepts")
+        except Exception as e:
+            logging.error(f"Failed to validate reused concepts: {str(e)}")
+            update_job_status(
+                scan_report=scan_report_id,
+                scan_report_table=table_id,
+                stage=JobStageType.REUSE_CONCEPTS,
+                status=StageStatusType.FAILED,
+                details=f"Error when validating reused concepts: {str(e)}",
             )
             raise e
         #  Create R concepts
