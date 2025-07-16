@@ -7,7 +7,7 @@ from libs.SR_processing.core import (
     process_and_create_scan_report_entries,
 )
 from libs.utils import connect_to_storage
-from libs.settings import AIRFLOW_DEBUG_MODE
+from libs.settings import AIRFLOW_DEBUG_MODE, AIRFLOW_DAGRUN_TIMEOUT
 
 """
 This DAG automates the process of creating scan report tables, fields and values 
@@ -43,6 +43,7 @@ dag = DAG(
     schedule_interval=None,
     catchup=False,
     is_paused_upon_creation=False,
+    dagrun_timeout=timedelta(minutes=float(AIRFLOW_DAGRUN_TIMEOUT)),
 )
 
 # TODO: add validate for DD file size: DATA_UPLOAD_MAX_MEMORY_SIZE :(
