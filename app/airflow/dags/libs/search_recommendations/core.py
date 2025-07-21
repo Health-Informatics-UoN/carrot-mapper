@@ -6,7 +6,6 @@ from libs.utils import (
 )
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 import logging
-from django.contrib.contenttypes.models import ContentType
 
 # PostgreSQL connection hook
 pg_hook = PostgresHook(postgres_conn_id="postgres_db_conn")
