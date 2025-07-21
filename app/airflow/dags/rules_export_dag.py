@@ -4,7 +4,7 @@ from airflow.operators.empty import EmptyOperator
 from libs.utils import create_task, validate_params_rules_export
 from libs.rules_export.core import pre_process_rules, build_and_upload_rules_file
 from libs.utils import connect_to_storage
-from libs.settings import AIRFLOW_DEBUG_MODE
+from libs.settings import AIRFLOW_DEBUG_MODE, AIRFLOW_DAGRUN_TIMEOUT
 
 """
 This DAG automates the process of retrieving the mapping rules from the database, 
@@ -39,6 +39,7 @@ dag = DAG(
     schedule_interval=None,
     catchup=False,
     is_paused_upon_creation=False,
+    dagrun_timeout=timedelta(minutes=float(AIRFLOW_DAGRUN_TIMEOUT)),
 )
 
 # Start the workflow

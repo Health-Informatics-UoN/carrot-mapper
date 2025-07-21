@@ -251,7 +251,8 @@ services:
     environment:
       <<: *airflow-common-env
       AIRFLOW__CORE__EXECUTE_TASKS_NEW_PYTHON_INTERPRETER: True
-      AIRFLOW_DEBUG_MODE: True
+      AIRFLOW_DEBUG_MODE: False
+      AIRFLOW_DAGRUN_TIMEOUT: 60 # Timeout for each dagrun in minutes
       AIRFLOW_VAR_JSON_VERSION: v2
 
 volumes:
