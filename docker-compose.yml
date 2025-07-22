@@ -31,8 +31,6 @@ x-airflow-common: &airflow-common
     AIRFLOW_VAR_MINIO_SECRET_KEY: minioadmin
     # WASB connection string (don't need to do URL encoding here)
     AIRFLOW_VAR_WASB_CONNECTION_STRING: DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;TableEndpoint=http://azurite:10002/devstoreaccount1
-    # Search recommendations feature flag
-    SEARCH_ENABLED: "true"
 
 services:
   db:
@@ -254,6 +252,8 @@ services:
       <<: *airflow-common-env
       AIRFLOW__CORE__EXECUTE_TASKS_NEW_PYTHON_INTERPRETER: True
       AIRFLOW_DEBUG_MODE: False
+      # Search recommendations feature flag - controls whether search recommendations task is included in auto_mapping DAG
+      SEARCH_ENABLED: "true"
 
 volumes:
   db_data:

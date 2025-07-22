@@ -25,20 +25,8 @@ def process_search_recommendations(**kwargs) -> None:
     # Get validated parameters from XCom
     validated_params = pull_validated_params(kwargs, "validate_params_auto_mapping")
 
-    if not validated_params:
-        logging.error(
-            "No validated parameters found. Task may not be running in proper DAG context."
-        )
-        raise ValueError(
-            "No validated parameters found. Task requires parameters from validate_params_auto_mapping task."
-        )
-
     scan_report_id = validated_params["scan_report_id"]
     table_id = validated_params["table_id"]
-
-    logging.info(
-        f"Processing search recommendations for scan_report_id: {scan_report_id}, table_id: {table_id}"
-    )
 
     try:
         # Get content type for ScanReportValue
