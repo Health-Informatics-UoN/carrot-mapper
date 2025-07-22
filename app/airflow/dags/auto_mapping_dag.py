@@ -24,9 +24,9 @@ from libs.auto_mapping.core_prep_rules_creation import (
     find_additional_fields,
 )
 from libs.auto_mapping.core_rules_creation import create_mapping_rules
-from libs.auto_mapping.core_search_recommendations import process_search_recommendations
+from libs.auto_mapping.search_recommendations import process_search_recommendations
 from libs.utils import create_task, validate_params_auto_mapping
-from libs.settings import AIRFLOW_DEBUG_MODE, SEARCH_ENABLED
+from libs.settings import AIRFLOW_DEBUG_MODE, SEARCH_ENABLED, AIRFLOW_DAGRUN_TIMEOUT
 
 """
 This DAG automates the process of creating and reusing concepts from scan reports and generating mapping rules.
@@ -84,6 +84,7 @@ dag = DAG(
     schedule_interval=None,
     catchup=False,
     is_paused_upon_creation=False,
+    dagrun_timeout=timedelta(minutes=float(AIRFLOW_DAGRUN_TIMEOUT)),
 )
 
 # Start the workflow
