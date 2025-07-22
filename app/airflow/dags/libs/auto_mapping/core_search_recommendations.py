@@ -52,24 +52,44 @@ def process_search_recommendations(**kwargs) -> None:
             raise ValueError("Could not find content type for ScanReportValue")
         content_type_id = content_type_result[0]
 
-        # Single optimized query to get all values and their concept matches
-        search_recommendations_query = """
-        WITH value_concepts AS (
-            SELECT 
-                sr_value.id as value_id,
-                sr_value.value as value_string,
-                concept.concept_id,
-                concept.concept_name,
-                concept.concept_code,
-                concept.vocabulary_id,
-                concept.domain_id,
-                ROW_NUMBER() OVER (
-                    PARTITION BY sr_value.id 
-                    ORDER BY concept.concept_name
-                ) as rn
-            FROM mapping_scanreportvalue sr_value
-            JOIN mapping_scanreportfield sr_field ON sr_value.scan_report_field_id = sr_field.id
-            CROSS JOIN LATERAL (
+        # Get all scan report values for the table
+        get_values_query = """
+        SELECT 
+            sr_value.id,
+            sr_value.value,
+            sr_value.scan_report_field_id
+        FROM mapping_scanreportvalue sr_value
+        JOIN mapping_scanreportfield sr_field ON sr_value.scan_report_field_id = sr_field.id
+        WHERE sr_field.scan_report_table_id = %(table_id)s
+          AND sr_value.value IS NOT NULL 
+          AND TRIM(sr_value.value) <> ''
+        """
+
+        logging.info(f"Getting scan report values for table_id: {table_id}")
+        values = pg_hook.get_records(
+            get_values_query, parameters={"table_id": table_id}
+        )
+
+        if not values:
+            logging.info(f"No values found for table {table_id}")
+            return
+
+        logging.info(
+            f"Found {len(values)} values to process for search recommendations"
+        )
+        logging.info(f"Sample values: {[v[1] for v in values[:3]]}")
+
+        # Process each value with individual queries
+        # This is more efficient for large concept tables because:
+        # 1. Each query has LIMIT 3, stopping early
+        # 2. No cross-join with 1.9M concept records
+        # 3. Database can optimize each focused query
+        recommendations_created = 0
+        for value_id, value_string, field_id in values:
+            try:
+                # Search OMOP concepts using ILIKE with LIMIT 3
+                # This is more efficient than cross-join approach
+                search_query = """
                 SELECT 
                     concept_id,
                     concept_name,
@@ -77,93 +97,74 @@ def process_search_recommendations(**kwargs) -> None:
                     vocabulary_id,
                     domain_id
                 FROM omop.concept 
-                WHERE concept_name ILIKE CONCAT('%%', sr_value.value, '%%')
+                WHERE concept_name ILIKE %(search_term)s
                   AND invalid_reason IS NULL
                   AND standard_concept = 'S'
                 ORDER BY concept_name
                 LIMIT 3
-            ) concept
-            WHERE sr_field.scan_report_table_id = %(table_id)s
-              AND sr_value.value IS NOT NULL 
-              AND TRIM(sr_value.value) <> ''
-        )
-        SELECT 
-            value_id,
-            value_string,
-            concept_id,
-            concept_name,
-            concept_code,
-            vocabulary_id,
-            domain_id
-        FROM value_concepts
-        WHERE rn <= 3
-        ORDER BY value_id, concept_name
-        """
+                """
 
-        logging.info(f"Executing optimized 2-query search for table_id: {table_id}")
-        matches = pg_hook.get_records(
-            search_recommendations_query, parameters={"table_id": table_id}
-        )
-
-        if not matches:
-            logging.info(f"No matches found for table {table_id}")
-            return
-
-        logging.info(f"Found {len(matches)} concept matches to process")
-
-        # Batch insert all recommendations
-        insert_query = """
-        INSERT INTO mapping_mappingrecommendation (
-            content_type_id,
-            object_id,
-            concept_id,
-            score,
-            tool_name,
-            tool_version,
-            created_at,
-            updated_at
-        ) VALUES (
-            %(content_type_id)s,
-            %(object_id)s,
-            %(concept_id)s,
-            %(score)s,
-            %(tool_name)s,
-            %(tool_version)s,
-            NOW(),
-            NOW()
-        )
-        """
-
-        recommendations_created = 0
-        for (
-            value_id,
-            value_string,
-            concept_id,
-            concept_name,
-            concept_code,
-            vocabulary_id,
-            domain_id,
-        ) in matches:
-            try:
-                pg_hook.run(
-                    insert_query,
-                    parameters={
-                        "content_type_id": content_type_id,
-                        "object_id": value_id,
-                        "concept_id": concept_id,
-                        "score": 0.5,  # Base score for ILIKE matches
-                        "tool_name": "string-search",
-                        "tool_version": "1.0.0",
-                    },
+                matches = pg_hook.get_records(
+                    search_query, parameters={"search_term": f"%{value_string}%"}
                 )
-                recommendations_created += 1
-                logging.info(
-                    f"Created recommendation: value '{value_string}' -> concept '{concept_name}' (ID: {concept_id})"
-                )
+
+                if matches:
+                    logging.info(
+                        f"Found {len(matches)} matches for value '{value_string}': {[(m[0], m[1]) for m in matches]}"
+                    )
+                    # Insert recommendations for each match
+                    for (
+                        concept_id,
+                        concept_name,
+                        concept_code,
+                        vocabulary_id,
+                        domain_id,
+                    ) in matches:
+                        insert_query = """
+                        INSERT INTO mapping_mappingrecommendation (
+                            content_type_id,
+                            object_id,
+                            concept_id,
+                            score,
+                            tool_name,
+                            tool_version,
+                            created_at,
+                            updated_at
+                        ) VALUES (
+                            %(content_type_id)s,
+                            %(object_id)s,
+                            %(concept_id)s,
+                            %(score)s,
+                            %(tool_name)s,
+                            %(tool_version)s,
+                            NOW(),
+                            NOW()
+                        )
+                        """
+
+                        pg_hook.run(
+                            insert_query,
+                            parameters={
+                                "content_type_id": content_type_id,
+                                "object_id": value_id,
+                                "concept_id": concept_id,
+                                "score": 0.5,  # Base score for ILIKE matches
+                                "tool_name": "string-search",
+                                "tool_version": "1.0.0",
+                            },
+                        )
+
+                        recommendations_created += 1
+
+                    logging.info(
+                        f"Created {len(matches)} recommendations for value '{value_string}'"
+                    )
+                else:
+                    logging.info(f"No matches found for value '{value_string}'")
+
             except Exception as e:
-                logging.error(
-                    f"Error inserting recommendation for value '{value_string}' -> concept '{concept_name}': {str(e)}"
-                )
+                logging.error(f"Error processing value '{value_string}': {str(e)}")
+                # Continue with next value instead of failing the entire process
                 continue
 
         logging.info(

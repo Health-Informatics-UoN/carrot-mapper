@@ -24,7 +24,7 @@ from libs.auto_mapping.core_prep_rules_creation import (
     find_additional_fields,
 )
 from libs.auto_mapping.core_rules_creation import create_mapping_rules
-from libs.search_recommendations.core import process_search_recommendations
+from libs.auto_mapping.core_search_recommendations import process_search_recommendations
 from libs.utils import create_task, validate_params_auto_mapping
 from libs.settings import AIRFLOW_DEBUG_MODE, SEARCH_ENABLED
 
