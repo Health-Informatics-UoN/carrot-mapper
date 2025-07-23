@@ -1,6 +1,4 @@
 from libs.utils import (
-    JobStageType,
-    StageStatusType,
     pull_validated_params,
 )
 from airflow.providers.postgres.hooks.postgres import PostgresHook
@@ -15,17 +13,15 @@ def process_search_recommendations(**kwargs) -> None:
     Process search recommendations for a given scan report table.
 
     This function:
-    1. Retrieves scan report value strings
-    2. Searches the OMOP concept table using ILIKE queries
-    3. Selects the top 3 matches for each value
-    4. Inserts them as MappingRecommendations into the database
+    1. Retrieves scan report value strings and searches the OMOP concept table using ILIKE queries
+    2. Selects the top 3 matches for each value
+    3. Inserts them as MappingRecommendations into the database
 
     Parameters are validated upstream in validate_params_auto_mapping task.
     """
     # Get validated parameters from XCom
     validated_params = pull_validated_params(kwargs, "validate_params_auto_mapping")
 
-    scan_report_id = validated_params["scan_report_id"]
     table_id = validated_params["table_id"]
 
     try:
@@ -44,8 +40,7 @@ def process_search_recommendations(**kwargs) -> None:
         get_values_query = """
         SELECT 
             sr_value.id,
-            sr_value.value,
-            sr_value.scan_report_field_id
+            sr_value.value
         FROM mapping_scanreportvalue sr_value
         JOIN mapping_scanreportfield sr_field ON sr_value.scan_report_field_id = sr_field.id
         WHERE sr_field.scan_report_table_id = %(table_id)s
@@ -62,28 +57,18 @@ def process_search_recommendations(**kwargs) -> None:
             logging.info(f"No values found for table {table_id}")
             return
 
-        logging.info(
-            f"Found {len(values)} values to process for search recommendations"
-        )
-        logging.info(f"Sample values: {[v[1] for v in values[:3]]}")
-
         # Process each value with individual queries
         # This is more efficient for large concept tables because:
         # 1. Each query has LIMIT 3, stopping early
         # 2. No cross-join with 1.9M concept records
         # 3. Database can optimize each focused query
         recommendations_created = 0
-        for value_id, value_string, field_id in values:
+        for value_id, value_string in values:
             try:
                 # Search OMOP concepts using ILIKE with LIMIT 3
                 # This is more efficient than cross-join approach
                 search_query = """
-                SELECT 
-                    concept_id,
-                    concept_name,
-                    concept_code,
-                    vocabulary_id,
-                    domain_id
+                SELECT concept_id
                 FROM omop.concept 
                 WHERE concept_name ILIKE %(search_term)s
                   AND invalid_reason IS NULL
@@ -97,17 +82,8 @@ def process_search_recommendations(**kwargs) -> None:
                 )
 
                 if matches:
-                    logging.info(
-                        f"Found {len(matches)} matches for value '{value_string}': {[(m[0], m[1]) for m in matches]}"
-                    )
                     # Insert recommendations for each match
-                    for (
-                        concept_id,
-                        concept_name,
-                        concept_code,
-                        vocabulary_id,
-                        domain_id,
-                    ) in matches:
+                    for (concept_id,) in matches:
                         insert_query = """
                         INSERT INTO mapping_mappingrecommendation (
                             content_type_id,
