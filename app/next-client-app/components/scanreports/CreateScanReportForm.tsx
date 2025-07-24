@@ -16,6 +16,7 @@ import { createScanReport } from "@/api/scanreports";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useState } from "react";
 import { CreateDatasetDialog } from "../datasets/CreateDatasetDialog";
+import { validateFileSize } from "@/lib/file-utils";
 
 interface FormData {
   name: string;
@@ -35,6 +36,10 @@ export function CreateScanReportForm({
   projects: Project[];
 }) {
   const [error, setError] = useState<string | null>(null);
+  const [fileSizeError, setFileSizeError] = useState<{
+    scanReport?: string;
+    dataDictionary?: string;
+  }>({});
   const partnerOptions = FormDataFilter<DataPartner>(dataPartners);
   const [reloadDataset, setReloadDataset] = useState(false);
   // State to hide/show the viewers field
@@ -88,6 +93,32 @@ export function CreateScanReportForm({
           </div>
         </Alert>
       )}
+
+      {/* File size error alerts */}
+      {fileSizeError.scanReport && (
+        <Alert variant="destructive" className="mb-3">
+          <div>
+            <AlertTitle className="flex items-center">
+              <AlertCircle className="h-4 w-4 mr-2" />
+              Scan Report File Too Large
+            </AlertTitle>
+            <AlertDescription>{fileSizeError.scanReport}</AlertDescription>
+          </div>
+        </Alert>
+      )}
+
+      {fileSizeError.dataDictionary && (
+        <Alert variant="destructive" className="mb-3">
+          <div>
+            <AlertTitle className="flex items-center">
+              <AlertCircle className="h-4 w-4 mr-2" />
+              Data Dictionary File Too Large
+            </AlertTitle>
+            <AlertDescription>{fileSizeError.dataDictionary}</AlertDescription>
+          </div>
+        </Alert>
+      )}
+
       <Formik
         initialValues={{
           dataPartner: 0,
@@ -121,7 +152,7 @@ export function CreateScanReportForm({
                   onChange={handleChange}
                   name="name"
                   className="text-lg"
-                  required
+                  required={true}
                 />
               </div>
               <div className="flex flex-col gap-2">
@@ -245,7 +276,9 @@ export function CreateScanReportForm({
                 <h3 className="flex">
                   <div className="flex items-center gap-2">
                     WhiteRabbit Scan Report{" "}
-                    <span className="text-muted-foreground text-sm">(.xlsx file)</span>
+                    <span className="text-muted-foreground text-sm">
+                      (.xlsx file, max 20MB)
+                    </span>
                   </div>
                   <Tooltips
                     content="Scan Report file generated from White Rabbit application."
@@ -259,11 +292,23 @@ export function CreateScanReportForm({
                     accept=".xlsx"
                     required={true}
                     onChange={(e) => {
-                      if (e.currentTarget.files) {
-                        setFieldValue(
-                          "scan_report_file",
-                          e.currentTarget.files[0]
-                        );
+                      if (e.currentTarget.files && e.currentTarget.files[0]) {
+                        const file = e.currentTarget.files[0];
+                        const sizeError = validateFileSize(file);
+
+                        if (sizeError) {
+                          setFileSizeError((prev) => ({
+                            ...prev,
+                            scanReport: sizeError
+                          }));
+                          setFieldValue("scan_report_file", null);
+                        } else {
+                          setFileSizeError((prev) => ({
+                            ...prev,
+                            scanReport: undefined
+                          }));
+                          setFieldValue("scan_report_file", file);
+                        }
                       }
                     }}
                   />
@@ -275,7 +320,7 @@ export function CreateScanReportForm({
                   <div className="flex items-center gap-2">
                     Data Dictionary{" "}
                     <span className="text-muted-foreground text-sm">
-                      (.csv file, optional)
+                      (.csv file, optional, max 20MB)
                     </span>
                   </div>
                   <Tooltips
@@ -289,8 +334,23 @@ export function CreateScanReportForm({
                     name="Data_dict"
                     accept=".csv"
                     onChange={(e) => {
-                      if (e.currentTarget.files) {
-                        setFieldValue("Data_dict", e.currentTarget.files[0]);
+                      if (e.currentTarget.files && e.currentTarget.files[0]) {
+                        const file = e.currentTarget.files[0];
+                        const sizeError = validateFileSize(file);
+
+                        if (sizeError) {
+                          setFileSizeError((prev) => ({
+                            ...prev,
+                            dataDictionary: sizeError
+                          }));
+                          setFieldValue("Data_dict", null);
+                        } else {
+                          setFileSizeError((prev) => ({
+                            ...prev,
+                            dataDictionary: undefined
+                          }));
+                          setFieldValue("Data_dict", file);
+                        }
                       }
                     }}
                   />
@@ -304,7 +364,9 @@ export function CreateScanReportForm({
                     values.dataPartner === 0 ||
                     values.dataset === 0 ||
                     values.dataset === -1 ||
-                    values.name === ""
+                    values.name === "" ||
+                    !!fileSizeError.scanReport ||
+                    !!fileSizeError.dataDictionary
                   }
                 >
                   <Upload className="mr-2" />
