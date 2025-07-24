@@ -2,14 +2,18 @@ import logging
 from libs.utils import pull_validated_params
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from libs.types import FileHandlerConfig
-from libs.rules_export.file_services import build_rules_json, build_rules_csv
+from libs.rules_export.file_services import (
+    build_rules_json,
+    build_rules_csv,
+    build_rules_json_v2,
+)
 from typing import Dict
 from datetime import datetime
 from libs.queries import create_update_temp_rules_table_query, create_file_entry_query
 from libs.storage_services import upload_blob_to_storage
 from libs.enums import JobStageType, StageStatusType
 from libs.utils import update_job_status
-from libs.settings import AIRFLOW_DEBUG_MODE
+from libs.settings import AIRFLOW_DEBUG_MODE, AIRFLOW_VAR_JSON_VERSION
 
 # PostgreSQL connection hook
 pg_hook = PostgresHook(postgres_conn_id="postgres_db_conn")
@@ -69,7 +73,11 @@ def build_and_upload_rules_file(**kwargs) -> None:
                 "csv",
             ),
             "json": FileHandlerConfig(
-                lambda: build_rules_json(scan_report_name, scan_report_id),
+                lambda: (
+                    build_rules_json_v2(scan_report_name, scan_report_id)
+                    if AIRFLOW_VAR_JSON_VERSION == "v2"
+                    else build_rules_json(scan_report_name, scan_report_id)
+                ),
                 "mapping_json",
                 "json",
             ),
