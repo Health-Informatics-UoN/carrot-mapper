@@ -24,8 +24,9 @@ from libs.auto_mapping.core_prep_rules_creation import (
     find_additional_fields,
 )
 from libs.auto_mapping.core_rules_creation import create_mapping_rules
+from libs.auto_mapping.search_recommendations import process_search_recommendations
 from libs.utils import create_task, validate_params_auto_mapping
-from libs.settings import AIRFLOW_DEBUG_MODE, AIRFLOW_DAGRUN_TIMEOUT
+from libs.settings import AIRFLOW_DEBUG_MODE, SEARCH_ENABLED, AIRFLOW_DAGRUN_TIMEOUT
 
 """
 This DAG automates the process of creating and reusing concepts from scan reports and generating mapping rules.
@@ -43,6 +44,7 @@ Workflow steps:
 10. Find concept fields for mapping
 11. Find additional fields needed for mapping
 12. Create mapping rules based on all collected information
+13. (Optional) Generate search-based recommendations when SEARCH_ENABLED=true
 
 This pipeline enables efficient concept reuse across scan reports and automates the creation of
 mapping rules connecting source data to OMOP-compliant destination tables.
@@ -71,8 +73,14 @@ dag = DAG(
     default_args=default_args,
     description="""Find and create V and R concepts. Then get all the existing concepts, 
     and find the dest. table and OMOP field ids for each concept.
-    After that, create mapping rules for each concept.""",
-    tags=["V-concepts", "R-concepts", "mapping_rules_creation"],
+    After that, create mapping rules for each concept.
+    Optionally includes search-based recommendations when SEARCH_ENABLED=true.""",
+    tags=[
+        "V-concepts",
+        "R-concepts",
+        "mapping_rules_creation",
+        "search_recommendations",
+    ],
     schedule_interval=None,
     catchup=False,
     is_paused_upon_creation=False,
@@ -103,6 +111,13 @@ tasks = [
     create_task("create_mapping_rules", create_mapping_rules, dag),
 ]
 
+# Conditionally add search recommendations task
+if SEARCH_ENABLED == "true":
+    tasks.append(
+        create_task(
+            "process_search_recommendations", process_search_recommendations, dag
+        )
+    )
 
 # End the workflow
 end = EmptyOperator(task_id="end", dag=dag)
