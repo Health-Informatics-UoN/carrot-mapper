@@ -17,6 +17,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useState } from "react";
 import { CreateDatasetDialog } from "../datasets/CreateDatasetDialog";
 import * as Yup from "yup";
+import { MAX_FILE_SIZE_BYTES, MAX_FILE_SIZE_MB } from "@/constants";
 
 interface FormData {
   name: string;
@@ -30,46 +31,26 @@ interface FormData {
 
 // Yup validation schema
 const validationSchema = Yup.object({
-  name: Yup.string().required("Scan Report name is required"),
-  dataPartner: Yup.number().min(1, "Please select a Data Partner"),
-  dataset: Yup.number().min(1, "Please select a Dataset"),
-  scan_report_file: Yup.mixed()
-    .required("Scan Report file is required")
-    .test("fileSize", "File size must be less than 20MB", function (value) {
+  scan_report_file: Yup.mixed().test(
+    "fileSize",
+    `File size must be less than ${MAX_FILE_SIZE_MB}MB`,
+    function (value) {
       if (!value) return true;
       const file = value as File;
-      return file.size <= 20 * 1024 * 1024;
-    })
-    .test("fileType", "Only .xlsx files are allowed", function (value) {
-      if (!value) return true;
-      const file = value as File;
-      const allowedTypes = [".xlsx"];
-      const fileExtension = file.name.split(".").pop()?.toLowerCase();
-      if (!fileExtension || !allowedTypes.includes(`.${fileExtension}`)) {
-        return this.createError({
-          message: `File type .${fileExtension} is not allowed. Only .xlsx files are accepted.`
-        });
-      }
-      return true;
-    }),
+      return file.size <= MAX_FILE_SIZE_BYTES;
+    }
+  ),
   Data_dict: Yup.mixed()
-    .test("fileSize", "File size must be less than 20MB", function (value) {
-      if (!value) return true; // Optional field
-      const file = value as File;
-      return file.size <= 20 * 1024 * 1024;
-    })
-    .test("fileType", "Only .csv files are allowed", function (value) {
-      if (!value) return true; // Optional field
-      const file = value as File;
-      const allowedTypes = [".csv"];
-      const fileExtension = file.name.split(".").pop()?.toLowerCase();
-      if (!fileExtension || !allowedTypes.includes(`.${fileExtension}`)) {
-        return this.createError({
-          message: `File type .${fileExtension} is not allowed. Only .csv files are accepted.`
-        });
+    .nullable()
+    .test(
+      "fileSize",
+      `File size must be less than ${MAX_FILE_SIZE_MB}MB`,
+      function (value) {
+        if (!value) return true;
+        const file = value as File;
+        return file.size <= MAX_FILE_SIZE_BYTES;
       }
-      return true;
-    })
+    )
 });
 
 export function CreateScanReportForm({
@@ -151,14 +132,7 @@ export function CreateScanReportForm({
           handleSubmit(data);
         }}
       >
-        {({
-          values,
-          handleChange,
-          handleSubmit,
-          setFieldValue,
-          errors,
-          touched
-        }) => (
+        {({ values, handleChange, handleSubmit, errors }) => (
           <Form
             className="w-full"
             onSubmit={handleSubmit}
@@ -171,16 +145,11 @@ export function CreateScanReportForm({
                   Scan Report Name
                   <Tooltips content="Name of the new Scan Report." />
                 </h3>
-                <Field
-                  as={Input}
+                <Input
+                  onChange={handleChange}
                   name="name"
                   className="text-lg"
                   required={true}
-                />
-                <ErrorMessage
-                  name="name"
-                  component="div"
-                  className="text-destructive text-sm"
                 />
               </div>
               <div className="flex flex-col gap-2">
@@ -198,11 +167,6 @@ export function CreateScanReportForm({
                   isMulti={false}
                   isDisabled={false}
                   required={true}
-                />
-                <ErrorMessage
-                  name="dataPartner"
-                  component="div"
-                  className="text-destructive text-sm"
                 />
               </div>
               <div className="flex flex-col gap-2">
@@ -238,11 +202,6 @@ export function CreateScanReportForm({
                   isDisabled={values.dataPartner === 0}
                   required={true}
                   reloadDataset={reloadDataset}
-                />
-                <ErrorMessage
-                  name="dataset"
-                  component="div"
-                  className="text-destructive text-sm"
                 />
               </div>
               <div className="flex items-center space-x-3">
@@ -315,7 +274,7 @@ export function CreateScanReportForm({
                   <div className="flex items-center gap-2">
                     WhiteRabbit Scan Report{" "}
                     <span className="text-muted-foreground text-sm">
-                      (.xlsx file, max 20MB)
+                      (.xlsx file, max {MAX_FILE_SIZE_MB}MB)
                     </span>
                   </div>
                   <Tooltips
@@ -337,9 +296,6 @@ export function CreateScanReportForm({
                             e.currentTarget.files[0]
                           ) {
                             const file = e.currentTarget.files[0];
-                            if (file.size > 20 * 1024 * 1024) {
-                              toast.error("File size exceeds 20MB limit");
-                            }
                             form.setFieldValue("scan_report_file", file);
                           }
                         }}
@@ -359,7 +315,7 @@ export function CreateScanReportForm({
                   <div className="flex items-center gap-2">
                     Data Dictionary{" "}
                     <span className="text-muted-foreground text-sm">
-                      (.csv file, optional, max 20MB)
+                      (.csv file, optional, max {MAX_FILE_SIZE_MB}MB)
                     </span>
                   </div>
                   <Tooltips
@@ -380,9 +336,6 @@ export function CreateScanReportForm({
                             e.currentTarget.files[0]
                           ) {
                             const file = e.currentTarget.files[0];
-                            if (file.size > 20 * 1024 * 1024) {
-                              toast.error("File size exceeds 20MB limit");
-                            }
                             form.setFieldValue("Data_dict", file);
                           }
                         }}
