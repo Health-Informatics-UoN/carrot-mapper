@@ -216,7 +216,7 @@ STATIC_URL = "/static/"
 LOGIN_REDIRECT_URL = "/scanreports/"
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 DATA_UPLOAD_MAX_MEMORY_SIZE = int(
-    os.environ.get("DATA_UPLOAD_MAX_MEMORY_SIZE", 2621440)
+    os.environ.get("DATA_UPLOAD_MAX_MEMORY_SIZE", 31457280)
 )
 
 SESSION_COOKIE_AGE = 86400  # session length is 24 hours
