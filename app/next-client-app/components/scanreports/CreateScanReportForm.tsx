@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { AlertCircle, Upload } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Form, Formik } from "formik";
+import { Form, Formik, Field, ErrorMessage } from "formik";
 import { toast } from "sonner";
 import { FormDataFilter } from "../form-components/FormikUtils";
 import { Tooltips } from "../core/Tooltips";
@@ -16,7 +16,7 @@ import { createScanReport } from "@/api/scanreports";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useState } from "react";
 import { CreateDatasetDialog } from "../datasets/CreateDatasetDialog";
-import { validateFileSize } from "@/lib/file-utils";
+import * as Yup from "yup";
 
 interface FormData {
   name: string;
@@ -28,6 +28,50 @@ interface FormData {
   Data_dict: File | null;
 }
 
+// Yup validation schema
+const validationSchema = Yup.object({
+  name: Yup.string().required("Scan Report name is required"),
+  dataPartner: Yup.number().min(1, "Please select a Data Partner"),
+  dataset: Yup.number().min(1, "Please select a Dataset"),
+  scan_report_file: Yup.mixed()
+    .required("Scan Report file is required")
+    .test("fileSize", "File size must be less than 20MB", function (value) {
+      if (!value) return true;
+      const file = value as File;
+      return file.size <= 20 * 1024 * 1024;
+    })
+    .test("fileType", "Only .xlsx files are allowed", function (value) {
+      if (!value) return true;
+      const file = value as File;
+      const allowedTypes = [".xlsx"];
+      const fileExtension = file.name.split(".").pop()?.toLowerCase();
+      if (!fileExtension || !allowedTypes.includes(`.${fileExtension}`)) {
+        return this.createError({
+          message: `File type .${fileExtension} is not allowed. Only .xlsx files are accepted.`
+        });
+      }
+      return true;
+    }),
+  Data_dict: Yup.mixed()
+    .test("fileSize", "File size must be less than 20MB", function (value) {
+      if (!value) return true; // Optional field
+      const file = value as File;
+      return file.size <= 20 * 1024 * 1024;
+    })
+    .test("fileType", "Only .csv files are allowed", function (value) {
+      if (!value) return true; // Optional field
+      const file = value as File;
+      const allowedTypes = [".csv"];
+      const fileExtension = file.name.split(".").pop()?.toLowerCase();
+      if (!fileExtension || !allowedTypes.includes(`.${fileExtension}`)) {
+        return this.createError({
+          message: `File type .${fileExtension} is not allowed. Only .csv files are accepted.`
+        });
+      }
+      return true;
+    })
+});
+
 export function CreateScanReportForm({
   dataPartners,
   projects
@@ -36,10 +80,6 @@ export function CreateScanReportForm({
   projects: Project[];
 }) {
   const [error, setError] = useState<string | null>(null);
-  const [fileSizeError, setFileSizeError] = useState<{
-    scanReport?: string;
-    dataDictionary?: string;
-  }>({});
   const partnerOptions = FormDataFilter<DataPartner>(dataPartners);
   const [reloadDataset, setReloadDataset] = useState(false);
   // State to hide/show the viewers field
@@ -94,31 +134,6 @@ export function CreateScanReportForm({
         </Alert>
       )}
 
-      {/* File size error alerts */}
-      {fileSizeError.scanReport && (
-        <Alert variant="destructive" className="mb-3">
-          <div>
-            <AlertTitle className="flex items-center">
-              <AlertCircle className="h-4 w-4 mr-2" />
-              Scan Report File Too Large
-            </AlertTitle>
-            <AlertDescription>{fileSizeError.scanReport}</AlertDescription>
-          </div>
-        </Alert>
-      )}
-
-      {fileSizeError.dataDictionary && (
-        <Alert variant="destructive" className="mb-3">
-          <div>
-            <AlertTitle className="flex items-center">
-              <AlertCircle className="h-4 w-4 mr-2" />
-              Data Dictionary File Too Large
-            </AlertTitle>
-            <AlertDescription>{fileSizeError.dataDictionary}</AlertDescription>
-          </div>
-        </Alert>
-      )}
-
       <Formik
         initialValues={{
           dataPartner: 0,
@@ -130,12 +145,20 @@ export function CreateScanReportForm({
           scan_report_file: null,
           Data_dict: null
         }}
+        validationSchema={validationSchema}
         onSubmit={(data) => {
           toast.info("Validating ...");
           handleSubmit(data);
         }}
       >
-        {({ values, handleChange, handleSubmit, setFieldValue }) => (
+        {({
+          values,
+          handleChange,
+          handleSubmit,
+          setFieldValue,
+          errors,
+          touched
+        }) => (
           <Form
             className="w-full"
             onSubmit={handleSubmit}
@@ -148,11 +171,16 @@ export function CreateScanReportForm({
                   Scan Report Name
                   <Tooltips content="Name of the new Scan Report." />
                 </h3>
-                <Input
-                  onChange={handleChange}
+                <Field
+                  as={Input}
                   name="name"
                   className="text-lg"
                   required={true}
+                />
+                <ErrorMessage
+                  name="name"
+                  component="div"
+                  className="text-destructive text-sm"
                 />
               </div>
               <div className="flex flex-col gap-2">
@@ -170,6 +198,11 @@ export function CreateScanReportForm({
                   isMulti={false}
                   isDisabled={false}
                   required={true}
+                />
+                <ErrorMessage
+                  name="dataPartner"
+                  component="div"
+                  className="text-destructive text-sm"
                 />
               </div>
               <div className="flex flex-col gap-2">
@@ -205,6 +238,11 @@ export function CreateScanReportForm({
                   isDisabled={values.dataPartner === 0}
                   required={true}
                   reloadDataset={reloadDataset}
+                />
+                <ErrorMessage
+                  name="dataset"
+                  component="div"
+                  className="text-destructive text-sm"
                 />
               </div>
               <div className="flex items-center space-x-3">
@@ -286,33 +324,34 @@ export function CreateScanReportForm({
                   />
                 </h3>
                 <div>
-                  <Input
-                    type="file"
+                  <Field
                     name="scan_report_file"
-                    accept=".xlsx"
-                    required={true}
-                    onChange={(e) => {
-                      if (e.currentTarget.files && e.currentTarget.files[0]) {
-                        const file = e.currentTarget.files[0];
-                        const sizeError = validateFileSize(file);
-
-                        if (sizeError) {
-                          setFileSizeError((prev) => ({
-                            ...prev,
-                            scanReport: sizeError
-                          }));
-                          setFieldValue("scan_report_file", null);
-                        } else {
-                          setFileSizeError((prev) => ({
-                            ...prev,
-                            scanReport: undefined
-                          }));
-                          setFieldValue("scan_report_file", file);
-                        }
-                      }
-                    }}
+                    render={({ field, form }: any) => (
+                      <Input
+                        type="file"
+                        accept=".xlsx"
+                        required={true}
+                        onChange={(e) => {
+                          if (
+                            e.currentTarget.files &&
+                            e.currentTarget.files[0]
+                          ) {
+                            const file = e.currentTarget.files[0];
+                            if (file.size > 20 * 1024 * 1024) {
+                              toast.error("File size exceeds 20MB limit");
+                            }
+                            form.setFieldValue("scan_report_file", file);
+                          }
+                        }}
+                      />
+                    )}
                   />
                 </div>
+                <ErrorMessage
+                  name="scan_report_file"
+                  component="div"
+                  className="text-destructive text-sm"
+                />
               </div>
 
               <div className="flex flex-col gap-2">
@@ -329,32 +368,33 @@ export function CreateScanReportForm({
                   />
                 </h3>
                 <div>
-                  <Input
-                    type="file"
+                  <Field
                     name="Data_dict"
-                    accept=".csv"
-                    onChange={(e) => {
-                      if (e.currentTarget.files && e.currentTarget.files[0]) {
-                        const file = e.currentTarget.files[0];
-                        const sizeError = validateFileSize(file);
-
-                        if (sizeError) {
-                          setFileSizeError((prev) => ({
-                            ...prev,
-                            dataDictionary: sizeError
-                          }));
-                          setFieldValue("Data_dict", null);
-                        } else {
-                          setFileSizeError((prev) => ({
-                            ...prev,
-                            dataDictionary: undefined
-                          }));
-                          setFieldValue("Data_dict", file);
-                        }
-                      }
-                    }}
+                    render={({ field, form }: any) => (
+                      <Input
+                        type="file"
+                        accept=".csv"
+                        onChange={(e) => {
+                          if (
+                            e.currentTarget.files &&
+                            e.currentTarget.files[0]
+                          ) {
+                            const file = e.currentTarget.files[0];
+                            if (file.size > 20 * 1024 * 1024) {
+                              toast.error("File size exceeds 20MB limit");
+                            }
+                            form.setFieldValue("Data_dict", file);
+                          }
+                        }}
+                      />
+                    )}
                   />
                 </div>
+                <ErrorMessage
+                  name="Data_dict"
+                  component="div"
+                  className="text-destructive text-sm"
+                />
               </div>
               <div className="mb-5 mt-3 flex">
                 <Button
@@ -365,8 +405,7 @@ export function CreateScanReportForm({
                     values.dataset === 0 ||
                     values.dataset === -1 ||
                     values.name === "" ||
-                    !!fileSizeError.scanReport ||
-                    !!fileSizeError.dataDictionary
+                    Object.keys(errors).length > 0
                   }
                 >
                   <Upload className="mr-2" />
