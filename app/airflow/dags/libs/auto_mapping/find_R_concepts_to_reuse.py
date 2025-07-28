@@ -99,7 +99,7 @@ def find_matching_value(**kwargs):
             scan_report_table=table_id,
             stage=JobStageType.REUSE_CONCEPTS,
             status=StageStatusType.IN_PROGRESS,
-            details=f"Finding eligible concepts for reuse at the value level",
+            details="Finding eligible concepts for reuse at the value level",
         )
 
         # Create temp table for reuse concepts
@@ -133,7 +133,7 @@ def find_matching_value(**kwargs):
                 },
             )
             logging.info(
-                f"Successfully found M-type concepts for reuse at the value level"
+                "Successfully found M-type concepts for reuse at the value level"
             )
         except Exception as e:
             logging.error(
@@ -181,7 +181,7 @@ def find_matching_field(**kwargs):
             scan_report_table=table_id,
             stage=JobStageType.REUSE_CONCEPTS,
             status=StageStatusType.IN_PROGRESS,
-            details=f"Finding eligible concepts for reuse at the field level",
+            details="Finding eligible concepts for reuse at the field level",
         )
 
         try:
@@ -203,7 +203,7 @@ def find_matching_field(**kwargs):
                 },
             )
             logging.info(
-                f"Successfully found M-type concepts for reuse at the field level"
+                "Successfully found M-type concepts for reuse at the field level"
             )
         except Exception as e:
             logging.error(
@@ -241,7 +241,7 @@ def create_reusing_concepts(**kwargs):
                 find_object_id_query,
                 parameters={"table_id": table_id},
             )
-            logging.info(f"Successfully found object ids for reusing concepts")
+            logging.info("Successfully found object ids for reusing concepts")
         except Exception as e:
             logging.error(f"Failed to find object ids for reusing concepts: {str(e)}")
             update_job_status(
@@ -258,7 +258,7 @@ def create_reusing_concepts(**kwargs):
                 validate_reused_concepts_query,
                 parameters={"table_id": table_id},
             )
-            logging.info(f"Successfully validated reused concepts")
+            logging.info("Successfully validated reused concepts")
         except Exception as e:
             logging.error(f"Failed to validate reused concepts: {str(e)}")
             update_job_status(
