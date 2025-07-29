@@ -20,8 +20,7 @@ export const recommendationServiceName = env(
   "NEXT_PUBLIC_RECOMMENDATION_SERVICE_NAME"
 );
 
-// File size limit in bytes (30MB default)
-export const MAX_FILE_SIZE_BYTES = 30 * 1024 * 1024;
-
-// File size limit in MB for display
-export const MAX_FILE_SIZE_MB = 30;
+// File size limit in bytes (configurable via env, default 30MB)
+export const MAX_FILE_SIZE_BYTES = process.env.BODY_SIZE_LIMIT_MB
+  ? parseInt(process.env.BODY_SIZE_LIMIT_MB, 10) * 1024 * 1024
+  : 30 * 1024 * 1024;

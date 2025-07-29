@@ -17,7 +17,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useState } from "react";
 import { CreateDatasetDialog } from "../datasets/CreateDatasetDialog";
 import * as Yup from "yup";
-import { MAX_FILE_SIZE_BYTES, MAX_FILE_SIZE_MB } from "@/constants";
+import { MAX_FILE_SIZE_BYTES } from "@/constants";
 
 interface FormData {
   name: string;
@@ -33,7 +33,7 @@ interface FormData {
 const validationSchema = Yup.object({
   scan_report_file: Yup.mixed().test(
     "fileSize",
-    `File size must be less than ${MAX_FILE_SIZE_MB}MB`,
+    `File size must be less than ${MAX_FILE_SIZE_BYTES / 1024 / 1024}MB`,
     function (value) {
       if (!value) return true;
       const file = value as File;
@@ -44,7 +44,7 @@ const validationSchema = Yup.object({
     .nullable()
     .test(
       "fileSize",
-      `File size must be less than ${MAX_FILE_SIZE_MB}MB`,
+      `File size must be less than ${MAX_FILE_SIZE_BYTES / 1024 / 1024}MB`,
       function (value) {
         if (!value) return true;
         const file = value as File;
@@ -132,7 +132,7 @@ export function CreateScanReportForm({
           handleSubmit(data);
         }}
       >
-        {({ values, handleChange, handleSubmit, errors }) => (
+        {({ values, handleChange, handleSubmit, errors, setFieldValue }) => (
           <Form
             className="w-full"
             onSubmit={handleSubmit}
@@ -274,7 +274,7 @@ export function CreateScanReportForm({
                   <div className="flex items-center gap-2">
                     WhiteRabbit Scan Report{" "}
                     <span className="text-muted-foreground text-sm">
-                      (.xlsx file, max {MAX_FILE_SIZE_MB}MB)
+                      (.xlsx file, max {MAX_FILE_SIZE_BYTES / 1024 / 1024}MB)
                     </span>
                   </div>
                   <Tooltips
@@ -283,24 +283,16 @@ export function CreateScanReportForm({
                   />
                 </h3>
                 <div>
-                  <Field
-                    name="scan_report_file"
-                    render={({ field, form }: any) => (
-                      <Input
-                        type="file"
-                        accept=".xlsx"
-                        required={true}
-                        onChange={(e) => {
-                          if (
-                            e.currentTarget.files &&
-                            e.currentTarget.files[0]
-                          ) {
-                            const file = e.currentTarget.files[0];
-                            form.setFieldValue("scan_report_file", file);
-                          }
-                        }}
-                      />
-                    )}
+                  <Input
+                    type="file"
+                    accept=".xlsx"
+                    required={true}
+                    onChange={(e) => {
+                      if (e.currentTarget.files && e.currentTarget.files[0]) {
+                        const file = e.currentTarget.files[0];
+                        setFieldValue("scan_report_file", file);
+                      }
+                    }}
                   />
                 </div>
                 <ErrorMessage
@@ -315,7 +307,8 @@ export function CreateScanReportForm({
                   <div className="flex items-center gap-2">
                     Data Dictionary{" "}
                     <span className="text-muted-foreground text-sm">
-                      (.csv file, optional, max {MAX_FILE_SIZE_MB}MB)
+                      (.csv file, optional, max{" "}
+                      {MAX_FILE_SIZE_BYTES / 1024 / 1024}MB)
                     </span>
                   </div>
                   <Tooltips
@@ -324,23 +317,15 @@ export function CreateScanReportForm({
                   />
                 </h3>
                 <div>
-                  <Field
-                    name="Data_dict"
-                    render={({ field, form }: any) => (
-                      <Input
-                        type="file"
-                        accept=".csv"
-                        onChange={(e) => {
-                          if (
-                            e.currentTarget.files &&
-                            e.currentTarget.files[0]
-                          ) {
-                            const file = e.currentTarget.files[0];
-                            form.setFieldValue("Data_dict", file);
-                          }
-                        }}
-                      />
-                    )}
+                  <Input
+                    type="file"
+                    accept=".csv"
+                    onChange={(e) => {
+                      if (e.currentTarget.files && e.currentTarget.files[0]) {
+                        const file = e.currentTarget.files[0];
+                        setFieldValue("Data_dict", file);
+                      }
+                    }}
                   />
                 </div>
                 <ErrorMessage
@@ -357,8 +342,7 @@ export function CreateScanReportForm({
                     values.dataPartner === 0 ||
                     values.dataset === 0 ||
                     values.dataset === -1 ||
-                    values.name === "" ||
-                    Object.keys(errors).length > 0
+                    values.name === ""
                   }
                 >
                   <Upload className="mr-2" />
