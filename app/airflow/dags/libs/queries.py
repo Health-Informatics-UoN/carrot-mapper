@@ -309,7 +309,7 @@ WITH
         JOIN mapping_scanreportvalue AS sr_value ON sr_value.scan_report_field_id = sr_field.id
         JOIN mapping_scanreportconcept AS sr_concept ON sr_concept.object_id = sr_value.id
             AND sr_concept.content_type_id = (SELECT id FROM value_content_type)
-            AND sr_concept.creation_type = 'M'
+            AND (sr_concept.creation_type = 'M' OR sr_concept.creation_type = 'R')
         CROSS JOIN value_content_type
     )
 INSERT INTO temp_reuse_concepts_%(table_id)s (
@@ -358,7 +358,7 @@ WITH
         JOIN mapping_scanreportfield AS sr_field ON sr_field.scan_report_table_id = sr_table.id
         JOIN mapping_scanreportconcept AS sr_concept ON sr_concept.object_id = sr_field.id
             AND sr_concept.content_type_id = (SELECT id FROM field_content_type)
-            AND sr_concept.creation_type = 'M'
+            AND (sr_concept.creation_type = 'M' OR sr_concept.creation_type = 'R')
         CROSS JOIN field_content_type
     )
 INSERT INTO temp_reuse_concepts_%(table_id)s (
@@ -409,8 +409,9 @@ find_object_id_query = """
 
 
 validate_reused_concepts_query = """
+-- Remove duplicates first (without joining omop.concept)
 DELETE FROM temp_reuse_concepts_%(table_id)s AS temp_table
-USING temp_reuse_concepts_%(table_id)s AS temp_table_duplicate, omop.concept AS omop_concept
+USING temp_reuse_concepts_%(table_id)s AS temp_table_duplicate
 WHERE (
     -- Remove duplicates at the value level, keeping the one with the lowest source_scanreport_id
     (
@@ -432,15 +433,15 @@ WHERE (
         )
         AND temp_table.source_scanreport_id > temp_table_duplicate.source_scanreport_id
     )
-    OR
-    -- Remove concepts whose domain is not in the allowed domains
-    (
-        temp_table.concept_id = omop_concept.concept_id
-        AND omop_concept.domain_id NOT IN (
-            'Condition', 'Drug', 'Procedure', 'Specimen', 'Device',
-            'Measurement', 'Observation', 'Gender', 'Race', 'Ethnicity', 'Spec Anatomic Site'
-        )
-    )
+);
+
+-- Remove concepts whose domain is not in the allowed domains
+DELETE FROM temp_reuse_concepts_%(table_id)s AS temp_table
+USING omop.concept AS omop_concept
+WHERE temp_table.concept_id = omop_concept.concept_id
+AND omop_concept.domain_id NOT IN (
+    'Condition', 'Drug', 'Procedure', 'Specimen', 'Device',
+    'Measurement', 'Observation', 'Gender', 'Race', 'Ethnicity', 'Spec Anatomic Site'
 );
 
 -- Delete concepts that have no object_id
