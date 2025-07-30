@@ -2,7 +2,7 @@ import {
   getAllScanReportFields,
   getScanReportField,
   getScanReportPermissions,
-  getScanReportTable,
+  getScanReportTable
 } from "@/api/scanreports";
 import { objToQuery } from "@/lib/client-utils";
 import { AlertCircleIcon } from "lucide-react";
@@ -21,15 +21,12 @@ interface UpdateTableProps {
 export default async function UpdateTable(props: UpdateTableProps) {
   const params = await props.params;
 
-  const {
-    id,
-    tableId
-  } = params;
+  const { id, tableId } = params;
 
   const defaultPageSize = 50;
   const defaultParams = {
     fields: "name,id",
-    page_size: defaultPageSize,
+    page_size: defaultPageSize
   };
   const combinedParams = { ...defaultParams };
   const query = objToQuery(combinedParams);
@@ -39,7 +36,9 @@ export default async function UpdateTable(props: UpdateTableProps) {
   const table = await getScanReportTable(id, tableId);
 
   // Check if fields are available first before making the calls
-  const defaultField = {
+  // Note: We create a fallback field object because the component expects ScanReportField,
+  // not null. This is a temporary workaround until we improve the fetching pattern (#795)
+  const fallbackField = {
     id: 0,
     name: "",
     created_at: new Date(),
@@ -65,10 +64,10 @@ export default async function UpdateTable(props: UpdateTableProps) {
 
   const personId = table.person_id?.id
     ? await getScanReportField(id, tableId, table.person_id.id)
-    : defaultField;
+    : fallbackField;
   const dateEvent = table.date_event?.id
     ? await getScanReportField(id, tableId, table.date_event.id)
-    : defaultField;
+    : fallbackField;
   const permissions = await getScanReportPermissions(id);
 
   return (
