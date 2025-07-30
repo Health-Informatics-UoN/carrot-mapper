@@ -4,8 +4,10 @@
 // Allows for multiple allowedOrigins in one environment
 const allowedOrigins = process.env.BACKEND_ORIGIN?.split(",");
 
-// Import file size limit from constants
-const { MAX_FILE_SIZE_BYTES } = require("./constants");
+// File size limit in bytes (configurable via env, default 30MB)
+const MAX_FILE_SIZE_BYTES = process.env.DATA_UPLOAD_MAX_MEMORY_SIZE
+  ? parseInt(process.env.DATA_UPLOAD_MAX_MEMORY_SIZE, 10)
+  : 31457280; // 30MB in bytes
 
 const nextConfig = {
   output: "standalone",
