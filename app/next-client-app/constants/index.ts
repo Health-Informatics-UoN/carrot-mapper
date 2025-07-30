@@ -21,6 +21,6 @@ export const recommendationServiceName = env(
 );
 
 // File size limit in bytes (configurable via env, default 30MB)
-export const MAX_FILE_SIZE_BYTES = process.env.BODY_SIZE_LIMIT_MB
-  ? parseInt(process.env.BODY_SIZE_LIMIT_MB, 10) * 1024 * 1024
-  : 30 * 1024 * 1024;
+export const MAX_FILE_SIZE_BYTES = process.env.DATA_UPLOAD_MAX_MEMORY_SIZE
+  ? parseInt(process.env.DATA_UPLOAD_MAX_MEMORY_SIZE, 10)
+  : 31457280; // 30MB in bytes

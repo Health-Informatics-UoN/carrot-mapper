@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { AlertCircle, Upload } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Form, Formik, Field, ErrorMessage } from "formik";
+import { Form, Formik, ErrorMessage } from "formik";
 import { toast } from "sonner";
 import { FormDataFilter } from "../form-components/FormikUtils";
 import { Tooltips } from "../core/Tooltips";
@@ -132,7 +132,7 @@ export function CreateScanReportForm({
           handleSubmit(data);
         }}
       >
-        {({ values, handleChange, handleSubmit, errors, setFieldValue }) => (
+        {({ values, handleChange, handleSubmit, setFieldValue }) => (
           <Form
             className="w-full"
             onSubmit={handleSubmit}
