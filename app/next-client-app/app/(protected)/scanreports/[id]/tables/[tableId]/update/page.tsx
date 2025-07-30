@@ -2,7 +2,7 @@ import {
   getAllScanReportFields,
   getScanReportField,
   getScanReportPermissions,
-  getScanReportTable,
+  getScanReportTable
 } from "@/api/scanreports";
 import { objToQuery } from "@/lib/client-utils";
 import { AlertCircleIcon } from "lucide-react";
@@ -21,15 +21,12 @@ interface UpdateTableProps {
 export default async function UpdateTable(props: UpdateTableProps) {
   const params = await props.params;
 
-  const {
-    id,
-    tableId
-  } = params;
+  const { id, tableId } = params;
 
   const defaultPageSize = 50;
   const defaultParams = {
     fields: "name,id",
-    page_size: defaultPageSize,
+    page_size: defaultPageSize
   };
   const combinedParams = { ...defaultParams };
   const query = objToQuery(combinedParams);
@@ -37,8 +34,38 @@ export default async function UpdateTable(props: UpdateTableProps) {
   const scanReportsFields = await getAllScanReportFields(id, tableId, query);
 
   const table = await getScanReportTable(id, tableId);
-  const personId = await getScanReportField(id, tableId, table.person_id?.id);
-  const dateEvent = await getScanReportField(id, tableId, table.date_event?.id);
+
+  // Check if fields are available first before making the calls
+  const defaultField = {
+    id: 0,
+    name: "",
+    created_at: new Date(),
+    updated_at: new Date(),
+    description_column: "",
+    type_column: "",
+    max_length: 0,
+    nrows: 0,
+    nrows_checked: 0,
+    fraction_empty: "",
+    nunique_values: 0,
+    fraction_unique: "",
+    ignore_column: null,
+    is_patient_id: false,
+    is_ignore: false,
+    classification_system: null,
+    pass_from_source: false,
+    concept_id: 0,
+    permissions: [],
+    field_description: null,
+    scan_report_table: 0
+  };
+
+  const personId = table.person_id?.id
+    ? await getScanReportField(id, tableId, table.person_id.id)
+    : defaultField;
+  const dateEvent = table.date_event?.id
+    ? await getScanReportField(id, tableId, table.date_event.id)
+    : defaultField;
   const permissions = await getScanReportPermissions(id);
 
   return (
