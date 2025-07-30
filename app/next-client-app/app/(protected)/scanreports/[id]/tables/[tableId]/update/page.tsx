@@ -2,7 +2,7 @@ import {
   getAllScanReportFields,
   getScanReportField,
   getScanReportPermissions,
-  getScanReportTable
+  getScanReportTable,
 } from "@/api/scanreports";
 import { objToQuery } from "@/lib/client-utils";
 import { AlertCircleIcon } from "lucide-react";
@@ -21,12 +21,15 @@ interface UpdateTableProps {
 export default async function UpdateTable(props: UpdateTableProps) {
   const params = await props.params;
 
-  const { id, tableId } = params;
+  const {
+    id,
+    tableId
+  } = params;
 
   const defaultPageSize = 50;
   const defaultParams = {
     fields: "name,id",
-    page_size: defaultPageSize
+    page_size: defaultPageSize,
   };
   const combinedParams = { ...defaultParams };
   const query = objToQuery(combinedParams);
