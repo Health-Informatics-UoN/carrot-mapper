@@ -128,6 +128,22 @@ export async function getDatasetPermissions(
   }
 }
 
+export async function getDatasetMembers(id: string): Promise<User[]> {
+  try {
+    const dataset = await getDataSet(id);
+    const allUsers = await getDataUsers();
+    
+    // Combine all member IDs from viewers, admins, and editors
+    const memberIds = [...dataset.viewers, ...dataset.admins, ...dataset.editors];
+    
+    // Filter users to only include those who are members
+    return allUsers.filter(user => memberIds.includes(user.id));
+  } catch (error) {
+    console.warn("Failed to fetch data.");
+    return [];
+  }
+}
+
 export async function createDataset(data: {}) {
   try {
     await request(fetchKeys.create, {

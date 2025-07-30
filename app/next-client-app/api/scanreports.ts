@@ -121,6 +121,25 @@ export async function getScanReportPermissions(
   }
 }
 
+export async function getScanReportMembers(id: string): Promise<User[]> {
+  try {
+    const scanReport = await getScanReport(id);
+    if (!scanReport) return [];
+    
+    // Get all users to map IDs to user objects
+    const allUsers = await request<User[]>("v2/usersfilter/?is_active=true");
+    
+    // Combine all member IDs from viewers and editors
+    const memberIds = [...scanReport.viewers, ...scanReport.editors];
+    
+    // Filter users to only include those who are members
+    return allUsers.filter((user: User) => memberIds.includes(user.id));
+  } catch (error) {
+    console.warn("Failed to fetch data.");
+    return [];
+  }
+}
+
 export async function getScanReportTable(
   scanReportId: string,
   tableId: string

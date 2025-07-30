@@ -5,9 +5,14 @@ import { Boundary } from "@/components/core/boundary";
 import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns/format";
-import { getDataSet, getDatasetPermissions } from "@/api/datasets";
+import {
+  getDataSet,
+  getDatasetPermissions,
+  getDatasetMembers
+} from "@/api/datasets";
 import { Badge } from "@/components/ui/badge";
 import { InfoItem } from "@/components/core/InfoItem";
+import { AvatarList } from "@/components/core/avatar-list";
 import Link from "next/link";
 
 interface LayoutProps {
@@ -22,6 +27,7 @@ export default async function DatasetLayout({
   const { id } = await params;
 
   const permissions = await getDatasetPermissions(id);
+  const members = await getDatasetMembers(id);
   const requiredPermissions: Permission[] = ["CanAdmin", "CanEdit", "CanView"];
 
   const items = [
@@ -78,6 +84,9 @@ export default async function DatasetLayout({
           value={format(createdDate, "MMM dd, yyyy h:mm a")}
           className="py-1 md:py-0 md:px-3"
         />
+        <div className="py-1 md:py-0 md:px-3 h-5 flex items-center gap-2">
+          Members: <AvatarList members={members || []} />
+        </div>
       </div>
       {/* "Navs" group */}
       <div className="flex justify-between">
