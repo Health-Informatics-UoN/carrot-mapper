@@ -309,7 +309,7 @@ WITH
         JOIN mapping_scanreportvalue AS sr_value ON sr_value.scan_report_field_id = sr_field.id
         JOIN mapping_scanreportconcept AS sr_concept ON sr_concept.object_id = sr_value.id
             AND sr_concept.content_type_id = (SELECT id FROM value_content_type)
-            AND sr_concept.creation_type = 'M'
+            AND (sr_concept.creation_type = 'M' OR sr_concept.creation_type = 'R')
         CROSS JOIN value_content_type
     )
 INSERT INTO temp_reuse_concepts_%(table_id)s (
@@ -358,7 +358,7 @@ WITH
         JOIN mapping_scanreportfield AS sr_field ON sr_field.scan_report_table_id = sr_table.id
         JOIN mapping_scanreportconcept AS sr_concept ON sr_concept.object_id = sr_field.id
             AND sr_concept.content_type_id = (SELECT id FROM field_content_type)
-            AND sr_concept.creation_type = 'M'
+            AND (sr_concept.creation_type = 'M' OR sr_concept.creation_type = 'R')
         CROSS JOIN field_content_type
     )
 INSERT INTO temp_reuse_concepts_%(table_id)s (
