@@ -1,4 +1,5 @@
 import { env } from "next-runtime-env";
+import { MAX_FILE_SIZE_BYTES } from "./config";
 
 export const apiUrl = process.env.BACKEND_URL;
 
@@ -19,3 +20,6 @@ export const enableAIRecommendation = env(
 export const recommendationServiceName = env(
   "NEXT_PUBLIC_RECOMMENDATION_SERVICE_NAME"
 );
+
+// Re-export MAX_FILE_SIZE_BYTES from config.js
+export { MAX_FILE_SIZE_BYTES };
