@@ -4,17 +4,15 @@
 // Allows for multiple allowedOrigins in one environment
 const allowedOrigins = process.env.BACKEND_ORIGIN?.split(",");
 
-// Allows configuration of body size limit via env (in bytes)
-const bodySizeLimit = process.env.BODY_SIZE_LIMIT
-  ? parseInt(process.env.BODY_SIZE_LIMIT, 10)
-  : 20728640; // Default to 20MB if not set
+// Import file size limit from constants
+const { MAX_FILE_SIZE_BYTES } = require("./constants/config");
 
 const nextConfig = {
   output: "standalone",
   experimental: {
     serverActions: {
       allowedOrigins,
-      bodySizeLimit,
+      bodySizeLimit: MAX_FILE_SIZE_BYTES,
     },
   },
   async redirects() {
