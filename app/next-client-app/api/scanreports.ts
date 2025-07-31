@@ -126,14 +126,16 @@ export async function getScanReportMembers(id: string): Promise<User[]> {
     const scanReport = await getScanReport(id);
     if (!scanReport) return [];
     
-    // Get all users to map IDs to user objects
-    const allUsers = await request<User[]>("v2/usersfilter/?is_active=true");
+    // Combine all members from viewers and editors
+    // Now they are User objects, so we can use them directly
+    const allMembers = [...scanReport.viewers, ...scanReport.editors];
     
-    // Combine all member IDs from viewers and editors
-    const memberIds = [...scanReport.viewers, ...scanReport.editors];
+    // Remove duplicates based on user ID
+    const uniqueMembers = allMembers.filter((member, index, self) => 
+      index === self.findIndex(m => m.id === member.id)
+    );
     
-    // Filter users to only include those who are members
-    return allUsers.filter((user: User) => memberIds.includes(user.id));
+    return uniqueMembers;
   } catch (error) {
     console.warn("Failed to fetch data.");
     return [];

@@ -94,6 +94,8 @@ class ScanReportViewSerializerV2(DynamicFieldsMixin, serializers.ModelSerializer
     """
 
     author = UserSerializer(read_only=True)
+    viewers = UserSerializer(many=True, read_only=True)
+    editors = UserSerializer(many=True, read_only=True)
     parent_dataset = DatasetSerializer(read_only=True)
     data_partner = serializers.SerializerMethodField()
     mapping_status = MappingStatusSerializer()
@@ -630,6 +632,8 @@ class ScanReportCreateSerializer(DynamicFieldsMixin, serializers.ModelSerializer
 
 class ScanReportEditSerializer(DynamicFieldsMixin, serializers.ModelSerializer):
     mapping_status = MappingStatusSerializer()
+    viewers = UserSerializer(many=True, read_only=True)
+    editors = UserSerializer(many=True, read_only=True)
 
     def validate_author(self, author):
         if request := self.context.get("request"):

@@ -131,13 +131,17 @@ export async function getDatasetPermissions(
 export async function getDatasetMembers(id: string): Promise<User[]> {
   try {
     const dataset = await getDataSet(id);
-    const allUsers = await getDataUsers();
     
-    // Combine all member IDs from viewers, admins, and editors
-    const memberIds = [...dataset.viewers, ...dataset.admins, ...dataset.editors];
+    // Combine all members from viewers, admins, and editors
+    // Now they are User objects, so we can use them directly
+    const allMembers = [...dataset.viewers, ...dataset.admins, ...dataset.editors];
     
-    // Filter users to only include those who are members
-    return allUsers.filter(user => memberIds.includes(user.id));
+    // Remove duplicates based on user ID
+    const uniqueMembers = allMembers.filter((member, index, self) => 
+      index === self.findIndex(m => m.id === member.id)
+    );
+    
+    return uniqueMembers;
   } catch (error) {
     console.warn("Failed to fetch data.");
     return [];
