@@ -1,4 +1,5 @@
 import { env } from "next-runtime-env";
+import { MAX_FILE_SIZE_BYTES } from "./config";
 
 export const apiUrl = process.env.BACKEND_URL;
 
@@ -20,7 +21,5 @@ export const recommendationServiceName = env(
   "NEXT_PUBLIC_RECOMMENDATION_SERVICE_NAME"
 );
 
-// File size limit in bytes (configurable via env, default 30MB)
-export const MAX_FILE_SIZE_BYTES = process.env.NEXT_PUBLIC_BODY_SIZE_LIMIT
-  ? parseInt(process.env.NEXT_PUBLIC_BODY_SIZE_LIMIT, 10)
-  : 31457280; // 30MB in bytes
+// Re-export MAX_FILE_SIZE_BYTES from config.js
+export { MAX_FILE_SIZE_BYTES };
