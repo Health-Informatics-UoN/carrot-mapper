@@ -37,7 +37,6 @@ export default async function ScanReports() {
                 Read the guide
               </Link>
             </Button>
-            for step-by-step instructions.
           </AlertDescription>
         </Alert>
         <CreateScanReportForm dataPartners={partners} projects={projects} />

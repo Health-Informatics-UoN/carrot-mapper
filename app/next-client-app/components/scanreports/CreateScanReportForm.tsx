@@ -98,8 +98,7 @@ export function CreateScanReportForm({
   return (
     <>
       {error && (
-        <Alert variant="destructive" className="mb-3">
-          <div>
+        <Alert variant="destructive" className="mb-3 max-w-2xl">
             <AlertTitle className="flex items-center">
               <AlertCircle className="h-4 w-4 mr-2" />
               Upload New Scan Report Failed. Error:
@@ -109,9 +108,8 @@ export function CreateScanReportForm({
                 {error.split(" * ").map((err, index) => (
                   <li key={index}>* {err}</li>
                 ))}
-              </ul>
-            </AlertDescription>
-          </div>
+            </ul>
+          </AlertDescription>
         </Alert>
       )}
 
