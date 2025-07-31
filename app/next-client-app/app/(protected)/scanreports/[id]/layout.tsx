@@ -15,7 +15,7 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
   DropdownMenuSeparator,
-  DropdownMenuLabel
+  DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";

@@ -28,7 +28,7 @@ export function DatasetForm({
   dataPartners,
   projects,
   users,
-  permissions
+  permissions,
 }: {
   dataset: DataSetSRList;
   dataPartners: DataPartner[];
@@ -69,7 +69,7 @@ export function DatasetForm({
       viewers: data.viewers || [],
       admins: data.admins || [],
       editors: data.editors || [],
-      projects: data.projects || []
+      projects: data.projects || [],
     };
     const response = await updateDatasetDetails(dataset.id, submittingData);
     if (response) {
@@ -134,8 +134,8 @@ export function DatasetForm({
                   handleChange({
                     target: {
                       name: "visibility",
-                      value: checked ? "PUBLIC" : "RESTRICTED"
-                    }
+                      value: checked ? "PUBLIC" : "RESTRICTED",
+                    },
                   });
                   setPublicVisibility(checked);
                 }}
