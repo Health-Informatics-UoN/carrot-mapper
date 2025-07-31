@@ -64,6 +64,7 @@ export function CreateScanReportForm({
   const [reloadDataset, setReloadDataset] = useState(false);
   // State to hide/show the viewers field
   const [publicVisibility, setPublicVisibility] = useState<boolean>(true);
+  const maxFileSizeMB = MAX_FILE_SIZE_BYTES / 1024 / 1024;
 
   const handleSubmit = async (data: FormData) => {
     const formData = new FormData();
@@ -287,7 +288,7 @@ export function CreateScanReportForm({
                     <FormLabel>
                       <div className="flex items-center gap-2">
                         WhiteRabbit Scan Report{" "}
-                        <span className="text-muted-foreground text-sm">(.xlsx file)</span>
+                        <span className="text-muted-foreground text-sm">(.xlsx file max {maxFileSizeMB}MB)</span>
                       </div>
                     </FormLabel>
                     <FormDescription>
@@ -321,7 +322,7 @@ export function CreateScanReportForm({
                       <div className="flex items-center gap-2">
                         Data Dictionary{" "}
                         <span className="text-muted-foreground text-sm">
-                          (.csv file, optional)
+                          (.csv file, optional, max {maxFileSizeMB}MB)
                         </span>
                       </div>
                     </FormLabel>
