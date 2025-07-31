@@ -15,6 +15,8 @@ import { createScanReport } from "@/api/scanreports";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useState } from "react";
 import { CreateDatasetDialog } from "../datasets/CreateDatasetDialog";
+import * as Yup from "yup";
+import { MAX_FILE_SIZE_BYTES } from "@/constants";
 
 interface FormData {
   name: string;
@@ -25,6 +27,30 @@ interface FormData {
   scan_report_file: File | null;
   Data_dict: File | null;
 }
+
+// Yup validation schema
+const validationSchema = Yup.object({
+  scan_report_file: Yup.mixed().test(
+    "fileSize",
+    `File size must be less than ${MAX_FILE_SIZE_BYTES / 1024 / 1024}MB`,
+    function (value) {
+      if (!value) return true;
+      const file = value as File;
+      return file.size <= MAX_FILE_SIZE_BYTES;
+    }
+  ),
+  Data_dict: Yup.mixed()
+    .nullable()
+    .test(
+      "fileSize",
+      `File size must be less than ${MAX_FILE_SIZE_BYTES / 1024 / 1024}MB`,
+      function (value) {
+        if (!value) return true;
+        const file = value as File;
+        return file.size <= MAX_FILE_SIZE_BYTES;
+      }
+    )
+});
 
 export function CreateScanReportForm({
   dataPartners,
@@ -87,6 +113,7 @@ export function CreateScanReportForm({
           </div>
         </Alert>
       )}
+
       <Formik
         initialValues={{
           dataPartner: 0,
@@ -98,6 +125,7 @@ export function CreateScanReportForm({
           scan_report_file: null,
           Data_dict: null
         }}
+        validationSchema={validationSchema}
         onSubmit={(data) => {
           toast.info("Validating ...");
           handleSubmit(data);
