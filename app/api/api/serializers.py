@@ -184,6 +184,12 @@ class ScanReportFilesSerializer(DynamicFieldsMixin, serializers.ModelSerializer)
                 "Please upload a .csv file."
             )
 
+        # Validate Data dictionary size before attempting to upload it
+        if data_dictionary.size > DATA_UPLOAD_MAX_MEMORY_SIZE:
+            raise ParseError(
+                f"Please upload a smaller Data dictionary. The maximum size of a Data dictionary is {DATA_UPLOAD_MAX_MEMORY_SIZE / 1024 / 1024} MB"
+            )
+
         # Read the file once
         decoded = data_dictionary.read().decode("utf-8-sig")
         csv_reader = csv.reader(StringIO(decoded))

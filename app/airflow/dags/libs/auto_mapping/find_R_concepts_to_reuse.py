@@ -7,11 +7,12 @@ from libs.utils import (
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 import logging
 from libs.queries import (
-    find_reusing_value_query,
-    find_reusing_field_query,
+    create_temp_reuse_table_query,
+    find_m_concepts_query,
+    find_m_concepts_query_field_level,
     find_object_id_query,
-    validate_reused_value_query,
-    create_concept_query,
+    validate_reused_concepts_query,
+    create_reuse_concept_query,
 )
 
 # PostgreSQL connection hook
@@ -67,22 +68,15 @@ def delete_R_concepts(**kwargs) -> None:
 
 def find_matching_value(**kwargs):
     """
-    Identifies and extracts field values from completed scan reports that can be reused for concept mapping.
+    Identifies and extracts field values from completed scan reports that have M-type concepts tied to them.
 
-    This function locates field values in the current table that match values in previously mapped scan reports
-    within the same parent dataset. The matching process requires:
-    1. Exact value text matching
-    2. Matching value descriptions (or both NULL)
-    3. Values must belong to fields with the same name
-
-    The SQL procedure:
-    1. Starts with values in the current scan report table
-    2. Joins to values in other scan reports based on value name, description, and field name
-    3. Finds values with associated concepts in completed scan reports
-    4. Filters to values from the specified parent dataset and only from completed scan reports
-    5. Excludes already reused concepts (creation_type != 'R')
-    6. Optionally excludes concepts from vocabulary matching (creation_type != 'V') if a data dictionary exists
-    7. Removes duplicate matches, keeping only the match from the oldest scan report
+    This function locates field values in eligible scan reports that have manually added (M-type) concepts
+    within the same parent dataset. The process:
+    1. Finds eligible scan reports (completed, not hidden, in same dataset, not current report)
+    2. Finds tables in those reports with the same name as the current table
+    3. Finds values in those tables that have M-type concepts tied to them
+    4. Inserts those values into temp_reuse_concepts for further processing
+    5. Find the object_id for each reuse concept by matching with current table values
 
     Results are stored in a temporary table (temp_reuse_concepts_{table_id}) for further processing.
 
@@ -90,7 +84,6 @@ def find_matching_value(**kwargs):
         - table_id (int): ID of the scan report table being processed
         - parent_dataset_id (int): ID of the parent dataset to search within
         - scan_report_id (int): ID of the current scan report
-        - has_data_dictionary (bool): If True, V-type concepts will be excluded from reuse
     """
     # Get validated parameters from XCom
     validated_params = pull_validated_params(kwargs, "validate_params_auto_mapping")
@@ -106,67 +99,54 @@ def find_matching_value(**kwargs):
             scan_report_table=table_id,
             stage=JobStageType.REUSE_CONCEPTS,
             status=StageStatusType.IN_PROGRESS,
-            details=f"Finding eligible concepts for reuse at the value level",
+            details="Finding eligible concepts for reuse at the value level",
         )
 
         # Create temp table for reuse concepts
-        create_table_query = """
-        -- Prevent duplicate creation of the temp reuse concepts table, in case of re-running the DAG after a bug fix
-        DROP TABLE IF EXISTS temp_reuse_concepts_%(table_id)s;
-        CREATE TABLE temp_reuse_concepts_%(table_id)s (
-            object_id INTEGER,
-            matching_value_name TEXT,
-            matching_field_name TEXT,
-            matching_table_name TEXT,
-            -- TODO: we need to add source_scanreport_id for the model SCANREPORTCONCEPT as well for R concepts
-            source_scanreport_id INTEGER,
-            content_type_id INTEGER,
-            source_concept_id INTEGER,
-            standard_concept_id INTEGER
-        );
-        """
         try:
-            pg_hook.run(create_table_query, parameters={"table_id": table_id})
-            logging.info(
-                f"Successfully created temp_standard_concepts_{table_id} table"
+            pg_hook.run(
+                create_temp_reuse_table_query, parameters={"table_id": table_id}
             )
+            logging.info(f"Successfully created temp_reuse_concepts_{table_id} table")
         except Exception as e:
             logging.error(
-                f"Failed to create temp_standard_concepts_{table_id} table: {str(e)}"
+                f"Failed to create temp_reuse_concepts_{table_id} table: {str(e)}"
             )
-            raise
-
-        # When a data dictionary (or field_vocab_pairs) for a table is provided, we won't reuse V concepts,
-        # because that is the job of V concepts DAG
-        field_vocab_pairs = validated_params["field_vocab_pairs"]
-        exclude_v_concepts_condition = (
-            "AND eligible_concept.creation_type != 'V'" if field_vocab_pairs else ""
-        )
+            raise e
 
         try:
-            # NOTE: parameterizing the query is not working for the exclude_v_concepts_condition, so we are using string interpolation instead
+            # Get the current table name to find matching tables in eligible scan reports
+            get_current_table_name_query = """
+            SELECT name FROM mapping_scanreporttable WHERE id = %(table_id)s;
+            """
+            current_table_name = pg_hook.get_first(
+                get_current_table_name_query, parameters={"table_id": table_id}
+            )[0]
+            # Find M-type concepts for reuse at the value level
             pg_hook.run(
-                (find_reusing_value_query + validate_reused_value_query)
-                % {
+                find_m_concepts_query,
+                parameters={
                     "table_id": table_id,
                     "parent_dataset_id": parent_dataset_id,
                     "scan_report_id": scan_report_id,
-                    "exclude_v_concepts_condition": exclude_v_concepts_condition,
-                }
+                    "current_table_name": current_table_name,
+                },
             )
-            logging.info(f"Successfully found reusing concepts at the value level")
+            logging.info(
+                "Successfully found M-type concepts for reuse at the value level"
+            )
         except Exception as e:
             logging.error(
-                f"Failed to find reusing concepts at the value level: {str(e)}"
+                f"Failed to find M-type concepts for reuse at the value level: {str(e)}"
             )
             update_job_status(
                 scan_report=scan_report_id,
                 scan_report_table=table_id,
                 stage=JobStageType.REUSE_CONCEPTS,
                 status=StageStatusType.FAILED,
-                details=f"Error when finding eligible concepts for reuse at the value level: {str(e)}",
+                details=f"Error when finding M-type concepts for reuse at the value level: {str(e)}",
             )
-            raise
+            raise e
     else:
         logging.info("Skipping find_matching_value as trigger_reuse_concepts is False")
 
@@ -201,31 +181,42 @@ def find_matching_field(**kwargs):
             scan_report_table=table_id,
             stage=JobStageType.REUSE_CONCEPTS,
             status=StageStatusType.IN_PROGRESS,
-            details=f"Finding eligible concepts for reuse at the field level",
+            details="Finding eligible concepts for reuse at the field level",
         )
 
         try:
+            # Get the current table name to find matching tables in eligible scan reports
+            get_current_table_name_query = """
+            SELECT name FROM mapping_scanreporttable WHERE id = %(table_id)s;
+            """
+            current_table_name = pg_hook.get_first(
+                get_current_table_name_query, parameters={"table_id": table_id}
+            )[0]
+            # Find M-type concepts for reuse at the field level
             pg_hook.run(
-                find_reusing_field_query,
+                find_m_concepts_query_field_level,
                 parameters={
                     "table_id": table_id,
                     "parent_dataset_id": parent_dataset_id,
                     "scan_report_id": scan_report_id,
+                    "current_table_name": current_table_name,
                 },
             )
-            logging.info(f"Successfully found reusing concepts at the field level")
+            logging.info(
+                "Successfully found M-type concepts for reuse at the field level"
+            )
         except Exception as e:
             logging.error(
-                f"Failed to find reusing concepts at the value level: {str(e)}"
+                f"Failed to find M-type concepts for reuse at the field level: {str(e)}"
             )
             update_job_status(
                 scan_report=scan_report_id,
                 scan_report_table=table_id,
                 stage=JobStageType.REUSE_CONCEPTS,
                 status=StageStatusType.FAILED,
-                details=f"Error when finding eligible concepts for reuse at the field level: {str(e)}",
+                details=f"Error when finding M-type concepts for reuse at the field level: {str(e)}",
             )
-            raise
+            raise e
     else:
         logging.info("Skipping find_matching_field as trigger_reuse_concepts is False")
 
@@ -248,9 +239,9 @@ def create_reusing_concepts(**kwargs):
         try:
             pg_hook.run(
                 find_object_id_query,
-                parameters={"table_id": table_id, "scan_report_id": scan_report_id},
+                parameters={"table_id": table_id},
             )
-            logging.info(f"Successfully found object ids for reusing concepts")
+            logging.info("Successfully found object ids for reusing concepts")
         except Exception as e:
             logging.error(f"Failed to find object ids for reusing concepts: {str(e)}")
             update_job_status(
@@ -261,9 +252,26 @@ def create_reusing_concepts(**kwargs):
                 details=f"Error when finding object ids for reusing concepts: {str(e)}",
             )
             raise e
+        #  Validate reused concepts
+        try:
+            pg_hook.run(
+                validate_reused_concepts_query,
+                parameters={"table_id": table_id},
+            )
+            logging.info("Successfully validated reused concepts")
+        except Exception as e:
+            logging.error(f"Failed to validate reused concepts: {str(e)}")
+            update_job_status(
+                scan_report=scan_report_id,
+                scan_report_table=table_id,
+                stage=JobStageType.REUSE_CONCEPTS,
+                status=StageStatusType.FAILED,
+                details=f"Error when validating reused concepts: {str(e)}",
+            )
+            raise e
         #  Create R concepts
         try:
-            pg_hook.run(create_concept_query, parameters={"table_id": table_id})
+            pg_hook.run(create_reuse_concept_query, parameters={"table_id": table_id})
             logging.info("Successfully created R (Reused) concepts")
             update_job_status(
                 scan_report=scan_report_id,

@@ -69,7 +69,6 @@ services:
     environment:
       - BACKEND_URL=http://api:8000
       - BACKEND_ORIGIN=localhost:8000
-      - BODY_SIZE_LIMIT=20728640
       - NEXTAUTH_URL=http://localhost:3000/
       - NEXTAUTH_SECRET=verycomplexsecretkey
       - NEXTAUTH_BACKEND_URL=http://api:8000/api/
@@ -81,6 +80,7 @@ services:
       - RECOMMENDATION_SERVICE=unison
       - UNISON_API_KEY=unison-api-key
       - UNISON_BASE_URL=https://api.hyperunison.com/api/public/suggester/generate
+      - NEXT_PUBLIC_BODY_SIZE_LIMIT=31457280
     volumes:
       - ./app/next-client-app:/app
       - /app/node_modules
@@ -128,7 +128,7 @@ services:
       - AIRFLOW_ADMIN_USERNAME=admin
       - AIRFLOW_ADMIN_PASSWORD=admin
       # To match with the capacity of the production environment
-      - DATA_UPLOAD_MAX_MEMORY_SIZE=10485760
+      - DATA_UPLOAD_MAX_MEMORY_SIZE=31457280
       # Default superuser credentials for dev environment
       - SUPERUSER_DEFAULT_PASSWORD=admin
       - SUPERUSER_DEFAULT_EMAIL=admin@carrot.com
@@ -252,6 +252,9 @@ services:
       <<: *airflow-common-env
       AIRFLOW__CORE__EXECUTE_TASKS_NEW_PYTHON_INTERPRETER: True
       AIRFLOW_DEBUG_MODE: False
+      # Search recommendations feature flag - controls whether search recommendations task is included in auto_mapping DAG
+      SEARCH_ENABLED: False
+      AIRFLOW_DAGRUN_TIMEOUT: 60 # Timeout for each dagrun in minutes
 
 volumes:
   db_data:
