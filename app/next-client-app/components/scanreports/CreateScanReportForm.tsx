@@ -64,6 +64,7 @@ export function CreateScanReportForm({
   const [reloadDataset, setReloadDataset] = useState(false);
   // State to hide/show the viewers field
   const [publicVisibility, setPublicVisibility] = useState<boolean>(true);
+  const maxFileSizeMB = MAX_FILE_SIZE_BYTES / 1024 / 1024;
 
   const handleSubmit = async (data: FormData) => {
     const formData = new FormData();
@@ -97,8 +98,7 @@ export function CreateScanReportForm({
   return (
     <>
       {error && (
-        <Alert variant="destructive" className="mb-3">
-          <div>
+        <Alert variant="destructive" className="mb-3 max-w-2xl">
             <AlertTitle className="flex items-center">
               <AlertCircle className="h-4 w-4 mr-2" />
               Upload New Scan Report Failed. Error:
@@ -108,9 +108,8 @@ export function CreateScanReportForm({
                 {error.split(" * ").map((err, index) => (
                   <li key={index}>* {err}</li>
                 ))}
-              </ul>
-            </AlertDescription>
-          </div>
+            </ul>
+          </AlertDescription>
         </Alert>
       )}
 
@@ -228,7 +227,7 @@ export function CreateScanReportForm({
                           checked={values.visibility === "PUBLIC"}
                         />
                       </FormControl>
-                      <span>
+                      <span className="text-sm">
                         {/* Show user-friendly label */}
                         {values.visibility === "PUBLIC" ? "Shared" : "Restricted"}
                       </span>
@@ -287,7 +286,7 @@ export function CreateScanReportForm({
                     <FormLabel>
                       <div className="flex items-center gap-2">
                         WhiteRabbit Scan Report{" "}
-                        <span className="text-muted-foreground text-sm">(.xlsx file)</span>
+                        <span className="text-muted-foreground text-sm">(.xlsx file max {maxFileSizeMB}MB)</span>
                       </div>
                     </FormLabel>
                     <FormDescription>
@@ -321,7 +320,7 @@ export function CreateScanReportForm({
                       <div className="flex items-center gap-2">
                         Data Dictionary{" "}
                         <span className="text-muted-foreground text-sm">
-                          (.csv file, optional)
+                          (.csv file, optional, max {maxFileSizeMB}MB)
                         </span>
                       </div>
                     </FormLabel>
