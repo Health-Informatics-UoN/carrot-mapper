@@ -227,7 +227,7 @@ export function CreateScanReportForm({
                           checked={values.visibility === "PUBLIC"}
                         />
                       </FormControl>
-                      <span>
+                      <span className="text-sm">
                         {/* Show user-friendly label */}
                         {values.visibility === "PUBLIC" ? "Shared" : "Restricted"}
                       </span>
