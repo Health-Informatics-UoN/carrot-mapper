@@ -8,6 +8,12 @@ import { FilterParameters } from "@/types/filter";
 import { CreateDatasetDialog } from "@/components/datasets/CreateDatasetDialog";
 import { Database } from "lucide-react";
 import { getAllProjects } from "@/api/projects";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Datasets | Carrot Mapper",
+  description: "Datasets for the current user",
+};
 
 interface DataSetListProps {
   searchParams?: Promise<FilterParameters>;

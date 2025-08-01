@@ -6,10 +6,16 @@ import { objToQuery } from "@/lib/client-utils";
 import { ScanReportsTableFilter } from "@/components/scanreports/ScanReportsTableFilter";
 import { FilterParameters } from "@/types/filter";
 import { FileScan } from "lucide-react";
+import { Metadata } from "next";
 
 interface ScanReportsProps {
   searchParams?: Promise<{ status__in: string } & FilterParameters>;
 }
+
+export const metadata: Metadata = {
+  title: "Scan Reports | Carrot Mapper",
+  description: "Scan reports for the current user",
+};
 
 export default async function ScanReports(props: ScanReportsProps) {
   const searchParams = await props.searchParams;
