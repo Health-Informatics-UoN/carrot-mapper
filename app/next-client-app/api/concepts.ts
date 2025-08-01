@@ -95,3 +95,20 @@ export async function getScanReportConceptDetail(
 ): Promise<ScanReportConceptDetailV3> {
   return await request(fetchKeys.scanreportConceptDetail(scanReportId, tableId, fieldId, valueId, conceptId));
 }
+
+export async function updateScanReportConceptDetail(
+  scanReportId: string,
+  tableId: string,
+  fieldId: string,
+  valueId: string,
+  conceptId: string,
+  data: {},
+): Promise<ScanReportConceptDetailV3> {
+  return await request(fetchKeys.scanreportConceptDetail(scanReportId, tableId, fieldId, valueId, conceptId), {
+    method: "PATCH",
+    headers: {
+      "Content-type": "application/json",
+    },
+    body: JSON.stringify(data),
+  });
+}
