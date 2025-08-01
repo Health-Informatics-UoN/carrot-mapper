@@ -936,8 +936,6 @@ class ScanReportValueListV3(ScanReportPermissionMixin, GenericAPIView, ListModel
             .prefetch_related("concepts", "concepts__concept")
         )
 
-    @method_decorator(cache_page(60 * 15))
-    @method_decorator(vary_on_cookie)
     def list(self, request, *args, **kwargs):
         return super().list(request, *args, **kwargs)
 
