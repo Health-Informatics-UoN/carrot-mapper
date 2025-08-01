@@ -1,7 +1,9 @@
 import { getDataPartners } from "@/api/datasets";
 import { getAllProjects } from "@/api/projects";
 import { CreateScanReportForm } from "@/components/scanreports/CreateScanReportForm";
-import { FileScan } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { FileScan, Info } from "lucide-react";
 import Link from "next/link";
 
 export default async function ScanReports() {
@@ -17,9 +19,26 @@ export default async function ScanReports() {
         </Link>
       </div>
       <div className="flex justify-between mt-3">
-        <h1 className="text-4xl font-semibold">Upload Scan Report</h1>
+        <h1 className="text-2xl font-semibold">Upload Scan Report</h1>
       </div>
       <div className="mt-4">
+        <Alert className="mb-6 max-w-md">
+          <Info />
+          <AlertTitle>Need help uploading a scan report?</AlertTitle>
+          <AlertDescription>
+            Please ensure your scan report follows the correct format. 
+            <Button variant="link" asChild className="p-0">
+              <Link
+                href="https://carrot.ac.uk/mapper/user_guide/upload_scan_report"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline text-primary hover:text-primary/80"
+                >
+                Read the guide
+              </Link>
+            </Button>
+          </AlertDescription>
+        </Alert>
         <CreateScanReportForm dataPartners={partners} projects={projects} />
       </div>
     </>

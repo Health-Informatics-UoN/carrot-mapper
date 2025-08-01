@@ -6,7 +6,7 @@ import {
 } from "@/api/scanreports";
 import { objToQuery } from "@/lib/client-utils";
 import { AlertCircleIcon } from "lucide-react";
-import { Alert } from "@/components/ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ScanReportTableUpdateForm } from "@/components/scanreports/ScanReportTableUpdateForm";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -78,19 +78,15 @@ export default async function UpdateTable(props: UpdateTableProps) {
         </Button>
       </Link>
       {(table.date_event === null || table.person_id === null) && (
-        <Alert className="flex items-center gap-3 bg-accent text-accent-foreground mt-3 w-1/2">
-          <div>
-            <AlertCircleIcon />
-          </div>
-          <div>
-            {" "}
-            Mapping Rules cannot be generated without the Person ID and Date
-            Event being set.
-            <br />
+        <Alert className="max-w-2xl mb-5">
+          <AlertCircleIcon />
+          <AlertTitle>Mapping Rules cannot be generated without Person ID and Date Event event being set</AlertTitle>
+          <AlertDescription>
+            <p>
             Once you set these, Mapping Rules will be generated for all Concepts
             currently associated to the table.
-            <br />
-          </div>
+            </p>
+          </AlertDescription>
         </Alert>
       )}
       <div className="mt-1">
