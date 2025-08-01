@@ -5,9 +5,8 @@ import {
   getScanReportTable,
 } from "@/api/scanreports";
 import { ScanReportFieldEditForm } from "@/components/scanreports/ScanReportFieldEditForm";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import { notFound } from "next/navigation";
+import { TableBreadcrumbs } from "@/components/scanreports/TableBreadcrumbs";
 
 interface ScanReportsEditFieldProps {
   params: Promise<{
@@ -37,17 +36,14 @@ export default async function ScanReportsEditField(props: ScanReportsEditFieldPr
 
   return (
     <div>
-      <div className="gap-2 flex">
-        {" "}
-        <Link href={`/scanreports/${id}/tables/${tableId}`}>
-          <Button variant={"secondary"} className="mb-3">
-            Table: {table.name}
-          </Button>
-        </Link>
-        <Button variant={"secondary"} className="mb-3">
-          Update Field: {field.name}
-        </Button>
-      </div>
+      <TableBreadcrumbs
+        id={id}
+        tableId={tableId}
+        fieldId={fieldId}
+        tableName={table.name}
+        fieldName={field.name}
+        variant="fieldUpdate"
+      />
       <div className="mt-2">
         <ScanReportFieldEditForm
           scanreportId={scanReport.id}

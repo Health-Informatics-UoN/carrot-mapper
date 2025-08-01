@@ -47,7 +47,8 @@ export default async function ScanReportLayout(
   const items = [
     {
       name: "Tables",
-      iconName: "TableProperties"
+      iconName: "TableProperties",
+      matchPrefixes: ["tables"]
     },
     { name: "Rules", slug: "mapping_rules", iconName: "Waypoints" },
     { name: "Review Rules", slug: "review_rules", iconName: "SearchCheck" },
@@ -153,13 +154,7 @@ export default async function ScanReportLayout(
         <div>
           <NavGroup
             path={`/scanreports/${params.id}`}
-            items={[
-              ...items.map((x) => ({
-                text: x.name,
-                slug: x.slug,
-                iconName: x.iconName
-              }))
-            ]}
+            items={items.map(x => ({ ...x, text: x.name }))}
           />
         </div>
 
