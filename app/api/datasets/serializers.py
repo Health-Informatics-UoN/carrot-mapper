@@ -3,7 +3,7 @@ from rest_framework import serializers
 from mapping.models import DataPartner, Dataset
 from mapping.permissions import is_admin, is_az_function_user
 from projects.serializers import ProjectNameSerializer
-from shared.users.serializers import UserSerializer
+from users.serializers import UserSerializer
 
 
 class DataPartnerSerializer(DynamicFieldsMixin, serializers.ModelSerializer):
