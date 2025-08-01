@@ -130,7 +130,6 @@ services:
       - SUPERUSER_DEFAULT_USERNAME=admin
     volumes:
       - ./app/api:/api
-      - ./app/shared:/shared
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 10s

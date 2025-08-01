@@ -1,6 +1,6 @@
 from django.db.models.query_utils import Q
 from rest_framework import filters
-from shared.mapping.models import VisibilityChoices
+from mapping.models import VisibilityChoices
 
 
 class ScanReportAccessFilter(filters.BaseFilterBackend):

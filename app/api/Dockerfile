@@ -13,9 +13,6 @@ WORKDIR /api
 USER django
 ENV PATH=/home/django/.local/bin:$PATH
 
-# --- Copy files needed for compilation and shared resources
-COPY ./shared /shared
-
 # ---- Install Dependencies using UV & Remove caches & tooling artefacts
 USER root
 RUN uv pip install --no-cache-dir --system . && \
@@ -43,9 +40,8 @@ COPY --from=builder /usr/local/lib/python3.11/site-packages \
                     /usr/local/lib/python3.11/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
 
-# 2. Application code & Shared modules
+# 2. Application code
 COPY --from=builder /api /api
-COPY --from=builder /shared /shared
 
 # 3. User / Group definitions for Django 
 COPY --from=builder /etc/passwd /etc/passwd

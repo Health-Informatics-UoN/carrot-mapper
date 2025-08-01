@@ -7,15 +7,7 @@
     {
       "name": "app/api",
       "path": "../app/api"
-    },
-    {
-      "name": "app/workers",
-      "path": "../app/workers"
-    },
-    {
-      "name": "app/shared",
-      "path": "../app/shared"
-    },
+    },  
     {
       "name": "app/next-client-app",
       "path": "../app/next-client-app"
@@ -29,7 +21,6 @@
     "recommendations": [
       "davidanson.vscode-markdownlint",
       "esbenp.prettier-vscode",
-      "ms-azuretools.vscode-azurefunctions",
       "ms-python.python"
     ]
   },

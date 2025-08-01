@@ -1,4 +1,4 @@
-from shared.mapping.models import UploadStatus
+from mapping.models import UploadStatus
 
 
 def react(request):

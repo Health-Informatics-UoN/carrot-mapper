@@ -11,7 +11,6 @@ dependencies = [
     { name = "azure-monitor-opentelemetry" },
     { name = "azure-storage-blob" },
     { name = "azure-storage-queue" },
-    { name = "carrot-shared" },
     { name = "dj-rest-auth", extra = ["with-social"] },
     { name = "django" },
     { name = "django-allauth" },
@@ -27,6 +26,7 @@ dependencies = [
     { name = "gunicorn" },
     { name = "minio" },
     { name = "openpyxl" },
+    { name = "psycopg2-binary" },
     { name = "python-dotenv" },
     { name = "requests" },
     { name = "whitenoise" },
@@ -48,7 +48,6 @@ requires-dist = [
     { name = "azure-monitor-opentelemetry", specifier = ">=1.6.9,<2" },
     { name = "azure-storage-blob", specifier = ">=12.25.1,<13" },
     { name = "azure-storage-queue", specifier = ">=12.12.0,<13" },
-    { name = "carrot-shared", editable = "../shared" },
     { name = "dj-rest-auth", extras = ["with-social"], specifier = "==7.0.1" },
     { name = "django", specifier = "==5.2.1" },
     { name = "django-allauth", specifier = "==65.3.0" },
@@ -64,6 +63,7 @@ requires-dist = [
     { name = "gunicorn", specifier = "==23.0.0" },
     { name = "minio", specifier = ">=7.2.15,<8" },
     { name = "openpyxl", specifier = ">=3.1.3,<4" },
+    { name = "psycopg2-binary", specifier = ">=2.9.10" },
     { name = "python-dotenv", specifier = ">=1.1.0,<2" },
     { name = "requests", specifier = ">=2.32.3,<3" },
     { name = "whitenoise", specifier = ">=6.9.0,<7" },
@@ -250,45 +250,6 @@ sdist = { url = "https://files.pythonhosted.org/packages/6c/b3/45bae4589fb9d1be0
 wheels = [
     { url = "https://files.pythonhosted.org/packages/39/62/a629654f0e455f2e4d3bec4be75bfeab0b027dc7ca72792961bac8d5bfac/azure_storage_queue-12.12.0-py3-none-any.whl", hash = "sha256:9305f724e0df6a93e3645bf075b5a7e3fc0a1eb1ee47c85912c7aff6b6fd490d", size = 182385, upload-time = "2024-09-17T21:25:31.205Z" },
 ]
-
-[[package]]
-name = "carrot-shared"
-version = "0.3.2"
-source = { editable = "../shared" }
-dependencies = [
-    { name = "azure-storage-blob" },
-    { name = "azure-storage-queue" },
-    { name = "cryptography" },
-    { name = "django" },
-    { name = "django-filter" },
-    { name = "djangorestframework" },
-    { name = "graphviz" },
-    { name = "openpyxl" },
-    { name = "psycopg2-binary" },
-    { name = "python-dotenv" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "azure-storage-blob", specifier = ">=12.25.1,<13" },
-    { name = "azure-storage-queue", specifier = ">=12.9.0,<13" },
-    { name = "cryptography", specifier = "<43.0.0" },
-    { name = "django", specifier = "~=5.2.1" },
-    { name = "django-filter", specifier = "==25.1" },
-    { name = "djangorestframework", specifier = ">=3.16.0,<4" },
-    { name = "graphviz", specifier = ">=0.20.3,<0.21" },
-    { name = "openpyxl", specifier = "==3.1.3" },
-    { name = "psycopg2-binary", specifier = ">=2.9.9,<3" },
-    { name = "python-dotenv", specifier = ">=1.0.1,<2" },
-]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "django-stubs", specifier = ">=5.0.2,<6" },
-    { name = "mypy", specifier = ">=1.9.0,<2" },
-    { name = "psycopg2", specifier = ">=2.9.9,<3" },
-]
-test = [{ name = "pytest", specifier = ">=8.1.1,<9" }]
 
 [[package]]
 name = "certifi"

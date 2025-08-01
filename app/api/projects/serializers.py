@@ -1,7 +1,7 @@
 from drf_dynamic_fields import DynamicFieldsMixin  # type: ignore
 from rest_framework import serializers
-from shared.mapping.models import Project
-from shared.users.serializers import UserSerializer
+from mapping.models import Project
+from users.serializers import UserSerializer
 
 
 class ProjectSerializer(DynamicFieldsMixin, serializers.ModelSerializer):
