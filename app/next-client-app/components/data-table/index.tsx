@@ -106,7 +106,7 @@ export function DataTable<TData, TValue>({
                 variant="outline"
                 className="ml-auto hidden lg:flex transition-colors"
               >
-                <Columns3 className="mr-2 size-4" />
+                <Columns3 />
                 Columns
               </Button>
             </DropdownMenuTrigger>
@@ -134,8 +134,8 @@ export function DataTable<TData, TValue>({
           </DropdownMenu>
         )}
       </div>
-      <div className="rounded-md border">
-        <Table overflow={overflow}>
+      <div className="rounded-md border overflow-x-auto">
+        <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow

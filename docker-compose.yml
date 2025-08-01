@@ -98,7 +98,7 @@ services:
       - 8000:8000
     environment:
       - FRONTEND_URL=http://frontend:3000
-      - ALLOWED_HOSTS=['localhost', '127.0.0.1','api', 'workers']
+      - ALLOWED_HOSTS=['localhost', '127.0.0.1','api']
       - DB_ENGINE=django.db.backends.postgresql
       - DB_HOST=db
       - DB_PORT=5432
@@ -107,12 +107,7 @@ services:
       - DB_PASSWORD=postgres
       - DEBUG=True
       - RULES_QUEUE_NAME=rules-queue
-      - WORKERS_UPLOAD_NAME=upload-reports-queue
       - SECRET_KEY=secret
-      - WORKERS_URL=http://workers:80
-      - WORKERS_RULES_NAME=RulesOrchestrator
-      - WORKERS_RULES_KEY=rules_key
-      - WORKERS_RULES_EXPORT_NAME=rules-exports-queue
       - STORAGE_CONN_STRING=DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;TableEndpoint=http://azurite:10002/devstoreaccount1;
       - SIGNING_KEY=secret
       - STORAGE_TYPE=${STORAGE_TYPE:-minio}
@@ -145,51 +140,6 @@ services:
     depends_on:
       omop-lite:
         condition: service_completed_successfully
-
-  workers:
-    profiles: ["azure"]
-    image: carrot-workers
-    build:
-      context: app
-      dockerfile: workers/Dockerfile
-    ports:
-      - 8080:80
-      - 7071:80
-    environment:
-      # Set Docker to look for secrets locally
-      - AzureWebJobsSecretStorageType=files
-      - IsEncrypted=false
-      - AzureWebJobsStorage=DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;TableEndpoint=http://azurite:10002/devstoreaccount1;
-      - FUNCTIONS_WORKER_RUNTIME=python
-      - STORAGE_CONN_STRING=DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;TableEndpoint=http://azurite:10002/devstoreaccount1;
-      - APP_URL=http://api:8000/
-      - WORKERS_UPLOAD_NAME=upload-reports-queue
-      - RULES_QUEUE_NAME=rules-queue
-      - RULES_FILE_QUEUE_NAME=rules-exports-queue
-      # The address that can be used to reach the function app from outside
-      - WEBSITE_HOSTNAME=localhost:7071
-      # Database setup
-      - DB_ENGINE=django.db.backends.postgresql
-      - DB_HOST=db
-      - DB_PORT=5432
-      - DB_NAME=postgres
-      - DB_USER=postgres
-      - DB_PASSWORD=postgres
-      - PYTHONPATH=/home/site/wwwroot:/home/site/wwwroot/shared
-      - STORAGE_TYPE=azure
-      - MINIO_ENDPOINT=minio:9000
-      - MINIO_ACCESS_KEY=minioadmin
-      - MINIO_SECRET_KEY=minioadmin
-    volumes:
-      - ./app/workers:/home/site/wwwroot
-      - ./app/shared:/home/site/wwwroot/shared
-      # Mount the local secret to Docker container
-      - ./app/workers/Secrets:/azure-functions-host/Secrets/
-    depends_on:
-      azurite:
-        condition: service_started
-      api:
-        condition: service_healthy
 
   azurite:
     profiles: ["azure"]

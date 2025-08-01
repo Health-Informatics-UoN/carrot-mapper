@@ -3,6 +3,7 @@ from rest_framework import serializers
 from mapping.models import DataPartner, Dataset
 from mapping.permissions import is_admin, is_az_function_user
 from projects.serializers import ProjectNameSerializer
+from shared.users.serializers import UserSerializer
 
 
 class DataPartnerSerializer(DynamicFieldsMixin, serializers.ModelSerializer):
@@ -51,6 +52,9 @@ class DatasetAndDataPartnerViewSerializer(
 class DatasetViewSerializerV2(DynamicFieldsMixin, serializers.ModelSerializer):
     projects = ProjectNameSerializer(many=True, read_only=True)
     data_partner = DataPartnerNameSerializer(read_only=True)
+    viewers = UserSerializer(many=True, read_only=True)
+    editors = UserSerializer(many=True, read_only=True)
+    admins = UserSerializer(many=True, read_only=True)
 
     class Meta:
         model = Dataset

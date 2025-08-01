@@ -7,6 +7,7 @@ import { objToQuery } from "@/lib/client-utils";
 import { FilterParameters } from "@/types/filter";
 import ScanReportsTableClient from "@/components/scanreports/ScanReportsTableClient";
 import { DataTableFilter } from "@/components/data-table/DataTableFilter";
+import { Breadcrumb, BreadcrumbItem, BreadcrumbList, BreadcrumbPage } from "@/components/ui/breadcrumb";
 
 interface ScanReportsTableProps {
   params: Promise<{
@@ -43,14 +44,19 @@ export default async function ScanReportsTable(props: ScanReportsTableProps) {
 
   return (
     <div>
-      <div>
-        <ScanReportsTableClient
-          scanReportId={id}
-          Filter={filter}
-          initialScanReportsResult={scanReportsResult}
-          count={scanReportsTables.count}
-        />
-      </div>
+      <Breadcrumb className="mb-3">
+        <BreadcrumbList>
+          <BreadcrumbPage>
+            Tables
+          </BreadcrumbPage>
+        </BreadcrumbList>
+      </Breadcrumb>
+      <ScanReportsTableClient
+        scanReportId={id}
+        Filter={filter}
+        initialScanReportsResult={scanReportsResult}
+        count={scanReportsTables.count}
+      />
     </div>
   );
 }

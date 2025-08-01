@@ -11,7 +11,7 @@ import {
   getAllScanReportConcepts,
 } from "@/api/concepts";
 import { ConceptDataTable } from "@/components/concepts/ConceptDataTable";
-import { Button } from "@/components/ui/button";
+import { TableBreadcrumbs } from "@/components/scanreports/TableBreadcrumbs";
 
 interface ScanReportsFieldProps {
   params: Promise<{
@@ -58,9 +58,12 @@ export default async function ScanReportsField(props: ScanReportsFieldProps) {
 
   return (
     <div>
-      <Button variant={"secondary"} className="mb-3">
-        Table: {tableName.name}
-      </Button>
+      <TableBreadcrumbs
+        id={id}
+        tableId={tableId}
+        tableName={tableName.name}
+        variant="table"
+      />
       <div>
         <ConceptDataTable
           count={scanReportsFields.count}

@@ -46,7 +46,7 @@ export const columns: ColumnDef<ScanReport>[] = [
         <Link href={`/scanreports/${id}`}>
           <Button
             variant="link"
-            className="font-bold text-black dark:text-white"
+            className="font-bold"
           >
             {dataset}
           </Button>
@@ -180,7 +180,7 @@ export const columns: ColumnDef<ScanReport>[] = [
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => setOpen(true)}
-                className="text-black dark:text-white hover:text-destructive focus:text-destructive dark:hover:text-destructive dark:focus:text-destructive"
+                className="hover:text-destructive focus:text-destructive dark:hover:text-destructive dark:focus:text-destructive"
               >
                 Delete <TrashIcon className="ml-auto" />
               </DropdownMenuItem>

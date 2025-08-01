@@ -12,8 +12,7 @@ import {
 } from "@/api/concepts";
 import { ConceptDataTable } from "@/components/concepts/ConceptDataTable";
 import { columns } from "./columns";
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
+import { TableBreadcrumbs } from "@/components/scanreports/TableBreadcrumbs";
 
 interface ScanReportsValueProps {
   params: Promise<{
@@ -66,17 +65,14 @@ export default async function ScanReportsValue(props: ScanReportsValueProps) {
       : [];
   return (
     <div>
-      <div className="gap-2 flex">
-        {" "}
-        <Link href={`/scanreports/${id}/tables/${tableId}`}>
-          <Button variant="secondary" className="mb-3">
-            Table: {table.name}
-          </Button>
-        </Link>
-        <Button variant="secondary" className="mb-3">
-          Field: {field.name}
-        </Button>
-      </div>
+      <TableBreadcrumbs
+        id={id}
+        tableId={tableId}
+        fieldId={fieldId}
+        tableName={table.name}
+        fieldName={field.name}
+        variant="field"
+      />
       <div>
         <ConceptDataTable
           count={scanReportsValues.count}

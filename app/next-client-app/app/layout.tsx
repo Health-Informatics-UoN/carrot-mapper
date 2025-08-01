@@ -50,7 +50,9 @@ export default async function RootLayout({
       <head>
         <PublicEnvScript />
       </head>
-      <body>
+      <body
+        className="bg-background text-foreground"
+      >
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
