@@ -632,8 +632,12 @@ class ScanReportCreateSerializer(DynamicFieldsMixin, serializers.ModelSerializer
 
 class ScanReportEditSerializer(DynamicFieldsMixin, serializers.ModelSerializer):
     mapping_status = MappingStatusSerializer()
-    viewers = UserSerializer(many=True, read_only=True)
-    editors = UserSerializer(many=True, read_only=True)
+    viewers = serializers.PrimaryKeyRelatedField(
+        many=True, queryset=User.objects.all(), required=False
+    )
+    editors = serializers.PrimaryKeyRelatedField(
+        many=True, queryset=User.objects.all(), required=False
+    )
 
     def validate_author(self, author):
         if request := self.context.get("request"):

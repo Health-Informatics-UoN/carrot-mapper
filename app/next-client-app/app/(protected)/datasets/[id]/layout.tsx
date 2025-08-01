@@ -5,11 +5,7 @@ import { Boundary } from "@/components/core/boundary";
 import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns/format";
-import {
-  getDataSet,
-  getDatasetPermissions,
-  getDatasetMembers
-} from "@/api/datasets";
+import { getDataSet, getDatasetPermissions } from "@/api/datasets";
 import { Badge } from "@/components/ui/badge";
 import { InfoItem } from "@/components/core/InfoItem";
 import { AvatarList } from "@/components/core/avatar-list";
@@ -27,7 +23,6 @@ export default async function DatasetLayout({
   const { id } = await params;
 
   const permissions = await getDatasetPermissions(id);
-  const members = await getDatasetMembers(id);
   const requiredPermissions: Permission[] = ["CanAdmin", "CanEdit", "CanView"];
 
   const items = [
@@ -84,10 +79,19 @@ export default async function DatasetLayout({
           value={format(createdDate, "MMM dd, yyyy h:mm a")}
           className="py-1 md:py-0 md:px-3"
         />
-        <div className="py-1 md:py-0 md:px-3 h-5 flex items-center gap-2">
-          Members: <AvatarList members={members || []} />
-        </div>
+        
       </div>
+      <div className="flex flex-col md:flex-row md:items-center h-7 text-sm space-y-2 md:space-y-0 divide-y md:divide-y-0 md:divide-x">
+        <div className="flex items-center gap-2 text-muted-foreground">
+            Members:{" "}
+            <AvatarList
+              members={[...dataset.viewers, ...dataset.editors].filter(
+                (member, index, self) =>
+                  index === self.findIndex((m) => m.id === member.id)
+              )}
+            />
+          </div>
+        </div>
       {/* "Navs" group */}
       <div className="flex justify-between">
         <NavGroup

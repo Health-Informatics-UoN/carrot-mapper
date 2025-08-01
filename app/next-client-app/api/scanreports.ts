@@ -121,27 +121,6 @@ export async function getScanReportPermissions(
   }
 }
 
-export async function getScanReportMembers(id: string): Promise<User[]> {
-  try {
-    const scanReport = await getScanReport(id);
-    if (!scanReport) return [];
-    
-    // Combine all members from viewers and editors
-    // Now they are User objects, so we can use them directly
-    const allMembers = [...scanReport.viewers, ...scanReport.editors];
-    
-    // Remove duplicates based on user ID
-    const uniqueMembers = allMembers.filter((member, index, self) => 
-      index === self.findIndex(m => m.id === member.id)
-    );
-    
-    return uniqueMembers;
-  } catch (error) {
-    console.warn("Failed to fetch data.");
-    return [];
-  }
-}
-
 export async function getScanReportTable(
   scanReportId: string,
   tableId: string
