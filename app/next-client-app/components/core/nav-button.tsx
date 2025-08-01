@@ -55,7 +55,7 @@ export const NavButton = ({
           isActive && "bg-muted"
         )}
       >
-        {Icon && <Icon className="mr-2 size-4" />}
+        {Icon && <Icon />}
         {item.text}
       </Button>
     </Link>

@@ -3,8 +3,8 @@ import { ReceiptText, ShieldQuestion } from "lucide-react";
 
 const Footer = () => {
   return (
-    <footer className="lg:mt-24 mt-20 mb-5 rounded-lg shadow bg-background">
-      <div className="w-full max-w-screen-xl mx-auto p-4 md:py-8">
+    <footer className="lg:mt-24 mt-20 mb-5 rounded-lg shadow-sm bg-background">
+      <div className="w-full max-w-(--breakpoint-xl) mx-auto p-4 md:py-8">
         <div className="sm:flex sm:items-center sm:justify-between">
           <Link href={"https://www.nottingham.ac.uk/"}>
             <img

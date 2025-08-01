@@ -5,9 +5,7 @@ on:
     types: [released]
 
 env:
-  AZURE_FUNCTIONAPP_PACKAGE_PATH: "./app/workers"
   AZURE_WEBAPP_PACKAGE_PATH: "./app/next-client-app"
-  PYTHON_VERSION: "3.11"
   NODE_VERSION: 20
   app-name: carrot
   repo-owner: health-informatics-uon
@@ -18,43 +16,6 @@ permissions:
   packages: write # Required to publish packages
 
 jobs:   
-  build-and-publish-workers:
-    runs-on: ubuntu-latest
-    steps:
-      - name: "Checkout GitHub Action"
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-
-      - name: Setup Python ${{ env.PYTHON_VERSION }} Environment
-        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-
-      - name: "Install UV and Pip"
-        run: |
-          python -m pip install --upgrade pip
-          pip install uv
-
-      - name: "Resolve Project Dependencies Using UV"
-        run: |
-          pushd './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
-          uv pip compile pyproject.toml --output-file requirements.txt
-          popd
-        shell: bash
-
-      - name: "Install Dependencies Using Pip"
-        shell: bash
-        run: |
-          pushd './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
-          pip install -r requirements.txt --target=".python_packages/lib/site-packages"
-          popd
-
-      - name: Upload artifact for deployment job
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: functionsapp
-          path: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
-          include-hidden-files: true
-
   build-and-publish-web:
     runs-on: "ubuntu-latest"
 
@@ -191,32 +152,10 @@ jobs:
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.scheduler_meta.outputs.tags }}
 
-  # Deploy Workers Production
-  deploy-workers-production:
-    runs-on: ubuntu-latest
-    needs: build-and-publish-workers
-    environment: production
-
-    steps:
-      - name: Download artifact from build job
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
-        with:
-          path: functionsapp
-          name: functionsapp
-
-      - name: "Run Azure Functions Action"
-        uses: Azure/functions-action@0bd707f87c0b6385742bab336c74e1afc61f6369 # v1.5.3
-        id: fa
-        with:
-          app-name: ${{ vars.AZURE_FUNCTIONS_NAME }}
-          slot-name: "production"
-          package: ${{ github.workspace }}/functionsapp
-          publish-profile: ${{ secrets.AZURE_FUNCAPP_PUBLISH_PROFILE  }}
-
   # Deploy Web App Production
   deploy-web-production:
     runs-on: ubuntu-latest
-    needs: [build-and-publish-web, deploy-workers-production]
+    needs: [build-and-publish-web]
     environment:
       name: "production"
       url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
