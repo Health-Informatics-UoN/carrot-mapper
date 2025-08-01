@@ -69,7 +69,6 @@ services:
     environment:
       - BACKEND_URL=http://api:8000
       - BACKEND_ORIGIN=localhost:8000
-      - BODY_SIZE_LIMIT=20728640
       - NEXTAUTH_URL=http://localhost:3000/
       - NEXTAUTH_SECRET=verycomplexsecretkey
       - NEXTAUTH_BACKEND_URL=http://api:8000/api/
@@ -81,6 +80,7 @@ services:
       - RECOMMENDATION_SERVICE=unison
       - UNISON_API_KEY=unison-api-key
       - UNISON_BASE_URL=https://api.hyperunison.com/api/public/suggester/generate
+      - NEXT_PUBLIC_BODY_SIZE_LIMIT=31457280
     volumes:
       - ./app/next-client-app:/app
       - /app/node_modules
@@ -98,7 +98,7 @@ services:
       - 8000:8000
     environment:
       - FRONTEND_URL=http://frontend:3000
-      - ALLOWED_HOSTS=['localhost', '127.0.0.1','api', 'workers']
+      - ALLOWED_HOSTS=['localhost', '127.0.0.1','api']
       - DB_ENGINE=django.db.backends.postgresql
       - DB_HOST=db
       - DB_PORT=5432
@@ -107,12 +107,7 @@ services:
       - DB_PASSWORD=postgres
       - DEBUG=True
       - RULES_QUEUE_NAME=rules-queue
-      - WORKERS_UPLOAD_NAME=upload-reports-queue
       - SECRET_KEY=secret
-      - WORKERS_URL=http://workers:80
-      - WORKERS_RULES_NAME=RulesOrchestrator
-      - WORKERS_RULES_KEY=rules_key
-      - WORKERS_RULES_EXPORT_NAME=rules-exports-queue
       - STORAGE_CONN_STRING=DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;TableEndpoint=http://azurite:10002/devstoreaccount1;
       - SIGNING_KEY=secret
       - STORAGE_TYPE=${STORAGE_TYPE:-minio}
@@ -128,7 +123,7 @@ services:
       - AIRFLOW_ADMIN_USERNAME=admin
       - AIRFLOW_ADMIN_PASSWORD=admin
       # To match with the capacity of the production environment
-      - DATA_UPLOAD_MAX_MEMORY_SIZE=10485760
+      - DATA_UPLOAD_MAX_MEMORY_SIZE=31457280
       # Default superuser credentials for dev environment
       - SUPERUSER_DEFAULT_PASSWORD=admin
       - SUPERUSER_DEFAULT_EMAIL=admin@carrot.com
@@ -145,51 +140,6 @@ services:
     depends_on:
       omop-lite:
         condition: service_completed_successfully
-
-  workers:
-    profiles: ["azure"]
-    image: carrot-workers
-    build:
-      context: app
-      dockerfile: workers/Dockerfile
-    ports:
-      - 8080:80
-      - 7071:80
-    environment:
-      # Set Docker to look for secrets locally
-      - AzureWebJobsSecretStorageType=files
-      - IsEncrypted=false
-      - AzureWebJobsStorage=DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;TableEndpoint=http://azurite:10002/devstoreaccount1;
-      - FUNCTIONS_WORKER_RUNTIME=python
-      - STORAGE_CONN_STRING=DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;TableEndpoint=http://azurite:10002/devstoreaccount1;
-      - APP_URL=http://api:8000/
-      - WORKERS_UPLOAD_NAME=upload-reports-queue
-      - RULES_QUEUE_NAME=rules-queue
-      - RULES_FILE_QUEUE_NAME=rules-exports-queue
-      # The address that can be used to reach the function app from outside
-      - WEBSITE_HOSTNAME=localhost:7071
-      # Database setup
-      - DB_ENGINE=django.db.backends.postgresql
-      - DB_HOST=db
-      - DB_PORT=5432
-      - DB_NAME=postgres
-      - DB_USER=postgres
-      - DB_PASSWORD=postgres
-      - PYTHONPATH=/home/site/wwwroot:/home/site/wwwroot/shared
-      - STORAGE_TYPE=azure
-      - MINIO_ENDPOINT=minio:9000
-      - MINIO_ACCESS_KEY=minioadmin
-      - MINIO_SECRET_KEY=minioadmin
-    volumes:
-      - ./app/workers:/home/site/wwwroot
-      - ./app/shared:/home/site/wwwroot/shared
-      # Mount the local secret to Docker container
-      - ./app/workers/Secrets:/azure-functions-host/Secrets/
-    depends_on:
-      azurite:
-        condition: service_started
-      api:
-        condition: service_healthy
 
   azurite:
     profiles: ["azure"]
@@ -252,6 +202,10 @@ services:
       <<: *airflow-common-env
       AIRFLOW__CORE__EXECUTE_TASKS_NEW_PYTHON_INTERPRETER: True
       AIRFLOW_DEBUG_MODE: False
+      # Search recommendations feature flag - controls whether search recommendations task is included in auto_mapping DAG
+      SEARCH_ENABLED: False
+      AIRFLOW_DAGRUN_TIMEOUT: 60 # Timeout for each dagrun in minutes
+      AIRFLOW_VAR_JSON_VERSION: v2
 
 volumes:
   db_data:

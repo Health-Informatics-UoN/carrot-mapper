@@ -94,7 +94,7 @@ export async function updateScanReport(
     return { errorMessage: error.message };
   }
   if (needRedirect) {
-    redirect(`/scanreports/`);
+    redirect(`/scanreports/${id}`);
   }
 }
 

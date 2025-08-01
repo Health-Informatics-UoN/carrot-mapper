@@ -6,6 +6,7 @@ export type Item = {
   segment?: string;
   parallelRoutesKey?: string;
   iconName?: string;
+  matchPrefixes?: string[];
 };
 
 export const NavGroup = ({

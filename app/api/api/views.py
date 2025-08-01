@@ -98,7 +98,7 @@ class DataPartnerViewSet(GenericAPIView, ListModelMixin):
             Handles GET requests to return a list of DataPartner objects.
     """
 
-    queryset = DataPartner.objects.all()
+    queryset = DataPartner.objects.all().order_by("name")
     serializer_class = DataPartnerSerializer
 
     def get(self, request, *args, **kwargs):
@@ -182,7 +182,8 @@ class UserFilterViewSet(GenericAPIView, ListModelMixin):
 
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    filter_backends = [DjangoFilterBackend]
+    filter_backends = [DjangoFilterBackend, OrderingFilter]
+    ordering_fields = ["id", "username"]
     filterset_fields = {"id": ["in", "exact"], "is_active": ["exact"]}
 
     def get(self, request, *args, **kwargs):

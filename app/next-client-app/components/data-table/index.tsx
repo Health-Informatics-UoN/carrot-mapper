@@ -104,9 +104,9 @@ export function DataTable<TData, TValue>({
               <Button
                 aria-label="Toggle columns"
                 variant="outline"
-                className="ml-auto hidden lg:flex hover:bg-muted transition-colors"
+                className="ml-auto hidden lg:flex transition-colors"
               >
-                <Columns3 className="mr-2 size-4" />
+                <Columns3 />
                 Columns
               </Button>
             </DropdownMenuTrigger>
@@ -134,18 +134,18 @@ export function DataTable<TData, TValue>({
           </DropdownMenu>
         )}
       </div>
-      <div className="rounded-md border">
-        <Table overflow={overflow}>
+      <div className="rounded-md border overflow-x-auto">
+        <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow
                 key={headerGroup.id}
-                className="group hover:bg-muted transition-colors"
+                className="group transition-colors"
               >
                 {headerGroup.headers.map((header) => (
                   <TableHead
                     key={header.id}
-                    className="group-hover:bg-muted transition-colors cursor-pointer"
+                    className="transition-colors cursor-pointer"
                   >
                     {flexRender(
                       header.column.columnDef.header,
@@ -162,7 +162,7 @@ export function DataTable<TData, TValue>({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
-                  className="hover:bg-muted transition-colors"
+                  className="transition-colors"
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>

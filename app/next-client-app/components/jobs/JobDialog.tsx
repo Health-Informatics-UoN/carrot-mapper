@@ -28,7 +28,7 @@ export default function JobDialog({
           />
         </div>
       </DialogTrigger>
-      <DialogContent className="max-w-screen-xl overflow-auto h-1/2">
+      <DialogContent className="max-w-(--breakpoint-xl) overflow-auto h-1/2">
         <DialogHeader>
           <DialogTitle className="flex justify-center text-center">
             Table: {table_name} - Job Progress Details

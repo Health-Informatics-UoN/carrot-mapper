@@ -14,6 +14,7 @@ import { deleteScanReport } from "@/api/scanreports";
 import { DialogTrigger } from "@radix-ui/react-dialog";
 import { useRouter } from "next/navigation";
 import { TrashIcon } from "lucide-react";
+import { DropdownMenuItem } from "../ui/dropdown-menu";
 
 interface DeleteDialogProps {
   id: number;
@@ -47,10 +48,13 @@ const DeleteDialog = ({
     <Dialog open={isOpen} onOpenChange={() => setOpen(false)}>
       {needTrigger && (
         <DialogTrigger asChild>
-          <div className="text-black dark:text-white hover:text-destructive hover:dark:text-destructive hover:bg-accent relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-destructive data-[disabled]:pointer-events-none data-[disabled]:opacity-50">
-            <TrashIcon className="mr-2 size-4" />
-            Delete Scan Report
-          </div>
+          <DropdownMenuItem
+            variant="destructive"
+            onSelect={(e) => e.preventDefault()}
+          >
+            <TrashIcon />
+            Delete
+          </DropdownMenuItem>
         </DialogTrigger>
       )}
       <DialogContent>

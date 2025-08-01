@@ -88,7 +88,7 @@ export function AISuggestionsButton({
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <div className="flex focus:outline-none">
+          <div className="flex focus:outline-hidden">
             <Button
               variant="outline"
               size="sm"
@@ -116,7 +116,7 @@ export function AISuggestionsButton({
             return (
               <DropdownMenuItem
                 key={domain.id}
-                className="cursor-pointer hover:bg-blue-100 hover:text-black focus:outline-none p-1"
+                className="cursor-pointer hover:bg-blue-100 hover:text-black focus:outline-hidden p-1"
                 onClick={() => {
                   setDomainId(domain.id);
                   handleClick(domain.id);

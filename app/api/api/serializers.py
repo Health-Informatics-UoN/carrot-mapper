@@ -94,6 +94,8 @@ class ScanReportViewSerializerV2(DynamicFieldsMixin, serializers.ModelSerializer
     """
 
     author = UserSerializer(read_only=True)
+    viewers = UserSerializer(many=True, read_only=True)
+    editors = UserSerializer(many=True, read_only=True)
     parent_dataset = DatasetSerializer(read_only=True)
     data_partner = serializers.SerializerMethodField()
     mapping_status = MappingStatusSerializer()
@@ -182,6 +184,12 @@ class ScanReportFilesSerializer(DynamicFieldsMixin, serializers.ModelSerializer)
                 "You have attempted to upload a data dictionary "
                 "which is not in CSV format. "
                 "Please upload a .csv file."
+            )
+
+        # Validate Data dictionary size before attempting to upload it
+        if data_dictionary.size > DATA_UPLOAD_MAX_MEMORY_SIZE:
+            raise ParseError(
+                f"Please upload a smaller Data dictionary. The maximum size of a Data dictionary is {DATA_UPLOAD_MAX_MEMORY_SIZE / 1024 / 1024} MB"
             )
 
         # Read the file once
@@ -624,6 +632,12 @@ class ScanReportCreateSerializer(DynamicFieldsMixin, serializers.ModelSerializer
 
 class ScanReportEditSerializer(DynamicFieldsMixin, serializers.ModelSerializer):
     mapping_status = MappingStatusSerializer()
+    viewers = serializers.PrimaryKeyRelatedField(
+        many=True, queryset=User.objects.all(), required=False
+    )
+    editors = serializers.PrimaryKeyRelatedField(
+        many=True, queryset=User.objects.all(), required=False
+    )
 
     def validate_author(self, author):
         if request := self.context.get("request"):

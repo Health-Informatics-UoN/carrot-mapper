@@ -40,7 +40,7 @@ export function FacetsFilter<TData, TValue>({
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button variant="outline" className="hover:bg-muted transition-colors">
+        <Button variant="outline" className="transition-colors">
           <Filter className="mr-2 size-4" />
           {title}
           {selectedOptions && selectedOptions?.length > 0 && (
@@ -48,7 +48,7 @@ export function FacetsFilter<TData, TValue>({
               <Separator orientation="vertical" className="mx-2 h-4" />
               <Badge
                 variant="secondary"
-                className="rounded-sm px-1 font-normal lg:hidden"
+                className="rounded-xs px-1 font-normal lg:hidden"
               >
                 {selectedOptions?.length}
               </Badge>
@@ -56,7 +56,7 @@ export function FacetsFilter<TData, TValue>({
                 {selectedOptions?.length > 2 ? (
                   <Badge
                     variant="secondary"
-                    className="rounded-sm px-1 font-normal"
+                    className="rounded-xs px-1 font-normal"
                   >
                     {selectedOptions?.length} selected
                   </Badge>
@@ -74,7 +74,7 @@ export function FacetsFilter<TData, TValue>({
                         key={option.value}
                         className={cn(
                           option.color,
-                          "rounded-sm px-1 font-normal"
+                          "rounded-xs px-1 font-normal"
                         )}
                       >
                         {option.label}
@@ -87,7 +87,7 @@ export function FacetsFilter<TData, TValue>({
         </Button>
       </PopoverTrigger>
       <PopoverContent
-        className="w-[12.5rem] p-0 bg-background text-foreground"
+        className="w-50 p-0 bg-background text-foreground"
         align="start"
       >
         <Command>
@@ -107,7 +107,7 @@ export function FacetsFilter<TData, TValue>({
                   >
                     <div
                       className={cn(
-                        "mr-2 flex size-4 items-center justify-center rounded-sm border border-muted-foreground",
+                        "mr-2 flex size-4 items-center justify-center rounded-xs border border-muted-foreground",
                         isSelected
                           ? "bg-primary text-primary-foreground"
                           : "opacity-50 [&_svg]:invisible"

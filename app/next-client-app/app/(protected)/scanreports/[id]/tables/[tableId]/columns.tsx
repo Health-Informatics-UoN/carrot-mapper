@@ -37,7 +37,7 @@ export const columns = (
                 prePath.endsWith("/") ? prePath : prePath + "/"
               }fields/${id}`}
             >
-              <Button variant="link" className="font-bold dark:text-white">
+              <Button variant="link" className="font-bold">
                 {name}
               </Button>
             </Link>
