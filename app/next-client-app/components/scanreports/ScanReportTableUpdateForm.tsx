@@ -126,11 +126,11 @@ export function ScanReportTableUpdateForm({
                         />
                       </FormControl>
                       <span className="text-sm">
-                        {values.triggerReuse === true ? "YES" : "NO"}
+                        {values.triggerReuse === true ? "Yes" : "No"}
                       </span>
                     </div>
                     <FormDescription>
-                      If YES, concepts added to other scan reports which are in same parent dataset will be reused, based on the matching value and field. This feature may make the auto mapping process longer to run.
+                      If Yes, concepts added to other scan reports which are in same parent dataset will be reused, based on the matching value and field. This feature may make the auto mapping process longer to run.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
