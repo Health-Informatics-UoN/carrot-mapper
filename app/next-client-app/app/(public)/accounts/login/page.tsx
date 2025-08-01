@@ -7,12 +7,6 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
-import { Metadata } from "next";
-
-export const metadata: Metadata = {
-  title: "Sign In | Carrot Mapper",
-  description: "Sign in to your account",
-};
 
 export default function SignIn() {
   const [username, setUsername] = useState("");

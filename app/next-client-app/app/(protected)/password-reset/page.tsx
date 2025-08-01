@@ -8,12 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { passwordReset } from "@/api/password-reset";
 import { useState } from "react";
-import { Metadata } from "next";
 
-export const metadata: Metadata = {
-  title: "Reset Password | Carrot Mapper",
-  description: "Reset your password",
-};
 
 // ✅ Validation schema
 const validationSchema = Yup.object({
