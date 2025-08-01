@@ -3,12 +3,11 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Save } from "lucide-react";
-import { Label } from "@/components/ui/label";
+import { FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription } from "@/components/ui/form";
 import { Switch } from "@/components/ui/switch";
-import { Form, Formik } from "formik";
+import { Formik } from "formik";
 import { toast } from "sonner";
 import { FindAndFormat, FormDataFilter } from "../form-components/FormikUtils";
-import { Tooltips } from "../core/Tooltips";
 import { FormikSelect } from "../form-components/FormikSelect";
 import { useState } from "react";
 import { updateScanReport } from "@/api/scanreports";
@@ -95,129 +94,140 @@ export function ScanReportDetailsForm({
       }}
     >
       {({ values, handleChange, handleSubmit }) => (
-        <Form className="w-full" onSubmit={handleSubmit}>
-          <div className="flex flex-col gap-3 text-lg">
-            <div className="flex items-center space-x-3">
-              <h3 className="flex">
-                {" "}
-                Name
-                <Tooltips content="Name of the Scan Report." />
-              </h3>
-              <Input
-                value={values.name}
-                onChange={handleChange}
-                name="name"
-                disabled={!canUpdate}
-                className="text-lg"
-              />
-            </div>
-            <div className="flex flex-col gap-2">
-              <h3 className="flex">
-                Author{" "}
-                <Tooltips
-                  content="Authors of a Scan Report can edit Scan Report details."
-                  link="https://carrot4omop.ac.uk/Carrot-Mapper/projects-datasets-and-scanreports/#authors"
-                />
-              </h3>
-              <FormikSelect
-                options={userOptions}
-                name="author"
-                placeholder="Choose an author"
-                isMulti={false}
-                isDisabled={!canUpdate}
-              />
-            </div>
-            <div className="flex items-center space-x-3">
-              <h3 className="flex">
-                Visibility
-                <Tooltips
-                  content="To see the contents of the Scan Report, the Scan Report must be shared, or users must be an author/editor/viewer of the Scan Report."
-                  link="https://carrot4omop.ac.uk/Carrot-Mapper/projects-datasets-and-scanreports/#access-controls"
-                />
-              </h3>
-              <Switch
-                onCheckedChange={(checked) => {
-                  handleChange({
-                    target: {
-                      name: "visibility",
-                      value: checked ? "PUBLIC" : "RESTRICTED"
-                    }
-                  });
-                  setPublicVisibility(checked);
-                }}
-                checked={values.visibility === "PUBLIC"}
-                disabled={!canUpdate}
-              />
-              <Label className="text-lg">
-                {/* Show user-friendly label */}
-                {values.visibility === "PUBLIC" ? "Shared" : "Restricted"}
-              </Label>
-            </div>
-            {!publicVisibility && (
-              <div className="flex flex-col gap-2">
-                <h3 className="flex">
-                  {" "}
-                  Viewers
-                  <Tooltips
-                    content="Viewers of a Scan Report can perform read-only actions."
-                    link="https://carrot4omop.ac.uk/Carrot-Mapper/projects-datasets-and-scanreports/#viewers"
-                  />
-                </h3>
+        <form className="w-full max-w-2xl" onSubmit={handleSubmit}>
+          <div className="flex flex-col gap-5">
+
+            <FormField name="name">
+              {({ field }) => (
+                <FormItem>
+                  <FormLabel>Name</FormLabel>
+                  <FormDescription>
+                    Name of the Scan Report.
+                  </FormDescription>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      value={values.name}
+                      onChange={handleChange}
+                      name="name"
+                      disabled={!canUpdate}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            </FormField>
+
+            <FormItem>
+              <FormLabel>Author</FormLabel>
+              <FormDescription>
+                Authors of a Scan Report can edit Scan Report details.
+              </FormDescription>
+              <FormControl>
                 <FormikSelect
                   options={userOptions}
-                  name="viewers"
-                  placeholder="Choose viewers"
+                  name="author"
+                  placeholder="Choose an author"
+                  isMulti={false}
+                  isDisabled={!canUpdate}
+                />
+              </FormControl>
+            </FormItem>
+
+            <FormField name="visibility">
+              {({ field }) => (
+                <FormItem>
+                  <div className="flex items-center space-x-3">
+                    <FormLabel>Visibility</FormLabel>
+                    <FormControl>
+                      <Switch
+                        onCheckedChange={(checked) => {
+                          handleChange({
+                            target: {
+                              name: "visibility",
+                              value: checked ? "PUBLIC" : "RESTRICTED"
+                            }
+                          });
+                          setPublicVisibility(checked);
+                        }}
+                        checked={values.visibility === "PUBLIC"}
+                        disabled={!canUpdate}
+                      />
+                    </FormControl>
+                    <span className="text-sm">
+                      {/* Show user-friendly label */}
+                      {values.visibility === "PUBLIC" ? "Shared" : "Restricted"}
+                    </span>
+                  </div>
+                  <FormDescription>
+                    To see the contents of the Scan Report, the Scan Report must be shared, or users must be an author/editor/viewer of the Scan Report.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            </FormField>
+
+            {!publicVisibility && (
+              <FormItem>
+                <FormLabel>Viewers</FormLabel>
+                <FormDescription>
+                  Viewers of a Scan Report can perform read-only actions.
+                </FormDescription>
+                <FormControl>
+                  <FormikSelect
+                    options={userOptions}
+                    name="viewers"
+                    placeholder="Choose viewers"
+                    isMulti={true}
+                    isDisabled={!canUpdate}
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+
+            <FormItem>
+              <FormLabel>Editors</FormLabel>
+              <FormDescription>
+                Editors of a Scan Report can add/remove concepts, update tables and update fields.
+              </FormDescription>
+              <FormControl>
+                <FormikSelect
+                  options={userOptions}
+                  name="editors"
+                  placeholder="Choose editors"
                   isMulti={true}
                   isDisabled={!canUpdate}
                 />
-              </div>
-            )}
-            <div className="flex flex-col gap-2">
-              <h3 className="flex">
-                {" "}
-                Editors
-                <Tooltips
-                  content="Editors of a Scan Report can add/remove concepts, update tables and update fields."
-                  link="https://carrot4omop.ac.uk/Carrot-Mapper/projects-datasets-and-scanreports/#editors"
+              </FormControl>
+            </FormItem>
+
+            <FormItem>
+              <FormLabel>Dataset</FormLabel>
+              <FormDescription>
+                The parent dataset of the Scan Report.
+              </FormDescription>
+              <FormControl>
+                <FormikSelect
+                  options={parentDatasetOptions}
+                  name="parent_dataset"
+                  placeholder="Choose a parent dataset"
+                  isMulti={false}
+                  isDisabled={!canUpdate}
                 />
-              </h3>
-              <FormikSelect
-                options={userOptions}
-                name="editors"
-                placeholder="Choose editors"
-                isMulti={true}
-                isDisabled={!canUpdate}
-              />
-            </div>
-            <div className="flex flex-col gap-2">
-              <h3 className="flex">
-                {" "}
-                Dataset
-                <Tooltips content="The parent dataset of the Scan Report." />
-              </h3>
-              <FormikSelect
-                options={parentDatasetOptions}
-                name="parent_dataset"
-                placeholder="Choose a parent dataset"
-                isMulti={false}
-                isDisabled={!canUpdate}
-              />
-            </div>
+              </FormControl>
+            </FormItem>
+
             <div className="flex mt-3">
               <Button
                 type="submit"
-                className="px-4 py-2 text-lg border border-input"
                 disabled={!canUpdate}
               >
-                Save <Save className="ml-2" />
+                <Save />
+                Save 
               </Button>
-              <Tooltips
-                content="You must be the author of the scan report or an admin of the parent dataset
-                    to update the details of this scan report."
-              />
             </div>
           </div>
-        </Form>
+        </form>
       )}
     </Formik>
   );

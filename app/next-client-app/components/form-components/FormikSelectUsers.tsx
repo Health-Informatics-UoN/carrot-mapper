@@ -80,20 +80,6 @@ const CustomSelect = ({
       classNamePrefix="my-react-select"
       isDisabled={isDisabled}
       components={animatedComponents}
-      styles={{
-        multiValueLabel: (base) => ({
-          ...base,
-          fontSize: "17px",
-        }),
-        multiValueRemove: (base) => ({
-          ...base,
-          fontSize: "17px",
-        }),
-        singleValue: (base) => ({
-          ...base,
-          fontSize: "17px",
-        }),
-      }}
     />
   );
 };
@@ -109,15 +95,13 @@ export const FormikSelectUsers = ({
   isMulti: boolean;
   isDisabled: boolean;
 }) => {
-  const {
-    values: { projects },
-  } = useFormikContext<FormikValues>();
-
+  const formik = useFormikContext<FormikValues>();
+  const projects = formik?.values?.projects;
   const [editors, setOptions] = useState<Option[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
-      if (projects !== 0) {
+      if (projects && projects !== 0) {
         const editors = await fetchProjectMembers(projects);
         setOptions(editors);
       }

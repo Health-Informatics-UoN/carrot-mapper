@@ -3,12 +3,11 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AlertCircle, Upload } from "lucide-react";
-import { Label } from "@/components/ui/label";
+import { FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription } from "@/components/ui/form";
 import { Switch } from "@/components/ui/switch";
-import { Form, Formik, ErrorMessage } from "formik";
+import { Formik } from "formik";
 import { toast } from "sonner";
 import { FormDataFilter } from "../form-components/FormikUtils";
-import { Tooltips } from "../core/Tooltips";
 import { FormikSelect } from "../form-components/FormikSelect";
 import { FormikSelectDataset } from "../form-components/FormikSelectDataset";
 import { FormikSelectEditors } from "../form-components/FormikSelectEditors";
@@ -65,6 +64,7 @@ export function CreateScanReportForm({
   const [reloadDataset, setReloadDataset] = useState(false);
   // State to hide/show the viewers field
   const [publicVisibility, setPublicVisibility] = useState<boolean>(true);
+  const maxFileSizeMB = MAX_FILE_SIZE_BYTES / 1024 / 1024;
 
   const handleSubmit = async (data: FormData) => {
     const formData = new FormData();
@@ -98,8 +98,7 @@ export function CreateScanReportForm({
   return (
     <>
       {error && (
-        <Alert variant="destructive" className="mb-3">
-          <div>
+        <Alert variant="destructive" className="mb-3 max-w-2xl">
             <AlertTitle className="flex items-center">
               <AlertCircle className="h-4 w-4 mr-2" />
               Upload New Scan Report Failed. Error:
@@ -109,9 +108,8 @@ export function CreateScanReportForm({
                 {error.split(" * ").map((err, index) => (
                   <li key={index}>* {err}</li>
                 ))}
-              </ul>
-            </AlertDescription>
-          </div>
+            </ul>
+          </AlertDescription>
         </Alert>
       )}
 
@@ -133,211 +131,222 @@ export function CreateScanReportForm({
         }}
       >
         {({ values, handleChange, handleSubmit, setFieldValue }) => (
-          <Form
-            className="w-full"
+          <form
+            className="w-full max-w-2xl"
             onSubmit={handleSubmit}
             encType="multipart/form-data"
           >
-            <div className="flex flex-col gap-3 text-lg">
-              <div className="flex flex-col gap-2">
-                <h3 className="flex">
-                  {" "}
-                  Scan Report Name
-                  <Tooltips content="Name of the new Scan Report." />
-                </h3>
-                <Input
-                  onChange={handleChange}
-                  name="name"
-                  className="text-lg"
-                  required={true}
-                />
-              </div>
-              <div className="flex flex-col gap-2">
-                <h3 className="flex">
-                  Data Partner{" "}
-                  <Tooltips
-                    content="The Data Partner that owns the Dataset of the new Scan Report."
-                    link="https://carrot4omop.ac.uk/Carrot-Mapper/projects-datasets-and-scanreports/#access-controls"
+            <div className="flex flex-col gap-5">
+
+              <FormField name="name">
+                {({ field }) => (
+                  <FormItem>
+                    <FormLabel>Scan Report Name</FormLabel>
+                    <FormDescription>
+                      Name of the new Scan Report.
+                    </FormDescription>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        onChange={handleChange}
+                        name="name"
+                        required
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              </FormField>
+
+              <FormItem>
+                <FormLabel>Data Partner</FormLabel>
+                <FormDescription>
+                  The Data Partner that owns the Dataset of the new Scan Report.
+                </FormDescription>
+                <FormControl>
+                  <FormikSelect
+                    options={partnerOptions}
+                    name="dataPartner"
+                    placeholder="Choose a Data Partner"
+                    isMulti={false}
+                    isDisabled={false}
+                    required={true}
                   />
-                </h3>
-                <FormikSelect
-                  options={partnerOptions}
-                  name="dataPartner"
-                  placeholder="Choose a Data Partner"
-                  isMulti={false}
-                  isDisabled={false}
-                  required={true}
-                />
-              </div>
-              <div className="flex flex-col gap-2">
+                </FormControl>
+              </FormItem>
+
+              <FormItem>
                 <div className="flex items-center">
-                  <h3 className="flex">
-                    {" "}
-                    Dataset
-                    <Tooltips
-                      content="The Dataset to add the new Scan Report to."
-                      link="https://carrot4omop.ac.uk/Carrot-Mapper/projects-datasets-and-scanreports/#access-controls"
-                    />
-                  </h3>
+                  <FormLabel>Dataset</FormLabel>
                   {values.dataPartner !== 0 && (
-                    <div className="flex">
+                    <div className="flex ml-2">
                       <CreateDatasetDialog
                         projects={projects}
                         dataPartnerID={values.dataPartner}
                         description={true}
                         setReloadDataset={setReloadDataset}
                       />
-                      <Tooltips content="If you couldn't find a dataset you wanted, you can create a new dataset here" />
                     </div>
                   )}
                 </div>
-                <FormikSelectDataset
-                  name="dataset"
-                  placeholder={
-                    values.dataPartner
-                      ? "Choose a Dataset"
-                      : "To choose a dataset, please select a Data partner"
-                  }
-                  isMulti={false}
-                  isDisabled={values.dataPartner === 0}
-                  required={true}
-                  reloadDataset={reloadDataset}
-                />
-              </div>
-              <div className="flex items-center space-x-3">
-                <h3 className="flex">
-                  Visibility
-                  <Tooltips
-                    content="Setting the visibility of the new Scan Report."
-                    link="https://carrot4omop.ac.uk/Carrot-Mapper/projects-datasets-and-scanreports/#access-controls"
+                <FormDescription>
+                  The Dataset to add the new Scan Report to.
+                </FormDescription>
+                <FormControl>
+                  <FormikSelectDataset
+                    name="dataset"
+                    placeholder={
+                      values.dataPartner
+                        ? "Choose a Dataset"
+                        : "To choose a dataset, please select a Data partner"
+                    }
+                    isMulti={false}
+                    isDisabled={values.dataPartner === 0}
+                    required={true}
+                    reloadDataset={reloadDataset}
                   />
-                </h3>
-                <Switch
-                  onCheckedChange={(checked) => {
-                    handleChange({
-                      target: {
-                        name: "visibility",
-                        value: checked ? "PUBLIC" : "RESTRICTED"
-                      }
-                    });
-                    setPublicVisibility(checked);
-                  }}
-                  checked={values.visibility === "PUBLIC"}
-                />
-                <Label className="text-lg">
-                  {/* Show user-friendly label */}
-                  {values.visibility === "PUBLIC" ? "Shared" : "Restricted"}
-                </Label>
-              </div>
+                </FormControl>
+              </FormItem>
+
+              <FormField name="visibility">
+                {({ field }) => (
+                  <FormItem>
+                    <div className="flex items-center space-x-3">
+                      <FormLabel>Visibility</FormLabel>
+                      <FormControl>
+                        <Switch
+                          onCheckedChange={(checked) => {
+                            handleChange({
+                              target: {
+                                name: "visibility",
+                                value: checked ? "PUBLIC" : "RESTRICTED"
+                              }
+                            });
+                            setPublicVisibility(checked);
+                          }}
+                          checked={values.visibility === "PUBLIC"}
+                        />
+                      </FormControl>
+                      <span className="text-sm">
+                        {/* Show user-friendly label */}
+                        {values.visibility === "PUBLIC" ? "Shared" : "Restricted"}
+                      </span>
+                    </div>
+                    <FormDescription>
+                      Setting the visibility of the new Scan Report.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              </FormField>
+
               {!publicVisibility && (
-                <div className="flex flex-col gap-2">
-                  <h3 className="flex">
-                    {" "}
-                    Viewers
-                    <Tooltips content="If the Scan Report is shared, then all users with access to the Dataset have viewer access to the Scan Report. Additionally, Dataset admins and editors have viewer access to the Scan Report in all cases." />
-                  </h3>
-                  {/* Viewers field uses the same logic and data as Editors field */}
+                <FormItem>
+                  <FormLabel>Viewers</FormLabel>
+                  <FormDescription>
+                    If the Scan Report is shared, then all users with access to the Dataset have viewer access to the Scan Report. Additionally, Dataset admins and editors have viewer access to the Scan Report in all cases.
+                  </FormDescription>
+                  <FormControl>
+                    <FormikSelectEditors
+                      name="viewers"
+                      placeholder={
+                        values.dataset
+                          ? "Choose viewers"
+                          : "To choose viewers, please select a Dataset"
+                      }
+                      isMulti={true}
+                      isDisabled={values.dataset === 0 || values.dataset === -1}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+
+              <FormItem>
+                <FormLabel>Editors</FormLabel>
+                <FormDescription>
+                  Dataset admins and editors also have Scan Report editor permissions.
+                </FormDescription>
+                <FormControl>
                   <FormikSelectEditors
-                    name="viewers"
+                    name="editors"
                     placeholder={
                       values.dataset
-                        ? "Choose viewers"
-                        : "To choose viewers, please select a Dataset"
+                        ? "Choose editors"
+                        : "To choose editors, please select a Dataset"
                     }
                     isMulti={true}
                     isDisabled={values.dataset === 0 || values.dataset === -1}
                   />
-                </div>
-              )}
-              <div className="flex flex-col gap-2">
-                <h3 className="flex">
-                  {" "}
-                  Editors
-                  <Tooltips
-                    content="Dataset admins and editors also have Scan Report editor permissions."
-                    link="https://carrot4omop.ac.uk/Carrot-Mapper/projects-datasets-and-scanreports/#scan-report-roles"
-                  />
-                </h3>
-                <FormikSelectEditors
-                  name="editors"
-                  placeholder={
-                    values.dataset
-                      ? "Choose editors"
-                      : "To choose editors, please select a Dataset"
-                  }
-                  isMulti={true}
-                  isDisabled={values.dataset === 0 || values.dataset === -1}
-                />
-              </div>
-              <div className="flex flex-col gap-2">
-                <h3 className="flex">
-                  <div className="flex items-center gap-2">
-                    WhiteRabbit Scan Report{" "}
-                    <span className="text-muted-foreground text-sm">
-                      (.xlsx file, max {MAX_FILE_SIZE_BYTES / 1024 / 1024}MB)
-                    </span>
-                  </div>
-                  <Tooltips
-                    content="Scan Report file generated from White Rabbit application."
-                    link="https://carrot4omop.ac.uk/Carrot-Mapper/uploading-scan-report/#the-scan-report-file-format"
-                  />
-                </h3>
-                <div>
-                  <Input
-                    type="file"
-                    accept=".xlsx"
-                    required={true}
-                    onChange={(e) => {
-                      if (e.currentTarget.files && e.currentTarget.files[0]) {
-                        const file = e.currentTarget.files[0];
-                        setFieldValue("scan_report_file", file);
-                      }
-                    }}
-                  />
-                </div>
-                <ErrorMessage
-                  name="scan_report_file"
-                  component="div"
-                  className="text-destructive text-sm"
-                />
-              </div>
+                </FormControl>
+              </FormItem>
 
-              <div className="flex flex-col gap-2">
-                <h3 className="flex">
-                  <div className="flex items-center gap-2">
-                    Data Dictionary{" "}
-                    <span className="text-muted-foreground text-sm">
-                      (.csv file, optional, max{" "}
-                      {MAX_FILE_SIZE_BYTES / 1024 / 1024}MB)
-                    </span>
-                  </div>
-                  <Tooltips
-                    content="Optional data dictionary to enable automatic building concepts from OMOP vocalubary."
-                    link="https://carrot4omop.ac.uk/Carrot-Mapper/uploading-scan-report/#the-data-dictionary-file-format"
-                  />
-                </h3>
-                <div>
-                  <Input
-                    type="file"
-                    accept=".csv"
-                    onChange={(e) => {
-                      if (e.currentTarget.files && e.currentTarget.files[0]) {
-                        const file = e.currentTarget.files[0];
-                        setFieldValue("Data_dict", file);
-                      }
-                    }}
-                  />
-                </div>
-                <ErrorMessage
-                  name="Data_dict"
-                  component="div"
-                  className="text-destructive text-sm"
-                />
-              </div>
+              <FormField name="scan_report_file">
+                {({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      <div className="flex items-center gap-2">
+                        WhiteRabbit Scan Report{" "}
+                        <span className="text-muted-foreground text-sm">(.xlsx file max {maxFileSizeMB}MB)</span>
+                      </div>
+                    </FormLabel>
+                    <FormDescription>
+                      Scan Report file generated from White Rabbit application.
+                    </FormDescription>
+                    <FormControl>
+                      <Input
+                        type="file"
+                        name="scan_report_file"
+                        accept=".xlsx"
+                        required={true}
+                        onChange={(e) => {
+                          if (e.currentTarget.files) {
+                            setFieldValue(
+                              "scan_report_file",
+                              e.currentTarget.files[0]
+                            );
+                          }
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              </FormField>
+
+              <FormField name="Data_dict">
+                {({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      <div className="flex items-center gap-2">
+                        Data Dictionary{" "}
+                        <span className="text-muted-foreground text-sm">
+                          (.csv file, optional, max {maxFileSizeMB}MB)
+                        </span>
+                      </div>
+                    </FormLabel>
+                    <FormDescription>
+                      Optional data dictionary to enable automatic building concepts from OMOP vocabulary.
+                    </FormDescription>
+                    <FormControl>
+                      <Input
+                        type="file"
+                        name="Data_dict"
+                        accept=".csv"
+                        onChange={(e) => {
+                          if (e.currentTarget.files) {
+                            setFieldValue("Data_dict", e.currentTarget.files[0]);
+                          }
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              </FormField>
+
               <div className="mb-5 mt-3 flex">
                 <Button
                   type="submit"
-                  className="px-4 py-2 text-lg border border-input"
                   disabled={
                     values.dataPartner === 0 ||
                     values.dataset === 0 ||
@@ -345,13 +354,12 @@ export function CreateScanReportForm({
                     values.name === ""
                   }
                 >
-                  <Upload className="mr-2" />
+                  <Upload />
                   Upload Scan Report
                 </Button>
-                <Tooltips content="You must be either an admin or an editor of the parent dataset to add a new scan report to it." />
               </div>
             </div>
-          </Form>
+          </form>
         )}
       </Formik>
     </>
