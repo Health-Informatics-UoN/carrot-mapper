@@ -3,13 +3,11 @@ import logging
 from urllib.parse import urljoin
 import requests
 from typing import Optional, Dict, Any
-from shared.mapping.models import ScanReport, ScanReportTable
-from shared.services.field_vocab_mappings import get_field_vocab_mappings
-from shared.services.rules import delete_mapping_rules
+from mapping.models import ScanReport, ScanReportTable
+from services.field_vocab_mappings import get_field_vocab_mappings
 from django.conf import settings
-from shared.services.azurequeue import add_message
 from abc import ABC, abstractmethod
-from shared.enums import WorkerServiceType
+from services.enums import WorkerServiceType
 
 
 class WorkerService(ABC):
@@ -35,48 +33,6 @@ class WorkerService(ABC):
     def trigger_rules_export(self, message_body: Dict[str, Any]):
         """Trigger rules export."""
         pass
-
-
-class AzureWorkerService(WorkerService):
-    """Azure Functions implementation of worker service."""
-
-    def __init__(self):
-        self._workers_url = settings.WORKERS_URL
-        self._workers_rules_name = settings.WORKERS_RULES_NAME
-        self._workers_rules_key = settings.WORKERS_RULES_KEY
-        self._workers_upload_name = settings.WORKERS_UPLOAD_NAME
-        self._workers_rules_export_name = settings.WORKERS_RULES_EXPORT_NAME
-
-    def trigger_auto_mapping(
-        self,
-        scan_report: ScanReport,
-        table: ScanReportTable,
-        data_dictionary_name: Optional[str] = None,
-        trigger_reuse_concepts: Optional[bool] = True,
-    ):
-        # Delete the current mapping rules
-        delete_mapping_rules(table.pk)
-
-        # Send request to functions
-        msg = {
-            "scan_report_id": scan_report.pk,
-            "table_id": table.pk,
-            "data_dictionary_blob": data_dictionary_name,
-            "trigger_reuse_concepts": trigger_reuse_concepts,
-        }
-        trigger = f"/api/orchestrators/{self._workers_rules_name}?code={self._workers_rules_key}"
-
-        try:
-            response = requests.post(urljoin(self._workers_url, trigger), json=msg)
-            response.raise_for_status()
-        except requests.exceptions.HTTPError as e:
-            logging.error(f"HTTP Trigger failed: {e}")
-
-    def trigger_scan_report_processing(self, message_body: Dict[str, Any]):
-        add_message(self._workers_upload_name, message_body)
-
-    def trigger_rules_export(self, message_body: Dict[str, Any]):
-        add_message(self._workers_rules_export_name, message_body)
 
 
 class AirflowWorkerService(WorkerService):
@@ -151,12 +107,7 @@ class AirflowWorkerService(WorkerService):
 def get_worker_service() -> WorkerService:
     """Function to create the appropriate worker service."""
     worker_service_type = settings.WORKER_SERVICE_TYPE
-
-    if worker_service_type == WorkerServiceType.AZURE:
-        return AzureWorkerService()
-    elif worker_service_type == WorkerServiceType.AIRFLOW:
+    if worker_service_type == WorkerServiceType.AIRFLOW:
         return AirflowWorkerService()
     else:
-        raise ValueError(
-            "Worker service type not supported. Only `airflow` or `azure` is supported."
-        )
+        raise ValueError("Worker service type not supported.")

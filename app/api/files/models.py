@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.db import models
-from shared.mapping.models import ScanReport
+from mapping.models import ScanReport
 
 
 class BaseModel(models.Model):

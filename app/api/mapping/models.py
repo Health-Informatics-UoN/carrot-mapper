@@ -3,7 +3,7 @@ from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelatio
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.db.models.constraints import UniqueConstraint
-from shared.data.models import Concept
+from data.models import Concept
 
 STATUS_LIVE = "LIVE"
 STATUS_ARCHIVED = "ARCHIVED"

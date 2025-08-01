@@ -2,5 +2,5 @@ from django.apps import AppConfig
 
 
 class FilesConfig(AppConfig):
-    name = "shared.files"
+    name = "files"
     label = "files"

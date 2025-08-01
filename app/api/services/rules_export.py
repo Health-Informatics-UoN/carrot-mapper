@@ -7,8 +7,8 @@ from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
 from django.db.models.query import QuerySet
 from graphviz import Digraph
-from shared.data.models import Concept, ConceptAncestor
-from shared.mapping.models import (
+from data.models import Concept, ConceptAncestor
+from mapping.models import (
     MappingRule,
     OmopField,
     OmopTable,
@@ -17,7 +17,7 @@ from shared.mapping.models import (
     ScanReportTable,
     ScanReportValue,
 )
-from shared.enums import ContentTypeModel
+from services.enums import ContentTypeModel
 
 
 class NonStandardConceptMapsToSelf(Exception):

@@ -6,12 +6,12 @@ from rest_framework.filters import OrderingFilter
 from rest_framework.generics import GenericAPIView
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
 from rest_framework.permissions import IsAuthenticated
-from shared.files.paginations import CustomPagination
-from shared.jobs.models import Job, JobStage, StageStatus
-from shared.mapping.models import ScanReport
+from files.paginations import CustomPagination
+from jobs.models import Job, JobStage, StageStatus
+from mapping.models import ScanReport
 from drf_spectacular.utils import extend_schema
-from shared.services.storage_service import StorageService
-from shared.services.worker_service import get_worker_service
+from services.storage_service import StorageService
+from services.worker_service import get_worker_service
 
 from .models import FileDownload
 from .serializers import FileDownloadSerializer
@@ -97,8 +97,6 @@ class FileDownloadView(GenericAPIView, ListModelMixin, RetrieveModelMixin):
             - Exception: For any other unexpected errors.
 
         Note:
-            - The `add_message` function is used to send the message to the
-            Rules Export Queue.
             - A job record is created with the status set to "IN_PROGRESS"
             and includes details about the file type being generated.
         """

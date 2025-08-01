@@ -5,8 +5,8 @@ from projects.serializers import (
 )
 from rest_framework.generics import ListAPIView, RetrieveAPIView
 from rest_framework.permissions import IsAuthenticated
-from shared.mapping.models import Project
-from shared.mapping.permissions import CanViewProject
+from mapping.models import Project
+from mapping.permissions import CanViewProject
 from api.paginations import CustomPagination
 from rest_framework.filters import OrderingFilter
 

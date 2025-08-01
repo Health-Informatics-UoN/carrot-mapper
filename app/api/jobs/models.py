@@ -1,5 +1,5 @@
 from django.db import models
-from shared.mapping.models import BaseModel, ScanReport, ScanReportTable
+from mapping.models import BaseModel, ScanReport, ScanReportTable
 
 
 class JobStage(models.Model):

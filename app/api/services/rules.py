@@ -1,8 +1,8 @@
-from typing import List, Optional, Dict, Tuple
+from typing import List, Optional
 from django.db import transaction
 
-from shared.data.models import Concept
-from shared.mapping.models import (
+from data.models import Concept
+from mapping.models import (
     MappingRule,
     OmopField,
     OmopTable,

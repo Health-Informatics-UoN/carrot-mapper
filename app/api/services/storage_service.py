@@ -9,7 +9,7 @@ import openpyxl  # type: ignore
 from azure.storage.blob import BlobServiceClient  # type: ignore
 from azure.storage.blob import ContentSettings
 from minio import Minio
-from shared.services.utils import (
+from services.utils import (
     process_four_item_dict,
     process_three_item_dict,
     remove_BOM,

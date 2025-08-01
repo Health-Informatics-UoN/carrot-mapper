@@ -9,7 +9,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.test import TestCase, TransactionTestCase
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIClient, APIRequestFactory, force_authenticate
-from shared.mapping.models import (
+from mapping.models import (
     Concept,
     DataPartner,
     Dataset,
