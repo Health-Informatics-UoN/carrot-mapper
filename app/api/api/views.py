@@ -9,6 +9,7 @@ from api.paginations import CustomPagination
 from api.serializers import (
     ConceptSerializerV2,
     GetRulesAnalysis,
+    ScanReportConceptDetailSerializerV3,
     ScanReportConceptSerializer,
     ScanReportCreateSerializer,
     ScanReportEditSerializer,
@@ -938,6 +939,20 @@ class ScanReportValueListV3(ScanReportPermissionMixin, GenericAPIView, ListModel
 
     def list(self, request, *args, **kwargs):
         return super().list(request, *args, **kwargs)
+
+
+class ScanReportConceptDetailV3(ScanReportPermissionMixin, GenericAPIView, RetrieveModelMixin):
+    """
+    A view for retrieving a specific ScanReportConcept object.
+    """
+
+    serializer_class = ScanReportConceptDetailSerializerV3
+
+    def get_object(self):
+        return get_object_or_404(ScanReportConcept, pk=self.kwargs["concept_pk"])
+
+    def get(self, request, *args, **kwargs):
+        return self.retrieve(request, *args, **kwargs)
 
 
 class ScanReportConceptListV2(

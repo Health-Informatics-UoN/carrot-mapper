@@ -49,6 +49,12 @@ class ConceptSerializerV2(serializers.ModelSerializer):
         fields = ["concept_id", "concept_name", "concept_code"]
 
 
+class ConceptSerializerV3(DynamicFieldsMixin, serializers.ModelSerializer):
+
+    class Meta:
+        model = Concept
+        fields = ["concept_id", "concept_name", "concept_code", "domain_id", "vocabulary_id", "concept_class_id", "standard_concept", "valid_start_date", "valid_end_date", "invalid_reason"]
+
 class UploadStatusSerializer(serializers.ModelSerializer):
     """
     Serializer for the UploadStatus model.
@@ -801,6 +807,12 @@ class ScanReportConceptSerializer(DynamicFieldsMixin, serializers.ModelSerialize
         model = ScanReportConcept
         fields = ["id", "object_id", "creation_type", "concept", "content_type"]
 
+class ScanReportConceptDetailSerializerV3(DynamicFieldsMixin, serializers.ModelSerializer):
+    concept = ConceptSerializerV3()
+
+    class Meta:
+        model = ScanReportConcept
+        fields = ["id", "object_id", "creation_type", "created_at", "created_by", "confidence", "description", "mapping_tool", "mapping_tool_version", "concept", "content_type"]
 
 class GetRulesAnalysis(DynamicFieldsMixin, serializers.ModelSerializer):
     class Meta:
