@@ -72,6 +72,15 @@ interface ScanReportConceptV3 {
   content_type: number;
 }
 
+interface ScanReportConceptDetailV3 extends ScanReportConceptV3 {
+  created_at: Date;
+  created_by: User;
+  confidence: number;
+  description: string;
+  mapping_tool: string;
+  mapping_tool_version: string;
+}
+
 interface ScanReportValue {
   id: number;
   value: string;

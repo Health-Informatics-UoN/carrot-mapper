@@ -9,6 +9,7 @@ const fetchKeys = {
   addConcept: "v2/scanreports/concepts/",
   deleteConcept: (conceptId: number) => `v2/scanreports/concepts/${conceptId}/`,
   scanreportConcepts: (filter?: string) => `v2/scanreports/concepts/?${filter}`,
+  scanreportConceptDetail: (scanReportId: string, tableId: string, fieldId: string, valueId: string, conceptId: string) => `v3/scanreports/${scanReportId}/tables/${tableId}/fields/${fieldId}/values/${valueId}/concepts/${conceptId}/`,
 };
 
 export async function getAllScanReportConcepts(
@@ -83,4 +84,14 @@ export async function deleteConceptV3(conceptId: number, path: string) {
     },
   });
   revalidatePath(path);
+}
+
+export async function getScanReportConceptDetail(
+  scanReportId: string,
+  tableId: string,
+  fieldId: string,
+  valueId: string,
+  conceptId: string,
+): Promise<ScanReportConceptDetailV3> {
+  return await request(fetchKeys.scanreportConceptDetail(scanReportId, tableId, fieldId, valueId, conceptId));
 }
