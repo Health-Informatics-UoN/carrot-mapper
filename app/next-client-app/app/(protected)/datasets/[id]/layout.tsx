@@ -63,9 +63,14 @@ export default async function DatasetLayout({
           <div>Project(s): </div>
           <div className="flex space-x-1">
             {projects.map((project) => (
-              <Badge variant="outline" key={project.id}>
-                {project.name}
-              </Badge>
+              <Link key={project.id} href={`/projects/${project.id}`}>
+                <Badge
+                  variant="outline"
+                  className="cursor-pointer hover:bg-accent hover:text-accent-foreground transition-colors"
+                >
+                  {project.name}
+                </Badge>
+              </Link>
             ))}
           </div>
         </h3>
