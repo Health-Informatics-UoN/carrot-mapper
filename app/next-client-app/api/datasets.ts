@@ -14,7 +14,7 @@ const fetchKeys = {
       ? `v2/datasets/?data_partner=${dataPartnerId}&hidden=false&ordering=name`
       : "v2/datasets/?ordering=name",
   dataPartners: () => "v2/datapartners/",
-  users: () => "v2/usersfilter/?is_active=true",
+  users: () => "v2/usersfilter/?is_active=true&ordering=username",
   updateDataset: (id: number) => `v2/datasets/${id}/`,
   permissions: (id: string) => `v2/datasets/${id}/permissions/`,
   create: "v2/datasets/",

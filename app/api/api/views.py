@@ -182,7 +182,8 @@ class UserFilterViewSet(GenericAPIView, ListModelMixin):
 
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    filter_backends = [DjangoFilterBackend]
+    filter_backends = [DjangoFilterBackend, OrderingFilter]
+    ordering_fields = ["id", "username"]
     filterset_fields = {"id": ["in", "exact"], "is_active": ["exact"]}
 
     def get(self, request, *args, **kwargs):
