@@ -55,7 +55,8 @@ class DatasetIndex(GenericAPIView, ListModelMixin, CreateModelMixin):
     """
 
     serializer_class = DatasetViewSerializerV2
-    filter_backends = [DjangoFilterBackend]
+    filter_backends = [DjangoFilterBackend, OrderingFilter]
+    ordering_fields = ["id", "name", "created_at", "visibility"]
     filterset_fields = {
         "id": ["in"],
         "data_partner": ["in", "exact"],
