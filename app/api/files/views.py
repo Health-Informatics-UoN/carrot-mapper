@@ -10,8 +10,8 @@ from files.paginations import CustomPagination
 from jobs.models import Job, JobStage, StageStatus
 from mapping.models import ScanReport
 from drf_spectacular.utils import extend_schema
-from shared.services.storage_service import StorageService
-from shared.services.worker_service import get_worker_service
+from services.storage_service import StorageService
+from services.worker_service import get_worker_service
 
 from .models import FileDownload
 from .serializers import FileDownloadSerializer

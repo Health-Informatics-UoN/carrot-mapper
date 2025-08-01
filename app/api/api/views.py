@@ -64,17 +64,17 @@ from drf_spectacular.utils import extend_schema
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter
 from mapping.permissions import get_user_permissions_on_scan_report
-from shared.services.rules import (
+from services.rules import (
     _find_destination_table,
     save_mapping_rules,
 )
-from shared.services.rules_export import (
+from services.rules_export import (
     get_mapping_rules_json,
     get_mapping_rules_list,
     make_dag,
 )
-from shared.services.storage_service import StorageService
-from shared.services.worker_service import get_worker_service
+from services.storage_service import StorageService
+from services.worker_service import get_worker_service
 from importlib.metadata import version
 
 storage_service = StorageService()

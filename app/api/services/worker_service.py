@@ -3,13 +3,13 @@ import logging
 from urllib.parse import urljoin
 import requests
 from typing import Optional, Dict, Any
-from shared.mapping.models import ScanReport, ScanReportTable
-from shared.services.field_vocab_mappings import get_field_vocab_mappings
-from shared.services.rules import delete_mapping_rules
+from mapping.models import ScanReport, ScanReportTable
+from services.field_vocab_mappings import get_field_vocab_mappings
+from services.rules import delete_mapping_rules
 from django.conf import settings
-from shared.services.azurequeue import add_message
+from services.azurequeue import add_message
 from abc import ABC, abstractmethod
-from shared.enums import WorkerServiceType
+from services.enums import WorkerServiceType
 
 
 class WorkerService(ABC):

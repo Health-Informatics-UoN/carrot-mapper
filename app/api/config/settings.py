@@ -13,7 +13,7 @@ https://docs.djangoproject.com/en/3.1/ref/settings/
 import os
 from datetime import timedelta
 from dotenv import load_dotenv
-from shared.enums import WorkerServiceType
+from services.enums import WorkerServiceType
 
 load_dotenv()
 
