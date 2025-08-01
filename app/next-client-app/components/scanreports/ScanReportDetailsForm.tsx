@@ -154,7 +154,7 @@ export function ScanReportDetailsForm({
                         disabled={!canUpdate}
                       />
                     </FormControl>
-                    <span>
+                    <span className="text-sm">
                       {/* Show user-friendly label */}
                       {values.visibility === "PUBLIC" ? "Shared" : "Restricted"}
                     </span>
