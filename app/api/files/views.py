@@ -97,8 +97,6 @@ class FileDownloadView(GenericAPIView, ListModelMixin, RetrieveModelMixin):
             - Exception: For any other unexpected errors.
 
         Note:
-            - The `add_message` function is used to send the message to the
-            Rules Export Queue.
             - A job record is created with the status set to "IN_PROGRESS"
             and includes details about the file type being generated.
         """
