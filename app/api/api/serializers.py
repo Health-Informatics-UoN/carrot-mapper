@@ -12,7 +12,7 @@ from drf_dynamic_fields import DynamicFieldsMixin  # type: ignore
 from openpyxl.workbook.workbook import Workbook  # type: ignore
 from rest_framework import serializers
 from rest_framework.exceptions import NotFound, ParseError, PermissionDenied
-from shared.data.models import Concept
+from data.models import Concept
 from shared.mapping.models import (
     Dataset,
     ScanReport,

@@ -47,7 +47,7 @@ from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from shared.data.models import Concept
+from data.models import Concept
 from shared.jobs.models import Job, JobStage, StageStatus
 from shared.mapping.models import (
     DataDictionary,

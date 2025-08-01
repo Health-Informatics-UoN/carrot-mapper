@@ -5,7 +5,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.contenttypes.models import ContentType
 from django.test import TestCase
 from rest_framework.authtoken.models import Token
-from shared.data.models import Concept
+from data.models import Concept
 from shared.mapping.models import (
     DataPartner,
     Dataset,
