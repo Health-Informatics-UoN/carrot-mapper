@@ -2,5 +2,5 @@ from django.apps import AppConfig
 
 
 class JobsConfig(AppConfig):
-    name = "shared.jobs"
+    name = "jobs"
     label = "jobs"

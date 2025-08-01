@@ -48,7 +48,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from data.models import Concept
-from shared.jobs.models import Job, JobStage, StageStatus
+from jobs.models import Job, JobStage, StageStatus
 from mapping.models import (
     DataDictionary,
     DataPartner,

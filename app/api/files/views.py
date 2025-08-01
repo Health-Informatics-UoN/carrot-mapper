@@ -7,8 +7,8 @@ from rest_framework.generics import GenericAPIView
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
 from rest_framework.permissions import IsAuthenticated
 from files.paginations import CustomPagination
-from shared.jobs.models import Job, JobStage, StageStatus
-from shared.mapping.models import ScanReport
+from jobs.models import Job, JobStage, StageStatus
+from mapping.models import ScanReport
 from drf_spectacular.utils import extend_schema
 from shared.services.storage_service import StorageService
 from shared.services.worker_service import get_worker_service
