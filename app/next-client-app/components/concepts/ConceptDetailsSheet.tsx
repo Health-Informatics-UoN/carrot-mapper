@@ -10,6 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Cross2Icon } from "@radix-ui/react-icons";
 import { getScanReportConceptDetail } from "@/api/concepts";
+import { InfoItem } from "@/components/core/InfoItem";
 
 interface ConceptDetailsSheetProps {
   concept: any; // Using any for now since we don't have the exact type
@@ -88,25 +89,34 @@ export function ConceptDetailsSheet({
           <SheetTitle>
             {concept.concept.concept_id} - {concept.concept.concept_name}
           </SheetTitle>
-          <SheetDescription>
-            {getCreationTypeDescription(concept.creation_type)}
-          </SheetDescription>
         </SheetHeader>
         <div className="mt-6 space-y-4">
           <div>
-            <h3 className="font-semibold mb-2">Concept Details</h3>
+            <h3 className="font-semibold mb-2">Mapping Details</h3>
             <div className="space-y-2 text-sm">
               <div>
-                <span className="font-medium">Concept ID:</span> {concept.concept.concept_id}
+                <InfoItem
+                  label="Concept ID"
+                  value={concept.concept.concept_id}
+                />
               </div>
               <div>
-                <span className="font-medium">Concept Name:</span> {concept.concept.concept_name}
+                <InfoItem
+                  label="Concept Name"
+                  value={concept.concept.concept_name}
+                />
               </div>
               <div>
-                <span className="font-medium">Concept Code:</span> {concept.concept.concept_code}
+                <InfoItem
+                  label="Concept Code"
+                  value={concept.concept.concept_code}
+                />
               </div>
               <div>
-                <span className="font-medium">Creation Type:</span> {concept.creation_type}
+                <InfoItem
+                  label="Creation Type"
+                  value={getCreationTypeDescription(concept.creation_type)}
+                />
               </div>
               {isLoading && (
                 <div className="text-muted-foreground">Loading additional details...</div>
@@ -114,65 +124,118 @@ export function ConceptDetailsSheet({
               {conceptDetail && !isLoading && (
                 <>
                   <div>
-                    <span className="font-medium">Created At:</span> {new Date(conceptDetail.created_at).toLocaleString()}
+                    <InfoItem
+                      label="Created At"
+                      value={new Date(conceptDetail.created_at).toLocaleString()}
+                    />
                   </div>
                   <div>
-                    <span className="font-medium">Created By:</span> {conceptDetail.created_by?.username || "Unknown"}
+                    <InfoItem
+                      label="Created By"
+                      value={conceptDetail.created_by?.username || "Unknown"}
+                    />
                   </div>
                   <div>
-                    <span className="font-medium">Confidence:</span> {conceptDetail.confidence}
+                    <InfoItem
+                      label="Confidence"
+                      value={conceptDetail.confidence}
+                    />
                   </div>
                   <div>
-                    <span className="font-medium">Description:</span> {conceptDetail.description}
+                    <InfoItem
+                      label="Description"
+                      value={conceptDetail.description}
+                    />
                   </div>
                   <div>
-                    <span className="font-medium">Mapping Tool:</span> {conceptDetail.mapping_tool}
+                    <InfoItem
+                      label="Mapping Tool"
+                      value={conceptDetail.mapping_tool}
+                    />
                   </div>
                   <div>
-                    <span className="font-medium">Mapping Tool Version:</span> {conceptDetail.mapping_tool_version}
+                    <InfoItem
+                      label="Mapping Tool Version"
+                      value={conceptDetail.mapping_tool_version}
+                    />
+                  </div>
+                  <hr className="my-4" />
+                  <h3 className="font-semibold mb-2">Concept Details</h3>
+                  <div>
+                    <InfoItem
+                      label="Concept"
+                      value={conceptDetail.concept.concept_id}
+                    />
                   </div>
                   <div>
-                    <span className="font-medium">Concept:</span> {conceptDetail.concept.concept_id} - {conceptDetail.concept.concept_name} - {conceptDetail.concept.concept_code}
+                    <InfoItem
+                      label="Domain"
+                      value={conceptDetail.concept.domain_id}
+                    />
                   </div>
                   <div>
-                    <span className="font-medium">Domain:</span> {conceptDetail.concept.domain_id}
+                    <InfoItem
+                      label="Vocabulary"
+                      value={conceptDetail.concept.vocabulary_id}
+                    />
                   </div>
                   <div>
-                    <span className="font-medium">Vocabulary:</span> {conceptDetail.concept.vocabulary_id}
+                    <InfoItem
+                      label="Concept Class"
+                      value={conceptDetail.concept.concept_class_id}
+                    />
                   </div>
                   <div>
-                    <span className="font-medium">Concept Class:</span> {conceptDetail.concept.concept_class_id}
+                    <InfoItem
+                      label="Standard Concept"
+                      value={conceptDetail.concept.standard_concept}
+                    />
                   </div>
                   <div>
-                    <span className="font-medium">Standard Concept:</span> {conceptDetail.concept.standard_concept}
+                    <InfoItem
+                      label="Valid Start Date"
+                      value={conceptDetail.concept.valid_start_date}
+                      />
                   </div>
                   <div>
-                    <span className="font-medium">Valid Start Date:</span> {conceptDetail.concept.valid_start_date}
+                    <InfoItem
+                      label="Valid End Date"
+                      value={conceptDetail.concept.valid_end_date}
+                      />
                   </div>
                   <div>
-                    <span className="font-medium">Valid End Date:</span> {conceptDetail.concept.valid_end_date}
-                  </div>
-                  <div>
-                    <span className="font-medium">Invalid Reason:</span> {conceptDetail.concept.invalid_reason}
+                    <InfoItem
+                      label="Invalid Reason"
+                      value={conceptDetail.concept.invalid_reason}
+                    />
                   </div>
                   
+                <Button variant="outline" size="sm" className="w-full" asChild>
+                <a
+                    href={`https://athena.ohdsi.org/search-terms/terms/${conceptDetail.concept.concept_id}`}
+                    target="_blank"
+                  >
+                    View on Athena
+                </a>
+                </Button>
                 </>
               )}
             </div>
           </div>
-          {onDelete && (
-            <div className="pt-4 border-t">
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={handleDelete}
-                className="w-full"
-              >
-                <Cross2Icon className="mr-2 h-4 w-4" />
-                Delete Concept
-              </Button>
-            </div>
-          )}
+          <div className="pt-4 border-t">
+            {onDelete && (
+
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleDelete}
+                  className="w-full mt-4"
+                >
+                  <Cross2Icon className="mr-2 h-4 w-4" />
+                  Delete Concept
+                </Button>
+            )}
+          </div>
         </div>
       </SheetContent>
     </Sheet>

@@ -809,6 +809,7 @@ class ScanReportConceptSerializer(DynamicFieldsMixin, serializers.ModelSerialize
 
 class ScanReportConceptDetailSerializerV3(DynamicFieldsMixin, serializers.ModelSerializer):
     concept = ConceptSerializerV3()
+    created_by = UserSerializer()
 
     class Meta:
         model = ScanReportConcept
