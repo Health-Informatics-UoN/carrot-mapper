@@ -54,8 +54,8 @@ export function ScanReportDetailsForm({
   const initialDatasetFilter =
     FormDataFilter<DataSetSRList>(initialParentDataset);
   const initialAuthorFilter = FormDataFilter<User>(initialAuthor);
-  const initialViewersFilter = FindAndFormat<User>(users, scanreport.viewers);
-  const initialEditorsFilter = FindAndFormat<User>(users, scanreport.editors);
+  const initialViewersFilter = FormDataFilter<User>(scanreport.viewers);
+  const initialEditorsFilter = FormDataFilter<User>(scanreport.editors);
 
   const handleSubmit = async (data: FormData) => {
     const submittingData = {
@@ -154,7 +154,7 @@ export function ScanReportDetailsForm({
                         disabled={!canUpdate}
                       />
                     </FormControl>
-                    <span>
+                    <span className="text-sm">
                       {/* Show user-friendly label */}
                       {values.visibility === "PUBLIC" ? "Shared" : "Restricted"}
                     </span>

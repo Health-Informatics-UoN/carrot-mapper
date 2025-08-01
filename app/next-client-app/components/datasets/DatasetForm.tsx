@@ -52,9 +52,9 @@ export function DatasetForm({
   )!;
   // Find and make initial data suitable for React select
   const initialPartnerFilter = FormDataFilter<DataPartner>(initialPartner);
-  const initialViewersFilter = FindAndFormat<User>(users, dataset.viewers);
-  const initialEditorsFilter = FindAndFormat<User>(users, dataset.editors);
-  const initialAdminsFilter = FindAndFormat<User>(users, dataset.admins);
+  const initialViewersFilter = FormDataFilter<User>(dataset.viewers);
+  const initialEditorsFilter = FormDataFilter<User>(dataset.editors);
+  const initialAdminsFilter = FormDataFilter<User>(dataset.admins);
   const initialProjectFilter = FindAndFormat<Project>(
     projects,
     dataset.projects.map((project) => project.id)
@@ -87,7 +87,7 @@ export function DatasetForm({
         editors: initialEditorsFilter.map((editor) => editor.value),
         dataPartner: initialPartnerFilter[0].value,
         admins: initialAdminsFilter.map((admin) => admin.value),
-        projects: initialProjectFilter.map((project) => project.value),
+        projects: initialProjectFilter.map((project) => project.value)
       }}
       onSubmit={(data) => {
         handleSubmit(data);
@@ -154,7 +154,7 @@ export function DatasetForm({
                         disabled={!canUpdate}
                       />
                     </FormControl>
-                    <span>
+                    <span className="text-sm">
                       {/* Show user-friendly label */}
                       {values.visibility === "PUBLIC" ? "Shared" : "Restricted"}
                     </span>

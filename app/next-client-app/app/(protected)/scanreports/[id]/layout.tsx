@@ -1,17 +1,20 @@
-import { getScanReport, getScanReportPermissions } from "@/api/scanreports";
+import {
+  getScanReport,
+  getScanReportPermissions,
+} from "@/api/scanreports";
 import { Forbidden } from "@/components/core/Forbidden";
 import { NavGroup } from "@/components/core/nav-group";
 import DeleteDialog from "@/components/scanreports/DeleteDialog";
 import { Button } from "@/components/ui/button";
-import { Edit, FileScan, Folders, GripVertical } from "lucide-react";
+import { FileScan, Folders, GripVertical } from "lucide-react";
 import { Boundary } from "@/components/core/boundary";
+import { AvatarList } from "@/components/core/avatar-list";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuTrigger,
   DropdownMenuSeparator,
-  DropdownMenuLabel,
-
+  DropdownMenuLabel
 } from "@/components/ui/dropdown-menu";
 import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -113,7 +116,7 @@ export default async function ScanReportLayout(
           value={format(createdDate, "MMM dd, yyyy h:mm a")}
           className="py-1 md:py-0 md:px-3"
         />
-        <div className="py-1 md:py-0 md:px-3 h-5 flex items-center gap-2">
+        <div className="py-1 md:py-0 md:px-3 h-5 flex items-center gap-2 text-muted-foreground">
           Upload status:{" "}
           <StatusIcon
             statusOptions={UploadStatusOptions}
@@ -132,7 +135,20 @@ export default async function ScanReportLayout(
             }
           />
         </div>
+        
+        
       </div>
+      <div className="flex flex-col md:flex-row md:items-center h-7 text-sm space-y-2 md:space-y-0 divide-y md:divide-y-0 md:divide-x">
+        <div className="flex items-center gap-2 text-muted-foreground">
+            Members:{" "}
+            <AvatarList
+              members={[...scanreport.viewers, ...scanreport.editors].filter(
+                (member, index, self) =>
+                  index === self.findIndex((m) => m.id === member.id)
+              )}
+            />
+          </div>
+        </div>
       {/* "Navs" group */}
       <div className="flex flex-col md:flex-row justify-between">
         <div>
@@ -158,7 +174,7 @@ export default async function ScanReportLayout(
                 scanReportId={params.id}
                 scanReportName={scanreport.dataset}
               />
-              
+
               <DeleteDialog id={Number(params.id)} redirect needTrigger />
             </DropdownMenuContent>
           </DropdownMenu>

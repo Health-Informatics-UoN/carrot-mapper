@@ -188,7 +188,7 @@ export function CreateDatasetForm({
                           defaultChecked
                         />
                       </FormControl>
-                      <span>
+                      <span className="text-sm">
                         {/* Show user-friendly label */}
                         {values.visibility === "PUBLIC" ? "Shared" : "Restricted"}
                       </span>

@@ -54,10 +54,18 @@ export default async function DatasetLayout({ params, children }: LayoutProps) {
           value={format(createdDate, "MMM dd, yyyy h:mm a")}
           className="py-1 md:py-0 md:pr-3"
         />
-        <div className="py-1 md:py-0 md:px-3 h-5 flex items-center gap-2">
-          Members: <AvatarList members={project?.members || []} />
-        </div>
       </div>
+      <div className="flex flex-col md:flex-row md:items-center h-7 text-sm space-y-2 md:space-y-0 divide-y md:divide-y-0 md:divide-x">
+        <div className="flex items-center gap-2 text-muted-foreground">
+            Members:{" "}
+            <AvatarList
+              members={[...project.members].filter(
+                (member, index, self) =>
+                  index === self.findIndex((m) => m.id === member.id)
+              )}
+            />
+          </div>
+        </div>
       {/* "Navs" group */}
       <div className="flex justify-between">
         <NavGroup
