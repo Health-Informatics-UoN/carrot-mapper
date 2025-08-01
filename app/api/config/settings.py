@@ -269,7 +269,7 @@ SUPERUSER_DEFAULT_USERNAME = os.getenv("SUPERUSER_DEFAULT_USERNAME", None)
 STORAGE_TYPE = os.getenv("STORAGE_TYPE", "minio")
 
 # Worker Service Type Variable
-WORKER_SERVICE_TYPE = os.getenv("WORKER_SERVICE_TYPE", WorkerServiceType.AZURE)
+WORKER_SERVICE_TYPE = os.getenv("WORKER_SERVICE_TYPE", WorkerServiceType.AIRFLOW)
 
 # Azure Storage Connection String
 azure_storage_conn_string = "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;TableEndpoint=http://azurite:10002/devstoreaccount1;"
