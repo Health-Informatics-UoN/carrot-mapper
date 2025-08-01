@@ -30,7 +30,7 @@ const ExportScanReport = ({ scanReportId, scanReportName }: ExportProps) => {
   };
   return (
     <DropdownMenuItem onSelect={handleDownload}>
-      <HardDriveDownload className="mr-2 size-4" />
+      <HardDriveDownload />
       Export
     </DropdownMenuItem>
   );

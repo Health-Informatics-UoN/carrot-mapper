@@ -52,7 +52,7 @@ const DeleteDialog = ({
             variant="destructive"
             onSelect={(e) => e.preventDefault()}
           >
-            <TrashIcon className="mr-2 size-4"/>
+            <TrashIcon />
             Delete
           </DropdownMenuItem>
         </DialogTrigger>

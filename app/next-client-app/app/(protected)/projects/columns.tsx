@@ -20,7 +20,7 @@ export const columns: ColumnDef<Project>[] = [
         <Link href={`/projects/${id}/`}>
           <Button
             variant="link"
-            className="font-bold text-black dark:text-white"
+            className="font-bold"
           >
             {name}
           </Button>
