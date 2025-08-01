@@ -41,7 +41,7 @@ export function FacetsFilter<TData, TValue>({
     <Popover>
       <PopoverTrigger asChild>
         <Button variant="outline" className="transition-colors">
-          <Filter />
+          <Filter className="mr-2 size-4" />
           {title}
           {selectedOptions && selectedOptions?.length > 0 && (
             <>
