@@ -90,9 +90,9 @@ export function AISuggestionsButton({
         <DropdownMenuTrigger asChild>
           <div className="flex focus:outline-hidden">
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
-              className="gap-2 border-purple-400 hover:bg-purple-100 hover:text-black dark:hover:bg-gray-700 dark:hover:text-white"
+              className="border-purple-400 hover:bg-purple-100 hover:text-black dark:hover:bg-gray-700 dark:hover:text-white"
               disabled={isLoading}
             >
               {isLoading ? (
@@ -100,7 +100,6 @@ export function AISuggestionsButton({
               ) : (
                 <Sparkles className="h-4 w-4 text-purple-500" />
               )}
-              Get Suggestions
             </Button>
           </div>
         </DropdownMenuTrigger>

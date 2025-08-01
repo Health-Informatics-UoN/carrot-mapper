@@ -1,0 +1,115 @@
+"use client";
+import { ColumnDef } from "@tanstack/react-table";
+import { DataTableColumnHeader } from "@/components/data-table/DataTableColumnHeader";
+import { ConceptTagsV3 } from "@/components/concepts/ConceptTagsV3";
+import { Suspense } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
+import CopyButton from "@/components/core/CopyButton";
+import AddConceptV3 from "@/components/concepts/AddConceptV3";
+import { AISuggestionsButton } from "@/components/recommendations/ai-suggesions-button";
+import { enableAIRecommendation } from "@/constants";
+
+export const columns = (
+  tableId: string,
+  canEdit: boolean,
+): ColumnDef<ScanReportValueV3>[] => [
+  {
+    id: "Value",
+    accessorKey: "value",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Value" sortName="value" />
+    ),
+    enableHiding: true,
+    enableSorting: false,
+    cell: ({ row }) => {
+      const { value, id } = row.original;
+
+      return (
+        <div className="flex items-center gap-2">
+          <a
+              className="font-bold underline underline-offset-2"
+              href={`https://athena.ohdsi.org/search-terms/terms?query=${value}`}
+              target="_blank"
+            >
+              {value}
+          </a>
+          <CopyButton textToCopy={value} />
+          {enableAIRecommendation === "true" && (
+            <AISuggestionsButton
+              value={value}
+              tableId={tableId}
+              rowId={id}
+              contentType="scanreportvalue"
+            />
+            )}
+        </div>
+      );
+    },
+  },
+  {
+    id: "Value Description",
+    accessorKey: "value_description",
+    header: ({ column }) => (
+      <DataTableColumnHeader
+        column={column}
+        title="Value Description"
+        sortName="value_description"
+      />
+    ),
+    enableHiding: true,
+    enableSorting: false,
+  },
+  {
+    id: "Frequency",
+    accessorKey: "frequency",
+    header: ({ column }) => (
+      <DataTableColumnHeader
+        column={column}
+        title="Frequency"
+        sortName="frequency"
+      />
+    ),
+    enableHiding: true,
+    enableSorting: false,
+  },
+  {
+    id: "Concepts",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Concepts" />
+    ),
+    enableHiding: true,
+    enableSorting: false,
+    cell: ({ row }) => {
+      const { concepts } = row.original;
+      return (
+        <Suspense fallback={<Skeleton className="h-5 w-[250px]" />}>
+          <ConceptTagsV3
+            concepts={concepts}
+            scanReportId={"2"}
+            tableId={tableId}
+            fieldId={row.original.scan_report_field}
+            valueId={row.original.id}
+          />
+        </Suspense>
+      );
+    },
+  },
+  {
+    id: "Add Concept",
+    header: "",
+    cell: ({ row }) => {
+      const { id } = row.original;
+
+      return (
+        <AddConceptV3
+          rowId={id}
+          tableId={tableId}
+          contentType="scanreportvalue"
+          disabled={!canEdit}
+          scanReportId={"2"}
+          fieldId={row.original.scan_report_field}
+        />
+      );
+    },
+  },
+];
