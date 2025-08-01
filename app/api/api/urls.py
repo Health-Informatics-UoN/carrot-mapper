@@ -1,6 +1,6 @@
 from api import views
 from django.urls import include, path
-from shared.files.views import FileDownloadView
+from files.views import FileDownloadView
 from shared.jobs.views import JobView
 from drf_spectacular.views import (
     SpectacularAPIView,

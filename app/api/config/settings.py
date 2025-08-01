@@ -67,6 +67,7 @@ INSTALLED_APPS = [
     "projects",
     "api",
     "mapping",
+    "files"
     "rest_framework",
     "django_filters",
     "rest_framework.authtoken",
@@ -80,7 +81,6 @@ INSTALLED_APPS = [
     "dj_rest_auth",
     "dj_rest_auth.registration",
     "shared",
-    "shared.files",
     "shared.jobs",
     "drf_spectacular",
 ]
