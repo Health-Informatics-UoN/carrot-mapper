@@ -37,7 +37,7 @@ export const columns: ColumnDef<DataSet>[] = [
         <Link href={`/datasets/${id}/`}>
           <Button
             variant="link"
-            className="font-bold text-black dark:text-white"
+            className="font-bold"
           >
             {name}
           </Button>

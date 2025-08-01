@@ -31,11 +31,11 @@ export function ActionsDownloadMenu({ scanreportId }: Props) {
     <DropdownMenuGroup>
       <DropdownMenuLabel>Downloads</DropdownMenuLabel>
       <DropdownMenuItem onSelect={() => handleDownload("application/json")}>
-        <FileJson className="mr-2 size-4" />
+        <FileJson />
         Mapping JSON
       </DropdownMenuItem>
       <DropdownMenuItem onSelect={() => handleDownload("text/csv")}>
-        <FileSpreadsheet className="mr-2 size-4" />
+        <FileSpreadsheet />
         Mapping CSV
       </DropdownMenuItem>
     </DropdownMenuGroup>
