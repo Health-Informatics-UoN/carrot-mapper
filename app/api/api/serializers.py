@@ -13,7 +13,7 @@ from openpyxl.workbook.workbook import Workbook  # type: ignore
 from rest_framework import serializers
 from rest_framework.exceptions import NotFound, ParseError, PermissionDenied
 from data.models import Concept
-from shared.mapping.models import (
+from mapping.models import (
     Dataset,
     ScanReport,
     ScanReportConcept,
@@ -25,7 +25,7 @@ from shared.mapping.models import (
     MappingStatus,
 )
 from shared.users.serializers import UserSerializer
-from shared.mapping.permissions import has_editorship, is_admin, is_az_function_user
+from mapping.permissions import has_editorship, is_admin, is_az_function_user
 from shared.services.rules_export import analyse_concepts
 from config.settings import DATA_UPLOAD_MAX_MEMORY_SIZE
 

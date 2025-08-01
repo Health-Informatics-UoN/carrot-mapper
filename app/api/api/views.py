@@ -49,7 +49,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from data.models import Concept
 from shared.jobs.models import Job, JobStage, StageStatus
-from shared.mapping.models import (
+from mapping.models import (
     DataDictionary,
     DataPartner,
     MappingRule,
@@ -63,7 +63,7 @@ from shared.mapping.models import (
 from drf_spectacular.utils import extend_schema
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter
-from shared.mapping.permissions import get_user_permissions_on_scan_report
+from mapping.permissions import get_user_permissions_on_scan_report
 from shared.services.rules import (
     _find_destination_table,
     save_mapping_rules,

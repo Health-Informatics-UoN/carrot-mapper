@@ -9,7 +9,7 @@ from datasets.serializers import (
 )
 from django.db.models.query_utils import Q
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import generics, status
+from rest_framework import status
 from rest_framework.filters import OrderingFilter
 from rest_framework.generics import GenericAPIView
 from rest_framework.mixins import (
@@ -23,8 +23,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from drf_spectacular.utils import extend_schema
 from drf_spectacular.types import OpenApiTypes
-from shared.mapping.models import Dataset, VisibilityChoices
-from shared.mapping.permissions import (
+from mapping.models import Dataset, VisibilityChoices
+from mapping.permissions import (
     CanAdmin,
     CanEdit,
     CanView,
