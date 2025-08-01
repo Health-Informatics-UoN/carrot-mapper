@@ -4,21 +4,24 @@ import { Button } from "@/components/ui/button";
 import { ApiError } from "@/lib/api/error";
 import { Cross2Icon } from "@radix-ui/react-icons";
 import { toast } from "sonner";
-import { Tooltip } from "react-tooltip";
+import { ConceptDetailsSheet } from "./ConceptDetailsSheet";
 
 const LazyBadge = lazy(() =>
   import("@/components/ui/badge").then((module) => ({ default: module.Badge })),
 );
+
 export function ConceptTagsV3({
   concepts,
   scanReportId,
   tableId,
   fieldId,
+  valueId,
 }: {
   concepts: ScanReportConceptV3[];
   scanReportId: string;
   tableId: string;
   fieldId: number;
+  valueId: number;
 }) {
   const [optimisticConcepts, setOptimisticConcepts] = useOptimistic(
     concepts,
@@ -46,46 +49,46 @@ export function ConceptTagsV3({
   return optimisticConcepts && optimisticConcepts.length > 0 ? (
     <div className="flex flex-col items-start w-[250px]">
       {optimisticConcepts.map((concept) => (
-        <a
+        <ConceptDetailsSheet
           key={concept.id}
-          data-tooltip-id="badge-tooltip"
-          data-tooltip-content={`${concept.concept.concept_id} ${
-            concept.concept.concept_name
-          } ${
-            concept.creation_type === "V"
-              ? "(built from a OMOP vocabulary)"
-              : concept.creation_type === "M"
-                ? "(added manually)"
-                : concept.creation_type === "R"
-                  ? "(added though mapping reuse)"
-                  : ""
-          }`}
-          data-tooltip-place="top"
+          concept={concept}
+          onDelete={handleDelete}
+          scanReportId={scanReportId}
+          tableId={tableId}
+          fieldId={fieldId.toString()}
+          valueId={valueId}
         >
-          <Tooltip id="badge-tooltip" />
-          <LazyBadge
-            className={`${
-              concept.creation_type === "V"
-                ? "bg-carrot-vocab hover:bg-carrot-vocab dark:bg-carrot-vocab dark:text-white"
-                : concept.creation_type === "M"
-                  ? "bg-carrot-manual hover:bg-carrot-manual dark:bg-carrot-manual dark:text-white"
-                  : concept.creation_type === "R"
-                    ? "bg-carrot-reuse hover:bg-carrot-reuse dark:bg-carrot-reuse dark:text-white"
-                    : ""
-            } ${concepts.length > 1 && "my-[1px]"}`}
-            key={concept.concept.concept_code}
+          <Button
+            variant="ghost"
+            className="p-0 h-auto w-full justify-start"
           >
-            <p className="pl-2 pr-1 py-1">{`${concept.concept.concept_id} ${concept.concept.concept_name} (${concept.creation_type})`}</p>
-            <Button
-              size="icon"
-              variant="ghost"
-              onClick={async () => await handleDelete(concept.id)}
-              className="dark:text-white"
+            <LazyBadge
+              className={`${
+                concept.creation_type === "V"
+                  ? "bg-carrot-vocab hover:bg-carrot-vocab dark:bg-carrot-vocab dark:text-white"
+                  : concept.creation_type === "M"
+                    ? "bg-carrot-manual hover:bg-carrot-manual dark:bg-carrot-manual dark:text-white"
+                    : concept.creation_type === "R"
+                      ? "bg-carrot-reuse hover:bg-carrot-reuse dark:bg-carrot-reuse dark:text-white"
+                      : ""
+              } ${concepts.length > 1 && "my-[1px]"}`}
+              key={concept.concept.concept_code}
             >
-              <Cross2Icon />
-            </Button>
-          </LazyBadge>
-        </a>
+              <p className="pl-2 pr-1 py-1">{`${concept.concept.concept_id} ${concept.concept.concept_name} (${concept.creation_type})`}</p>
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  await handleDelete(concept.id);
+                }}
+                className="dark:text-white"
+              >
+                <Cross2Icon />
+              </Button>
+            </LazyBadge>
+          </Button>
+        </ConceptDetailsSheet>
       ))}
     </div>
   ) : (

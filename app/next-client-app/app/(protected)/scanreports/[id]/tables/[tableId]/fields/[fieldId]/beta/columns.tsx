@@ -85,9 +85,10 @@ export const columns = (
         <Suspense fallback={<Skeleton className="h-5 w-[250px]" />}>
           <ConceptTagsV3
             concepts={concepts}
-            scanReportId={"11"}
+            scanReportId={"2"}
             tableId={tableId}
             fieldId={row.original.scan_report_field}
+            valueId={row.original.id}
           />
         </Suspense>
       );
@@ -105,7 +106,7 @@ export const columns = (
           tableId={tableId}
           contentType="scanreportvalue"
           disabled={!canEdit}
-          scanReportId={"11"}
+          scanReportId={"2"}
           fieldId={row.original.scan_report_field}
         />
       );

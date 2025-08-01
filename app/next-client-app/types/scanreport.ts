@@ -79,6 +79,7 @@ interface ScanReportConceptDetailV3 extends ScanReportConceptV3 {
   description: string;
   mapping_tool: string;
   mapping_tool_version: string;
+  concept: Concept;
 }
 
 interface ScanReportValue {
