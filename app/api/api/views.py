@@ -98,7 +98,7 @@ class DataPartnerViewSet(GenericAPIView, ListModelMixin):
             Handles GET requests to return a list of DataPartner objects.
     """
 
-    queryset = DataPartner.objects.all()
+    queryset = DataPartner.objects.all().order_by("name")
     serializer_class = DataPartnerSerializer
 
     def get(self, request, *args, **kwargs):
