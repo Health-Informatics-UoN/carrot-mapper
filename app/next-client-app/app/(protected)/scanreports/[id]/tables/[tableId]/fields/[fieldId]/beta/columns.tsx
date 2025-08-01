@@ -6,6 +6,8 @@ import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import CopyButton from "@/components/core/CopyButton";
 import AddConceptV3 from "@/components/concepts/AddConceptV3";
+import { AISuggestionsButton } from "@/components/recommendations/ai-suggesions-button";
+import { enableAIRecommendation } from "@/constants";
 
 export const columns = (
   tableId: string,
@@ -20,12 +22,26 @@ export const columns = (
     enableHiding: true,
     enableSorting: false,
     cell: ({ row }) => {
-      const { value } = row.original;
+      const { value, id } = row.original;
 
       return (
         <div className="flex items-center gap-2">
-          <span className="font-bold">{value}</span>
+          <a
+              className="font-bold underline underline-offset-2"
+              href={`https://athena.ohdsi.org/search-terms/terms?query=${value}`}
+              target="_blank"
+            >
+              {value}
+          </a>
           <CopyButton textToCopy={value} />
+          {enableAIRecommendation === "true" && (
+            <AISuggestionsButton
+              value={value}
+              tableId={tableId}
+              rowId={id}
+              contentType="scanreportvalue"
+            />
+            )}
         </div>
       );
     },
