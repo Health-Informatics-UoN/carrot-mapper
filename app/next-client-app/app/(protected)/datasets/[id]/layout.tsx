@@ -8,6 +8,7 @@ import { format } from "date-fns/format";
 import { getDataSet, getDatasetPermissions } from "@/api/datasets";
 import { Badge } from "@/components/ui/badge";
 import { InfoItem } from "@/components/core/InfoItem";
+import { AvatarList } from "@/components/core/avatar-list";
 import Link from "next/link";
 
 interface LayoutProps {
@@ -62,9 +63,14 @@ export default async function DatasetLayout({
           <div>Project(s): </div>
           <div className="flex space-x-1">
             {projects.map((project) => (
-              <Badge variant="outline" key={project.id}>
-                {project.name}
-              </Badge>
+              <Link key={project.id} href={`/projects/${project.id}`}>
+                <Badge
+                  variant="outline"
+                  className="cursor-pointer hover:bg-accent hover:text-accent-foreground transition-colors"
+                >
+                  {project.name}
+                </Badge>
+              </Link>
             ))}
           </div>
         </h3>
@@ -78,7 +84,19 @@ export default async function DatasetLayout({
           value={format(createdDate, "MMM dd, yyyy h:mm a")}
           className="py-1 md:py-0 md:px-3"
         />
+        
       </div>
+      <div className="flex flex-col md:flex-row md:items-center h-7 text-sm space-y-2 md:space-y-0 divide-y md:divide-y-0 md:divide-x">
+        <div className="flex items-center gap-2 text-muted-foreground">
+            Members:{" "}
+            <AvatarList
+              members={[...dataset.viewers, ...dataset.editors].filter(
+                (member, index, self) =>
+                  index === self.findIndex((m) => m.id === member.id)
+              )}
+            />
+          </div>
+        </div>
       {/* "Navs" group */}
       <div className="flex justify-between">
         <NavGroup
