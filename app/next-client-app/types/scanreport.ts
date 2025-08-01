@@ -14,8 +14,8 @@ interface ScanReport {
   hidden: boolean;
   visibility: string;
   author: User;
-  viewers: number[];
-  editors: number[];
+  viewers: User[];
+  editors: User[];
 }
 
 interface ScanReportTable {
