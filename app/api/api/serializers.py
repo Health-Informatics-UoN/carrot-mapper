@@ -24,7 +24,7 @@ from mapping.models import (
     UploadStatus,
     MappingStatus,
 )
-from shared.users.serializers import UserSerializer
+from users.serializers import UserSerializer
 from mapping.permissions import has_editorship, is_admin, is_az_function_user
 from shared.services.rules_export import analyse_concepts
 from config.settings import DATA_UPLOAD_MAX_MEMORY_SIZE
