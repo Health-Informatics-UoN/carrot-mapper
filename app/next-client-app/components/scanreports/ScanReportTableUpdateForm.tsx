@@ -125,7 +125,7 @@ export function ScanReportTableUpdateForm({
                           className="size-5"
                         />
                       </FormControl>
-                      <span>
+                      <span className="text-sm">
                         {values.triggerReuse === true ? "YES" : "NO"}
                       </span>
                     </div>
