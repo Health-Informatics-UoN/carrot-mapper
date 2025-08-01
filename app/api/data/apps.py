@@ -2,5 +2,5 @@ from django.apps import AppConfig
 
 
 class DataConfig(AppConfig):
-    name = "shared.data"
+    name = "data"
     label = "data"
