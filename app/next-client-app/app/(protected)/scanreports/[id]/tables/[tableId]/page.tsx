@@ -75,7 +75,6 @@ export default async function ScanReportsField(props: ScanReportsFieldProps) {
           columns={columns}
           filterCol="name"
           filterText="field "
-          linkPrefix="fields/"
           tableId={tableId}
         />
       </div>
