@@ -112,7 +112,7 @@ export const columns: ColumnDef<ScanReport>[] = [
             id={id.toString()}
             mapping_status={mapping_status || { value: "PENDING" }}
             dataset={dataset}
-            className="w-[160px]"
+            className="w-[165px]"
             disabled={upload_status_check.value === "COMPLETE" ? false : true} // Users who don't have permissions will see the error
           />
         </div>
