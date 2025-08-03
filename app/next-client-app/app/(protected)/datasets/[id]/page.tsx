@@ -1,4 +1,4 @@
-import { columns } from "../../scanreports/columns";
+import { columns } from "./columns";
 import { getScanReports } from "@/api/scanreports";
 import { DataTable } from "@/components/data-table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
