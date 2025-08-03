@@ -17,14 +17,6 @@ import { HandleArchive } from "@/components/core/HandleArchive";
 
 export const columns: ColumnDef<DataSet>[] = [
   {
-    accessorKey: "id",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="ID" sortName="id" />
-    ),
-    enableHiding: false,
-    enableSorting: true
-  },
-  {
     id: "Name",
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Name" sortName="name" />

@@ -6,14 +6,6 @@ import { format } from "date-fns/format";
 
 export const columns: ColumnDef<DataSet>[] = [
   {
-    accessorKey: "id",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="ID" sortName="id" />
-    ),
-    enableHiding: false,
-    enableSorting: true,
-  },
-  {
     accessorKey: "name",
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Name" sortName="name" />
