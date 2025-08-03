@@ -86,7 +86,7 @@ export default async function DatasetLayout({
         />
         
       </div>
-      <div className="flex flex-col md:flex-row md:items-center h-7 text-sm space-y-2 md:space-y-0 divide-y md:divide-y-0 md:divide-x">
+      <div className="hidden md:flex flex-col md:flex-row md:items-center h-7 text-sm space-y-2 md:space-y-0 divide-y md:divide-y-0 md:divide-x">
         <div className="flex items-center gap-2 text-muted-foreground">
             Members:{" "}
             <AvatarList
