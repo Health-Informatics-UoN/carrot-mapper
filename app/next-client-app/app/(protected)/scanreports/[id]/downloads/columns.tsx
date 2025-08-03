@@ -30,18 +30,7 @@ export const columns: ColumnDef<FileDownload>[] = [
     ),
     cell: ({ row }) => {
       const { created_at } = row.original;
-      return (
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger>
-              <>{formatDistanceToNow(created_at)} ago</>
-            </TooltipTrigger>
-            <TooltipContent>
-              {format(created_at, "MMM dd, yyyy h:mm a")}
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      );
+      return format(created_at, "d MMM HH:mm");
     },
     enableHiding: true,
     enableSorting: true,
