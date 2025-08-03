@@ -95,8 +95,9 @@ export default async function DatasetLayout({
                   index === self.findIndex((m) => m.id === member.id)
               )}
             />
-          </div>
         </div>
+      </div>
+      
       {/* "Navs" group */}
       <div className="flex justify-between">
         <NavGroup
