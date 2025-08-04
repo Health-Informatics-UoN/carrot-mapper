@@ -19,7 +19,6 @@ interface CustomDataTableProps<T> {
   ) => any;
   filterCol: string;
   filterText: string;
-  linkPrefix?: string;
   tableId: string;
 }
 
@@ -35,7 +34,6 @@ export function ConceptDataTable<
   columns,
   filterCol,
   filterText,
-  linkPrefix,
   tableId,
 }: CustomDataTableProps<T>) {
   const filter = <DataTableFilter filter={filterCol} filterText={filterText} />;
@@ -87,7 +85,6 @@ export function ConceptDataTable<
         count={count}
         Filter={filter}
         defaultPageSize={defaultPageSize}
-        linkPrefix={linkPrefix}
       />
     </div>
   );

@@ -6,6 +6,7 @@ import { objToQuery } from "@/lib/client-utils";
 import { ScanReportsTableFilter } from "@/components/scanreports/ScanReportsTableFilter";
 import { FilterParameters } from "@/types/filter";
 import { FileScan } from "lucide-react";
+import { VisibilityState } from "@tanstack/react-table";
 import { Metadata } from "next";
 
 interface ScanReportsProps {
@@ -19,7 +20,7 @@ export const metadata: Metadata = {
 
 export default async function ScanReports(props: ScanReportsProps) {
   const searchParams = await props.searchParams;
-  const defaultPageSize = 10;
+  const defaultPageSize = 30;
   const defaultParams = {
     hidden: false,
     page_size: defaultPageSize,
@@ -29,6 +30,11 @@ export default async function ScanReports(props: ScanReportsProps) {
   const query = objToQuery(combinedParams);
   const scanReports = await getScanReports(query);
   const filter = <ScanReportsTableFilter filter="dataset" filterText="name" />;
+
+  // Define which columns should be hidden by default
+  const initialColumnVisibility: VisibilityState = {
+    id: false,
+  };
 
   return (
     <div className="space-y-2">
@@ -62,6 +68,7 @@ export default async function ScanReports(props: ScanReportsProps) {
               count={scanReports.count}
               Filter={filter}
               defaultPageSize={defaultPageSize}
+              initialColumnVisibility={initialColumnVisibility}
             />
           </TabsContent>
           <TabsContent value="archived">
@@ -71,6 +78,7 @@ export default async function ScanReports(props: ScanReportsProps) {
               count={scanReports.count}
               Filter={filter}
               defaultPageSize={defaultPageSize}
+              initialColumnVisibility={initialColumnVisibility}
             />
           </TabsContent>
         </Tabs>

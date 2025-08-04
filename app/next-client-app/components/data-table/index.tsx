@@ -34,13 +34,13 @@ interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
   count: number;
-  linkPrefix?: string;
   Filter?: JSX.Element;
   viewColumns?: boolean;
   paginated?: boolean;
   overflow?: boolean;
   RefreshButton?: JSX.Element;
   defaultPageSize?: 10 | 20 | 30 | 40 | 50;
+  initialColumnVisibility?: VisibilityState;
 }
 
 function UrlBuilder(id: string, prefix: string = "") {
@@ -51,16 +51,16 @@ export function DataTable<TData, TValue>({
   columns,
   data,
   count,
-  linkPrefix = "",
   Filter,
   viewColumns = true,
   paginated = true,
   overflow = true,
   RefreshButton,
-  defaultPageSize
+  defaultPageSize,
+  initialColumnVisibility
 }: DataTableProps<TData, TValue>) {
   const [columnVisibility, setColumnVisibility] =
-    React.useState<VisibilityState>({});
+    React.useState<VisibilityState>(initialColumnVisibility || {});
 
   const table = useReactTable({
     data,
@@ -75,22 +75,6 @@ export function DataTable<TData, TValue>({
       columnVisibility
     }
   });
-
-  const handleRowClick = (id: string) => {
-    let location = window.location.pathname;
-    // the test method of the regular expression object to check if location contains "datasets/" followed by one or more digits.
-    // If it does, it sets location to "/scanreports/"
-    if (/datasets\/\d+/.test(location)) {
-      location = "/scanreports/";
-    }
-    if (/projects\/\d+/.test(location)) {
-      location = "/datasets/";
-    }
-    window.location.href = UrlBuilder(
-      id,
-      `${location.endsWith("/") ? location : location + "/"}${linkPrefix}`
-    );
-  };
 
   return (
     <div>
