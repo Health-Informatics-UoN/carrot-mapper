@@ -1,4 +1,4 @@
-import { columns } from "./columns";
+import { columns } from "@/app/(protected)/scanreports/columns";
 import { getScanReports } from "@/api/scanreports";
 import { DataTable } from "@/components/data-table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -35,6 +35,7 @@ export default async function DatasetSRList(props: DataSetListProps) {
   // Define which columns should be hidden by default
   const initialColumnVisibility: VisibilityState = {
     id: false,
+    Dataset: false,
   };
 
   return (
