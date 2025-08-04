@@ -204,7 +204,7 @@ services:
       AIRFLOW_DEBUG_MODE: True
       # Search recommendations feature flag - controls whether search recommendations task is included in auto_mapping DAG
       SEARCH_ENABLED: False
-      AIRFLOW_DAGRUN_TIMEOUT: 0.1 # Timeout for each dagrun in minutes
+      AIRFLOW_DAGRUN_TIMEOUT: 60 # Timeout for each dagrun in minutes
       AIRFLOW_VAR_JSON_VERSION: v2
 
 volumes:
