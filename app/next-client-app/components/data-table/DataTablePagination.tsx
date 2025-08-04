@@ -91,8 +91,8 @@ but it also means that we need to change many other API endpoints as well. So it
         </div>
         <div className="flex items-center space-x-2">
           <Button
+            variant="outline"
             aria-label="Go to first page"
-            className="pagination-btn"
             onClick={() => navigateToPage(1)}
             disabled={canNotGoToPreviousPage()}
           >
@@ -102,8 +102,8 @@ but it also means that we need to change many other API endpoints as well. So it
             />
           </Button>
           <Button
+            variant="outline"
             aria-label="Go to previous page"
-            className="pagination-btn"
             onClick={() => navigateToPage(currentPage - 1)}
             disabled={canNotGoToPreviousPage()}
           >
@@ -113,8 +113,8 @@ but it also means that we need to change many other API endpoints as well. So it
             />
           </Button>
           <Button
+            variant="outline"
             aria-label="Go to next page"
-            className="pagination-btn"
             onClick={() => navigateToPage(currentPage + 1)}
             disabled={canNotGoToNextPage()}
           >
@@ -124,8 +124,8 @@ but it also means that we need to change many other API endpoints as well. So it
             />
           </Button>
           <Button
+            variant="outline"
             aria-label="Go to last page"
-            className="pagination-btn"
             onClick={() => navigateToPage(numberOfPages)}
             disabled={canNotGoToNextPage()}
           >

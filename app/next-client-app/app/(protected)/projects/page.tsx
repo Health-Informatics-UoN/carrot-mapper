@@ -5,6 +5,12 @@ import { DataTableFilter } from "@/components/data-table/DataTableFilter";
 import { FilterParameters } from "@/types/filter";
 import { Folders } from "lucide-react";
 import { getProjectsList } from "@/api/projects";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Projects | Carrot Mapper",
+  description: "Projects for the current user",
+};
 
 interface ProjectListProps {
   searchParams?: Promise<FilterParameters>;
