@@ -14,6 +14,7 @@ import { InfoItem } from "@/components/core/InfoItem";
 import { Formik } from "formik";
 import { FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Slider } from "@/components/ui/slider";
 import { Save } from "lucide-react";
 import { toast } from "sonner";
 
@@ -42,6 +43,123 @@ const getCreationTypeDescription = (creationType: string) => {
 
 interface FormData {
   description: string;
+  confidence: number;
+}
+
+interface ConceptEditFormProps {
+  conceptDetail: any;
+  scanReportId: string;
+  tableId: string;
+  fieldId: string;
+  valueId: number;
+  conceptId: number;
+  onUpdate: (updatedDetail: any) => void;
+}
+
+function ConceptEditForm({ 
+  conceptDetail, 
+  scanReportId, 
+  tableId, 
+  fieldId, 
+  valueId, 
+  conceptId, 
+  onUpdate 
+}: ConceptEditFormProps) {
+  const handleUpdateConcept = async (data: FormData) => {
+    try {
+      const response = await updateScanReportConceptDetail(
+        scanReportId,
+        tableId,
+        fieldId,
+        valueId.toString(),
+        conceptId.toString(),
+        { 
+          description: data.description,
+          confidence: data.confidence
+        }
+      );
+      
+      if (response) {
+        onUpdate(response);
+        toast.success("Concept details updated successfully!");
+      }
+    } catch (error: any) {
+      toast.error(`Update failed. Error: ${error.message}`);
+    }
+  };
+
+  return (
+    <Formik
+      initialValues={{
+        description: conceptDetail.description || "",
+        confidence: conceptDetail.confidence || 0
+      }}
+      onSubmit={handleUpdateConcept}
+    >
+      {({ values, handleChange, handleSubmit, setFieldValue }) => (
+        <form onSubmit={handleSubmit}>
+          <FormField name="confidence">
+            {({ field }) => (
+              <FormItem>
+                <FormLabel>Confidence</FormLabel>
+                <FormDescription>
+                  Confidence score for the mapping (0.00 - 1.00)
+                </FormDescription>
+                <FormControl>
+                  <div className="space-y-2">
+                    <Slider
+                      min={0}
+                      max={100}
+                      step={1}
+                      value={[Math.round(values.confidence * 100)]}
+                      onValueChange={(value) => {
+                        setFieldValue("confidence", value[0] / 100);
+                      }}
+                      className="w-full"
+                    />
+                    <div className="text-sm text-muted-foreground">
+                      Current value: {values.confidence.toFixed(2)}
+                    </div>
+                  </div>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          </FormField>
+          <div className="mt-4">
+          <FormField name="description">
+            {({ field }) => (
+              <FormItem>
+                <FormLabel>Description</FormLabel>
+                <FormDescription>
+                  Description of the concept mapping.
+                </FormDescription>
+                <FormControl>
+                  <Input
+                    {...field}
+                    placeholder="Enter description"
+                    onChange={handleChange}
+                    name="description"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          </FormField>
+          </div>
+          <div className="flex mt-4">
+            <Button
+              type="submit"
+              size="sm"
+            >
+              <Save className="mr-2 h-4 w-4" />
+              Save Changes
+            </Button>
+          </div>
+        </form>
+      )}
+    </Formik>
+  );
 }
 
 export function ConceptDetailsSheet({ 
@@ -64,30 +182,8 @@ export function ConceptDetailsSheet({
     }
   };
 
-  const handleUpdateDescription = async (data: FormData) => {
-    if (!scanReportId || !tableId || !fieldId || !valueId || !conceptDetail) {
-      toast.error("Missing required parameters for update");
-      return;
-    }
-
-    try {
-      const response = await updateScanReportConceptDetail(
-        scanReportId,
-        tableId,
-        fieldId,
-        valueId.toString(),
-        concept.id.toString(),
-        { description: data.description }
-      );
-      
-      if (response) {
-        // Update the local state with the new data
-        setConceptDetail(response);
-        toast.success("Description updated successfully!");
-      }
-    } catch (error: any) {
-      toast.error(`Update failed. Error: ${error.message}`);
-    }
+  const handleUpdateConcept = (updatedDetail: any) => {
+    setConceptDetail(updatedDetail);
   };
 
   useEffect(() => {
@@ -125,10 +221,10 @@ export function ConceptDetailsSheet({
             {concept.concept.concept_id} - {concept.concept.concept_name}
           </SheetTitle>
         </SheetHeader>
-        <div className="mt-6 space-y-4">
+        <div className="mt-6 space-y-6">
           <div>
-            <h3 className="font-semibold mb-2">Mapping Details</h3>
-            <div className="space-y-2 text-sm">
+            <h3 className="font-semibold mb-4 text-lg">Mapping Details</h3>
+            <div className="space-y-3 text-sm bg-muted/30 rounded-lg p-4">
               <div>
                 <InfoItem
                   label="Concept ID"
@@ -153,131 +249,103 @@ export function ConceptDetailsSheet({
                   value={getCreationTypeDescription(concept.creation_type)}
                 />
               </div>
+              
               {isLoading && (
-                <div className="text-muted-foreground">Loading additional details...</div>
+                <div className="text-muted-foreground py-2">Loading additional details...</div>
               )}
+              
               {conceptDetail && !isLoading && (
                 <>
-                  <div>
-                    <InfoItem
-                      label="Created At"
-                      value={new Date(conceptDetail.created_at).toLocaleString()}
-                    />
-                  </div>
-                  <div>
-                    <InfoItem
-                      label="Created By"
-                      value={conceptDetail.created_by?.username || "Unknown"}
-                    />
-                  </div>
-                  <div>
-                    <InfoItem
-                      label="Confidence"
-                      value={conceptDetail.confidence}
-                    />
-                  </div>
-                  <div>
-                    <Formik
-                      initialValues={{
-                        description: conceptDetail.description || ""
-                      }}
-                      onSubmit={handleUpdateDescription}
-                    >
-                      {({ values, handleChange, handleSubmit }) => (
-                        <form onSubmit={handleSubmit}>
-                          <FormField name="description">
-                            {({ field }) => (
-                              <FormItem>
-                                <FormLabel>Description</FormLabel>
-                                <FormDescription>
-                                  Description of the concept mapping.
-                                </FormDescription>
-                                <FormControl>
-                                  <Input
-                                    {...field}
-                                    placeholder="Enter description"
-                                    onChange={handleChange}
-                                    name="description"
-                                  />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          </FormField>
-                          <div className="flex mt-2">
-                            <Button
-                              type="submit"
-                              size="sm"
-                            >
-                              <Save className="mr-2 h-4 w-4" />
-                              Save Description
-                            </Button>
-                          </div>
-                        </form>
-                      )}
-                    </Formik>
-                  </div>
-                  <div>
-                    <InfoItem
-                      label="Mapping Tool"
-                      value={conceptDetail.mapping_tool}
-                    />
-                  </div>
-                  <div>
-                    <InfoItem
-                      label="Mapping Tool Version"
-                      value={conceptDetail.mapping_tool_version}
-                    />
-                  </div>
-                  <hr className="my-4" />
-                  <h3 className="font-semibold mb-2">Concept Details</h3>
-                  <div>
-                    <InfoItem
-                      label="Concept"
-                      value={conceptDetail.concept.concept_id}
-                    />
-                  </div>
-                  <div>
-                    <InfoItem
-                      label="Domain"
-                      value={conceptDetail.concept.domain_id}
-                    />
-                  </div>
-                  <div>
-                    <InfoItem
-                      label="Vocabulary"
-                      value={conceptDetail.concept.vocabulary_id}
-                    />
-                  </div>
-                  <div>
-                    <InfoItem
-                      label="Concept Class"
-                      value={conceptDetail.concept.concept_class_id}
-                    />
-                  </div>
-                  <div>
-                    <InfoItem
-                      label="Standard Concept"
-                      value={conceptDetail.concept.standard_concept}
-                    />
-                  </div>
-                  <div>
-                    <InfoItem
-                      label="Valid Start Date"
-                      value={conceptDetail.concept.valid_start_date}
+                  <div className="space-y-3 pt-2 border-t">
+                    <div>
+                      <InfoItem
+                        label="Created At"
+                        value={new Date(conceptDetail.created_at).toLocaleString()}
                       />
-                  </div>
-                  <div>
-                    <InfoItem
-                      label="Valid End Date"
-                      value={conceptDetail.concept.valid_end_date}
+                    </div>
+                    <div>
+                      <InfoItem
+                        label="Created By"
+                        value={conceptDetail.created_by?.username || "Unknown"}
                       />
+                    </div>
+                    <div>
+                      <InfoItem
+                        label="Mapping Tool"
+                        value={conceptDetail.mapping_tool}
+                      />
+                    </div>
+                    <div>
+                      <InfoItem
+                        label="Mapping Tool Version"
+                        value={conceptDetail.mapping_tool_version}
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <InfoItem
-                      label="Invalid Reason"
-                      value={conceptDetail.concept.invalid_reason}
+                  
+                  <div className="pt-4 border-t">
+                    <ConceptEditForm
+                      conceptDetail={conceptDetail}
+                      scanReportId={scanReportId!}
+                      tableId={tableId!}
+                      fieldId={fieldId!}
+                      valueId={valueId!}
+                      conceptId={concept.id}
+                      onUpdate={handleUpdateConcept}
                     />
+                  </div>
+
+                  <hr className="my-6" />
+                  <h3 className="font-semibold mb-4 text-lg">Concept Details</h3>
+                  <div className="space-y-3 text-sm bg-muted/30 rounded-lg p-4">
+                    <div>
+                      <InfoItem
+                        label="Concept"
+                        value={conceptDetail.concept.concept_id}
+                      />
+                    </div>
+                    <div>
+                      <InfoItem
+                        label="Domain"
+                        value={conceptDetail.concept.domain_id}
+                      />
+                    </div>
+                    <div>
+                      <InfoItem
+                        label="Vocabulary"
+                        value={conceptDetail.concept.vocabulary_id}
+                      />
+                    </div>
+                    <div>
+                      <InfoItem
+                        label="Concept Class"
+                        value={conceptDetail.concept.concept_class_id}
+                      />
+                    </div>
+                    <div>
+                      <InfoItem
+                        label="Standard Concept"
+                        value={conceptDetail.concept.standard_concept}
+                      />
+                    </div>
+                    <div>
+                      <InfoItem
+                        label="Valid Start Date"
+                        value={conceptDetail.concept.valid_start_date}
+                        />
+                    </div>
+                    <div>
+                      <InfoItem
+                        label="Valid End Date"
+                        value={conceptDetail.concept.valid_end_date}
+                        />
+                    </div>
+                    <div>
+                      <InfoItem
+                        label="Invalid Reason"
+                        value={conceptDetail.concept.invalid_reason}
+                      />
+                    </div>
                   </div>
                   
                 <Button variant="outline" size="sm" className="w-full" asChild>
