@@ -1,7 +1,11 @@
 from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.operators.empty import EmptyOperator
-from libs.utils import create_task, validate_params_rules_export
+from libs.utils import (
+    create_task,
+    validate_params_rules_export,
+    update_job_status_on_failure,
+)
 from libs.rules_export.core import pre_process_rules, build_and_upload_rules_file
 from libs.utils import connect_to_storage
 from libs.settings import AIRFLOW_DEBUG_MODE, AIRFLOW_DAGRUN_TIMEOUT
@@ -40,6 +44,7 @@ dag = DAG(
     catchup=False,
     is_paused_upon_creation=False,
     dagrun_timeout=timedelta(minutes=float(AIRFLOW_DAGRUN_TIMEOUT)),
+    on_failure_callback=update_job_status_on_failure,
 )
 
 # Start the workflow
