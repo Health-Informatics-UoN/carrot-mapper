@@ -10,9 +10,13 @@ import io
 import csv
 from datetime import date
 import logging
+from libs.settings import AIRFLOW_DAGRUN_TIMEOUT
 
 # PostgreSQL connection hook
-pg_hook = PostgresHook(postgres_conn_id="postgres_db_conn")
+pg_hook = PostgresHook(
+    postgres_conn_id="postgres_db_conn",
+    options=f"-c statement_timeout={float(AIRFLOW_DAGRUN_TIMEOUT) * 60 * 1000}ms",
+)
 
 
 def build_rules_csv(scan_report_id: int) -> BytesIO:
@@ -349,19 +353,19 @@ def build_rules_json_v2(scan_report_name: str, scan_report_id: int) -> BytesIO:
 
                 # Adding the person_id_mapping, date_mapping, concept_mapping to the result
                 if person_id_mappings:
-                    result[dest_table_str][source_table_clean][
-                        "person_id_mapping"
-                    ] = person_id_mappings
+                    result[dest_table_str][source_table_clean]["person_id_mapping"] = (
+                        person_id_mappings
+                    )
 
                 if date_mappings:
-                    result[dest_table_str][source_table_clean][
-                        "date_mapping"
-                    ] = date_mappings
+                    result[dest_table_str][source_table_clean]["date_mapping"] = (
+                        date_mappings
+                    )
 
                 if concept_mappings:
-                    result[dest_table_str][source_table_clean][
-                        "concept_mappings"
-                    ] = concept_mappings
+                    result[dest_table_str][source_table_clean]["concept_mappings"] = (
+                        concept_mappings
+                    )
 
         cdm = {
             "metadata": metadata,

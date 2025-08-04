@@ -14,11 +14,15 @@ from libs.settings import (
     AIRFLOW_VAR_MINIO_ENDPOINT,
     AIRFLOW_VAR_MINIO_ACCESS_KEY,
     AIRFLOW_VAR_MINIO_SECRET_KEY,
+    AIRFLOW_DAGRUN_TIMEOUT,
 )
 
 
 # PostgreSQL connection hook
-pg_hook = PostgresHook(postgres_conn_id="postgres_db_conn")
+pg_hook = PostgresHook(
+    postgres_conn_id="postgres_db_conn",
+    options=f"-c statement_timeout={float(AIRFLOW_DAGRUN_TIMEOUT) * 60 * 1000}ms",
+)
 
 
 # Define a type for field-vocab pairs
