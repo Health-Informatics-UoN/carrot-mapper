@@ -47,7 +47,6 @@ export default function ScanReportsTableClient({
             onJobsRefresh={handleJobsRefresh}
           />
         }
-        linkPrefix="tables/"
         Filter={Filter}
       />
     </div>

@@ -109,7 +109,7 @@ export function ScanReportsTableFilter({
         </div>
         <MappingStatusFilter />
       </div>
-      <div>
+      <div className="max-sm:hidden">
         <Link href="/scanreports/create" prefetch={false}>
           <Button variant={"outline"} className="ml-auto mr-4">
             <Upload />

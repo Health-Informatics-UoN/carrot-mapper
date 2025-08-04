@@ -1,10 +1,11 @@
-import { columns } from "../../scanreports/columns";
+import { columns } from "@/app/(protected)/scanreports/columns";
 import { getScanReports } from "@/api/scanreports";
 import { DataTable } from "@/components/data-table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { objToQuery } from "@/lib/client-utils";
 import { ScanReportsTableFilter } from "@/components/scanreports/ScanReportsTableFilter";
 import { FilterParameters } from "@/types/filter";
+import { VisibilityState } from "@tanstack/react-table";
 
 interface DataSetListProps {
   params: Promise<{
@@ -18,10 +19,11 @@ export default async function DatasetSRList(props: DataSetListProps) {
   const params = await props.params;
 
   const { id } = params;
+  const defaultPageSize = 30;
 
   const defaultParams = {
     hidden: false,
-    page_size: 10,
+    page_size: defaultPageSize,
     parent_dataset: id
   };
   const combinedParams = { ...defaultParams, ...searchParams };
@@ -29,6 +31,12 @@ export default async function DatasetSRList(props: DataSetListProps) {
   const query = objToQuery(combinedParams);
   const scanReports = await getScanReports(query);
   const filter = <ScanReportsTableFilter filter="dataset" filterText="name" />;
+
+  // Define which columns should be hidden by default
+  const initialColumnVisibility: VisibilityState = {
+    id: false,
+    Dataset: false,
+  };
 
   return (
     <Tabs
@@ -54,6 +62,8 @@ export default async function DatasetSRList(props: DataSetListProps) {
           data={scanReports.results}
           count={scanReports.count}
           Filter={filter}
+          initialColumnVisibility={initialColumnVisibility}
+          defaultPageSize={defaultPageSize}
         />
       </TabsContent>
       <TabsContent value="archived">
@@ -62,6 +72,8 @@ export default async function DatasetSRList(props: DataSetListProps) {
           data={scanReports.results}
           count={scanReports.count}
           Filter={filter}
+          initialColumnVisibility={initialColumnVisibility}
+          defaultPageSize={defaultPageSize}
         />
       </TabsContent>
     </Tabs>

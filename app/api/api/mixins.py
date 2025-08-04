@@ -1,6 +1,6 @@
 from django.shortcuts import get_object_or_404
-from shared.mapping.models import ScanReport
-from shared.mapping.permissions import CanAdmin, CanEditOrAdmin, CanView
+from mapping.models import ScanReport
+from mapping.permissions import CanAdmin, CanEditOrAdmin, CanView
 
 
 class ScanReportPermissionMixin:

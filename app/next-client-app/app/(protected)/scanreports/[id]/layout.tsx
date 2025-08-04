@@ -28,6 +28,15 @@ import { UploadStatusOptions } from "@/constants/scanReportStatus";
 import ExportScanReport from "@/components/scanreports/ExportScanReport";
 import { ActionsDownloadMenu } from "./actions-download-menu";
 
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = await params;
+  const scanreport = await getScanReport(resolvedParams.id);
+  return {
+    title: `${scanreport?.dataset} | Carrot Mapper`,
+    description: `Scan report details for ${scanreport?.dataset}`,
+  };
+}
+
 export default async function ScanReportLayout(
   props: Readonly<{
     params: { id: string };
@@ -100,7 +109,7 @@ export default async function ScanReportLayout(
         </Link>
       </div>
 
-      <div className="flex flex-col md:flex-row md:items-center h-7 text-sm space-y-2 md:space-y-0 divide-y md:divide-y-0 md:divide-x">
+      <div className="flex flex-col md:flex-row md:items-center text-sm space-y-2 md:space-y-0 divide-y md:divide-y-0 md:divide-x divide-muted">
         <InfoItem
           label="Data Partner"
           value={scanreport.data_partner}
@@ -136,25 +145,24 @@ export default async function ScanReportLayout(
           />
         </div>
         
-        
       </div>
-      <div className="flex flex-col md:flex-row md:items-center h-7 text-sm space-y-2 md:space-y-0 divide-y md:divide-y-0 md:divide-x">
+      <div className="hidden md:flex flex-col md:flex-row md:items-center h-7 text-sm space-y-2 md:space-y-0 divide-y md:divide-y-0 md:divide-x">
         <div className="flex items-center gap-2 text-muted-foreground">
             Members:{" "}
             <AvatarList
-              members={[...scanreport.viewers, ...scanreport.editors].filter(
+              members={[scanreport.author, ...scanreport.viewers, ...scanreport.editors].filter(
                 (member, index, self) =>
                   index === self.findIndex((m) => m.id === member.id)
               )}
             />
-          </div>
         </div>
+      </div>
       {/* "Navs" group */}
-      <div className="flex flex-col md:flex-row justify-between">
+      <div className="flex flex-col md:flex-row justify-between mt-6 md:mt-0">
         <div>
           <NavGroup
-            path={`/scanreports/${params.id}`}
-            items={items.map(x => ({ ...x, text: x.name }))}
+          path={`/scanreports/${params.id}`}
+          items={items.map(x => ({ ...x, text: x.name }))}
           />
         </div>
 

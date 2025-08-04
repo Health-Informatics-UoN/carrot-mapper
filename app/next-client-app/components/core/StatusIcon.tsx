@@ -63,7 +63,7 @@ export function StatusIcon({
     <TooltipProvider delayDuration={100}>
       <Tooltip>
         <TooltipTrigger asChild>{iconElement}</TooltipTrigger>
-        <TooltipContent className="max-w-[500px] text-center">
+        <TooltipContent className="max-w-[500px] text-center whitespace-pre-wrap">
           <p>
             {status.value === "FAILED" && statusDetails !== ""
               ? statusDetails

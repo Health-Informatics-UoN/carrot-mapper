@@ -1,5 +1,5 @@
 from django.contrib import admin
-from shared.mapping.models import (
+from mapping.models import (
     DataDictionary,
     DataPartner,
     Dataset,
