@@ -1,12 +1,11 @@
 "Area: Migrations":
-  - "app/shared/mapping/migrations/*"
-  - "app/shared/files/migrations/*"
-  - "app/shared/jobs/migrations/*"
+  - "app/api/mapping/migrations/*"
+  - "app/api/files/migrations/*"
+  - "app/api/jobs/migrations/*"
 
 dependencies:
   - "pyproject.toml"
   - "app/airflow/pyproject.toml"
-  - "app/shared/pyproject.toml"
   - "app/api/pyproject.toml"
   - "app/next-client-app/package-lock.json"
   - "app/next-client-app/package.json"
@@ -16,7 +15,6 @@ dependencies:
 
 "Area: Backend":
   - "app/api/**"
-  - "app/shared/**"
 
 "Area: Frontend":
   - "app/next-client-app/**"
