@@ -17,6 +17,7 @@ interface CustomDataTableProps<T> {
   filterText: string;
   tableId: string;
   scanReportId: string;
+  Filter: JSX.Element;
 }
 
 export function ConceptDataTableV3<
@@ -31,8 +32,8 @@ export function ConceptDataTableV3<
   filterText,
   tableId,
   scanReportId,
+  Filter,
 }: CustomDataTableProps<T>) {
-  const filter = <DataTableFilter filter={filterCol} filterText={filterText} />;
 
   return (
     <div>
@@ -40,7 +41,7 @@ export function ConceptDataTableV3<
         columns={columns(tableId, canEdit, scanReportId)}
         data={scanReportsData}
         count={count}
-        Filter={filter}
+        Filter={Filter}
         defaultPageSize={defaultPageSize}
       />
     </div>

@@ -9,6 +9,7 @@ import { FilterParameters } from "@/types/filter";
 import { columns } from "./columns";
 import { ConceptDataTableV3 } from "@/components/concepts/ConceptDataTableV3";
 import { TableBreadcrumbs } from "@/components/scanreports/TableBreadcrumbs";
+import { ConceptDataFilter } from "@/components/concepts/ConceptDataFilter";
 
 interface ScanReportsValueProps {
   params: Promise<{
@@ -41,6 +42,8 @@ export default async function ScanReportsValue(props: ScanReportsValueProps) {
     query,
   );
 
+  const filter = <ConceptDataFilter />;
+
   const canEdit =
     permissions.permissions.includes("CanEdit") ||
     permissions.permissions.includes("CanAdmin");
@@ -66,6 +69,7 @@ export default async function ScanReportsValue(props: ScanReportsValueProps) {
           filterText="value "
           tableId={tableId}
           scanReportId={id}
+          Filter={filter}
         />
       </div>
     </div>
