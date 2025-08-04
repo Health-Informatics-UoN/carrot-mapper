@@ -71,21 +71,16 @@ export function ConceptTagsV3({
                     : concept.creation_type === "R"
                       ? "bg-carrot-reuse hover:bg-carrot-reuse dark:bg-carrot-reuse dark:text-white"
                       : ""
-              } ${concepts.length > 1 && "my-[1px]"}`}
+              } ${concepts.length > 1 && "my-[1px]"} p-1`}
               key={concept.concept.concept_code}
             >
-              <p className="pl-2 pr-1 py-1">{`${concept.concept.concept_id} ${concept.concept.concept_name} (${concept.creation_type})`}</p>
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={async (e) => {
+              <p className="">{`${concept.concept.concept_id} ${concept.concept.concept_name} (${concept.creation_type})`}</p>
+              <Cross2Icon
+               onClick={async (e) => {
                   e.stopPropagation();
                   await handleDelete(concept.id);
                 }}
-                className="dark:text-white"
-              >
-                <Cross2Icon />
-              </Button>
+              />
             </LazyBadge>
           </Button>
         </ConceptDetailsSheet>

@@ -4,6 +4,7 @@ import {
   import { Button } from "@/components/ui/button";
   import { Input } from "@/components/ui/input";
   import { Form, Formik } from "formik";
+import { PlusIcon } from "lucide-react";
   import { toast } from "sonner";
   
   interface AddConceptProps {
@@ -53,7 +54,7 @@ import {
       >
         {({ values, handleChange, handleSubmit }) => (
           <Form onSubmit={handleSubmit}>
-            <div className="flex gap-2">
+            <div className="flex">
               <div>
                 <Input
                   type="text"
@@ -61,12 +62,12 @@ import {
                   value={values.concept}
                   onChange={handleChange}
                   required
-                  className="w-[180px]"
+                  className="w-[140px] rounded-r-none"
                   pattern="\d*"
                 />
               </div>
-              <Button type="submit" disabled={disabled}>
-                Add
+              <Button type="submit" disabled={disabled} className="rounded-l-none">
+                <PlusIcon />
               </Button>
             </div>
           </Form>
