@@ -6,7 +6,6 @@ from airflow.operators.python import PythonOperator
 from typing import TypedDict, List, Optional, Dict, Any
 from airflow.models.taskinstance import TaskInstance
 from libs.enums import JobStageType, StageStatusType, StorageType
-import os
 from airflow.utils.session import create_session
 from airflow.models.connection import Connection
 from libs.settings import (
@@ -137,13 +136,13 @@ def update_job_status(
 
         pg_hook.run(update_query, parameters=params)
 
-    except Exception as e:
+    except Exception:
         error_msg = f"Failed to update job status for scan_report={scan_report}, stage={stage.name}"
         logging.error(error_msg)
         raise ValueError(error_msg)
 
 
-def update_job_status_on_skipped(context):
+def update_job_status_on_failure(context):
     """
     Update job status on skipped task.
 
@@ -161,31 +160,29 @@ def update_job_status_on_skipped(context):
         dag_run = context["dag_run"]
 
         # Determine the appropriate stage based on DAG ID and task ID
-        if dag.dag_id == "scan_report_processing":
-            stage = JobStageType.UPLOAD_SCAN_REPORT
-        elif dag.dag_id == "rules_export":
+        if dag.dag_id == "rules_export":
             stage = JobStageType.DOWNLOAD_RULES
         elif dag.dag_id == "auto_mapping":
             # For auto_mapping DAG, determine stage based on task name
             task_id = task_instance.task_id
-            if any(
-                task_name in task_id
-                for task_name in ["find_standard_concepts", "create_standard_concepts"]
-            ):
+            if task_id in [
+                "delete_mapping_rules",
+                "find_standard_concepts",
+                "create_standard_concepts",
+            ]:
                 stage = JobStageType.BUILD_CONCEPTS_FROM_DICT
-            elif any(
-                task_name in task_id
-                for task_name in [
-                    "find_matching",
-                    "create_reusing_concepts",
-                    "delete_R_concepts",
-                ]
-            ):
+            elif task_id in [
+                "find_matching_value",
+                "find_matching_field",
+                "create_reusing_concepts",
+                "delete_R_concepts",
+            ]:
                 stage = JobStageType.REUSE_CONCEPTS
             else:
                 stage = JobStageType.GENERATE_RULES
         else:
-            stage = JobStageType.UPLOAD_SCAN_REPORT  # Default fallback
+            logging.error(f"No job stage found for {dag.dag_id}.")
+            return
 
         # Extract scan_report_id from DAG run configuration
         dag_run_conf = dag_run.conf or {}
@@ -199,22 +196,13 @@ def update_job_status_on_skipped(context):
 
         # Get table_id if available (needed for some stages)
         table_id = dag_run_conf.get("table_id")
-        fail_details_query = """
-            SELECT upload_status_details FROM mapping_scanreport
-            WHERE id = %(scan_report_id)s
-        """
-        # fail_details = pg_hook.get_records(
-        #     fail_details_query, parameters={"scan_report_id": scan_report_id}
-        # )
-
-        details = f"Task '{task_instance.task_id}' was skipped in DAG '{dag.dag_id}'"
         # Update job status as failed
         update_job_status(
             stage=stage,
             status=StageStatusType.FAILED,
             scan_report=scan_report_id,
             scan_report_table=table_id,
-            details=details,
+            details=f"Task '{task_instance.task_id}' was timed-out or failed due to an unexpected error.",
         )
 
     except Exception as e:
