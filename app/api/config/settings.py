@@ -13,7 +13,7 @@ https://docs.djangoproject.com/en/3.1/ref/settings/
 import os
 from datetime import timedelta
 from dotenv import load_dotenv
-from shared.enums import WorkerServiceType
+from services.enums import WorkerServiceType
 
 load_dotenv()
 
@@ -62,11 +62,13 @@ INSTALLED_APPS = [
     "whitenoise.runserver_nostatic",
     "django.contrib.staticfiles",
     "extra_views",
+    "data",
     "datasets",
     "projects",
     "api",
-    "shared.data",
-    "shared.mapping",
+    "mapping",
+    "files",
+    "jobs",
     "rest_framework",
     "django_filters",
     "rest_framework.authtoken",
@@ -79,9 +81,6 @@ INSTALLED_APPS = [
     "allauth.socialaccount",
     "dj_rest_auth",
     "dj_rest_auth.registration",
-    "shared",
-    "shared.files",
-    "shared.jobs",
     "drf_spectacular",
 ]
 
@@ -153,6 +152,7 @@ DATABASES = {
     }
 }
 
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Password validation
 # https://docs.djangoproject.com/en/3.1/ref/settings/#auth-password-validators
@@ -269,7 +269,7 @@ SUPERUSER_DEFAULT_USERNAME = os.getenv("SUPERUSER_DEFAULT_USERNAME", None)
 STORAGE_TYPE = os.getenv("STORAGE_TYPE", "minio")
 
 # Worker Service Type Variable
-WORKER_SERVICE_TYPE = os.getenv("WORKER_SERVICE_TYPE", WorkerServiceType.AZURE)
+WORKER_SERVICE_TYPE = os.getenv("WORKER_SERVICE_TYPE", WorkerServiceType.AIRFLOW)
 
 # Azure Storage Connection String
 azure_storage_conn_string = "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;TableEndpoint=http://azurite:10002/devstoreaccount1;"

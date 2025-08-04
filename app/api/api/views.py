@@ -47,9 +47,9 @@ from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from shared.data.models import Concept
-from shared.jobs.models import Job, JobStage, StageStatus
-from shared.mapping.models import (
+from data.models import Concept
+from jobs.models import Job, JobStage, StageStatus
+from mapping.models import (
     DataDictionary,
     DataPartner,
     MappingRule,
@@ -63,18 +63,18 @@ from shared.mapping.models import (
 from drf_spectacular.utils import extend_schema
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter
-from shared.mapping.permissions import get_user_permissions_on_scan_report
-from shared.services.rules import (
+from mapping.permissions import get_user_permissions_on_scan_report
+from services.rules import (
     _find_destination_table,
     save_mapping_rules,
 )
-from shared.services.rules_export import (
+from services.rules_export import (
     get_mapping_rules_json,
     get_mapping_rules_list,
     make_dag,
 )
-from shared.services.storage_service import StorageService
-from shared.services.worker_service import get_worker_service
+from services.storage_service import StorageService
+from services.worker_service import get_worker_service
 from importlib.metadata import version
 
 storage_service = StorageService()

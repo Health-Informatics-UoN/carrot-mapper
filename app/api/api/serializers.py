@@ -12,8 +12,8 @@ from drf_dynamic_fields import DynamicFieldsMixin  # type: ignore
 from openpyxl.workbook.workbook import Workbook  # type: ignore
 from rest_framework import serializers
 from rest_framework.exceptions import NotFound, ParseError, PermissionDenied
-from shared.data.models import Concept
-from shared.mapping.models import (
+from data.models import Concept
+from mapping.models import (
     Dataset,
     ScanReport,
     ScanReportConcept,
@@ -24,9 +24,9 @@ from shared.mapping.models import (
     UploadStatus,
     MappingStatus,
 )
-from shared.users.serializers import UserSerializer
-from shared.mapping.permissions import has_editorship, is_admin, is_az_function_user
-from shared.services.rules_export import analyse_concepts
+from users.serializers import UserSerializer
+from mapping.permissions import has_editorship, is_admin, is_az_function_user
+from services.rules_export import analyse_concepts
 from config.settings import DATA_UPLOAD_MAX_MEMORY_SIZE
 
 
