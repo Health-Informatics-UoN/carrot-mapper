@@ -21,7 +21,7 @@ export const columns = (
       <DataTableColumnHeader column={column} title="Value" sortName="value" />
     ),
     enableHiding: true,
-    enableSorting: false,
+    enableSorting: true,
     cell: ({ row }) => {
       const { value, id } = row.original;
 
@@ -58,7 +58,7 @@ export const columns = (
       />
     ),
     enableHiding: true,
-    enableSorting: false,
+    enableSorting: true,
   },
   {
     id: "Frequency",
@@ -71,7 +71,11 @@ export const columns = (
       />
     ),
     enableHiding: true,
-    enableSorting: false,
+    enableSorting: true,
+    cell: ({ row }) => {
+      const { frequency } = row.original;
+      return <span className="tabular-nums">{frequency}</span>;
+    },
   },
   {
     id: "Concepts",
