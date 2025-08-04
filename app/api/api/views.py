@@ -919,7 +919,8 @@ class ScanReportValueListV3(ScanReportPermissionMixin, GenericAPIView, ListModel
     filterset_fields = {
         "value": ["in", "icontains"],
     }
-    filter_backends = [DjangoFilterBackend]
+    filter_backends = [DjangoFilterBackend, OrderingFilter]
+    ordering_fields = ["value", "frequency", "value_description"]
     pagination_class = CustomPagination
     serializer_class = ScanReportValueViewSerializerV3
 
