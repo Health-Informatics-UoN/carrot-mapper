@@ -52,7 +52,6 @@ export function ConceptTagsV3({
         <ConceptDetailsSheet
           key={concept.id}
           concept={concept}
-          onDelete={handleDelete}
           scanReportId={scanReportId}
           tableId={tableId}
           fieldId={fieldId.toString()}

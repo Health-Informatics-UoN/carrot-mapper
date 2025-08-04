@@ -19,7 +19,6 @@ import { toast } from "sonner";
 interface ConceptDetailsSheetProps {
   concept: any; // Using any for now since we don't have the exact type
   children: React.ReactNode;
-  onDelete?: (conceptId: number) => Promise<void>;
   scanReportId?: string;
   tableId?: string;
   fieldId?: string;
@@ -164,7 +163,6 @@ function ConceptEditForm({
 export function ConceptDetailsSheet({ 
   concept, 
   children, 
-  onDelete,
   scanReportId,
   tableId,
   fieldId,
@@ -173,13 +171,6 @@ export function ConceptDetailsSheet({
   const [conceptDetail, setConceptDetail] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
-
-  const handleDelete = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (onDelete) {
-      await onDelete(concept.id);
-    }
-  };
 
   const handleUpdateConcept = (updatedDetail: any) => {
     setConceptDetail(updatedDetail);
