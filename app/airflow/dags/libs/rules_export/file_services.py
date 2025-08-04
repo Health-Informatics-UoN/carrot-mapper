@@ -353,19 +353,19 @@ def build_rules_json_v2(scan_report_name: str, scan_report_id: int) -> BytesIO:
 
                 # Adding the person_id_mapping, date_mapping, concept_mapping to the result
                 if person_id_mappings:
-                    result[dest_table_str][source_table_clean]["person_id_mapping"] = (
-                        person_id_mappings
-                    )
+                    result[dest_table_str][source_table_clean][
+                        "person_id_mapping"
+                    ] = person_id_mappings
 
                 if date_mappings:
-                    result[dest_table_str][source_table_clean]["date_mapping"] = (
-                        date_mappings
-                    )
+                    result[dest_table_str][source_table_clean][
+                        "date_mapping"
+                    ] = date_mappings
 
                 if concept_mappings:
-                    result[dest_table_str][source_table_clean]["concept_mappings"] = (
-                        concept_mappings
-                    )
+                    result[dest_table_str][source_table_clean][
+                        "concept_mappings"
+                    ] = concept_mappings
 
         cdm = {
             "metadata": metadata,
