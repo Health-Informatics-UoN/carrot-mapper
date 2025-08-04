@@ -10,6 +10,13 @@ import { Badge } from "@/components/ui/badge";
 import { InfoItem } from "@/components/core/InfoItem";
 import { AvatarList } from "@/components/core/avatar-list";
 import Link from "next/link";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { ChevronDownIcon, Folders } from "lucide-react";
 
 interface LayoutProps {
   params: Promise<{ id: string }>;
@@ -48,36 +55,12 @@ export default async function DatasetLayout({
   }
   return (
     <div className="space-y-2">
-      <div className="flex font-semibold text-xl items-center space-x-2">
-        <Database className="text-muted-foreground" />
-        <Link href={`/datasets`}>
-          <h2 className="text-muted-foreground">Datasets</h2>
-        </Link>
-        <h2 className="text-muted-foreground">{"/"}</h2>
-        <Database className="mr-2 text-blue-700" />
-        <h2>{dataset.name}</h2>
-      </div>
+      <DatasetBreadcrumb projects={projects} datasetName={dataset.name} />
 
       <div className="flex flex-col md:flex-row md:items-center text-sm space-y-2 md:space-y-0 divide-y md:divide-y-0 md:divide-x divide-muted">
-        <h3 className="text-muted-foreground flex items-center gap-2 pr-2">
-          <div>Project(s): </div>
-          <div className="flex space-x-1">
-            {projects.map((project) => (
-              <Link key={project.id} href={`/projects/${project.id}`}>
-                <Badge
-                  variant="outline"
-                  className="cursor-pointer hover:bg-accent hover:text-accent-foreground transition-colors"
-                >
-                  {project.name}
-                </Badge>
-              </Link>
-            ))}
-          </div>
-        </h3>
         <InfoItem
           label="Data Partner"
           value={dataPartner.name}
-          className="py-1 md:py-0 md:px-3"
         />
         <InfoItem
           label="Created"
@@ -117,6 +100,40 @@ export default async function DatasetLayout({
           {children}
         </Suspense>
       </Boundary>
+    </div>
+  );
+}
+
+interface DatasetBreadcrumbProps {
+  projects: Array<{ id: number; name: string }>;
+  datasetName: string;
+}
+
+function DatasetBreadcrumb({ projects, datasetName }: DatasetBreadcrumbProps) {
+  return (
+    <div className="flex font-semibold text-xl items-center space-x-2">
+      <Folders className="text-muted-foreground" />
+      <Link href={`/projects/${projects[0].id}`}>
+        <h2 className="text-muted-foreground">{projects[0].name}</h2>
+      </Link>
+      
+      {projects.length > 1 && (
+        <DropdownMenu>
+          <DropdownMenuTrigger>
+            <ChevronDownIcon size={16} />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            {projects.map((project) => (
+              <DropdownMenuItem key={project.id}>
+                <Link href={`/projects/${project.id}`}>{project.name}</Link>
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
+      <h2 className="text-muted-foreground">{"/"}</h2>
+      <Database className="mr-2 text-blue-700" />
+      <h2>{datasetName}</h2>
     </div>
   );
 }
