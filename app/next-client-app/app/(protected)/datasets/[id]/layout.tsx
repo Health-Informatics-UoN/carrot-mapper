@@ -82,7 +82,7 @@ export default async function DatasetLayout({
         <div className="flex items-center gap-2 text-muted-foreground">
             Members:{" "}
             <AvatarList
-              members={[...dataset.viewers, ...dataset.editors].filter(
+              members={[...dataset.admins, ...dataset.viewers, ...dataset.editors].filter(
                 (member, index, self) =>
                   index === self.findIndex((m) => m.id === member.id)
               )}

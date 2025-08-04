@@ -150,7 +150,7 @@ export default async function ScanReportLayout(
         <div className="flex items-center gap-2 text-muted-foreground">
             Members:{" "}
             <AvatarList
-              members={[...scanreport.viewers, ...scanreport.editors].filter(
+              members={[scanreport.author, ...scanreport.viewers, ...scanreport.editors].filter(
                 (member, index, self) =>
                   index === self.findIndex((m) => m.id === member.id)
               )}
@@ -158,7 +158,7 @@ export default async function ScanReportLayout(
         </div>
       </div>
       {/* "Navs" group */}
-      <div className="flex flex-col md:flex-row justify-between">
+      <div className="flex flex-col md:flex-row justify-between mt-6 md:mt-0">
         <div>
           <NavGroup
           path={`/scanreports/${params.id}`}
