@@ -941,7 +941,7 @@ class ScanReportValueListV3(ScanReportPermissionMixin, GenericAPIView, ListModel
         return super().list(request, *args, **kwargs)
 
 
-class ScanReportConceptDetailV3(ScanReportPermissionMixin, GenericAPIView, RetrieveModelMixin):
+class ScanReportConceptDetailV3(ScanReportPermissionMixin, GenericAPIView, RetrieveModelMixin, UpdateModelMixin):
     """
     A view for retrieving a specific ScanReportConcept object.
     """

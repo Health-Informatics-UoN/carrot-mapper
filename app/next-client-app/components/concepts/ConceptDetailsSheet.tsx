@@ -9,8 +9,13 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Cross2Icon } from "@radix-ui/react-icons";
-import { getScanReportConceptDetail } from "@/api/concepts";
+import { getScanReportConceptDetail, updateScanReportConceptDetail } from "@/api/concepts";
 import { InfoItem } from "@/components/core/InfoItem";
+import { Formik } from "formik";
+import { FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Save } from "lucide-react";
+import { toast } from "sonner";
 
 interface ConceptDetailsSheetProps {
   concept: any; // Using any for now since we don't have the exact type
@@ -35,6 +40,10 @@ const getCreationTypeDescription = (creationType: string) => {
   }
 };
 
+interface FormData {
+  description: string;
+}
+
 export function ConceptDetailsSheet({ 
   concept, 
   children, 
@@ -52,6 +61,32 @@ export function ConceptDetailsSheet({
     e.stopPropagation();
     if (onDelete) {
       await onDelete(concept.id);
+    }
+  };
+
+  const handleUpdateDescription = async (data: FormData) => {
+    if (!scanReportId || !tableId || !fieldId || !valueId || !conceptDetail) {
+      toast.error("Missing required parameters for update");
+      return;
+    }
+
+    try {
+      const response = await updateScanReportConceptDetail(
+        scanReportId,
+        tableId,
+        fieldId,
+        valueId.toString(),
+        concept.id.toString(),
+        { description: data.description }
+      );
+      
+      if (response) {
+        // Update the local state with the new data
+        setConceptDetail(response);
+        toast.success("Description updated successfully!");
+      }
+    } catch (error: any) {
+      toast.error(`Update failed. Error: ${error.message}`);
     }
   };
 
@@ -142,10 +177,45 @@ export function ConceptDetailsSheet({
                     />
                   </div>
                   <div>
-                    <InfoItem
-                      label="Description"
-                      value={conceptDetail.description}
-                    />
+                    <Formik
+                      initialValues={{
+                        description: conceptDetail.description || ""
+                      }}
+                      onSubmit={handleUpdateDescription}
+                    >
+                      {({ values, handleChange, handleSubmit }) => (
+                        <form onSubmit={handleSubmit}>
+                          <FormField name="description">
+                            {({ field }) => (
+                              <FormItem>
+                                <FormLabel>Description</FormLabel>
+                                <FormDescription>
+                                  Description of the concept mapping.
+                                </FormDescription>
+                                <FormControl>
+                                  <Input
+                                    {...field}
+                                    placeholder="Enter description"
+                                    onChange={handleChange}
+                                    name="description"
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          </FormField>
+                          <div className="flex mt-2">
+                            <Button
+                              type="submit"
+                              size="sm"
+                            >
+                              <Save className="mr-2 h-4 w-4" />
+                              Save Description
+                            </Button>
+                          </div>
+                        </form>
+                      )}
+                    </Formik>
                   </div>
                   <div>
                     <InfoItem
