@@ -362,20 +362,6 @@ export function ConceptDetailsSheet({
               )}
             </div>
           </div>
-          <div className="pt-4 border-t">
-            {onDelete && (
-
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={handleDelete}
-                  className="w-full mt-4"
-                >
-                  <Cross2Icon className="mr-2 h-4 w-4" />
-                  Delete Concept
-                </Button>
-            )}
-          </div>
         </div>
       </SheetContent>
     </Sheet>
