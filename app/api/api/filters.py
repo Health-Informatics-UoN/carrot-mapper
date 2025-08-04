@@ -47,13 +47,13 @@ class CreationTypeFilter(django_filters.MultipleChoiceFilter):
                 q_objects = Q(concepts__isnull=True)
                 for creation_type in other_values:
                     q_objects |= Q(concepts__creation_type=creation_type)
-                return qs.filter(q_objects)
+                return qs.filter(q_objects).distinct()
             else:
                 # Only 'none' is selected
                 return qs.filter(concepts__isnull=True)
         else:
             # Only creation types are selected (no 'none')
-            return qs.filter(concepts__creation_type__in=value)
+            return qs.filter(concepts__creation_type__in=value).distinct()
 
 
 class ScanReportAccessFilter(filters.BaseFilterBackend):
