@@ -13,6 +13,9 @@ import {
 import { ConceptDataTable } from "@/components/concepts/ConceptDataTable";
 import { columns } from "./columns";
 import { TableBreadcrumbs } from "@/components/scanreports/TableBreadcrumbs";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Sparkles } from "lucide-react";
 
 interface ScanReportsValueProps {
   params: Promise<{
@@ -73,6 +76,9 @@ export default async function ScanReportsValue(props: ScanReportsValueProps) {
         fieldName={field.name}
         variant="field"
       />
+      <div className="flex justify-end">
+        <Button variant="link" asChild><Link href={`${fieldId}/beta`}>Try the new experience <Sparkles className="text-orange-500" /></Link></Button>
+      </div>
       <div>
         <ConceptDataTable
           count={scanReportsValues.count}

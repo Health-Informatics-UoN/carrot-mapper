@@ -7,8 +7,6 @@ import {
 import { objToQuery } from "@/lib/client-utils";
 import { FilterParameters } from "@/types/filter";
 import { columns } from "./columns";
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
 import { ConceptDataTableV3 } from "@/components/concepts/ConceptDataTableV3";
 import { TableBreadcrumbs } from "@/components/scanreports/TableBreadcrumbs";
 
@@ -67,6 +65,7 @@ export default async function ScanReportsValue(props: ScanReportsValueProps) {
           filterCol="value"
           filterText="value "
           tableId={tableId}
+          scanReportId={id}
         />
       </div>
     </div>

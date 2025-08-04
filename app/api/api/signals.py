@@ -13,8 +13,6 @@ from mapping.models import Dataset, Project, ScanReport
 @receiver(post_delete, sender=Dataset)
 @receiver(post_save, sender=ScanReport)
 @receiver(post_delete, sender=ScanReport)
-@receiver(post_save, sender=ScanReportConcept)
-@receiver(post_delete, sender=ScanReportConcept)
 def clear_cache(sender: Type[Model], **kwargs):
     """
     Clears the cache when a Project, Dataset, or Scan Report is saved or deleted.

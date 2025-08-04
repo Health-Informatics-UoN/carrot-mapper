@@ -11,11 +11,12 @@ interface CustomDataTableProps<T> {
   columns: (
     tableId: string,
     canEdit: boolean,
+    scanReportId: string,
   ) => any;
   filterCol: string;
   filterText: string;
-  linkPrefix?: string;
   tableId: string;
+  scanReportId: string;
 }
 
 export function ConceptDataTableV3<
@@ -28,20 +29,19 @@ export function ConceptDataTableV3<
   columns,
   filterCol,
   filterText,
-  linkPrefix,
   tableId,
+  scanReportId,
 }: CustomDataTableProps<T>) {
   const filter = <DataTableFilter filter={filterCol} filterText={filterText} />;
 
   return (
     <div>
       <DataTable
-        columns={columns(tableId, canEdit)}
+        columns={columns(tableId, canEdit, scanReportId)}
         data={scanReportsData}
         count={count}
         Filter={filter}
         defaultPageSize={defaultPageSize}
-        linkPrefix={linkPrefix}
       />
     </div>
   );

@@ -12,6 +12,7 @@ import { enableAIRecommendation } from "@/constants";
 export const columns = (
   tableId: string,
   canEdit: boolean,
+  scanReportId: string,
 ): ColumnDef<ScanReportValueV3>[] => [
   {
     id: "Value",
@@ -85,7 +86,7 @@ export const columns = (
         <Suspense fallback={<Skeleton className="h-5 w-[250px]" />}>
           <ConceptTagsV3
             concepts={concepts}
-            scanReportId={"2"}
+            scanReportId={scanReportId}
             tableId={tableId}
             fieldId={row.original.scan_report_field}
             valueId={row.original.id}
@@ -106,7 +107,7 @@ export const columns = (
           tableId={tableId}
           contentType="scanreportvalue"
           disabled={!canEdit}
-          scanReportId={"2"}
+          scanReportId={scanReportId}
           fieldId={row.original.scan_report_field}
         />
       );
