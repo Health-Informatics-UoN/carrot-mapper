@@ -5,6 +5,12 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { FileScan, Info } from "lucide-react";
 import Link from "next/link";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Upload Scan Report | Carrot Mapper",
+  description: "Upload a scan report to the system",
+};
 
 export default async function ScanReports() {
   const partners = await getDataPartners();

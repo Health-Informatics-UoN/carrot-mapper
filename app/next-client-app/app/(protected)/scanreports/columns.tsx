@@ -92,30 +92,23 @@ export const columns: ColumnDef<ScanReport>[] = [
         column={column}
         title="Uploaded"
         sortName="created_at"
+        className="tabular-nums"
       />
     ),
     enableHiding: false,
     enableSorting: true,
     cell: ({ row }) => {
-      const date = new Date(row.original.created_at);
-      return format(date, "MMM dd, yyyy h:mm a");
-    }
-  },
-  {
-    id: "Upload Status",
-    accessorKey: "upload_status",
-    header: () => <div className="text-center"> Upload Status</div>,
-    enableHiding: true,
-    enableSorting: false,
-    cell: ({ row }) => {
       const { upload_status, upload_status_details } = row.original;
-      return (
+      const date = new Date(row.original.created_at);
+
+      return <div className="flex items-center gap-2">
+        <span className="tabular-nums">{format(date, "d MMM HH:mm")}</span>
         <StatusIcon
           statusOptions={UploadStatusOptions}
           status={upload_status || { value: "IN_PROGRESS" }}
           statusDetails={upload_status_details}
         />
-      );
+      </div>
     }
   },
   {
@@ -132,7 +125,7 @@ export const columns: ColumnDef<ScanReport>[] = [
             id={id.toString()}
             mapping_status={mapping_status || { value: "PENDING" }}
             dataset={dataset}
-            className="w-[180px]"
+            className="w-[165px]"
             disabled={upload_status_check.value === "COMPLETE" ? false : true} // Users who don't have permissions will see the error
           />
         </div>

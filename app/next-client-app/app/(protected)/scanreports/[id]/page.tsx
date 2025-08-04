@@ -44,7 +44,7 @@ export default async function ScanReportsTable(props: ScanReportsTableProps) {
 
   return (
     <div>
-      <Breadcrumb className="mb-3">
+      <Breadcrumb className="mb-3 hidden md:block">
         <BreadcrumbList>
           <BreadcrumbPage>
             Tables

@@ -79,7 +79,7 @@ export async function TableBreadcrumbs({
   }
 
   return (
-    <Breadcrumb className="mb-3">
+    <Breadcrumb className="mb-3 hidden md:block">
       <BreadcrumbList>
         <BreadcrumbItem>
           <Link href={`/scanreports/${id}`}>Tables</Link>

@@ -4,7 +4,7 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 from rest_framework.serializers import ValidationError
 from rest_framework.test import APIRequestFactory
-from shared.mapping.models import (
+from mapping.models import (
     DataPartner,
     Dataset,
     Project,

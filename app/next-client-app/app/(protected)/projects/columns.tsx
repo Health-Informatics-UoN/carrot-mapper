@@ -42,7 +42,7 @@ export const columns: ColumnDef<Project>[] = [
     enableSorting: true,
     cell: ({ row }) => {
       const date = new Date(row.original.created_at);
-      return format(date, "MMM dd, yyyy h:mm a");
+      return format(date, "d MMM HH:mm");
     }
   }
 ];

@@ -5,13 +5,6 @@ import { DataTableColumnHeader } from "@/components/data-table/DataTableColumnHe
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
 import { format } from "date-fns/format";
-import { formatDistanceToNow } from "date-fns/formatDistanceToNow";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { saveAs } from "file-saver";
 import { Badge } from "@/components/ui/badge";
 import { downloadFile } from "@/api/files";
@@ -30,18 +23,7 @@ export const columns: ColumnDef<FileDownload>[] = [
     ),
     cell: ({ row }) => {
       const { created_at } = row.original;
-      return (
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger>
-              <>{formatDistanceToNow(created_at)} ago</>
-            </TooltipTrigger>
-            <TooltipContent>
-              {format(created_at, "MMM dd, yyyy h:mm a")}
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      );
+      return format(created_at, "d MMM HH:mm");
     },
     enableHiding: true,
     enableSorting: true,
