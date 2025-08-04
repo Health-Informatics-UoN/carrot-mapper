@@ -2,18 +2,15 @@ import React, { useEffect, useState } from "react";
 import {
   Sheet,
   SheetContent,
-  SheetDescription,
   SheetHeader,
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Cross2Icon } from "@radix-ui/react-icons";
 import { getScanReportConceptDetail, updateScanReportConceptDetail } from "@/api/concepts";
 import { InfoItem } from "@/components/core/InfoItem";
 import { Formik } from "formik";
 import { FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
 import { Save } from "lucide-react";
@@ -226,7 +223,7 @@ export function ConceptDetailsSheet({
         <div className="mt-6 space-y-6">
           <div>
             <h3 className="font-semibold mb-4 text-lg">Mapping Details</h3>
-            <div className="space-y-3 text-sm bg-muted/30 rounded-lg p-4">
+            <div className="space-y-3 text-sm py-4">
               <div>
                 <InfoItem
                   label="Concept ID"
@@ -299,7 +296,7 @@ export function ConceptDetailsSheet({
 
                   <hr className="my-6" />
                   <h3 className="font-semibold mb-4 text-lg">Concept Details</h3>
-                  <div className="space-y-3 text-sm bg-muted/30 rounded-lg p-4">
+                  <div className="space-y-3 text-sm">
                     <div>
                       <InfoItem
                         label="Concept"
