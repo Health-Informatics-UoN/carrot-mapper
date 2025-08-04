@@ -65,11 +65,11 @@ export function ConceptTagsV3({
             <LazyBadge
               className={`${
                 concept.creation_type === "V"
-                  ? "bg-carrot-vocab hover:bg-carrot-vocab dark:bg-carrot-vocab dark:text-white"
+                  ? "bg-pink-600 hover:bg-pink-600"
                   : concept.creation_type === "M"
-                    ? "bg-carrot-manual hover:bg-carrot-manual dark:bg-carrot-manual dark:text-white"
+                    ? "bg-sky-700 hover:bg-sky-700 text-white"
                     : concept.creation_type === "R"
-                      ? "bg-carrot-reuse hover:bg-carrot-reuse dark:bg-carrot-reuse dark:text-white"
+                      ? "bg-emerald-700 hover:bg-emerald-700 text-white"
                       : ""
               } ${concepts.length > 1 && "my-[1px]"} p-1`}
               key={concept.concept.concept_code}
