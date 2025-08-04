@@ -11,6 +11,15 @@ import { getProject } from "@/api/projects";
 import { AvatarList } from "@/components/core/avatar-list";
 import { ReactNode } from "react";
 
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = await params;
+  const project = await getProject(resolvedParams.id);
+  return {
+    title: `${project?.name} | Carrot Mapper`,
+    description: `Project details for ${project?.name}`,
+  };
+}
+
 
 interface LayoutProps {
   params: Promise<{ id: string }>;
