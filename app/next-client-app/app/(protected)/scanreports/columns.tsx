@@ -92,6 +92,7 @@ export const columns: ColumnDef<ScanReport>[] = [
         column={column}
         title="Uploaded"
         sortName="created_at"
+        className="tabular-nums"
       />
     ),
     enableHiding: false,
@@ -101,7 +102,7 @@ export const columns: ColumnDef<ScanReport>[] = [
       const date = new Date(row.original.created_at);
 
       return <div className="flex items-center gap-2">
-        <span>{format(date, "d MMM HH:mm")}</span>
+        <span className="tabular-nums">{format(date, "d MMM HH:mm")}</span>
         <StatusIcon
           statusOptions={UploadStatusOptions}
           status={upload_status || { value: "IN_PROGRESS" }}

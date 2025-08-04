@@ -78,13 +78,14 @@ export const columns: ColumnDef<DataSet>[] = [
         column={column}
         title="Creation Date"
         sortName="created_at"
+        className="tabular-nums"
       />
     ),
     enableHiding: true,
     enableSorting: true,
     cell: ({ row }) => {
       const date = new Date(row.original.created_at);
-      return format(date, "d MMM HH:mm");
+      return <span className="tabular-nums">{format(date, "d MMM HH:mm")}</span>
     }
   },
   {

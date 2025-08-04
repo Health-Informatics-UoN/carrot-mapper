@@ -63,10 +63,15 @@ export const columns = (
           column={column}
           title="Frequency"
           sortName="frequency"
+          className="tabular-nums"
         />
       ),
       enableHiding: true,
       enableSorting: false,
+      cell: ({ row }) => {
+        const { frequency } = row.original;
+        return <span className="tabular-nums">{frequency}</span>;
+      },
     },
     {
       id: "Concepts",
