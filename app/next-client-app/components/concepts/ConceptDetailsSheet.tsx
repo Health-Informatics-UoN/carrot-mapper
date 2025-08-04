@@ -14,6 +14,7 @@ import { InfoItem } from "@/components/core/InfoItem";
 import { Formik } from "formik";
 import { FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
 import { Save } from "lucide-react";
 import { toast } from "sonner";
@@ -117,9 +118,9 @@ function ConceptEditForm({
                       }}
                       className="w-full"
                     />
-                    <div className="text-sm text-muted-foreground">
-                      Current value: {values.confidence.toFixed(2)}
-                    </div>
+                                          <div className="text-sm text-muted-foreground">
+                        Current value: {typeof values.confidence === 'number' ? values.confidence.toFixed(2) : '0.00'}
+                      </div>
                   </div>
                 </FormControl>
                 <FormMessage />
@@ -127,25 +128,26 @@ function ConceptEditForm({
             )}
           </FormField>
           <div className="mt-4">
-          <FormField name="description">
-            {({ field }) => (
-              <FormItem>
-                <FormLabel>Description</FormLabel>
-                <FormDescription>
-                  Description of the concept mapping.
-                </FormDescription>
-                <FormControl>
-                  <Input
-                    {...field}
-                    placeholder="Enter description"
-                    onChange={handleChange}
-                    name="description"
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          </FormField>
+            <FormField name="description">
+              {({ field }) => (
+                <FormItem>
+                  <FormLabel>Description</FormLabel>
+                  <FormDescription>
+                    Description of the concept mapping.
+                  </FormDescription>
+                  <FormControl>
+                    <Textarea
+                      {...field}
+                      placeholder="Enter description"
+                      onChange={handleChange}
+                      name="description"
+                      rows={3}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            </FormField>
           </div>
           <div className="flex mt-4">
             <Button
