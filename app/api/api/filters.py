@@ -1,6 +1,59 @@
 from django.db.models.query_utils import Q
 from rest_framework import filters
-from mapping.models import VisibilityChoices
+from mapping.models import VisibilityChoices, ScanReportValue
+from django_filters import rest_framework as django_filters
+
+
+class HasConceptsFilter(django_filters.BooleanFilter):
+    """
+    Custom filter to check if a ScanReportValue has any concepts.
+    """
+    
+    def filter(self, qs, value):
+        if value is None:
+            return qs
+        
+        if value:
+            return qs.filter(concepts__isnull=False)
+        else:
+            return qs.filter(concepts__isnull=True)
+
+
+class CreationTypeFilter(django_filters.MultipleChoiceFilter):
+    """
+    Custom filter to filter ScanReportValue by the creation_type of their concepts.
+    """
+    
+    def __init__(self, *args, **kwargs):
+        choices = [
+            ('M', 'Manual'),
+            ('V', 'Vocab'),
+            ('R', 'Reuse'),
+            ('none', 'No Concepts'),
+        ]
+        super().__init__(choices=choices, *args, **kwargs)
+    
+    def filter(self, qs, value):
+        if not value:
+            return qs
+        
+        # Handle the case where 'none' is selected
+        if 'none' in value:
+            # Remove 'none' from the list and filter for values with no concepts
+            other_values = [v for v in value if v != 'none']
+            if other_values:
+                # If other values are also selected, we need to use Q objects for OR logic
+                from django.db.models import Q
+                q_objects = Q(concepts__isnull=True)
+                for creation_type in other_values:
+                    q_objects |= Q(concepts__creation_type=creation_type)
+                return qs.filter(q_objects)
+            else:
+                # Only 'none' is selected
+                return qs.filter(concepts__isnull=True)
+        else:
+            # Only creation types are selected (no 'none')
+            return qs.filter(concepts__creation_type__in=value)
 
 
 class ScanReportAccessFilter(filters.BaseFilterBackend):
@@ -81,3 +134,17 @@ class ScanReportAccessFilter(filters.BaseFilterBackend):
             )
             & Q(**{scan_report_visibility: VisibilityChoices.PUBLIC})
         ) & Q(**{project_members: user_id})
+
+
+class ScanReportValueFilter(django_filters.FilterSet):
+    """
+    Custom filterset for ScanReportValue model.
+    """
+    has_concepts = HasConceptsFilter()
+    creation_type = CreationTypeFilter()
+    
+    class Meta:
+        model = ScanReportValue
+        fields = {
+            'value': ['in', 'icontains'],
+        }

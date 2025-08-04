@@ -3,7 +3,7 @@ import os
 import random
 import string
 from typing import Any, Optional
-from api.filters import ScanReportAccessFilter
+from api.filters import ScanReportAccessFilter, ScanReportValueFilter
 from api.mixins import ScanReportPermissionMixin
 from api.paginations import CustomPagination
 from api.serializers import (
@@ -916,9 +916,7 @@ class ScanReportValueListV3(ScanReportPermissionMixin, GenericAPIView, ListModel
             ScanReportValue objects.
     """
 
-    filterset_fields = {
-        "value": ["in", "icontains"],
-    }
+    filterset_class = ScanReportValueFilter
     filter_backends = [DjangoFilterBackend, OrderingFilter]
     ordering_fields = ["value", "frequency", "value_description"]
     pagination_class = CustomPagination
