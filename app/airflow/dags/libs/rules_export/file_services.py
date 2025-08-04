@@ -10,9 +10,13 @@ import io
 import csv
 from datetime import date
 import logging
+from libs.settings import AIRFLOW_DAGRUN_TIMEOUT
 
 # PostgreSQL connection hook
-pg_hook = PostgresHook(postgres_conn_id="postgres_db_conn")
+pg_hook = PostgresHook(
+    postgres_conn_id="postgres_db_conn",
+    options=f"-c statement_timeout={float(AIRFLOW_DAGRUN_TIMEOUT) * 60 * 1000}ms",
+)
 
 
 def build_rules_csv(scan_report_id: int) -> BytesIO:

@@ -13,10 +13,17 @@ from libs.queries import create_update_temp_rules_table_query, create_file_entry
 from libs.storage_services import upload_blob_to_storage
 from libs.enums import JobStageType, StageStatusType
 from libs.utils import update_job_status
-from libs.settings import AIRFLOW_DEBUG_MODE, AIRFLOW_VAR_JSON_VERSION
+from libs.settings import (
+    AIRFLOW_DEBUG_MODE,
+    AIRFLOW_VAR_JSON_VERSION,
+    AIRFLOW_DAGRUN_TIMEOUT,
+)
 
 # PostgreSQL connection hook
-pg_hook = PostgresHook(postgres_conn_id="postgres_db_conn")
+pg_hook = PostgresHook(
+    postgres_conn_id="postgres_db_conn",
+    options=f"-c statement_timeout={float(AIRFLOW_DAGRUN_TIMEOUT) * 60 * 1000}ms",
+)
 
 
 def pre_process_rules(**kwargs) -> None:

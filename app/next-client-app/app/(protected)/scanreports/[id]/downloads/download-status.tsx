@@ -11,7 +11,7 @@ export function DownloadStatus({ lastestJob }: { lastestJob: Job }) {
         "flex items-center border-2 p-2",
         lastestJob.status.value == "IN_PROGRESS"
           ? "border-orange-400 max-w-sm"
-          : "border-red-400 max-w-[1000px]"
+          : "border-red-400 max-w-[500px]"
       )}
     >
       <AlertDescription className="flex items-center">
@@ -20,7 +20,9 @@ export function DownloadStatus({ lastestJob }: { lastestJob: Job }) {
           statusOptions={GeneralStatus}
           disableTooltip={true}
         />
-        <div className="ml-2">{lastestJob?.details}</div>
+        <div className="ml-2 whitespace-pre-wrap text-pretty">
+          {lastestJob?.details}
+        </div>
       </AlertDescription>
     </Alert>
   );

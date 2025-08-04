@@ -14,9 +14,13 @@ from libs.queries import (
     validate_reused_concepts_query,
     create_reuse_concept_query,
 )
+from libs.settings import AIRFLOW_DAGRUN_TIMEOUT
 
 # PostgreSQL connection hook
-pg_hook = PostgresHook(postgres_conn_id="postgres_db_conn")
+pg_hook = PostgresHook(
+    postgres_conn_id="postgres_db_conn",
+    options=f"-c statement_timeout={float(AIRFLOW_DAGRUN_TIMEOUT) * 60 * 1000}ms",
+)
 
 
 def delete_R_concepts(**kwargs) -> None:
