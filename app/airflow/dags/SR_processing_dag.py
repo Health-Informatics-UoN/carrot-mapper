@@ -6,7 +6,7 @@ from libs.SR_processing.core import (
     process_data_dictionary,
     process_and_create_scan_report_entries,
 )
-from libs.utils import connect_to_storage
+from libs.utils import connect_to_storage, update_job_status_on_skipped
 from libs.settings import AIRFLOW_DEBUG_MODE, AIRFLOW_DAGRUN_TIMEOUT
 
 """
@@ -44,6 +44,7 @@ dag = DAG(
     catchup=False,
     is_paused_upon_creation=False,
     dagrun_timeout=timedelta(minutes=float(AIRFLOW_DAGRUN_TIMEOUT)),
+    on_failure_callback=update_job_status_on_skipped,
 )
 
 # TODO: add validate for DD file size: DATA_UPLOAD_MAX_MEMORY_SIZE :(
