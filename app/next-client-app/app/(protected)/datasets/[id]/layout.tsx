@@ -23,6 +23,15 @@ interface LayoutProps {
   children: React.ReactNode;
 }
 
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = await params;
+  const dataset = await getDataSet(resolvedParams.id);
+  return {
+    title: `${dataset?.name} | Carrot Mapper`,
+    description: `Dataset details for ${dataset?.name}`,
+  };
+}
+
 export default async function DatasetLayout({
   params,
   children

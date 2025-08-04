@@ -28,6 +28,15 @@ import { UploadStatusOptions } from "@/constants/scanReportStatus";
 import ExportScanReport from "@/components/scanreports/ExportScanReport";
 import { ActionsDownloadMenu } from "./actions-download-menu";
 
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = await params;
+  const scanreport = await getScanReport(resolvedParams.id);
+  return {
+    title: `${scanreport?.dataset} | Carrot Mapper`,
+    description: `Scan report details for ${scanreport?.dataset}`,
+  };
+}
+
 export default async function ScanReportLayout(
   props: Readonly<{
     params: { id: string };

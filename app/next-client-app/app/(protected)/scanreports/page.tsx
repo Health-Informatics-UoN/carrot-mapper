@@ -7,10 +7,16 @@ import { ScanReportsTableFilter } from "@/components/scanreports/ScanReportsTabl
 import { FilterParameters } from "@/types/filter";
 import { FileScan } from "lucide-react";
 import { VisibilityState } from "@tanstack/react-table";
+import { Metadata } from "next";
 
 interface ScanReportsProps {
   searchParams?: Promise<{ status__in: string } & FilterParameters>;
 }
+
+export const metadata: Metadata = {
+  title: "Scan Reports | Carrot Mapper",
+  description: "Scan reports for the current user",
+};
 
 export default async function ScanReports(props: ScanReportsProps) {
   const searchParams = await props.searchParams;
