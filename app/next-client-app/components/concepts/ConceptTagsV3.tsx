@@ -64,7 +64,7 @@ export function ConceptTagsV3({
             <LazyBadge
               className={`${
                 concept.creation_type === "V"
-                  ? "bg-pink-600 hover:bg-pink-600"
+                  ? "bg-pink-600 hover:bg-pink-600 text-white"
                   : concept.creation_type === "M"
                     ? "bg-sky-700 hover:bg-sky-700 text-white"
                     : concept.creation_type === "R"
