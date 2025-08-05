@@ -70,7 +70,7 @@ export function ConceptTagsV3({
                     : concept.creation_type === "R"
                       ? "bg-emerald-700 hover:bg-emerald-700 text-white"
                       : ""
-              } ${concepts.length > 1 && "my-[1px]"} p-1`}
+              } ${concepts.length > 1 && "my-[0.5px]"} p-1.5`}
               key={concept.concept.concept_code}
             >
               <p className="">{`${concept.concept.concept_id} ${concept.concept.concept_name} (${concept.creation_type})`}</p>
