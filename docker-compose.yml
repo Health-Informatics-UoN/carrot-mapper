@@ -1,7 +1,6 @@
 name: carrot-mapper-dev
 
 x-airflow-common: &airflow-common
-  profiles: ["main"]
   volumes:
     - ./app/airflow/dags:/opt/airflow/dags
   depends_on:
@@ -29,8 +28,6 @@ x-airflow-common: &airflow-common
     AIRFLOW_VAR_MINIO_ENDPOINT: http://minio:9000
     AIRFLOW_VAR_MINIO_ACCESS_KEY: minioadmin
     AIRFLOW_VAR_MINIO_SECRET_KEY: minioadmin
-    # WASB connection string (don't need to do URL encoding here)
-    AIRFLOW_VAR_WASB_CONNECTION_STRING: DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;TableEndpoint=http://azurite:10002/devstoreaccount1
 
 services:
   db:
@@ -108,13 +105,12 @@ services:
       - DEBUG=True
       - RULES_QUEUE_NAME=rules-queue
       - SECRET_KEY=secret
-      - STORAGE_CONN_STRING=DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;TableEndpoint=http://azurite:10002/devstoreaccount1;
       - SIGNING_KEY=secret
-      - STORAGE_TYPE=${STORAGE_TYPE:-minio}
+      - STORAGE_TYPE=minio
       - MINIO_ENDPOINT=minio:9000
       - MINIO_ACCESS_KEY=minioadmin
       - MINIO_SECRET_KEY=minioadmin
-      - WORKER_SERVICE_TYPE=${WORKER_SERVICE_TYPE:-airflow}
+      - WORKER_SERVICE_TYPE=airflow
       # TODO: update to API v2 when updating Airflow to 3.0.0
       - AIRFLOW_BASE_URL=http://airflow-webserver:8080/api/v1/
       - AIRFLOW_AUTO_MAPPING_DAG_ID=auto_mapping
@@ -140,21 +136,7 @@ services:
       omop-lite:
         condition: service_completed_successfully
 
-  azurite:
-    profiles: ["azure"]
-    image: mcr.microsoft.com/azure-storage/azurite
-    restart: always
-    ports:
-      - 10000:10000
-      - 10001:10001
-      - 10002:10002
-    command: azurite --blobHost azurite --queueHost azurite --tableHost azurite --location /data --debug /data/debug.log --loose --skipApiVersionCheck
-    hostname: azurite
-    environment:
-      - AZURITE_ACCOUNTS=devstoreaccount1:Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==
-
   minio:
-    profiles: ["main"]
     image: minio/minio
     restart: always
     command: server /data --console-address ":9001"
