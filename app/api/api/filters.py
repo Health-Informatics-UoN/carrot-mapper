@@ -31,11 +31,16 @@ class CreationTypeFilter(django_filters.MultipleChoiceFilter):
             ('R', 'Reuse'),
             ('none', 'No Concepts'),
         ]
+        # Configure to handle comma-separated values
+        kwargs['method'] = 'filter_creation_type'
         super().__init__(choices=choices, *args, **kwargs)
     
-    def filter(self, qs, value):
+    def filter_creation_type(self, queryset, name, value):
+        """
+        Custom filter method to handle comma-separated values.
+        """
         if not value:
-            return qs
+            return queryset
         
         # Handle the case where 'none' is selected
         if 'none' in value:
@@ -47,13 +52,13 @@ class CreationTypeFilter(django_filters.MultipleChoiceFilter):
                 q_objects = Q(concepts__isnull=True)
                 for creation_type in other_values:
                     q_objects |= Q(concepts__creation_type=creation_type)
-                return qs.filter(q_objects).distinct()
+                return queryset.filter(q_objects).distinct()
             else:
                 # Only 'none' is selected
-                return qs.filter(concepts__isnull=True)
+                return queryset.filter(concepts__isnull=True)
         else:
             # Only creation types are selected (no 'none')
-            return qs.filter(concepts__creation_type__in=value).distinct()
+            return queryset.filter(concepts__creation_type__in=value).distinct()
 
 
 class ScanReportAccessFilter(filters.BaseFilterBackend):

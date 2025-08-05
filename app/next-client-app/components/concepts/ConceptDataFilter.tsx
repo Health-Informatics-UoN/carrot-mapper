@@ -5,6 +5,7 @@ import { navigateWithSearchParam } from "@/lib/client-utils";
 import { FilterOption } from "@/types/filter";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { DataTableFilter } from "../data-table/DataTableFilter";
 
 const ConceptDataOptions = [
     {
@@ -32,15 +33,15 @@ export function ConceptDataFilter() {
 
   // Runs on load to populate the selectedOptions from params
   useEffect(() => {
-    const statusParam = searchParam.get("mapping_status__value__in");
-    if (statusParam) {
-      const statusValues = statusParam.split(",");
+    const creationTypeParam = searchParam.get("creation_type");
+    if (creationTypeParam) {
+      const creationTypeValues = creationTypeParam.split(",");
       const filteredOptions = ConceptDataOptions.filter((option) =>
-        statusValues.includes(option.value)
+        creationTypeValues.includes(option.value)
       );
       setOptions(filteredOptions);
     }
-  }, []);
+  }, [searchParam]);
 
   const handleSelectOption = (option: FilterOption) => {
     const updatedOptions = selectedOptions ? [...selectedOptions] : [];
@@ -65,7 +66,7 @@ export function ConceptDataFilter() {
   const handleFacetsFilter = (options?: FilterOption[]) => {
     if (options?.length === 0) {
       navigateWithSearchParam(
-        "",
+        "creation_type",
         "",
         router,
         searchParam
@@ -74,21 +75,22 @@ export function ConceptDataFilter() {
     }
     navigateWithSearchParam(
       "creation_type",
-      options?.map((option) => option.value) || "",
+      options?.map((option) => option.value).join(",") || "",
       router,
       searchParam
     );
   };
 
   return (
-    <div className="max-sm:hidden">
-      <FacetsFilter
+    <div className="flex gap-4 max-sm:hidden">
+        <DataTableFilter filter="value" filterText="Value" />
+        <FacetsFilter
         title="Concepts"
         options={ConceptDataOptions}
         selectedOptions={selectedOptions}
         handleSelect={handleSelectOption}
         handleClear={() => (setOptions([]), handleFacetsFilter())}
-      />
+        />
     </div>
   );
 }
