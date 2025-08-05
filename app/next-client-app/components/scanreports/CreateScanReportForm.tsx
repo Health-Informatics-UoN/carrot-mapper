@@ -3,7 +3,14 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AlertCircle, Upload } from "lucide-react";
-import { FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription } from "@/components/ui/form";
+import {
+  FormField,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormMessage,
+  FormDescription,
+} from "@/components/ui/form";
 import { Switch } from "@/components/ui/switch";
 import { Formik } from "formik";
 import { toast } from "sonner";
@@ -30,15 +37,18 @@ interface FormData {
 
 // Yup validation schema
 const validationSchema = Yup.object({
-  scan_report_file: Yup.mixed().test(
-    "fileSize",
-    `File size must be less than ${MAX_FILE_SIZE_BYTES / 1024 / 1024}MB`,
-    function (value) {
-      if (!value) return true;
-      const file = value as File;
-      return file.size <= MAX_FILE_SIZE_BYTES;
-    }
-  ),
+  name: Yup.string().required("Scan report name is required"),
+  scan_report_file: Yup.mixed()
+    .required("Scan report file is required")
+    .test(
+      "fileSize",
+      `File size must be less than ${MAX_FILE_SIZE_BYTES / 1024 / 1024}MB`,
+      function (value) {
+        if (!value) return false; // Don't allow null/undefined
+        const file = value as File;
+        return file.size <= MAX_FILE_SIZE_BYTES;
+      }
+    ),
   Data_dict: Yup.mixed()
     .nullable()
     .test(
@@ -49,12 +59,12 @@ const validationSchema = Yup.object({
         const file = value as File;
         return file.size <= MAX_FILE_SIZE_BYTES;
       }
-    )
+    ),
 });
 
 export function CreateScanReportForm({
   dataPartners,
-  projects
+  projects,
 }: {
   dataPartners: DataPartner[];
   projects: Project[];
@@ -99,15 +109,15 @@ export function CreateScanReportForm({
     <>
       {error && (
         <Alert variant="destructive" className="mb-3 max-w-2xl">
-            <AlertTitle className="flex items-center">
-              <AlertCircle className="h-4 w-4 mr-2" />
-              Upload New Scan Report Failed. Error:
-            </AlertTitle>
-            <AlertDescription>
-              <ul>
-                {error.split(" * ").map((err, index) => (
-                  <li key={index}>* {err}</li>
-                ))}
+          <AlertTitle className="flex items-center">
+            <AlertCircle className="h-4 w-4 mr-2" />
+            Upload New Scan Report Failed. Error:
+          </AlertTitle>
+          <AlertDescription>
+            <ul>
+              {error.split(" * ").map((err, index) => (
+                <li key={index}>* {err}</li>
+              ))}
             </ul>
           </AlertDescription>
         </Alert>
@@ -122,9 +132,11 @@ export function CreateScanReportForm({
           visibility: "PUBLIC",
           name: "",
           scan_report_file: null,
-          Data_dict: null
+          Data_dict: null,
         }}
         validationSchema={validationSchema}
+        validateOnChange={false}
+        validateOnBlur={false}
         onSubmit={(data) => {
           toast.info("Validating ...");
           handleSubmit(data);
@@ -137,7 +149,6 @@ export function CreateScanReportForm({
             encType="multipart/form-data"
           >
             <div className="flex flex-col gap-5">
-
               <FormField name="name">
                 {({ field }) => (
                   <FormItem>
@@ -146,12 +157,7 @@ export function CreateScanReportForm({
                       Name of the new Scan Report.
                     </FormDescription>
                     <FormControl>
-                      <Input
-                        {...field}
-                        onChange={handleChange}
-                        name="name"
-                        required
-                      />
+                      <Input {...field} onChange={handleChange} name="name" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -219,8 +225,8 @@ export function CreateScanReportForm({
                             handleChange({
                               target: {
                                 name: "visibility",
-                                value: checked ? "PUBLIC" : "RESTRICTED"
-                              }
+                                value: checked ? "PUBLIC" : "RESTRICTED",
+                              },
                             });
                             setPublicVisibility(checked);
                           }}
@@ -229,7 +235,9 @@ export function CreateScanReportForm({
                       </FormControl>
                       <span className="text-sm">
                         {/* Show user-friendly label */}
-                        {values.visibility === "PUBLIC" ? "Shared" : "Restricted"}
+                        {values.visibility === "PUBLIC"
+                          ? "Shared"
+                          : "Restricted"}
                       </span>
                     </div>
                     <FormDescription>
@@ -244,7 +252,10 @@ export function CreateScanReportForm({
                 <FormItem>
                   <FormLabel>Viewers</FormLabel>
                   <FormDescription>
-                    If the Scan Report is shared, then all users with access to the Dataset have viewer access to the Scan Report. Additionally, Dataset admins and editors have viewer access to the Scan Report in all cases.
+                    If the Scan Report is shared, then all users with access to
+                    the Dataset have viewer access to the Scan Report.
+                    Additionally, Dataset admins and editors have viewer access
+                    to the Scan Report in all cases.
                   </FormDescription>
                   <FormControl>
                     <FormikSelectEditors
@@ -264,7 +275,8 @@ export function CreateScanReportForm({
               <FormItem>
                 <FormLabel>Editors</FormLabel>
                 <FormDescription>
-                  Dataset admins and editors also have Scan Report editor permissions.
+                  Dataset admins and editors also have Scan Report editor
+                  permissions.
                 </FormDescription>
                 <FormControl>
                   <FormikSelectEditors
@@ -286,7 +298,9 @@ export function CreateScanReportForm({
                     <FormLabel>
                       <div className="flex items-center gap-2">
                         WhiteRabbit Scan Report{" "}
-                        <span className="text-muted-foreground text-sm">(.xlsx file max {maxFileSizeMB}MB)</span>
+                        <span className="text-muted-foreground text-sm">
+                          (.xlsx file, required, max {maxFileSizeMB}MB)
+                        </span>
                       </div>
                     </FormLabel>
                     <FormDescription>
@@ -297,7 +311,6 @@ export function CreateScanReportForm({
                         type="file"
                         name="scan_report_file"
                         accept=".xlsx"
-                        required={true}
                         onChange={(e) => {
                           if (e.currentTarget.files) {
                             setFieldValue(
@@ -325,7 +338,8 @@ export function CreateScanReportForm({
                       </div>
                     </FormLabel>
                     <FormDescription>
-                      Optional data dictionary to enable automatic building concepts from OMOP vocabulary.
+                      Optional data dictionary to enable automatic building
+                      concepts from OMOP vocabulary.
                     </FormDescription>
                     <FormControl>
                       <Input
@@ -334,7 +348,10 @@ export function CreateScanReportForm({
                         accept=".csv"
                         onChange={(e) => {
                           if (e.currentTarget.files) {
-                            setFieldValue("Data_dict", e.currentTarget.files[0]);
+                            setFieldValue(
+                              "Data_dict",
+                              e.currentTarget.files[0]
+                            );
                           }
                         }}
                       />

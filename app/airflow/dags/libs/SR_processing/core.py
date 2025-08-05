@@ -22,9 +22,13 @@ from typing import List, Tuple
 from libs.queries import create_values_query, create_temp_data_dictionary_table_query
 from libs.enums import JobStageType, StageStatusType
 from libs.utils import update_job_status
+from libs.settings import AIRFLOW_DAGRUN_TIMEOUT
 
 # PostgreSQL connection hook
-pg_hook = PostgresHook(postgres_conn_id="postgres_db_conn")
+pg_hook = PostgresHook(
+    postgres_conn_id="postgres_db_conn",
+    options=f"-c statement_timeout={float(AIRFLOW_DAGRUN_TIMEOUT) * 60 * 1000}ms",
+)
 
 
 def process_data_dictionary(**kwargs) -> None:

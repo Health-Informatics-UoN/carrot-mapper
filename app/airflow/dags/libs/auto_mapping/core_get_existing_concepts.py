@@ -11,9 +11,13 @@ from libs.queries import (
     find_existing_concepts_query,
     find_source_field_id_query,
 )
+from libs.settings import AIRFLOW_DAGRUN_TIMEOUT
 
 # PostgreSQL connection hook
-pg_hook = PostgresHook(postgres_conn_id="postgres_db_conn")
+pg_hook = PostgresHook(
+    postgres_conn_id="postgres_db_conn",
+    options=f"-c statement_timeout={float(AIRFLOW_DAGRUN_TIMEOUT) * 60 * 1000}ms",
+)
 
 
 def delete_mapping_rules(**kwargs) -> None:
@@ -67,7 +71,7 @@ def find_existing_concepts(**kwargs) -> None:
         scan_report_table=table_id,
         stage=JobStageType.GENERATE_RULES,
         status=StageStatusType.IN_PROGRESS,
-        details=f"Retrieving all existing concepts in the scan report table",
+        details="Retrieving all existing concepts in the scan report table",
     )
 
     try:
@@ -75,7 +79,7 @@ def find_existing_concepts(**kwargs) -> None:
             find_existing_concepts_query + find_source_field_id_query,
             parameters={"table_id": table_id, "scan_report_id": scan_report_id},
         )
-        logging.info(f"Successfully found existing concepts")
+        logging.info("Successfully found existing concepts")
     except Exception as e:
         logging.error(f"Failed to find existing concepts: {str(e)}")
         update_job_status(

@@ -3,9 +3,13 @@ from libs.utils import (
 )
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 import logging
+from libs.settings import AIRFLOW_DAGRUN_TIMEOUT
 
 # PostgreSQL connection hook
-pg_hook = PostgresHook(postgres_conn_id="postgres_db_conn")
+pg_hook = PostgresHook(
+    postgres_conn_id="postgres_db_conn",
+    options=f"-c statement_timeout={float(AIRFLOW_DAGRUN_TIMEOUT) * 60 * 1000}ms",
+)
 
 
 def process_search_recommendations(**kwargs) -> None:

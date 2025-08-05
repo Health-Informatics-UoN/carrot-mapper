@@ -25,7 +25,11 @@ from libs.auto_mapping.core_prep_rules_creation import (
 )
 from libs.auto_mapping.core_rules_creation import create_mapping_rules
 from libs.auto_mapping.search_recommendations import process_search_recommendations
-from libs.utils import create_task, validate_params_auto_mapping
+from libs.utils import (
+    create_task,
+    validate_params_auto_mapping,
+    update_job_status_on_failure,
+)
 from libs.settings import AIRFLOW_DEBUG_MODE, SEARCH_ENABLED, AIRFLOW_DAGRUN_TIMEOUT
 
 """
@@ -85,6 +89,7 @@ dag = DAG(
     catchup=False,
     is_paused_upon_creation=False,
     dagrun_timeout=timedelta(minutes=float(AIRFLOW_DAGRUN_TIMEOUT)),
+    on_failure_callback=update_job_status_on_failure,
 )
 
 # Start the workflow

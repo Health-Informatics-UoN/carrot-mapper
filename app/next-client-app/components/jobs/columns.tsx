@@ -71,7 +71,11 @@ export const columns: ColumnDef<Job>[] = [
     ),
     cell: ({ row }) => {
       const { details } = row.original;
-      return <div className="w-[300px]">{details}</div>;
+      return (
+        <div className="w-[300px] whitespace-pre-wrap text-pretty">
+          {details}
+        </div>
+      );
     },
     enableSorting: false,
     enableHiding: true,

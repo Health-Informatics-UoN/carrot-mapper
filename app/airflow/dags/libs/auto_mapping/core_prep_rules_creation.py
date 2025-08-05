@@ -11,9 +11,13 @@ from libs.queries import (
     find_dates_fields_query,
     find_concept_fields_query,
 )
+from libs.settings import AIRFLOW_DAGRUN_TIMEOUT
 
 # PostgreSQL connection hook
-pg_hook = PostgresHook(postgres_conn_id="postgres_db_conn")
+pg_hook = PostgresHook(
+    postgres_conn_id="postgres_db_conn",
+    options=f"-c statement_timeout={float(AIRFLOW_DAGRUN_TIMEOUT) * 60 * 1000}ms",
+)
 
 
 def find_dest_table_and_person_field_id(**kwargs) -> None:

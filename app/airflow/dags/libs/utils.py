@@ -6,7 +6,6 @@ from airflow.operators.python import PythonOperator
 from typing import TypedDict, List, Optional, Dict, Any
 from airflow.models.taskinstance import TaskInstance
 from libs.enums import JobStageType, StageStatusType, StorageType
-import os
 from airflow.utils.session import create_session
 from airflow.models.connection import Connection
 from libs.settings import (
@@ -15,10 +14,15 @@ from libs.settings import (
     AIRFLOW_VAR_MINIO_ENDPOINT,
     AIRFLOW_VAR_MINIO_ACCESS_KEY,
     AIRFLOW_VAR_MINIO_SECRET_KEY,
+    AIRFLOW_DAGRUN_TIMEOUT,
 )
 
+
 # PostgreSQL connection hook
-pg_hook = PostgresHook(postgres_conn_id="postgres_db_conn")
+pg_hook = PostgresHook(
+    postgres_conn_id="postgres_db_conn",
+    options=f"-c statement_timeout={float(AIRFLOW_DAGRUN_TIMEOUT) * 60 * 1000}ms",
+)
 
 
 # Define a type for field-vocab pairs
@@ -136,10 +140,77 @@ def update_job_status(
 
         pg_hook.run(update_query, parameters=params)
 
-    except Exception as e:
+    except Exception:
         error_msg = f"Failed to update job status for scan_report={scan_report}, stage={stage.name}"
         logging.error(error_msg)
         raise ValueError(error_msg)
+
+
+def update_job_status_on_failure(context):
+    """
+    Update job status on skipped task.
+
+    This function is designed to be used as an Airflow callback that receives the
+    execution context. It extracts the scan_report_id from the DAG run configuration
+    and updates the job status to FAILED with appropriate stage information.
+
+    Args:
+        context: Airflow execution context containing task_instance, dag, dag_run, etc.
+    """
+    try:
+        # Extract information from Airflow context
+        task_instance = context["task_instance"]
+        dag = context["dag"]
+        dag_run = context["dag_run"]
+
+        # Determine the appropriate stage based on DAG ID and task ID
+        if dag.dag_id == "rules_export":
+            stage = JobStageType.DOWNLOAD_RULES
+        elif dag.dag_id == "auto_mapping":
+            # For auto_mapping DAG, determine stage based on task name
+            task_id = task_instance.task_id
+            if task_id in [
+                "delete_mapping_rules",
+                "find_standard_concepts",
+                "create_standard_concepts",
+            ]:
+                stage = JobStageType.BUILD_CONCEPTS_FROM_DICT
+            elif task_id in [
+                "find_matching_value",
+                "find_matching_field",
+                "create_reusing_concepts",
+                "delete_R_concepts",
+            ]:
+                stage = JobStageType.REUSE_CONCEPTS
+            else:
+                stage = JobStageType.GENERATE_RULES
+        else:
+            logging.error(f"No job stage found for {dag.dag_id}.")
+            return
+
+        # Extract scan_report_id from DAG run configuration
+        dag_run_conf = dag_run.conf or {}
+        scan_report_id = dag_run_conf.get("scan_report_id")
+
+        if not scan_report_id:
+            logging.error(
+                f"No scan_report_id found in DAG run configuration for {dag.dag_id}"
+            )
+            return
+
+        # Get table_id if available (needed for some stages)
+        table_id = dag_run_conf.get("table_id")
+        # Update job status as failed
+        update_job_status(
+            stage=stage,
+            status=StageStatusType.FAILED,
+            scan_report=scan_report_id,
+            scan_report_table=table_id,
+            details=f"Task '{task_instance.task_id}' was timed-out or failed due to an unexpected error.",
+        )
+
+    except Exception as e:
+        logging.error(f"Failed to update job status on skipped task: {str(e)}")
 
 
 def create_task(task_id, python_callable, dag, provide_context=True):
