@@ -19,46 +19,41 @@ class HasConceptsFilter(django_filters.BooleanFilter):
             return qs.filter(concepts__isnull=True)
 
 
-class CreationTypeFilter(django_filters.MultipleChoiceFilter):
+class CreationTypeFilter(django_filters.CharFilter):
     """
     Custom filter to filter ScanReportValue by the creation_type of their concepts.
     """
     
     def __init__(self, *args, **kwargs):
-        choices = [
-            ('M', 'Manual'),
-            ('V', 'Vocab'),
-            ('R', 'Reuse'),
-            ('none', 'No Concepts'),
-        ]
-        # Configure to handle comma-separated values
-        kwargs['method'] = 'filter_creation_type'
-        super().__init__(choices=choices, *args, **kwargs)
+        super().__init__(*args, **kwargs)
     
-    def filter_creation_type(self, queryset, name, value):
-        """
-        Custom filter method to handle comma-separated values.
-        """
+    def filter(self, qs, value):
         if not value:
-            return queryset
+            return qs
+        
+        # Split comma-separated values
+        if isinstance(value, str):
+            values = [v.strip() for v in value.split(',')]
+        else:
+            values = value
         
         # Handle the case where 'none' is selected
-        if 'none' in value:
+        if 'none' in values:
             # Remove 'none' from the list and filter for values with no concepts
-            other_values = [v for v in value if v != 'none']
+            other_values = [v for v in values if v != 'none']
             if other_values:
                 # If other values are also selected, we need to use Q objects for OR logic
                 from django.db.models import Q
                 q_objects = Q(concepts__isnull=True)
                 for creation_type in other_values:
                     q_objects |= Q(concepts__creation_type=creation_type)
-                return queryset.filter(q_objects).distinct()
+                return qs.filter(q_objects).distinct()
             else:
                 # Only 'none' is selected
-                return queryset.filter(concepts__isnull=True)
+                return qs.filter(concepts__isnull=True)
         else:
             # Only creation types are selected (no 'none')
-            return queryset.filter(concepts__creation_type__in=value).distinct()
+            return qs.filter(concepts__creation_type__in=values).distinct()
 
 
 class ScanReportAccessFilter(filters.BaseFilterBackend):
