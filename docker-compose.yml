@@ -1,13 +1,10 @@
 name: carrot-mapper-dev
 
 x-airflow-common: &airflow-common
-  profiles: ["main"]
   volumes:
     - ./app/airflow/dags:/opt/airflow/dags
   depends_on:
     db:
-      condition: service_started
-    minio:
       condition: service_started
     api:
       condition: service_healthy
@@ -24,7 +21,7 @@ x-airflow-common: &airflow-common
     # This connection can be in separate variables (then don't need to do URL encoding), but it can reuse the same connection string with SQL_ALCHEMY_CONN (without extras)
     AIRFLOW_CONN_POSTGRES_DB_CONN: postgresql+psycopg2://postgres:postgres@db:5432/postgres
     # The blob storage where Airflow get/put necessary files
-    STORAGE_TYPE: minio
+    STORAGE_TYPE: ${STORAGE_TYPE:-minio}
     # Minio connection variables (don't need to do URL encoding here)
     AIRFLOW_VAR_MINIO_ENDPOINT: http://minio:9000
     AIRFLOW_VAR_MINIO_ACCESS_KEY: minioadmin
@@ -114,7 +111,7 @@ services:
       - MINIO_ENDPOINT=minio:9000
       - MINIO_ACCESS_KEY=minioadmin
       - MINIO_SECRET_KEY=minioadmin
-      - WORKER_SERVICE_TYPE=${WORKER_SERVICE_TYPE:-airflow}
+      - WORKER_SERVICE_TYPE=airflow
       # TODO: update to API v2 when updating Airflow to 3.0.0
       - AIRFLOW_BASE_URL=http://airflow-webserver:8080/api/v1/
       - AIRFLOW_AUTO_MAPPING_DAG_ID=auto_mapping
