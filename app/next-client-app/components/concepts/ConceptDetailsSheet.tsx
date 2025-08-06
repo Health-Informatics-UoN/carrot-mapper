@@ -89,7 +89,7 @@ function ConceptEditForm({
     <Formik
       initialValues={{
         description: conceptDetail.description || "",
-        confidence: conceptDetail.confidence || 0
+        confidence: typeof conceptDetail.confidence === 'number' ? conceptDetail.confidence : parseFloat(conceptDetail.confidence) || 0
       }}
       onSubmit={handleUpdateConcept}
     >
@@ -115,7 +115,7 @@ function ConceptEditForm({
                       className="w-full"
                     />
                                           <div className="text-sm text-muted-foreground">
-                        Current value: {typeof values.confidence === 'number' ? values.confidence.toFixed(2) : '0.00'}
+                        Current value: {(typeof values.confidence === 'number' ? values.confidence : parseFloat(values.confidence) || 0).toFixed(2)}
                       </div>
                   </div>
                 </FormControl>
