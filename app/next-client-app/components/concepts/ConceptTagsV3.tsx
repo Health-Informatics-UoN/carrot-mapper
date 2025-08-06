@@ -57,12 +57,9 @@ export function ConceptTagsV3({
           fieldId={fieldId.toString()}
           valueId={valueId}
         >
-          <Button
-            variant="ghost"
-            className="p-0 h-auto w-full justify-start"
-          >
-            <LazyBadge
-              className={`${
+          <div className="p-0 w-full justify-start">
+            <div
+              className={`w-fit max-w-[300px] rounded-md border px-2.5 py-0.5 text-xs font-semibold relative ${
                 concept.creation_type === "V"
                   ? "bg-pink-600 hover:bg-pink-600 text-white"
                   : concept.creation_type === "M"
@@ -70,18 +67,27 @@ export function ConceptTagsV3({
                     : concept.creation_type === "R"
                       ? "bg-emerald-700 hover:bg-emerald-700 text-white"
                       : ""
-              } ${concepts.length > 1 && "my-[0.5px]"} p-1.5`}
+              } ${concepts.length > 1 && "my-[0.5px]"}`}
               key={concept.concept.concept_code}
             >
-              <p className="">{`${concept.concept.concept_id} ${concept.concept.concept_name} (${concept.creation_type})`}</p>
-              <Cross2Icon
-               onClick={async (e) => {
+              <div className="pr-6">
+                <span className="font-semibold">{concept.concept.concept_id}</span>
+                <span className="ml-1 text-wrap break-words">{concept.concept.concept_name}</span>
+                <span className="ml-1 text-xs opacity-80">({concept.creation_type})</span>
+              </div>
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={async (e) => {
                   e.stopPropagation();
                   await handleDelete(concept.id);
                 }}
-              />
-            </LazyBadge>
-          </Button>
+                className="absolute top-0 right-0 h-auto p-0 w-auto min-w-0 text-white hover:text-red-200"
+              >
+                <Cross2Icon />
+              </Button>
+            </div>
+          </div>
         </ConceptDetailsSheet>
       ))}
     </div>
