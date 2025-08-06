@@ -2,7 +2,7 @@ import React, { lazy, useOptimistic } from "react";
 import { deleteConceptV3 } from "@/api/concepts";
 import { Button } from "@/components/ui/button";
 import { ApiError } from "@/lib/api/error";
-import { Cross2Icon, InfoCircledIcon } from "@radix-ui/react-icons";
+import { Cross2Icon } from "@radix-ui/react-icons";
 import { toast } from "sonner";
 import { ConceptDetailsSheet } from "./ConceptDetailsSheet";
 
