@@ -44,13 +44,13 @@ interface FormData {
 }
 
 interface ConceptEditFormProps {
-  conceptDetail: any;
+  conceptDetail: ScanReportConceptDetailV3;
   scanReportId: string;
   tableId: string;
   fieldId: string;
   valueId: number;
   conceptId: number;
-  onUpdate: (updatedDetail: any) => void;
+  onUpdate: (updatedDetail: ScanReportConceptDetailV3) => void;
 }
 
 function ConceptEditForm({ 
@@ -168,11 +168,11 @@ export function ConceptDetailsSheet({
   fieldId,
   valueId
 }: ConceptDetailsSheetProps) {
-  const [conceptDetail, setConceptDetail] = useState<any>(null);
+  const [conceptDetail, setConceptDetail] = useState<ScanReportConceptDetailV3 | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
 
-  const handleUpdateConcept = (updatedDetail: any) => {
+  const handleUpdateConcept = (updatedDetail: ScanReportConceptDetailV3) => {
     setConceptDetail(updatedDetail);
   };
 
