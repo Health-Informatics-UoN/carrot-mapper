@@ -6,8 +6,6 @@ x-airflow-common: &airflow-common
   depends_on:
     db:
       condition: service_started
-    minio:
-      condition: service_started
     api:
       condition: service_healthy
   environment: &airflow-common-env
@@ -23,11 +21,13 @@ x-airflow-common: &airflow-common
     # This connection can be in separate variables (then don't need to do URL encoding), but it can reuse the same connection string with SQL_ALCHEMY_CONN (without extras)
     AIRFLOW_CONN_POSTGRES_DB_CONN: postgresql+psycopg2://postgres:postgres@db:5432/postgres
     # The blob storage where Airflow get/put necessary files
-    STORAGE_TYPE: minio
+    STORAGE_TYPE: ${STORAGE_TYPE:-minio}
     # Minio connection variables (don't need to do URL encoding here)
     AIRFLOW_VAR_MINIO_ENDPOINT: http://minio:9000
     AIRFLOW_VAR_MINIO_ACCESS_KEY: minioadmin
     AIRFLOW_VAR_MINIO_SECRET_KEY: minioadmin
+    # WASB connection string (don't need to do URL encoding here)
+    AIRFLOW_VAR_WASB_CONNECTION_STRING: DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;TableEndpoint=http://azurite:10002/devstoreaccount1
 
 services:
   db:
@@ -105,8 +105,9 @@ services:
       - DEBUG=True
       - RULES_QUEUE_NAME=rules-queue
       - SECRET_KEY=secret
+      - STORAGE_CONN_STRING=DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;TableEndpoint=http://azurite:10002/devstoreaccount1;
       - SIGNING_KEY=secret
-      - STORAGE_TYPE=minio
+      - STORAGE_TYPE=${STORAGE_TYPE:-minio}
       - MINIO_ENDPOINT=minio:9000
       - MINIO_ACCESS_KEY=minioadmin
       - MINIO_SECRET_KEY=minioadmin
@@ -136,7 +137,21 @@ services:
       omop-lite:
         condition: service_completed_successfully
 
+  azurite:
+    profiles: ["azure"]
+    image: mcr.microsoft.com/azure-storage/azurite
+    restart: always
+    ports:
+      - 10000:10000
+      - 10001:10001
+      - 10002:10002
+    command: azurite --blobHost azurite --queueHost azurite --tableHost azurite --location /data --debug /data/debug.log --loose --skipApiVersionCheck
+    hostname: azurite
+    environment:
+      - AZURITE_ACCOUNTS=devstoreaccount1:Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==
+
   minio:
+    profiles: ["main"]
     image: minio/minio
     restart: always
     command: server /data --console-address ":9001"
