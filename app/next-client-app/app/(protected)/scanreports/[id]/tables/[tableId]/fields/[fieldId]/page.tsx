@@ -68,6 +68,7 @@ export default async function ScanReportsValue(props: ScanReportsValueProps) {
       : [];
   return (
     <div>
+      <div className="flex justify-between items-center">
       <TableBreadcrumbs
         id={id}
         tableId={tableId}
@@ -75,10 +76,10 @@ export default async function ScanReportsValue(props: ScanReportsValueProps) {
         tableName={table.name}
         fieldName={field.name}
         variant="field"
-      />
-      <div className="flex justify-end">
-        <Button variant="link" asChild><Link href={`${fieldId}/beta`}>Try the new experience <Sparkles className="text-orange-500" /></Link></Button>
+        />
+        <Button variant="link" asChild><Link href={`${fieldId}/beta`}>Try the new experience <Sparkles className="text-carrot-brand" /></Link></Button>
       </div>
+      
       <div>
         <ConceptDataTable
           count={scanReportsValues.count}
