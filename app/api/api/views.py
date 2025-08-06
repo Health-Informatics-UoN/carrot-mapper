@@ -940,7 +940,9 @@ class ScanReportValueListV3(ScanReportPermissionMixin, GenericAPIView, ListModel
         return super().list(request, *args, **kwargs)
 
 
-class ScanReportConceptDetailV3(ScanReportPermissionMixin, GenericAPIView, RetrieveModelMixin, UpdateModelMixin):
+class ScanReportConceptDetailV3(
+    ScanReportPermissionMixin, GenericAPIView, RetrieveModelMixin, UpdateModelMixin
+):
     """
     A view for retrieving a specific ScanReportConcept object.
     """
@@ -952,9 +954,10 @@ class ScanReportConceptDetailV3(ScanReportPermissionMixin, GenericAPIView, Retri
 
     def get(self, request, *args, **kwargs):
         return self.retrieve(request, *args, **kwargs)
-    
+
     def patch(self, request, *args, **kwargs):
         return self.partial_update(request, *args, **kwargs)
+
 
 class ScanReportConceptListV2(
     GenericAPIView, ListModelMixin, CreateModelMixin, DestroyModelMixin

@@ -8,11 +8,11 @@ class HasConceptsFilter(django_filters.BooleanFilter):
     """
     Custom filter to check if a ScanReportValue has any concepts.
     """
-    
+
     def filter(self, qs, value):
         if value is None:
             return qs
-        
+
         if value:
             return qs.filter(concepts__isnull=False)
         else:
@@ -23,27 +23,28 @@ class CreationTypeFilter(django_filters.CharFilter):
     """
     Custom filter to filter ScanReportValue by the creation_type of their concepts.
     """
-    
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-    
+
     def filter(self, qs, value):
         if not value:
             return qs
-        
+
         # Split comma-separated values
         if isinstance(value, str):
-            values = [v.strip() for v in value.split(',')]
+            values = [v.strip() for v in value.split(",")]
         else:
             values = value
-        
+
         # Handle the case where 'none' is selected
-        if 'none' in values:
+        if "none" in values:
             # Remove 'none' from the list and filter for values with no concepts
-            other_values = [v for v in values if v != 'none']
+            other_values = [v for v in values if v != "none"]
             if other_values:
                 # If other values are also selected, we need to use Q objects for OR logic
                 from django.db.models import Q
+
                 q_objects = Q(concepts__isnull=True)
                 for creation_type in other_values:
                     q_objects |= Q(concepts__creation_type=creation_type)
@@ -140,11 +141,12 @@ class ScanReportValueFilter(django_filters.FilterSet):
     """
     Custom filterset for ScanReportValue model.
     """
+
     has_concepts = HasConceptsFilter()
     creation_type = CreationTypeFilter()
-    
+
     class Meta:
         model = ScanReportValue
         fields = {
-            'value': ['in', 'icontains'],
+            "value": ["in", "icontains"],
         }
