@@ -125,6 +125,7 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+  --select-background: oklch(1 0 0 / 5%);
 }
 
 
@@ -277,7 +278,7 @@
 
 .dark .my-react-select-container .my-react-select__control {
   border-color: var(--input) !important;
-  background-color: var(--background) !important;
+  background-color: var(--select-background) !important;
 }
 
 .dark .my-react-select__option--is-focused {
