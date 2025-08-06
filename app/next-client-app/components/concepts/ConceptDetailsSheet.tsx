@@ -78,7 +78,7 @@ function ConceptEditForm({
       
       if (response) {
         onUpdate(response);
-        toast.success("Concept details updated successfully!");
+        toast.success("Concept details updated");
       }
     } catch (error: any) {
       toast.error(`Update failed. Error: ${error.message}`);

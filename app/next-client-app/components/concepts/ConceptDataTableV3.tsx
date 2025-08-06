@@ -1,7 +1,6 @@
 "use client";
 
 import { DataTable } from "@/components/data-table";
-import { DataTableFilter } from "@/components/data-table/DataTableFilter";
 
 interface CustomDataTableProps<T> {
   scanReportsData: ScanReportValueV3[];
@@ -13,8 +12,6 @@ interface CustomDataTableProps<T> {
     canEdit: boolean,
     scanReportId: string,
   ) => any;
-  filterCol: string;
-  filterText: string;
   tableId: string;
   scanReportId: string;
   Filter: JSX.Element;
@@ -28,8 +25,6 @@ export function ConceptDataTableV3<
   count,
   defaultPageSize,
   columns,
-  filterCol,
-  filterText,
   tableId,
   scanReportId,
   Filter,

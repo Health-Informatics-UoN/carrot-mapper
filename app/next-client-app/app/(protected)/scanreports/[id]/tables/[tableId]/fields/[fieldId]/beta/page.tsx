@@ -65,8 +65,6 @@ export default async function ScanReportsValue(props: ScanReportsValueProps) {
           scanReportsData={scanReportsValues.results}
           defaultPageSize={defaultPageSize}
           columns={columns}
-          filterCol="value"
-          filterText="value "
           tableId={tableId}
           scanReportId={id}
           Filter={filter}

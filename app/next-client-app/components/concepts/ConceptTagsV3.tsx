@@ -70,7 +70,7 @@ export function ConceptTagsV3({
               } ${concepts.length > 1 && "my-[0.5px]"}`}
               key={concept.concept.concept_code}
             >
-              <div className="pr-6">
+              <div className="pr-2">
                 <span className="font-semibold">{concept.concept.concept_id}</span>
                 <span className="ml-1 text-wrap break-words">{concept.concept.concept_name}</span>
                 <span className="ml-1 text-xs opacity-80">({concept.creation_type})</span>
@@ -82,7 +82,7 @@ export function ConceptTagsV3({
                   e.stopPropagation();
                   await handleDelete(concept.id);
                 }}
-                className="absolute top-0 right-0 h-auto p-0 w-auto min-w-0 text-white hover:text-red-200"
+                className="absolute top-0 right-0 h-auto p-0 pt-0.5 w-auto min-w-0 text-white hover:text-red-200"
               >
                 <Cross2Icon />
               </Button>
