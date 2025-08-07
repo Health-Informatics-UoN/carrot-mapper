@@ -205,13 +205,13 @@ export function ConceptDetailsSheet({
       <SheetTrigger asChild>
         {children}
       </SheetTrigger>
-      <SheetContent>
-        <SheetHeader>
+      <SheetContent className="flex flex-col h-full">
+        <SheetHeader className="flex-shrink-0">
           <SheetTitle>
             {concept.concept.concept_id} - {concept.concept.concept_name}
           </SheetTitle>
         </SheetHeader>
-        <div className="mt-6 space-y-6">
+        <div className="mt-6 space-y-6 flex-1 overflow-y-auto">
           <div>
             <h3 className="font-semibold mb-4 text-lg">Mapping Details</h3>
             <div className="space-y-3 text-sm py-4">
