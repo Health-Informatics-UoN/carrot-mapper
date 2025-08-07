@@ -99,12 +99,12 @@ urlpatterns = [
         name="scan-report-values",
     ),
     path(
-        "v3/scanreports/<int:pk>/tables/<int:table_pk>/fields/<int:field_pk>/values/",
+        "v2/scanreports/<int:pk>/tables/<int:table_pk>/fields/<int:field_pk>/values/",
         views.ScanReportValueListV3.as_view(),
         name="scan-report-values",
     ),
     path(
-        "v3/scanreports/<int:pk>/tables/<int:table_pk>/fields/<int:field_pk>/values/<int:value_pk>/concepts/<int:concept_pk>/",
+        "v2/scanreports/<int:pk>/tables/<int:table_pk>/fields/<int:field_pk>/values/<int:value_pk>/concepts/<int:concept_pk>/",
         views.ScanReportConceptDetailV3.as_view(),
         name="scan-report-concepts-detail",
     ),
