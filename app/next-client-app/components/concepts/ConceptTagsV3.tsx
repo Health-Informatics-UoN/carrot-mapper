@@ -57,11 +57,11 @@ export function ConceptTagsV3({
             <div
               className={`w-fit max-w-[300px] rounded-md border px-2.5 py-0.5 text-xs font-semibold relative ${
                 concept.creation_type === "V"
-                  ? "bg-pink-600 hover:bg-pink-600 text-white"
+                  ? "bg-rose-200 hover:bg-rose-200 text-black"
                   : concept.creation_type === "M"
-                    ? "bg-sky-700 hover:bg-sky-700 text-white"
+                    ? "bg-blue-200 hover:bg-blue-200 text-black"
                     : concept.creation_type === "R"
-                      ? "bg-emerald-700 hover:bg-emerald-700 text-white"
+                      ? "bg-emerald-200 hover:bg-emerald-200 text-black"
                       : ""
               } ${concepts.length > 1 && "my-[1px]"}`}
               key={concept.concept.concept_code}
