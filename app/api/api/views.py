@@ -3,12 +3,13 @@ import os
 import random
 import string
 from typing import Any, Optional
-from api.filters import ScanReportAccessFilter
+from api.filters import ScanReportAccessFilter, ScanReportValueFilter
 from api.mixins import ScanReportPermissionMixin
 from api.paginations import CustomPagination
 from api.serializers import (
     ConceptSerializerV2,
     GetRulesAnalysis,
+    ScanReportConceptDetailSerializerV3,
     ScanReportConceptSerializer,
     ScanReportCreateSerializer,
     ScanReportEditSerializer,
@@ -915,10 +916,9 @@ class ScanReportValueListV3(ScanReportPermissionMixin, GenericAPIView, ListModel
             ScanReportValue objects.
     """
 
-    filterset_fields = {
-        "value": ["in", "icontains"],
-    }
-    filter_backends = [DjangoFilterBackend]
+    filterset_class = ScanReportValueFilter
+    filter_backends = [DjangoFilterBackend, OrderingFilter]
+    ordering_fields = ["value", "frequency", "value_description"]
     pagination_class = CustomPagination
     serializer_class = ScanReportValueViewSerializerV3
 
@@ -936,10 +936,27 @@ class ScanReportValueListV3(ScanReportPermissionMixin, GenericAPIView, ListModel
             .prefetch_related("concepts", "concepts__concept")
         )
 
-    @method_decorator(cache_page(60 * 15))
-    @method_decorator(vary_on_cookie)
     def list(self, request, *args, **kwargs):
         return super().list(request, *args, **kwargs)
+
+
+class ScanReportConceptDetailV3(
+    ScanReportPermissionMixin, GenericAPIView, RetrieveModelMixin, UpdateModelMixin
+):
+    """
+    A view for retrieving a specific ScanReportConcept object.
+    """
+
+    serializer_class = ScanReportConceptDetailSerializerV3
+
+    def get_object(self):
+        return get_object_or_404(ScanReportConcept, pk=self.kwargs["concept_pk"])
+
+    def get(self, request, *args, **kwargs):
+        return self.retrieve(request, *args, **kwargs)
+
+    def patch(self, request, *args, **kwargs):
+        return self.partial_update(request, *args, **kwargs)
 
 
 class ScanReportConceptListV2(
