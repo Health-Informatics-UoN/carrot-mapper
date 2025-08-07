@@ -63,7 +63,7 @@ export const ConceptTags = React.memo(function ConceptTags({
             } ${concepts.length > 1 ? "my-px" : ""}`}
             key={concept.concept_code}
           >
-            <p className="py-0.5 m-0">{`${concept.concept_id} ${concept.concept_name} (${concept.creation_type})`}</p>
+            <p className="py-0.5 m-0 text-wrap">{`${concept.concept_id} ${concept.concept_name} (${concept.creation_type})`}</p>
             <Button
               size="icon"
               variant="ghost"
