@@ -51,9 +51,13 @@ export async function requestFile(
 
 export async function downloadFile(
   scan_report_id: number,
-  file_type?: string,
   file_id?: number
-): Promise<{ success: boolean; errorMessage?: string; data?: any }> {
+): Promise<{
+  success: boolean;
+  errorMessage?: string;
+  data?: any;
+  blob?: Blob;
+}> {
   try {
     if (!file_id) {
       // The case of SR exporting
@@ -66,19 +70,14 @@ export async function downloadFile(
 
       return { success: true, data: base64String };
     } else {
-      // The case of mapping rules file downloading
+      // The case of mapping rules file downloading - use streaming for all file types
       const response = await request(
-        fetchKeys.downloadFile(scan_report_id, file_id)
+        fetchKeys.downloadFile(scan_report_id, file_id),
+        { download: true }
       );
-      if (file_type == "mapping_json") {
-        return { success: true, data: JSON.parse(response) };
-      }
-      if (file_type == "mapping_csv") {
-        return { success: true, data: response };
-      }
+      // Return the blob directly
+      return { success: true, blob: response as Blob };
     }
-
-    return { success: false, errorMessage: "Unsupported file type" };
   } catch (error: any) {
     return { success: false, errorMessage: error.message };
   }
