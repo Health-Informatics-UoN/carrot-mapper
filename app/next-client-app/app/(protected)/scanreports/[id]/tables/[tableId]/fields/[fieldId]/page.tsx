@@ -69,13 +69,13 @@ export default async function ScanReportsValue(props: ScanReportsValueProps) {
   return (
     <div>
       <div className="flex justify-between items-center">
-      <TableBreadcrumbs
-        id={id}
-        tableId={tableId}
-        fieldId={fieldId}
-        tableName={table.name}
-        fieldName={field.name}
-        variant="field"
+        <TableBreadcrumbs
+          id={id}
+          tableId={tableId}
+          fieldId={fieldId}
+          tableName={table.name}
+          fieldName={field.name}
+          variant="field"
         />
         <Button variant="link" asChild><Link href={`${fieldId}/beta`}>Try the new experience <Sparkles className="text-carrot-brand" /></Link></Button>
       </div>

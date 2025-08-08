@@ -10,6 +10,9 @@ import { columns } from "./columns";
 import { ConceptDataTableV3 } from "@/components/concepts/ConceptDataTableV3";
 import { TableBreadcrumbs } from "@/components/scanreports/TableBreadcrumbs";
 import { ConceptDataFilter } from "@/components/concepts/ConceptDataFilter";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 
 interface ScanReportsValueProps {
   params: Promise<{
@@ -50,14 +53,17 @@ export default async function ScanReportsValue(props: ScanReportsValueProps) {
 
   return (
     <div>
-      <TableBreadcrumbs
-        id={id}
-        tableId={tableId}
-        fieldId={fieldId}
-        tableName={table.name}
-        fieldName={field.name}
-        variant="field"
-      />
+      <div className="flex justify-between items-center">
+        <TableBreadcrumbs
+          id={id}
+          tableId={tableId}
+          fieldId={fieldId}
+          tableName={table.name}
+          fieldName={field.name}
+          variant="field"
+        />
+        <Button variant="link" asChild><Link href={`/scanreports/${id}/tables/${tableId}/fields/${fieldId}`}>Back to old experience <ArrowLeft className="text-carrot-brand" /></Link></Button>
+      </div>
       <div>
         <ConceptDataTableV3
           count={scanReportsValues.count}
