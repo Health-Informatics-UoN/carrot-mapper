@@ -111,6 +111,7 @@
   --muted-foreground: oklch(0.708 0 0);
   --accent: oklch(0.269 0 0);
   --accent-foreground: oklch(0.985 0 0);
+  --text-toast: oklch(1 0 0);
   --destructive: oklch(0.577 0.245 27.325);
   --info: oklch(54.6% 0.245 262.881);
   --warning: oklch(66.6% 0.179 58.318);
