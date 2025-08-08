@@ -243,7 +243,7 @@ export function ConceptDetailsSheet({
 
               {conceptDetail && !isLoading && (
                 <>
-                  <div className="space-y-3 pt-2 border-t">
+                  <div className="space-y-3">
                     <div>
                       <InfoItem
                         label="Created At"
