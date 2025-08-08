@@ -1,4 +1,4 @@
-@import 'tailwindcss';
+@import "tailwindcss";
 
 @config '../tailwind.config.ts';
 
@@ -12,7 +12,7 @@
 }
 
 ::selection {
-	background: #F98109;
+  background: #f98109;
 }
 
 @custom-variant dark (&:is(.dark *));
@@ -57,7 +57,6 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
-
 :root {
   --radius: 0.625rem;
   --background: oklch(1 0 0);
@@ -74,7 +73,11 @@
   --muted-foreground: oklch(0.556 0 0);
   --accent: oklch(0.97 0 0);
   --accent-foreground: oklch(0.205 0 0);
+  --text-toast: oklch(1 0 0);
   --destructive: oklch(0.577 0.245 27.325);
+  --info: oklch(54.6% 0.245 262.881);
+  --warning: oklch(66.6% 0.179 58.318);
+  --success: oklch(62.7% 0.194 149.214);
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
   --ring: oklch(0.708 0 0);
@@ -108,7 +111,11 @@
   --muted-foreground: oklch(0.708 0 0);
   --accent: oklch(0.269 0 0);
   --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
+  --text-toast: oklch(1 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --info: oklch(54.6% 0.245 262.881);
+  --warning: oklch(66.6% 0.179 58.318);
+  --success: oklch(62.7% 0.194 149.214);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.556 0 0);
@@ -126,7 +133,6 @@
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
 }
-
 
 /* React Select using shadcn/ui tokens - updated to match shadcn design */
 .my-react-select-container {
@@ -303,21 +309,20 @@
   color: #fff !important;
 }
 
-
 /* Sonner toast global styles */
 [data-sonner-toast][data-type="success"] {
   background: var(--success) !important;
-  color: var(--success-foreground) !important;
+  color: var(--text-toast) !important;
 }
 [data-sonner-toast][data-type="error"] {
   background: var(--destructive) !important;
-  color: var(--destructive-foreground) !important;
+  color: var(--text-toast) !important;
 }
 [data-sonner-toast][data-type="info"] {
-  background: var(--primary) !important;
-  color: var(--primary-foreground) !important;
+  background: var(--info) !important;
+  color: var(--text-toast) !important;
 }
 [data-sonner-toast][data-type="warning"] {
   background: var(--warning) !important;
-  color: var(--warning-foreground) !important;
+  color: var(--text-toast) !important;
 }

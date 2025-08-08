@@ -50,9 +50,7 @@ export default async function RootLayout({
       <head>
         <PublicEnvScript />
       </head>
-      <body
-        className="bg-background text-foreground"
-      >
+      <body className="bg-background text-foreground">
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
@@ -62,16 +60,7 @@ export default async function RootLayout({
           {children}
         </ThemeProvider>
 
-        <Toaster
-          toastOptions={{
-            classNames: {
-              error: "bg-destructive text-destructive-foreground",
-              success: "bg-success text-success-foreground",
-              warning: "bg-warning text-warning-foreground",
-              info: "bg-popover text-popover-foreground",
-            },
-          }}
-        />
+        <Toaster />
       </body>
     </html>
   );
