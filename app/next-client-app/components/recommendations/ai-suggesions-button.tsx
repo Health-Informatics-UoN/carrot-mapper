@@ -100,6 +100,7 @@ export function AISuggestionsButton({
               ) : (
                 <Sparkles className="h-4 w-4 text-purple-500" />
               )}
+              Suggestions
             </Button>
           </div>
         </DropdownMenuTrigger>
