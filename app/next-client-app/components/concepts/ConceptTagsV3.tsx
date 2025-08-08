@@ -22,7 +22,7 @@ export function ConceptTagsV3({
   const [optimisticConcepts, setOptimisticConcepts] = useOptimistic(
     concepts,
     (state, conceptIdToDelete: number) =>
-      state.filter((concept) => concept.id !== conceptIdToDelete),
+      state.filter((concept) => concept.id !== conceptIdToDelete)
   );
 
   const handleDelete = async (conceptId: number) => {
@@ -30,13 +30,13 @@ export function ConceptTagsV3({
       setOptimisticConcepts(conceptId);
       await deleteConceptV3(
         conceptId,
-        `/scanreports/${scanReportId}/tables/${tableId}/fields/${fieldId}/beta`,
+        `/scanreports/${scanReportId}/tables/${tableId}/fields/${fieldId}/beta`
       );
       toast.success("Concept Id Deleted");
     } catch (error) {
       const errorObj = JSON.parse((error as ApiError).message);
       toast.error(
-        `Unable to delete Concept id from value Error: ${errorObj.detail}`,
+        `Unable to delete Concept id from value Error: ${errorObj.detail}`
       );
       console.error(error);
     }
@@ -59,17 +59,23 @@ export function ConceptTagsV3({
                 concept.creation_type === "V"
                   ? "bg-rose-200 hover:bg-rose-200 text-black"
                   : concept.creation_type === "M"
-                    ? "bg-blue-200 hover:bg-blue-200 text-black"
-                    : concept.creation_type === "R"
-                      ? "bg-emerald-200 hover:bg-emerald-200 text-black"
-                      : ""
+                  ? "bg-blue-200 hover:bg-blue-200 text-black"
+                  : concept.creation_type === "R"
+                  ? "bg-emerald-200 hover:bg-emerald-200 text-black"
+                  : ""
               } ${concepts.length > 1 && "my-[1px]"}`}
               key={concept.concept.concept_code}
             >
               <div className="pr-2">
-                <span className="font-semibold">{concept.concept.concept_id}</span>
-                <span className="ml-1 text-wrap break-words">{concept.concept.concept_name}</span>
-                <span className="ml-1 text-xs opacity-80">({concept.creation_type})</span>
+                <span className="font-semibold">
+                  {concept.concept.concept_id}
+                </span>
+                <span className="ml-1 text-wrap break-words">
+                  {concept.concept.concept_name}
+                </span>
+                <span className="ml-1 text-xs opacity-80">
+                  ({concept.creation_type})
+                </span>
               </div>
               <Button
                 size="icon"
@@ -78,7 +84,7 @@ export function ConceptTagsV3({
                   e.stopPropagation();
                   await handleDelete(concept.id);
                 }}
-                className="absolute top-0 right-0 h-auto p-0 pt-0.5 w-auto min-w-0 text-white hover:text-red-200"
+                className="absolute top-0 right-0 h-auto p-0 pt-0.5 w-auto min-w-0 text-white hover:text-red-600"
               >
                 <Cross2Icon />
               </Button>

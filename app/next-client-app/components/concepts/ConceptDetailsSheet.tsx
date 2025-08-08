@@ -7,10 +7,20 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { getScanReportConceptDetail, updateScanReportConceptDetail } from "@/api/concepts";
+import {
+  getScanReportConceptDetail,
+  updateScanReportConceptDetail,
+} from "@/api/concepts";
 import { InfoItem } from "@/components/core/InfoItem";
 import { Formik } from "formik";
-import { FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription } from "@/components/ui/form";
+import {
+  FormField,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormMessage,
+  FormDescription,
+} from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
 import { Save } from "lucide-react";
@@ -53,14 +63,14 @@ interface ConceptEditFormProps {
   onUpdate: (updatedDetail: ScanReportConceptDetailV3) => void;
 }
 
-function ConceptEditForm({ 
-  conceptDetail, 
-  scanReportId, 
-  tableId, 
-  fieldId, 
-  valueId, 
-  conceptId, 
-  onUpdate 
+function ConceptEditForm({
+  conceptDetail,
+  scanReportId,
+  tableId,
+  fieldId,
+  valueId,
+  conceptId,
+  onUpdate,
 }: ConceptEditFormProps) {
   const handleUpdateConcept = async (data: FormData) => {
     try {
@@ -70,12 +80,12 @@ function ConceptEditForm({
         fieldId,
         valueId.toString(),
         conceptId.toString(),
-        { 
+        {
           description: data.description,
-          confidence: data.confidence
+          confidence: data.confidence,
         }
       );
-      
+
       if (response) {
         onUpdate(response);
         toast.success("Concept details updated");
@@ -89,7 +99,10 @@ function ConceptEditForm({
     <Formik
       initialValues={{
         description: conceptDetail.description || "",
-        confidence: typeof conceptDetail.confidence === 'number' ? conceptDetail.confidence : parseFloat(conceptDetail.confidence) || 0
+        confidence:
+          typeof conceptDetail.confidence === "number"
+            ? conceptDetail.confidence
+            : parseFloat(conceptDetail.confidence) || 0,
       }}
       onSubmit={handleUpdateConcept}
     >
@@ -114,9 +127,13 @@ function ConceptEditForm({
                       }}
                       className="w-full"
                     />
-                                          <div className="text-sm text-muted-foreground">
-                        Current value: {(typeof values.confidence === 'number' ? values.confidence : parseFloat(values.confidence) || 0).toFixed(2)}
-                      </div>
+                    <div className="text-sm text-muted-foreground">
+                      Current value:{" "}
+                      {(typeof values.confidence === "number"
+                        ? values.confidence
+                        : parseFloat(values.confidence) || 0
+                      ).toFixed(2)}
+                    </div>
                   </div>
                 </FormControl>
                 <FormMessage />
@@ -146,10 +163,7 @@ function ConceptEditForm({
             </FormField>
           </div>
           <div className="flex mt-4">
-            <Button
-              type="submit"
-              size="sm"
-            >
+            <Button type="submit" size="sm">
               <Save className="mr-2 h-4 w-4" />
               Save Changes
             </Button>
@@ -160,15 +174,16 @@ function ConceptEditForm({
   );
 }
 
-export function ConceptDetailsSheet({ 
-  concept, 
-  children, 
+export function ConceptDetailsSheet({
+  concept,
+  children,
   scanReportId,
   tableId,
   fieldId,
-  valueId
+  valueId,
 }: ConceptDetailsSheetProps) {
-  const [conceptDetail, setConceptDetail] = useState<ScanReportConceptDetailV3 | null>(null);
+  const [conceptDetail, setConceptDetail] =
+    useState<ScanReportConceptDetailV3 | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
 
@@ -182,9 +197,9 @@ export function ConceptDetailsSheet({
         setIsLoading(true);
         try {
           const detail = await getScanReportConceptDetail(
-            scanReportId, 
-            tableId, 
-            fieldId, 
+            scanReportId,
+            tableId,
+            fieldId,
             valueId?.toString() || "",
             concept.id.toString()
           );
@@ -202,55 +217,39 @@ export function ConceptDetailsSheet({
 
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
-      <SheetTrigger asChild>
-        {children}
-      </SheetTrigger>
+      <SheetTrigger asChild>{children}</SheetTrigger>
       <SheetContent className="flex flex-col h-full">
         <SheetHeader className="flex-shrink-0">
           <SheetTitle>
             {concept.concept.concept_id} - {concept.concept.concept_name}
           </SheetTitle>
         </SheetHeader>
-        <div className="mt-6 space-y-6 flex-1 overflow-y-auto">
+        <div className="space-y-6 flex-1 overflow-y-auto">
           <div>
-            <h3 className="font-semibold mb-4 text-lg">Mapping Details</h3>
+            <h3 className="font-semibold text-lg">Mapping Details</h3>
             <div className="space-y-3 text-sm py-4">
-              <div>
-                <InfoItem
-                  label="Concept ID"
-                  value={concept.concept.concept_id}
-                />
-              </div>
-              <div>
-                <InfoItem
-                  label="Concept Name"
-                  value={concept.concept.concept_name}
-                />
-              </div>
-              <div>
-                <InfoItem
-                  label="Concept Code"
-                  value={concept.concept.concept_code}
-                />
-              </div>
               <div>
                 <InfoItem
                   label="Creation Type"
                   value={getCreationTypeDescription(concept.creation_type)}
                 />
               </div>
-              
+
               {isLoading && (
-                <div className="text-muted-foreground py-2">Loading additional details...</div>
+                <div className="text-muted-foreground py-2">
+                  Loading additional details...
+                </div>
               )}
-              
+
               {conceptDetail && !isLoading && (
                 <>
                   <div className="space-y-3 pt-2 border-t">
                     <div>
                       <InfoItem
                         label="Created At"
-                        value={new Date(conceptDetail.created_at).toLocaleString()}
+                        value={new Date(
+                          conceptDetail.created_at
+                        ).toLocaleString()}
                       />
                     </div>
                     <div>
@@ -272,7 +271,7 @@ export function ConceptDetailsSheet({
                       />
                     </div>
                   </div>
-                  
+
                   <div className="pt-4 border-t">
                     <ConceptEditForm
                       conceptDetail={conceptDetail}
@@ -286,8 +285,28 @@ export function ConceptDetailsSheet({
                   </div>
 
                   <hr className="my-6" />
-                  <h3 className="font-semibold mb-4 text-lg">Concept Details</h3>
+                  <h3 className="font-semibold mb-4 text-lg">
+                    Concept Details
+                  </h3>
                   <div className="space-y-3 text-sm">
+                    <div>
+                      <InfoItem
+                        label="Concept ID"
+                        value={concept.concept.concept_id}
+                      />
+                    </div>
+                    <div>
+                      <InfoItem
+                        label="Concept Name"
+                        value={concept.concept.concept_name}
+                      />
+                    </div>
+                    <div>
+                      <InfoItem
+                        label="Concept Code"
+                        value={concept.concept.concept_code}
+                      />
+                    </div>
                     <div>
                       <InfoItem
                         label="Concept"
@@ -322,13 +341,13 @@ export function ConceptDetailsSheet({
                       <InfoItem
                         label="Valid Start Date"
                         value={conceptDetail.concept.valid_start_date}
-                        />
+                      />
                     </div>
                     <div>
                       <InfoItem
                         label="Valid End Date"
                         value={conceptDetail.concept.valid_end_date}
-                        />
+                      />
                     </div>
                     <div>
                       <InfoItem
@@ -337,15 +356,20 @@ export function ConceptDetailsSheet({
                       />
                     </div>
                   </div>
-                  
-                <Button variant="outline" size="sm" className="w-full" asChild>
-                <a
-                    href={`https://athena.ohdsi.org/search-terms/terms/${conceptDetail.concept.concept_id}`}
-                    target="_blank"
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    asChild
                   >
-                    View on Athena
-                </a>
-                </Button>
+                    <a
+                      href={`https://athena.ohdsi.org/search-terms/terms/${conceptDetail.concept.concept_id}`}
+                      target="_blank"
+                    >
+                      View on Athena
+                    </a>
+                  </Button>
                 </>
               )}
             </div>
@@ -354,4 +378,4 @@ export function ConceptDetailsSheet({
       </SheetContent>
     </Sheet>
   );
-} 
+}
