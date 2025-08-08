@@ -6,7 +6,7 @@ import {
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
-  useReactTable
+  useReactTable,
 } from "@tanstack/react-table";
 
 import {
@@ -15,7 +15,7 @@ import {
   TableCell,
   TableHead,
   TableHeader,
-  TableRow
+  TableRow,
 } from "@/components/ui/table";
 import React from "react";
 import { Button } from "@/components/ui/button";
@@ -25,7 +25,7 @@ import {
   DropdownMenuContent,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuTrigger
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { DataTablePagination } from "./DataTablePagination";
 import { Columns3 } from "lucide-react";
@@ -57,7 +57,7 @@ export function DataTable<TData, TValue>({
   overflow = true,
   RefreshButton,
   defaultPageSize,
-  initialColumnVisibility
+  initialColumnVisibility,
 }: DataTableProps<TData, TValue>) {
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>(initialColumnVisibility || {});
@@ -72,8 +72,8 @@ export function DataTable<TData, TValue>({
     manualSorting: true,
     onColumnVisibilityChange: setColumnVisibility,
     state: {
-      columnVisibility
-    }
+      columnVisibility,
+    },
   });
 
   return (
@@ -130,6 +130,10 @@ export function DataTable<TData, TValue>({
                   <TableHead
                     key={header.id}
                     className="transition-colors cursor-pointer"
+                    style={{
+                      minWidth: header.column.columnDef.size,
+                      maxWidth: header.column.columnDef.size,
+                    }}
                   >
                     {flexRender(
                       header.column.columnDef.header,
@@ -149,7 +153,13 @@ export function DataTable<TData, TValue>({
                   className="transition-colors"
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
+                    <TableCell
+                      key={cell.id}
+                      style={{
+                        minWidth: cell.column.columnDef.size,
+                        maxWidth: cell.column.columnDef.size,
+                      }}
+                    >
                       <div>
                         {flexRender(
                           cell.column.columnDef.cell,

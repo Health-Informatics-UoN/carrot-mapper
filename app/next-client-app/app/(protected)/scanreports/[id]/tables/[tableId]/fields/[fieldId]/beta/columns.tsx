@@ -59,6 +59,11 @@ export const columns = (
     ),
     enableHiding: true,
     enableSorting: true,
+    size: 200,
+    cell: ({ row }) => {
+      const { value_description } = row.original;
+      return <span className="text-wrap">{value_description}</span>;
+    },
   },
   {
     id: "Frequency",

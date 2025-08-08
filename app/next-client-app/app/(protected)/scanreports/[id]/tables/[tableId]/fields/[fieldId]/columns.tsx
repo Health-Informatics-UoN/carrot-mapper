@@ -52,8 +52,13 @@ export const columns = (
           sortName="value_description"
         />
       ),
+      size: 200,
       enableHiding: true,
       enableSorting: false,
+      cell: ({ row }) => {
+        const { value_description } = row.original;
+        return <span className="text-wrap">{value_description}</span>;
+      },
     },
     {
       id: "Frequency",
