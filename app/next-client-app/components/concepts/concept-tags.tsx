@@ -32,7 +32,7 @@ export const ConceptTags = React.memo(function ConceptTags({
   };
 
   return concepts && concepts.length > 0 ? (
-    <div className="flex flex-col items-start max-w-[500px] whitespace-pre-line text-pretty">
+    <div className="flex flex-col items-start max-w-[500px] whitespace-pre-wrap text-pretty">
       {concepts.map((concept) => (
         <a
           key={concept.concept_code}
