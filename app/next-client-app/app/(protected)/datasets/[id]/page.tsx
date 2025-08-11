@@ -65,7 +65,7 @@ export default async function DatasetSRList(props: DataSetListProps) {
           initialColumnVisibility={initialColumnVisibility}
           defaultPageSize={defaultPageSize}
           emptyStateMessage="No scan reports in this dataset"
-          emptyStateDescription="Run a scan on this dataset to generate scan reports and begin mapping your data."
+          emptyStateDescription="No scan reports found in this dataset yet."
           emptyStateIcon="filescan"
         />
       </TabsContent>

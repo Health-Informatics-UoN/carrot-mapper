@@ -9,7 +9,7 @@ import { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Projects | Carrot Mapper",
-  description: "Projects for the current user",
+  description: "Projects for the current user"
 };
 
 interface ProjectListProps {
@@ -19,7 +19,7 @@ interface ProjectListProps {
 export default async function Projects(props: ProjectListProps) {
   const searchParams = await props.searchParams;
   const defaultParams = {
-    page_size: 10,
+    page_size: 10
   };
   const combinedParams = { ...defaultParams, ...searchParams };
   const query = objToQuery(combinedParams);

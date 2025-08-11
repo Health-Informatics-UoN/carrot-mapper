@@ -1,13 +1,19 @@
-import { LucideIcon, Plus, Folders, Database, FileScan } from "lucide-react";
+import {
+  LucideIcon,
+  CircleSlash,
+  Folders,
+  Database,
+  FileScan
+} from "lucide-react";
 
 interface EmptyStateProps {
-  icon?: "folders" | "database" | "filescan" | "plus";
+  icon?: "folders" | "database" | "filescan" | "circle-slash";
   title: string;
   description: string;
 }
 
 export function EmptyState({
-  icon = "plus",
+  icon = "circle-slash",
   title,
   description
 }: EmptyStateProps) {
@@ -19,9 +25,9 @@ export function EmptyState({
         return Database;
       case "filescan":
         return FileScan;
-      case "plus":
+      case "circle-slash":
       default:
-        return Plus;
+        return CircleSlash;
     }
   };
 
@@ -29,13 +35,13 @@ export function EmptyState({
 
   return (
     <div className="flex flex-col items-center justify-center py-12 text-center w-full max-w-none">
-      <div className="mb-4 text-gray-400 flex justify-center">
+      <div className="mb-4 text-gray-600 dark:text-gray-400 flex justify-center">
         <IconComponent className="h-16 w-16" />
       </div>
-      <h3 className="mb-2 text-lg font-semibold text-gray-200 text-center w-full">
+      <h3 className="mb-2 text-lg font-semibold text-gray-900 dark:text-gray-200 text-center w-full">
         {title}
       </h3>
-      <p className="mb-6 max-w-sm text-sm text-gray-400 text-center leading-relaxed mx-auto">
+      <p className="mb-6 text-sm text-gray-600 dark:text-gray-400 text-center leading-relaxed mx-auto">
         {description}
       </p>
     </div>

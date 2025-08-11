@@ -17,14 +17,12 @@ export default async function ProjectDetail(props: ProjectDetailProps) {
   const searchParams = await props.searchParams;
   const params = await props.params;
 
-  const {
-    id
-  } = params;
+  const { id } = params;
 
   const defaultParams = {
     hidden: false,
     page_size: 10,
-    project: id,
+    project: id
   };
   const combinedParams = { ...defaultParams, ...searchParams };
   const query = objToQuery(combinedParams);

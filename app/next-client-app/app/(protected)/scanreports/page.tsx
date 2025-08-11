@@ -15,7 +15,7 @@ interface ScanReportsProps {
 
 export const metadata: Metadata = {
   title: "Scan Reports | Carrot Mapper",
-  description: "Scan reports for the current user",
+  description: "Scan reports for the current user"
 };
 
 export default async function ScanReports(props: ScanReportsProps) {
@@ -23,7 +23,7 @@ export default async function ScanReports(props: ScanReportsProps) {
   const defaultPageSize = 30;
   const defaultParams = {
     hidden: false,
-    page_size: defaultPageSize,
+    page_size: defaultPageSize
   };
   const combinedParams = { ...defaultParams, ...searchParams };
 
@@ -33,7 +33,7 @@ export default async function ScanReports(props: ScanReportsProps) {
 
   // Define which columns should be hidden by default
   const initialColumnVisibility: VisibilityState = {
-    id: false,
+    id: false
   };
 
   return (
@@ -70,7 +70,7 @@ export default async function ScanReports(props: ScanReportsProps) {
               defaultPageSize={defaultPageSize}
               initialColumnVisibility={initialColumnVisibility}
               emptyStateMessage="No scan reports yet"
-              emptyStateDescription="Create a dataset first to generate scan reports, or upload an existing scan report."
+              emptyStateDescription="Upload a scan report to begin mapping your data."
               emptyStateIcon="filescan"
             />
           </TabsContent>

@@ -44,7 +44,7 @@ interface DataTableProps<TData, TValue> {
   initialColumnVisibility?: VisibilityState;
   emptyStateMessage?: string;
   emptyStateDescription?: string;
-  emptyStateIcon?: "folders" | "database" | "filescan" | "plus";
+  emptyStateIcon?: "folders" | "database" | "filescan" | "circle-slash";
 }
 
 function UrlBuilder(id: string, prefix: string = "") {
@@ -64,7 +64,7 @@ export function DataTable<TData, TValue>({
   initialColumnVisibility,
   emptyStateMessage,
   emptyStateDescription,
-  emptyStateIcon,
+  emptyStateIcon
 }: DataTableProps<TData, TValue>) {
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>(initialColumnVisibility || {});
@@ -179,7 +179,9 @@ export function DataTable<TData, TValue>({
                       title={emptyStateMessage}
                       description={emptyStateDescription || "No results."}
                     />
-                  ) : null}
+                  ) : (
+                    "No results."
+                  )}
                 </TableCell>
               </TableRow>
             )}

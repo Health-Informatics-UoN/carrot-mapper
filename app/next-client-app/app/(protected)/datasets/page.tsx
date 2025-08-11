@@ -12,7 +12,7 @@ import { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Datasets | Carrot Mapper",
-  description: "Datasets for the current user",
+  description: "Datasets for the current user"
 };
 
 interface DataSetListProps {
@@ -23,7 +23,7 @@ export default async function DataSets(props: DataSetListProps) {
   const searchParams = await props.searchParams;
   const defaultParams = {
     hidden: false,
-    page_size: 10,
+    page_size: 10
   };
   const combinedParams = { ...defaultParams, ...searchParams };
 
