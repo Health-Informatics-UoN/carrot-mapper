@@ -57,7 +57,11 @@ export const columns = (
       enableSorting: false,
       cell: ({ row }) => {
         const { value_description } = row.original;
-        return <span className="text-wrap">{value_description}</span>;
+        return (
+          <span className="text-gray-500 max-w-[200px] whitespace-pre-wrap text-pretty">
+            {value_description}
+          </span>
+        );
       },
     },
     {
