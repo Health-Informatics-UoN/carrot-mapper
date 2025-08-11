@@ -1,0 +1,43 @@
+import { LucideIcon, Plus, Folders, Database, FileScan } from "lucide-react";
+
+interface EmptyStateProps {
+  icon?: "folders" | "database" | "filescan" | "plus";
+  title: string;
+  description: string;
+}
+
+export function EmptyState({
+  icon = "plus",
+  title,
+  description
+}: EmptyStateProps) {
+  const getIcon = (iconName: string): LucideIcon => {
+    switch (iconName) {
+      case "folders":
+        return Folders;
+      case "database":
+        return Database;
+      case "filescan":
+        return FileScan;
+      case "plus":
+      default:
+        return Plus;
+    }
+  };
+
+  const IconComponent = getIcon(icon);
+
+  return (
+    <div className="flex flex-col items-center justify-center py-12 text-center w-full max-w-none">
+      <div className="mb-4 text-gray-400 flex justify-center">
+        <IconComponent className="h-16 w-16" />
+      </div>
+      <h3 className="mb-2 text-lg font-semibold text-gray-200 text-center w-full">
+        {title}
+      </h3>
+      <p className="mb-6 max-w-sm text-sm text-gray-400 text-center leading-relaxed mx-auto">
+        {description}
+      </p>
+    </div>
+  );
+}

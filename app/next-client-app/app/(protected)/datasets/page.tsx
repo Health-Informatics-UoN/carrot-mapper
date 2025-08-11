@@ -72,6 +72,9 @@ export default async function DataSets(props: DataSetListProps) {
                 data={dataset.results}
                 count={dataset.count}
                 Filter={filter}
+                emptyStateMessage="No datasets yet"
+                emptyStateDescription="Create your first dataset to start organizing and mapping your data."
+                emptyStateIcon="database"
               />
             </TabsContent>
             <TabsContent value="archived">
@@ -80,6 +83,9 @@ export default async function DataSets(props: DataSetListProps) {
                 data={dataset.results}
                 count={dataset.count}
                 Filter={filter}
+                emptyStateMessage="No archived datasets"
+                emptyStateDescription="No archived datasets found. Active datasets will appear here when archived."
+                emptyStateIcon="database"
               />
             </TabsContent>
           </Tabs>

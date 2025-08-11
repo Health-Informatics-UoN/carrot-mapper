@@ -64,6 +64,9 @@ export default async function DatasetSRList(props: DataSetListProps) {
           Filter={filter}
           initialColumnVisibility={initialColumnVisibility}
           defaultPageSize={defaultPageSize}
+          emptyStateMessage="No scan reports in this dataset"
+          emptyStateDescription="Run a scan on this dataset to generate scan reports and begin mapping your data."
+          emptyStateIcon="filescan"
         />
       </TabsContent>
       <TabsContent value="archived">
@@ -74,6 +77,9 @@ export default async function DatasetSRList(props: DataSetListProps) {
           Filter={filter}
           initialColumnVisibility={initialColumnVisibility}
           defaultPageSize={defaultPageSize}
+          emptyStateMessage="No archived reports"
+          emptyStateDescription="No archived scan reports found in this dataset. Active reports will appear here when archived."
+          emptyStateIcon="filescan"
         />
       </TabsContent>
     </Tabs>
