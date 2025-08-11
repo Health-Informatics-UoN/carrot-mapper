@@ -84,7 +84,7 @@ export function ConceptTagsV3({
                   e.stopPropagation();
                   await handleDelete(concept.id);
                 }}
-                className="absolute top-0 right-0 h-auto p-0 pt-0.5 w-auto min-w-0 text-white hover:text-red-600"
+                className="absolute top-0 right-0 h-auto p-0 pt-0.5 w-auto min-w-0 text-dark hover:text-red-600 dark:text-black"
               >
                 <Cross2Icon />
               </Button>
