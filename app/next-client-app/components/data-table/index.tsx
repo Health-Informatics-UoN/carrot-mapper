@@ -130,10 +130,6 @@ export function DataTable<TData, TValue>({
                   <TableHead
                     key={header.id}
                     className="transition-colors cursor-pointer"
-                    style={{
-                      minWidth: header.column.columnDef.size,
-                      maxWidth: header.column.columnDef.size,
-                    }}
                   >
                     {flexRender(
                       header.column.columnDef.header,
@@ -155,10 +151,6 @@ export function DataTable<TData, TValue>({
                   {row.getVisibleCells().map((cell) => (
                     <TableCell
                       key={cell.id}
-                      style={{
-                        minWidth: cell.column.columnDef.size,
-                        maxWidth: cell.column.columnDef.size,
-                      }}
                     >
                       <div>
                         {flexRender(

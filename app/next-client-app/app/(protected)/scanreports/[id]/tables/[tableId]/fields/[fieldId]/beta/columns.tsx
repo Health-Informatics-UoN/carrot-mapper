@@ -59,10 +59,9 @@ export const columns = (
     ),
     enableHiding: true,
     enableSorting: true,
-    size: 200,
     cell: ({ row }) => {
       const { value_description } = row.original;
-      return <span className="text-wrap">{value_description}</span>;
+      return <span className="max-w-[200px] whitespace-pre-wrap text-pretty">{value_description}</span>;
     },
   },
   {

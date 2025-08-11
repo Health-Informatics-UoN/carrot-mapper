@@ -52,7 +52,6 @@ export const columns = (
           sortName="value_description"
         />
       ),
-      size: 200,
       enableHiding: true,
       enableSorting: false,
       cell: ({ row }) => {
