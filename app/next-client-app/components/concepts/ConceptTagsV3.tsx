@@ -43,7 +43,7 @@ export function ConceptTagsV3({
   };
 
   return optimisticConcepts && optimisticConcepts.length > 0 ? (
-    <div className="flex flex-col items-start w-[250px]">
+    <div className="flex flex-col items-start">
       {optimisticConcepts.map((concept) => (
         <ConceptDetailsSheet
           key={concept.id}
@@ -84,7 +84,7 @@ export function ConceptTagsV3({
                   e.stopPropagation();
                   await handleDelete(concept.id);
                 }}
-                className="absolute top-0 right-0 h-auto p-0 pt-0.5 w-auto min-w-0 text-dark hover:text-red-600 dark:text-black"
+                className="absolute top-0 right-0 h-auto p-0 pt-0.5 w-auto min-w-0 hover:text-red-600 text-black"
               >
                 <Cross2Icon />
               </Button>

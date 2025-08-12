@@ -246,7 +246,7 @@ export function ConceptDetailsSheet({
             {concept.concept.concept_id} - {concept.concept.concept_name}
           </SheetTitle>
         </SheetHeader>
-        <div className="space-y-6 flex-1 overflow-y-auto">
+        <div className="space-y-6 flex-1 overflow-y-auto px-1">
           <div>
             <h3 className="font-semibold text-lg">Mapping Details</h3>
             <div className="space-y-3 text-sm py-4">
