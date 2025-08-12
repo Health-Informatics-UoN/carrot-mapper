@@ -66,22 +66,12 @@ export const columns: ColumnDef<FileDownload>[] = [
     id: "Download",
     header: ({ column }) => <DataTableColumnHeader column={column} title="" />,
     cell: ({ row }) => {
-      const { id, scan_report, file_type, name } = row.original;
+      const { id, scan_report, name } = row.original;
       const handleDownload = async () => {
-        const response = await downloadFile(scan_report, file_type.value, id);
-        if (response.success) {
-          // Based on the file type to process the data from the response accordingly
-          if (file_type.value == "mapping_json") {
-            const blob = new Blob([JSON.stringify(response.data)], {
-              type: "application/json",
-            });
-            saveAs(blob, name);
-          } else if (file_type.value == "mapping_csv") {
-            const blob = new Blob([response.data], {
-              type: "text/csv",
-            });
-            saveAs(blob, name);
-          }
+        const response = await downloadFile(scan_report, id);
+        if (response.success && response.blob) {
+          // Use the blob directly
+          saveAs(response.blob, name);
         } else {
           toast.error(
             `Error downloading file: ${(response.errorMessage as any).message}`

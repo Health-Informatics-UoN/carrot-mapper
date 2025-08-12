@@ -44,7 +44,7 @@ export const columns = (
             <CopyButton textToCopy={name} />
           </div>
         );
-      }
+      },
     },
     {
       id: "description",
@@ -57,7 +57,15 @@ export const columns = (
         />
       ),
       enableHiding: true,
-      enableSorting: true
+      enableSorting: true,
+      cell: ({ row }) => {
+        const { description_column } = row.original;
+        return (
+          <span className="text-gray-500 max-w-[200px] whitespace-pre-wrap text-pretty">
+            {description_column}
+          </span>
+        );
+      },
     },
     {
       id: "Data Type",
@@ -70,7 +78,7 @@ export const columns = (
         />
       ),
       enableHiding: true,
-      enableSorting: true
+      enableSorting: true,
     },
     {
       id: "Concepts",
@@ -88,7 +96,7 @@ export const columns = (
             <ConceptTags concepts={concepts ?? []} deleteSR={deleteSR} />
           </Suspense>
         );
-      }
+      },
     },
     {
       id: "Add Concept",
@@ -106,8 +114,8 @@ export const columns = (
             addSR={addSR}
           />
         );
-      }
-    }
+      },
+    },
   ];
 
   // AI Suggestions Column & setting as 4th Column
@@ -132,7 +140,7 @@ export const columns = (
             contentType="scanreportfield"
           />
         );
-      }
+      },
     });
   } else {
     baseColumns.splice(5, 0, {
@@ -150,7 +158,7 @@ export const columns = (
             permissions={permissions}
           />
         );
-      }
+      },
     });
   }
   return baseColumns;

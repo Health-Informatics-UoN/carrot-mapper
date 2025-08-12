@@ -100,7 +100,7 @@ export function CreateScanReportForm({
       setError(response.errorMessage);
       toast.error("Upload New Scan Report failed. Fix the error(s) first");
     } else {
-      toast.success("New Scan Report is being uploaded");
+      toast.dismiss();
       setError(null);
     }
   };
@@ -138,7 +138,7 @@ export function CreateScanReportForm({
         validateOnChange={false}
         validateOnBlur={false}
         onSubmit={(data) => {
-          toast.info("Validating ...");
+          toast.info("Validating and uploading...");
           handleSubmit(data);
         }}
       >
