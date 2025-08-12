@@ -6,3 +6,13 @@ interface Concept {
   scan_report_concept_id?: number;
   creation_type: string;
 }
+
+interface ConceptDetail extends Concept {
+  domain_id: string;
+  vocabulary_id: string;
+  concept_class_id: string;
+  standard_concept: string;
+  valid_start_date: string;
+  valid_end_date: string;
+  invalid_reason: string;
+}
