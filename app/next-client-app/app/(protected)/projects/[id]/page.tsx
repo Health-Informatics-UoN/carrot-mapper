@@ -55,9 +55,14 @@ export default async function ProjectDetail(props: ProjectDetailProps) {
           data={datasets.results}
           count={datasets.count}
           Filter={filter}
-          emptyStateMessage="No datasets in this project"
-          emptyStateDescription="Create your first dataset in this project to start organizing and mapping your data."
-          emptyStateIcon="database"
+          {...(datasets.results.length === 0
+            ? {
+                emptyStateMessage: "No datasets in this project",
+                emptyStateDescription:
+                  "Create your first dataset in this project to start organizing and mapping your data.",
+                emptyStateIcon: "database"
+              }
+            : {})}
         />
       </TabsContent>
       <TabsContent value="archived">
@@ -66,9 +71,14 @@ export default async function ProjectDetail(props: ProjectDetailProps) {
           data={datasets.results}
           count={datasets.count}
           Filter={filter}
-          emptyStateMessage="No archived datasets"
-          emptyStateDescription="No archived datasets found in this project. Active datasets will appear here when archived."
-          emptyStateIcon="database"
+          {...(datasets.results.length === 0
+            ? {
+                emptyStateMessage: "No archived datasets",
+                emptyStateDescription:
+                  "No archived datasets found in this project. Active datasets will appear here when archived.",
+                emptyStateIcon: "database"
+              }
+            : {})}
         />
       </TabsContent>
     </Tabs>

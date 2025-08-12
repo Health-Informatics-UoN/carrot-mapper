@@ -39,9 +39,14 @@ export default async function Projects(props: ProjectListProps) {
           data={projects.results}
           count={projects.count}
           Filter={filter}
-          emptyStateMessage="No projects yet"
-          emptyStateDescription="Contact your administrator to be added to a project."
-          emptyStateIcon="folders"
+          {...(projects.results.length === 0
+            ? {
+                emptyStateMessage: "No projects yet",
+                emptyStateDescription:
+                  "Contact your administrator to be added to a project.",
+                emptyStateIcon: "folders"
+              }
+            : {})}
         />
       </div>
     </div>

@@ -69,9 +69,14 @@ export default async function ScanReports(props: ScanReportsProps) {
               Filter={filter}
               defaultPageSize={defaultPageSize}
               initialColumnVisibility={initialColumnVisibility}
-              emptyStateMessage="No scan reports yet"
-              emptyStateDescription="Upload a scan report to begin mapping your data."
-              emptyStateIcon="filescan"
+              {...(scanReports.results.length === 0
+                ? {
+                    emptyStateMessage: "No scan reports yet",
+                    emptyStateDescription:
+                      "Upload a scan report to begin mapping your data.",
+                    emptyStateIcon: "filescan"
+                  }
+                : {})}
             />
           </TabsContent>
           <TabsContent value="archived">
@@ -82,9 +87,14 @@ export default async function ScanReports(props: ScanReportsProps) {
               Filter={filter}
               defaultPageSize={defaultPageSize}
               initialColumnVisibility={initialColumnVisibility}
-              emptyStateMessage="No archived reports"
-              emptyStateDescription="No archived scan reports found. Active reports will appear here when archived."
-              emptyStateIcon="filescan"
+              {...(scanReports.results.length === 0
+                ? {
+                    emptyStateMessage: "No archived reports",
+                    emptyStateDescription:
+                      "No archived scan reports found. Active reports will appear here when archived.",
+                    emptyStateIcon: "filescan"
+                  }
+                : {})}
             />
           </TabsContent>
         </Tabs>
