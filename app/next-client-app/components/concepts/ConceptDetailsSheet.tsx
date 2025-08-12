@@ -289,72 +289,26 @@ export function ConceptDetailsSheet({
                     Concept Details
                   </h3>
                   <div className="space-y-3 text-sm">
-                    <div>
-                      <InfoItem
-                        label="Concept ID"
-                        value={concept.concept.concept_id}
-                      />
-                    </div>
-                    <div>
-                      <InfoItem
-                        label="Concept Name"
-                        value={concept.concept.concept_name}
-                      />
-                    </div>
-                    <div>
-                      <InfoItem
-                        label="Concept Code"
-                        value={concept.concept.concept_code}
-                      />
-                    </div>
-                    <div>
-                      <InfoItem
-                        label="Concept"
-                        value={conceptDetail.concept.concept_id}
-                      />
-                    </div>
-                    <div>
-                      <InfoItem
-                        label="Domain"
-                        value={conceptDetail.concept.domain_id}
-                      />
-                    </div>
-                    <div>
-                      <InfoItem
-                        label="Vocabulary"
-                        value={conceptDetail.concept.vocabulary_id}
-                      />
-                    </div>
-                    <div>
-                      <InfoItem
-                        label="Concept Class"
-                        value={conceptDetail.concept.concept_class_id}
-                      />
-                    </div>
-                    <div>
-                      <InfoItem
-                        label="Standard Concept"
-                        value={conceptDetail.concept.standard_concept}
-                      />
-                    </div>
-                    <div>
-                      <InfoItem
-                        label="Valid Start Date"
-                        value={conceptDetail.concept.valid_start_date}
-                      />
-                    </div>
-                    <div>
-                      <InfoItem
-                        label="Valid End Date"
-                        value={conceptDetail.concept.valid_end_date}
-                      />
-                    </div>
-                    <div>
-                      <InfoItem
-                        label="Invalid Reason"
-                        value={conceptDetail.concept.invalid_reason}
-                      />
-                    </div>
+                    {[
+                      { label: "Concept ID", value: concept.concept.concept_id },
+                      { label: "Concept Name", value: concept.concept.concept_name },
+                      { label: "Concept Code", value: concept.concept.concept_code },
+                      { label: "Concept", value: conceptDetail.concept.concept_id },
+                      { label: "Domain", value: conceptDetail.concept.domain_id },
+                      { label: "Vocabulary", value: conceptDetail.concept.vocabulary_id },
+                      { label: "Concept Class", value: conceptDetail.concept.concept_class_id },
+                      { label: "Standard Concept", value: conceptDetail.concept.standard_concept },
+                      { label: "Valid Start Date", value: conceptDetail.concept.valid_start_date },
+                      { label: "Valid End Date", value: conceptDetail.concept.valid_end_date },
+                      { label: "Invalid Reason", value: conceptDetail.concept.invalid_reason },
+                    ].map((item, index) => (
+                      <div key={index}>
+                        <InfoItem
+                          label={item.label}
+                          value={item.value}
+                        />
+                      </div>
+                    ))}
                   </div>
 
                   <Button
