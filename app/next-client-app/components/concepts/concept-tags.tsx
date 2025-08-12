@@ -32,7 +32,7 @@ export const ConceptTags = React.memo(function ConceptTags({
   };
 
   return concepts && concepts.length > 0 ? (
-    <div className="flex flex-col items-start max-w-[500px] whitespace-pre-wrap text-pretty">
+    <div className="flex flex-col items-start max-w-[300px] whitespace-pre-wrap text-pretty">
       {concepts.map((concept) => (
         <a
           key={concept.concept_code}
@@ -63,7 +63,7 @@ export const ConceptTags = React.memo(function ConceptTags({
             } ${concepts.length > 1 ? "my-px" : ""}`}
             key={concept.concept_code}
           >
-            <p className="py-0.5 m-0">{`${concept.concept_id} ${concept.concept_name} (${concept.creation_type})`}</p>
+            <p className="py-0.5 m-0 text-wrap">{`${concept.concept_id} ${concept.concept_name} (${concept.creation_type})`}</p>
             <Button
               size="icon"
               variant="ghost"

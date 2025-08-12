@@ -2,7 +2,7 @@ import { cn } from "@/lib/utils";
 
 interface InfoItemProps extends React.HTMLProps<HTMLHeadingElement> {
   label: string;
-  value: string;
+  value: string | number;
 }
 
 export const InfoItem: React.FC<InfoItemProps> = ({

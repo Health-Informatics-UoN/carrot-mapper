@@ -44,6 +44,7 @@ const config = {
         "carrot-vocab": "#BEA9DF",
         "carrot-manual": "#3C579E",
         "carrot-reuse": "#3db28c",
+        "carrot-brand": "#F98109",
       },
       keyframes: {
         "accordion-down": {
