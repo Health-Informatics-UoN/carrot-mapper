@@ -1,6 +1,6 @@
 [project]
 name = "carrot-mapper"
-version = "2.2.13"
+version = "4.1.0"
 description = ""
 authors = [
     { name = "Sam Cox", email = "sam.cox@nottingham.ac.uk" },
