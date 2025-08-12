@@ -58,7 +58,6 @@ export function DataTable<TData, TValue>({
   Filter,
   viewColumns = true,
   paginated = true,
-  overflow = true,
   RefreshButton,
   defaultPageSize,
   initialColumnVisibility,
