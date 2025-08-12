@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import {
   Sheet,
   SheetContent,
@@ -27,7 +27,7 @@ import { Save } from "lucide-react";
 import { toast } from "sonner";
 
 interface ConceptDetailsSheetProps {
-  concept: any; // Using any for now since we don't have the exact type
+  concept: ScanReportConceptV3;
   children: React.ReactNode;
   scanReportId?: string;
   tableId?: string;
@@ -47,6 +47,19 @@ const getCreationTypeDescription = (creationType: string) => {
       return "";
   }
 };
+
+const CONCEPT_DETAIL_FIELDS = [
+  { label: "Concept ID", key: "concept_id" },
+  { label: "Concept Name", key: "concept_name" },
+  { label: "Concept Code", key: "concept_code" },
+  { label: "Domain", key: "domain_id" },
+  { label: "Vocabulary", key: "vocabulary_id" },
+  { label: "Concept Class", key: "concept_class_id" },
+  { label: "Standard Concept", key: "standard_concept" },
+  { label: "Valid Start Date", key: "valid_start_date" },
+  { label: "Valid End Date", key: "valid_end_date" },
+  { label: "Invalid Reason", key: "invalid_reason" },
+] as const;
 
 interface FormData {
   description: string;
@@ -72,7 +85,10 @@ function ConceptEditForm({
   conceptId,
   onUpdate,
 }: ConceptEditFormProps) {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const handleUpdateConcept = async (data: FormData) => {
+    setIsSubmitting(true);
     try {
       const response = await updateScanReportConceptDetail(
         scanReportId,
@@ -92,6 +108,8 @@ function ConceptEditForm({
       }
     } catch (error: any) {
       toast.error(`Update failed. Error: ${error.message}`);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -163,9 +181,9 @@ function ConceptEditForm({
             </FormField>
           </div>
           <div className="flex mt-4">
-            <Button type="submit" size="sm">
+            <Button type="submit" size="sm" disabled={isSubmitting}>
               <Save className="mr-2 h-4 w-4" />
-              Save Changes
+              {isSubmitting ? "Saving..." : "Save Changes"}
             </Button>
           </div>
         </form>
@@ -185,16 +203,18 @@ export function ConceptDetailsSheet({
   const [conceptDetail, setConceptDetail] =
     useState<ScanReportConceptDetailV3 | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
 
-  const handleUpdateConcept = (updatedDetail: ScanReportConceptDetailV3) => {
+  const handleUpdateConcept = useMemo(() => (updatedDetail: ScanReportConceptDetailV3) => {
     setConceptDetail(updatedDetail);
-  };
+  }, []);
 
   useEffect(() => {
     if (isOpen && scanReportId && tableId && fieldId) {
       const fetchConceptDetail = async () => {
         setIsLoading(true);
+        setError(null);
         try {
           const detail = await getScanReportConceptDetail(
             scanReportId,
@@ -205,6 +225,8 @@ export function ConceptDetailsSheet({
           );
           setConceptDetail(detail);
         } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : "Failed to fetch concept detail";
+          setError(errorMessage);
           console.error("Failed to fetch concept detail:", error);
         } finally {
           setIsLoading(false);
@@ -213,7 +235,7 @@ export function ConceptDetailsSheet({
 
       fetchConceptDetail();
     }
-  }, [isOpen, scanReportId, tableId, fieldId, concept.id]);
+  }, [isOpen, scanReportId, tableId, fieldId, valueId, concept.id]);
 
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
@@ -238,6 +260,12 @@ export function ConceptDetailsSheet({
               {isLoading && (
                 <div className="text-muted-foreground py-2">
                   Loading additional details...
+                </div>
+              )}
+
+              {error && (
+                <div className="text-red-600 py-2">
+                  Error: {error}
                 </div>
               )}
 
@@ -289,23 +317,11 @@ export function ConceptDetailsSheet({
                     Concept Details
                   </h3>
                   <div className="space-y-3 text-sm">
-                    {[
-                      { label: "Concept ID", value: concept.concept.concept_id },
-                      { label: "Concept Name", value: concept.concept.concept_name },
-                      { label: "Concept Code", value: concept.concept.concept_code },
-                      { label: "Concept", value: conceptDetail.concept.concept_id },
-                      { label: "Domain", value: conceptDetail.concept.domain_id },
-                      { label: "Vocabulary", value: conceptDetail.concept.vocabulary_id },
-                      { label: "Concept Class", value: conceptDetail.concept.concept_class_id },
-                      { label: "Standard Concept", value: conceptDetail.concept.standard_concept },
-                      { label: "Valid Start Date", value: conceptDetail.concept.valid_start_date },
-                      { label: "Valid End Date", value: conceptDetail.concept.valid_end_date },
-                      { label: "Invalid Reason", value: conceptDetail.concept.invalid_reason },
-                    ].map((item, index) => (
-                      <div key={index}>
+                    {CONCEPT_DETAIL_FIELDS.map((field) => (
+                      <div key={field.key}>
                         <InfoItem
-                          label={item.label}
-                          value={item.value}
+                          label={field.label}
+                          value={conceptDetail.concept[field.key]}
                         />
                       </div>
                     ))}
