@@ -5,7 +5,7 @@
 #
 # When to use:
 # - Deploying stable releases to production
-# - Deploying edge images to production after testing
+# - Deploying edge images to production after testing (I don't recommend this though)
 # - Emergency deployments with specific image tags
 #
 # What it does:
@@ -20,9 +20,8 @@ on:
   workflow_dispatch:
     inputs:
       image_tag:
-        description: 'Image tag to deploy (e.g., v1.2.3, edge, or specific commit SHA)'
+        description: 'Image tag to deploy (e.g., v4.0.1, v4.1.0, or specific commit SHA)'
         required: true
-        default: 'edge'
 
 env:
   app-name: carrot
