@@ -7,11 +7,6 @@ on:
         description: 'Image tag to deploy (e.g., v1.2.3, edge, or specific commit SHA)'
         required: true
         default: 'edge'
-      confirm_deployment:
-        description: 'Confirm you want to deploy to production'
-        required: true
-        default: 'false'
-        type: boolean
 
 env:
   app-name: carrot
@@ -25,12 +20,6 @@ jobs:
   validate-deployment:
     runs-on: ubuntu-latest
     steps:
-      - name: Check deployment confirmation
-        if: ${{ github.event.inputs.confirm_deployment != 'true' }}
-        run: |
-          echo "❌ Deployment not confirmed. Set confirm_deployment to true to proceed."
-          exit 1
-
       - name: Validate image tag
         run: |
           if [[ "${{ github.event.inputs.image_tag }}" == "" ]]; then
