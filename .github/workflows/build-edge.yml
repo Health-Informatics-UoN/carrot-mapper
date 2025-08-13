@@ -3,7 +3,7 @@ name: Build and Push Edge Images
 on:
   push:
     branches:
-      - feat/897/change-release-pattern
+      - master
   workflow_dispatch:
 
 env:
