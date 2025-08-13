@@ -1,3 +1,18 @@
+# Deploy to Dev and Test Environments
+#
+# This workflow deploys Docker images to both dev and test environments.
+# It's triggered automatically when build-edge.yml completes, or manually for custom deployments.
+#
+# When to use:
+# - Automatically triggered after edge images are built (production pipeline)
+# - Manually triggered to deploy specific image tags to dev/test
+#
+# What it does:
+# - Deploys to dev environment first
+# - Then deploys to test environment (if dev succeeds)
+# - Validates image existence before deployment
+# - Uses edge tag by default, or custom tag if specified
+
 name: Deploy to Dev and Test
 
 on:

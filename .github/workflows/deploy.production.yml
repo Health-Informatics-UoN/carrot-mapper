@@ -1,3 +1,19 @@
+# Deploy to Production (carrot.ac.uk)
+#
+# This workflow deploys Docker images to the production environment.
+# It requires manual approval and validates image existence before deployment.
+#
+# When to use:
+# - Deploying stable releases to production
+# - Deploying edge images to production after testing
+# - Emergency deployments with specific image tags
+#
+# What it does:
+# - Validates that the specified image tag exists
+# - Deploys all services to production environment
+# - Requires manual approval (environment protection)
+# - Provides deployment summary
+
 name: Deploy to Production (carrot.ac.uk)
 
 on:
