@@ -1,3 +1,22 @@
+# Build and Deploy to Dev Environment
+# 
+# This workflow is designed for testing feature branches in the dev environment.
+# It builds Docker images from the current branch and deploys them to dev only.
+#
+# When to use:
+# - Testing feature branches before merging to master
+# - Manual testing of changes in a controlled environment
+# - Debugging issues that need to be tested in dev
+#
+# What it does:
+# - Builds backend, frontend, and Airflow images from current branch
+# - Tags images with branch name (e.g., feat-897-change-release-pattern)
+# - Deploys all services to dev environment only
+# - Does NOT deploy to test or production environments
+#
+# Security: This workflow can only deploy to dev environment due to the 'environment: dev' 
+# restriction in the job configuration.
+
 name: Build and Deploy to Dev
 
 on:
@@ -18,8 +37,10 @@ permissions:
   packages: write
 
 jobs:
+  # Single job that builds and deploys everything to dev environment
   build-and-deploy:
     runs-on: ubuntu-latest
+    # Security: This restricts the job to only use dev environment secrets and variables
     environment: dev
     steps:
       - name: Check out the repo
@@ -41,10 +62,12 @@ jobs:
       - name: Set timestamp env var
         run: echo "RUN_TIMESTAMP=$(TZ="Etc/UTC" date +'%Y%m%d%H%M%S')" >> $GITHUB_ENV
 
+      # Set the image tag - either from user input or derived from branch name
       - name: Set default image tag
         run: |
           if [ -z "${{ github.event.inputs.image_tag }}" ]; then
-            # Use branch name, replacing slashes with dashes
+            # Use branch name, replacing slashes with dashes for valid Docker tag format
+            # e.g., feat/897/change-release-pattern -> feat-897-change-release-pattern
             BRANCH_TAG=$(echo "${{ github.ref_name }}" | sed 's/\//-/g')
             echo "IMAGE_TAG=$BRANCH_TAG" >> $GITHUB_ENV
           else
@@ -133,7 +156,10 @@ jobs:
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.airflow_scheduler_meta.outputs.tags }}
 
-      # Deploy to Dev Environment
+      # =============================================================================
+      # DEPLOY TO DEV ENVIRONMENT
+      # =============================================================================
+      # All deployments are restricted to dev environment only for security
       - name: Deploy Backend to Dev
         uses: azure/webapps-deploy@2fdd5c3ebb4e540834e86ecc1f6fdcd5539023ee # v3.0.2
         with:
