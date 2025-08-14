@@ -12,7 +12,7 @@ import { enableAIRecommendation } from "@/constants";
 export const columns = (
   tableId: string,
   canEdit: boolean,
-  scanReportId: string,
+  scanReportId: string
 ): ColumnDef<ScanReportValueV3>[] => [
   {
     id: "Value",
@@ -28,11 +28,11 @@ export const columns = (
       return (
         <div className="flex items-center gap-2">
           <a
-              className="font-bold underline underline-offset-2"
-              href={`https://athena.ohdsi.org/search-terms/terms?query=${value}`}
-              target="_blank"
-            >
-              {value}
+            className="font-bold underline underline-offset-2"
+            href={`https://athena.ohdsi.org/search-terms/terms?query=${value}`}
+            target="_blank"
+          >
+            {value}
           </a>
           <CopyButton textToCopy={value} />
           {enableAIRecommendation === "true" && (
@@ -42,10 +42,10 @@ export const columns = (
               rowId={id}
               contentType="scanreportvalue"
             />
-            )}
+          )}
         </div>
       );
-    },
+    }
   },
   {
     id: "Value Description",
@@ -61,8 +61,12 @@ export const columns = (
     enableSorting: true,
     cell: ({ row }) => {
       const { value_description } = row.original;
-      return <span className="max-w-[200px] whitespace-pre-wrap text-pretty">{value_description}</span>;
-    },
+      return (
+        <span className="max-w-[200px] whitespace-pre-wrap text-pretty">
+          {value_description}
+        </span>
+      );
+    }
   },
   {
     id: "Frequency",
@@ -79,7 +83,7 @@ export const columns = (
     cell: ({ row }) => {
       const { frequency } = row.original;
       return <span className="tabular-nums">{frequency}</span>;
-    },
+    }
   },
   {
     id: "Concepts",
@@ -101,7 +105,7 @@ export const columns = (
           />
         </Suspense>
       );
-    },
+    }
   },
   {
     id: "Add Concept",
@@ -119,6 +123,6 @@ export const columns = (
           fieldId={row.original.scan_report_field}
         />
       );
-    },
-  },
+    }
+  }
 ];

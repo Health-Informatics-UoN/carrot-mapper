@@ -23,6 +23,7 @@ from mapping.models import (
     VisibilityChoices,
     UploadStatus,
     MappingStatus,
+    MappingRecommendation,
 )
 from users.serializers import UserSerializer
 from mapping.permissions import has_editorship, is_admin, is_az_function_user
@@ -793,8 +794,26 @@ class ScanReportConceptSerializerV2(DynamicFieldsMixin, serializers.ModelSeriali
         fields = ["id", "object_id", "creation_type", "content_type", "concept"]
 
 
+class MappingRecommendationSerializerV3(serializers.ModelSerializer):
+    concept = ConceptSerializerV2()
+
+    class Meta:
+        model = MappingRecommendation
+        fields = [
+            "id",
+            "concept",
+            "score",
+            "tool_name",
+            "tool_version",
+            "created_at",
+        ]
+
+
 class ScanReportValueViewSerializerV3(serializers.ModelSerializer):
     concepts = ScanReportConceptSerializerV2(many=True, read_only=True)
+    mapping_recommendations = MappingRecommendationSerializerV3(
+        many=True, read_only=True
+    )
 
     class Meta:
         model = ScanReportValue
@@ -805,6 +824,7 @@ class ScanReportValueViewSerializerV3(serializers.ModelSerializer):
             "value_description",
             "scan_report_field",
             "concepts",
+            "mapping_recommendations",
         ]
 
 
