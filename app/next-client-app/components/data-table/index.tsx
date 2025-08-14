@@ -6,7 +6,7 @@ import {
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
-  useReactTable,
+  useReactTable
 } from "@tanstack/react-table";
 
 import {
@@ -15,7 +15,7 @@ import {
   TableCell,
   TableHead,
   TableHeader,
-  TableRow,
+  TableRow
 } from "@/components/ui/table";
 import React from "react";
 import { Button } from "@/components/ui/button";
@@ -25,11 +25,10 @@ import {
   DropdownMenuContent,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuTrigger,
+  DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import { DataTablePagination } from "./DataTablePagination";
 import { Columns3 } from "lucide-react";
-import { EmptyState } from "@/components/ui/empty-state";
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -42,9 +41,6 @@ interface DataTableProps<TData, TValue> {
   RefreshButton?: JSX.Element;
   defaultPageSize?: 10 | 20 | 30 | 40 | 50;
   initialColumnVisibility?: VisibilityState;
-  emptyStateMessage?: string;
-  emptyStateDescription?: string;
-  emptyStateIcon?: "folders" | "database" | "filescan" | "circle-slash";
 }
 
 function UrlBuilder(id: string, prefix: string = "") {
@@ -60,10 +56,7 @@ export function DataTable<TData, TValue>({
   paginated = true,
   RefreshButton,
   defaultPageSize,
-  initialColumnVisibility,
-  emptyStateMessage,
-  emptyStateDescription,
-  emptyStateIcon,
+  initialColumnVisibility
 }: DataTableProps<TData, TValue>) {
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>(initialColumnVisibility || {});
@@ -78,8 +71,8 @@ export function DataTable<TData, TValue>({
     manualSorting: true,
     onColumnVisibilityChange: setColumnVisibility,
     state: {
-      columnVisibility,
-    },
+      columnVisibility
+    }
   });
 
   return (
@@ -155,9 +148,7 @@ export function DataTable<TData, TValue>({
                   className="transition-colors"
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell
-                      key={cell.id}
-                    >
+                    <TableCell key={cell.id}>
                       <div>
                         {flexRender(
                           cell.column.columnDef.cell,
@@ -174,15 +165,7 @@ export function DataTable<TData, TValue>({
                   colSpan={columns.length}
                   className="h-24 text-center"
                 >
-                  {emptyStateMessage ? (
-                    <EmptyState
-                      icon={emptyStateIcon}
-                      title={emptyStateMessage}
-                      description={emptyStateDescription || "No results."}
-                    />
-                  ) : (
-                    "No results."
-                  )}
+                  {/* No results message is now handled by individual pages */}
                 </TableCell>
               </TableRow>
             )}
