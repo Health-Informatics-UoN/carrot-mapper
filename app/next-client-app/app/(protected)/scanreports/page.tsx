@@ -8,6 +8,7 @@ import { FilterParameters } from "@/types/filter";
 import { FileScan } from "lucide-react";
 import { VisibilityState } from "@tanstack/react-table";
 import { Metadata } from "next";
+import { EmptyState } from "@/components/ui/empty-state";
 
 interface ScanReportsProps {
   searchParams?: Promise<{ status__in: string } & FilterParameters>;
@@ -62,40 +63,40 @@ export default async function ScanReports(props: ScanReportsProps) {
             </a>
           </TabsList>
           <TabsContent value="active">
-            <DataTable
-              columns={columns}
-              data={scanReports.results}
-              count={scanReports.count}
-              Filter={filter}
-              defaultPageSize={defaultPageSize}
-              initialColumnVisibility={initialColumnVisibility}
-              {...(scanReports.results.length === 0
-                ? {
-                    emptyStateMessage: "No scan reports yet",
-                    emptyStateDescription:
-                      "Upload a scan report to begin mapping your data.",
-                    emptyStateIcon: "filescan"
-                  }
-                : {})}
-            />
+            {scanReports.results.length > 0 ? (
+              <DataTable
+                columns={columns}
+                data={scanReports.results}
+                count={scanReports.count}
+                Filter={filter}
+                defaultPageSize={defaultPageSize}
+                initialColumnVisibility={initialColumnVisibility}
+              />
+            ) : (
+              <EmptyState
+                icon="filescan"
+                title="No scan reports yet"
+                description="Upload a scan report to begin mapping your data."
+              />
+            )}
           </TabsContent>
           <TabsContent value="archived">
-            <DataTable
-              columns={columns}
-              data={scanReports.results}
-              count={scanReports.count}
-              Filter={filter}
-              defaultPageSize={defaultPageSize}
-              initialColumnVisibility={initialColumnVisibility}
-              {...(scanReports.results.length === 0
-                ? {
-                    emptyStateMessage: "No archived reports",
-                    emptyStateDescription:
-                      "No archived scan reports found. Active reports will appear here when archived.",
-                    emptyStateIcon: "filescan"
-                  }
-                : {})}
-            />
+            {scanReports.results.length > 0 ? (
+              <DataTable
+                columns={columns}
+                data={scanReports.results}
+                count={scanReports.count}
+                Filter={filter}
+                defaultPageSize={defaultPageSize}
+                initialColumnVisibility={initialColumnVisibility}
+              />
+            ) : (
+              <EmptyState
+                icon="filescan"
+                title="No archived reports"
+                description="No archived scan reports found. Active reports will appear here when archived."
+              />
+            )}
           </TabsContent>
         </Tabs>
       </div>

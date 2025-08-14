@@ -9,6 +9,7 @@ import { CreateDatasetDialog } from "@/components/datasets/CreateDatasetDialog";
 import { Database } from "lucide-react";
 import { getAllProjects } from "@/api/projects";
 import { Metadata } from "next";
+import { EmptyState } from "@/components/ui/empty-state";
 
 export const metadata: Metadata = {
   title: "Datasets | Carrot Mapper",
@@ -67,36 +68,36 @@ export default async function DataSets(props: DataSetListProps) {
               </div>
             </div>
             <TabsContent value="active">
-              <DataTable
-                columns={columns}
-                data={dataset.results}
-                count={dataset.count}
-                Filter={filter}
-                {...(dataset.results.length === 0
-                  ? {
-                      emptyStateMessage: "No datasets yet",
-                      emptyStateDescription:
-                        "Create your first dataset to start organizing and mapping your data.",
-                      emptyStateIcon: "database"
-                    }
-                  : {})}
-              />
+              {dataset.results.length > 0 ? (
+                <DataTable
+                  columns={columns}
+                  data={dataset.results}
+                  count={dataset.count}
+                  Filter={filter}
+                />
+              ) : (
+                <EmptyState
+                  icon="database"
+                  title="No datasets yet"
+                  description="Create your first dataset to start organising and mapping your data."
+                />
+              )}
             </TabsContent>
             <TabsContent value="archived">
-              <DataTable
-                columns={columns}
-                data={dataset.results}
-                count={dataset.count}
-                Filter={filter}
-                {...(dataset.results.length === 0
-                  ? {
-                      emptyStateMessage: "No archived datasets",
-                      emptyStateDescription:
-                        "No archived datasets found. Active datasets will appear here when archived.",
-                      emptyStateIcon: "database"
-                    }
-                  : {})}
-              />
+              {dataset.results.length > 0 ? (
+                <DataTable
+                  columns={columns}
+                  data={dataset.results}
+                  count={dataset.count}
+                  Filter={filter}
+                />
+              ) : (
+                <EmptyState
+                  icon="database"
+                  title="No archived datasets"
+                  description="No archived datasets found. Active datasets will appear here when archived."
+                />
+              )}
             </TabsContent>
           </Tabs>
         </div>

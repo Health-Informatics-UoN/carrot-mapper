@@ -34,7 +34,7 @@ export function EmptyState({
   const IconComponent = getIcon(icon);
 
   return (
-    <div className="flex flex-col items-center justify-center py-12 text-center w-full max-w-none">
+    <div className="flex flex-col items-center justify-center py-12 text-center w-full max-w-none border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900/50 transition-all duration-200 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800/50 hover:shadow-sm">
       <div className="mb-4 text-gray-600 dark:text-gray-400 flex justify-center">
         <IconComponent className="h-16 w-16" />
       </div>
