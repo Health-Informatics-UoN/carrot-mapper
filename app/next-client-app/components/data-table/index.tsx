@@ -165,7 +165,7 @@ export function DataTable<TData, TValue>({
                   colSpan={columns.length}
                   className="h-24 text-center"
                 >
-                  {/* No results message is now handled by individual pages */}
+                  No results.
                 </TableCell>
               </TableRow>
             )}
