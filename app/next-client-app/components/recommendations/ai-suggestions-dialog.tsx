@@ -40,7 +40,7 @@ export default function AISuggestionDialog({
 }: AISuggestionDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-(--breakpoint-xl) overflow-auto max-h-[80vh]">
+      <DialogContent className="max-w-screen-xl overflow-auto max-h-[80vh]">
         <DialogHeader>
           <DialogTitle className="text-xl text-center">
             AI Mapping Suggestions

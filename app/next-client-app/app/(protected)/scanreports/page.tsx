@@ -8,6 +8,7 @@ import { FilterParameters } from "@/types/filter";
 import { FileScan } from "lucide-react";
 import { VisibilityState } from "@tanstack/react-table";
 import { Metadata } from "next";
+import { EmptyState } from "@/components/ui/empty-state";
 
 interface ScanReportsProps {
   searchParams?: Promise<{ status__in: string } & FilterParameters>;
@@ -15,7 +16,7 @@ interface ScanReportsProps {
 
 export const metadata: Metadata = {
   title: "Scan Reports | Carrot Mapper",
-  description: "Scan reports for the current user",
+  description: "Scan reports for the current user"
 };
 
 export default async function ScanReports(props: ScanReportsProps) {
@@ -23,7 +24,7 @@ export default async function ScanReports(props: ScanReportsProps) {
   const defaultPageSize = 30;
   const defaultParams = {
     hidden: false,
-    page_size: defaultPageSize,
+    page_size: defaultPageSize
   };
   const combinedParams = { ...defaultParams, ...searchParams };
 
@@ -33,7 +34,7 @@ export default async function ScanReports(props: ScanReportsProps) {
 
   // Define which columns should be hidden by default
   const initialColumnVisibility: VisibilityState = {
-    id: false,
+    id: false
   };
 
   return (
@@ -62,24 +63,40 @@ export default async function ScanReports(props: ScanReportsProps) {
             </a>
           </TabsList>
           <TabsContent value="active">
-            <DataTable
-              columns={columns}
-              data={scanReports.results}
-              count={scanReports.count}
-              Filter={filter}
-              defaultPageSize={defaultPageSize}
-              initialColumnVisibility={initialColumnVisibility}
-            />
+            {scanReports.results.length > 0 ? (
+              <DataTable
+                columns={columns}
+                data={scanReports.results}
+                count={scanReports.count}
+                Filter={filter}
+                defaultPageSize={defaultPageSize}
+                initialColumnVisibility={initialColumnVisibility}
+              />
+            ) : (
+              <EmptyState
+                icon="filescan"
+                title="No scan reports yet"
+                description="Upload a scan report to begin mapping your data."
+              />
+            )}
           </TabsContent>
           <TabsContent value="archived">
-            <DataTable
-              columns={columns}
-              data={scanReports.results}
-              count={scanReports.count}
-              Filter={filter}
-              defaultPageSize={defaultPageSize}
-              initialColumnVisibility={initialColumnVisibility}
-            />
+            {scanReports.results.length > 0 ? (
+              <DataTable
+                columns={columns}
+                data={scanReports.results}
+                count={scanReports.count}
+                Filter={filter}
+                defaultPageSize={defaultPageSize}
+                initialColumnVisibility={initialColumnVisibility}
+              />
+            ) : (
+              <EmptyState
+                icon="filescan"
+                title="No archived reports"
+                description="No archived scan reports found. Active reports will appear here when archived."
+              />
+            )}
           </TabsContent>
         </Tabs>
       </div>
