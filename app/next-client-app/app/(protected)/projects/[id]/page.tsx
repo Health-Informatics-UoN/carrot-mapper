@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DataTableFilter } from "@/components/data-table/DataTableFilter";
 import { getDataSets } from "@/api/datasets";
 import { columns } from "../../datasets/columns";
+import { EmptyState } from "@/components/ui/empty-state";
 
 interface ProjectDetailProps {
   params: Promise<{
@@ -50,36 +51,36 @@ export default async function ProjectDetail(props: ProjectDetailProps) {
         </TabsList>
       </div>
       <TabsContent value="active">
-        <DataTable
-          columns={columns}
-          data={datasets.results}
-          count={datasets.count}
-          Filter={filter}
-          {...(datasets.results.length === 0
-            ? {
-                emptyStateMessage: "No datasets in this project",
-                emptyStateDescription:
-                  "Create your first dataset in this project to start organizing and mapping your data.",
-                emptyStateIcon: "database"
-              }
-            : {})}
-        />
+        {datasets.results.length > 0 ? (
+          <DataTable
+            columns={columns}
+            data={datasets.results}
+            count={datasets.count}
+            Filter={filter}
+          />
+        ) : (
+          <EmptyState
+            icon="database"
+            title="No datasets in this project"
+            description="Create your first dataset in this project to start organizing and mapping your data."
+          />
+        )}
       </TabsContent>
       <TabsContent value="archived">
-        <DataTable
-          columns={columns}
-          data={datasets.results}
-          count={datasets.count}
-          Filter={filter}
-          {...(datasets.results.length === 0
-            ? {
-                emptyStateMessage: "No archived datasets",
-                emptyStateDescription:
-                  "No archived datasets found in this project. Active datasets will appear here when archived.",
-                emptyStateIcon: "database"
-              }
-            : {})}
-        />
+        {datasets.results.length > 0 ? (
+          <DataTable
+            columns={columns}
+            data={datasets.results}
+            count={datasets.count}
+            Filter={filter}
+          />
+        ) : (
+          <EmptyState
+            icon="database"
+            title="No archived datasets"
+            description="No archived datasets found in this project. Active datasets will appear here when archived."
+          />
+        )}
       </TabsContent>
     </Tabs>
   );
