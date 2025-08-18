@@ -41,6 +41,8 @@ export const columns = (
               tableId={tableId}
               rowId={id}
               contentType="scanreportvalue"
+              scanReportId={scanReportId}
+              fieldId={row.original.scan_report_field}
             />
           )}
         </div>

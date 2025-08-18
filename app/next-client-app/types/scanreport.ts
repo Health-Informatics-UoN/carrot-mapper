@@ -93,6 +93,16 @@ interface ScanReportValue {
   permissions: Permission[];
 }
 
+interface MappingRecommendation {
+  id: number;
+  content_type: number;
+  object_id: number;
+  concept: ConceptDetail;
+  score: number | null;
+  tool_name: string;
+  tool_version: string;
+}
+
 interface ScanReportValueV3 {
   id: number;
   value: string;
@@ -100,4 +110,5 @@ interface ScanReportValueV3 {
   value_description: string;
   scan_report_field: number;
   concepts: ScanReportConceptV3[];
+  mapping_recommendations: MappingRecommendation[];
 }

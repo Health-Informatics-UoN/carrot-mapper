@@ -5,7 +5,7 @@ import { Sparkles, Loader2 } from "lucide-react";
 import AISuggestionDialog from "./ai-suggestions-dialog";
 import { getConceptRecommendationsUnison } from "@/api/recommendations";
 import { UnisonConceptItem } from "@/types/recommendation";
-import { addConcept } from "@/api/concepts";
+import { addConcept, getSuggestionsV3 } from "@/api/concepts";
 import { toast } from "sonner";
 import {
   DropdownMenu,
@@ -21,12 +21,16 @@ export function AISuggestionsButton({
   value,
   tableId,
   rowId,
-  contentType
+  contentType,
+  scanReportId,
+  fieldId
 }: {
   value: string;
   tableId: string;
   rowId: number;
   contentType: string;
+  scanReportId?: string;
+  fieldId?: number;
 }) {
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
@@ -43,15 +47,9 @@ export function AISuggestionsButton({
     setIsLoading(true);
 
     try {
-      // Call the getConceptRecommendations function
-      const recommendations = await getConceptRecommendationsUnison(
-        value,
-        domainId
-      );
-      // Filter to get only unique concept IDs
-      const uniqueRecommendations = recommendations.items.filter(
-        (item, index, array) =>
-          array.findIndex((i) => i.conceptId === item.conceptId) === index
+      const recommendations = await fetchRecommendations(domainId);
+      const uniqueRecommendations = deduplicateRecommendations(
+        recommendations.items
       );
 
       setSuggestions(uniqueRecommendations);
@@ -62,6 +60,92 @@ export function AISuggestionsButton({
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Fetch recommendations from appropriate source
+  const fetchRecommendations = async (domainId: string) => {
+    if (canUseV3Endpoint()) {
+      // 🗄️ DATABASE: Use v3 endpoint to fetch from mapping_recommendations table
+      return await fetchFromV3Endpoint();
+    }
+
+    // 🌐 EXTERNAL API: Fallback to Unison service when v3 endpoint not available
+    return await fetchFromUnisonService(domainId);
+  };
+
+  // Check if we can use the v3 endpoint
+  const canUseV3Endpoint = () => {
+    return Boolean(scanReportId && fieldId);
+  };
+
+  // 🗄️ DATABASE: Fetch recommendations from v3 endpoint (mapping_recommendations table)
+  const fetchFromV3Endpoint = async () => {
+    const v3Response = await getSuggestionsV3(
+      scanReportId!,
+      tableId,
+      fieldId!.toString()
+    );
+
+    const targetValue = v3Response.results.find(
+      (result) => result.value === value
+    );
+
+    if (hasMappingRecommendations(targetValue)) {
+      return {
+        items: transformMappingRecommendations(
+          targetValue!.mapping_recommendations
+        )
+      };
+    }
+
+    return {
+      items: [],
+      message:
+        "V3 endpoint is available but no AI recommendations found for this value."
+    };
+  };
+
+  // Check if target value has mapping recommendations
+  const hasMappingRecommendations = (
+    targetValue: ScanReportValueV3 | undefined
+  ) => {
+    return Boolean(targetValue?.mapping_recommendations?.length);
+  };
+
+  // Transform mapping recommendations to expected format
+  const transformMappingRecommendations = (
+    recommendations: MappingRecommendation[]
+  ) => {
+    return recommendations.map((rec) => ({
+      accuracy: rec.score ?? null, // Keep as null, handle in UI
+      conceptId: rec.concept.concept_id,
+      conceptName: rec.concept.concept_name,
+      conceptCode: rec.concept.concept_code,
+      vocabulary: rec.concept.vocabulary_id ?? "Unknown",
+      domain: rec.concept.domain_id ?? "Unknown",
+      conceptClass: rec.concept.concept_class_id ?? "Unknown",
+      explanation: rec.score
+        ? `AI recommendation from ${rec.tool_name} (score: ${rec.score})`
+        : `AI recommendation from ${rec.tool_name} (no score)`
+    }));
+  };
+
+  // 🌐 EXTERNAL API: Fetch recommendations from Unison service (external API call)
+  const fetchFromUnisonService = async (domainId: string) => {
+    try {
+      return await getConceptRecommendationsUnison(value, domainId);
+    } catch (error) {
+      console.error("Unison service failed:", error);
+      return { items: [] };
+    }
+  };
+
+  // Remove duplicate recommendations by concept ID
+  const deduplicateRecommendations = (items: UnisonConceptItem[]) => {
+    return items.filter(
+      (item, index, array) =>
+        array.findIndex((i) => i.conceptId === item.conceptId) === index
+    );
   };
 
   const handleApplySuggestion = async (data: {

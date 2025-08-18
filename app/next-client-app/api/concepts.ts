@@ -7,6 +7,7 @@ const fetchKeys = {
   conceptFilter: (filter: string) =>
     `v2/omop/conceptsfilter/?concept_id__in=${filter}`,
   addConcept: "v2/scanreports/concepts/",
+  getSuggestionsV3: (scanReportId: string, tableId: string, fieldId: string) => `v3/scanreports/${scanReportId}/tables/${tableId}/fields/${fieldId}/values/`,
   deleteConcept: (conceptId: number) => `v2/scanreports/concepts/${conceptId}/`,
   scanreportConcepts: (filter?: string) => `v2/scanreports/concepts/?${filter}`,
   scanreportConceptDetail: (scanReportId: string, tableId: string, fieldId: string, valueId: string, conceptId: string) => `v3/scanreports/${scanReportId}/tables/${tableId}/fields/${fieldId}/values/${valueId}/concepts/${conceptId}/`,
@@ -111,4 +112,22 @@ export async function updateScanReportConceptDetail(
     },
     body: JSON.stringify(data),
   });
+}
+
+export async function getSuggestionsV3(
+  scanReportId: string,
+  tableId: string,
+  fieldId: string,
+  filter?: string
+): Promise<PaginatedResponse<ScanReportValueV3>> {
+  try {
+    const endpoint = filter 
+      ? `${fetchKeys.getSuggestionsV3(scanReportId, tableId, fieldId)}?${filter}`
+      : fetchKeys.getSuggestionsV3(scanReportId, tableId, fieldId);
+      
+    return await request<PaginatedResponse<ScanReportValueV3>>(endpoint);
+  } catch (error) {
+    console.warn("Failed to fetch suggestions from v3 endpoint.");
+    return { count: 0, next: null, previous: null, results: [] };
+  }
 }

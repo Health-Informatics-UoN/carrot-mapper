@@ -1,5 +1,5 @@
 export interface UnisonConceptItem {
-  accuracy: number;
+  accuracy: number | null;
   conceptId: number;
   conceptName: string;
   conceptCode: string;
