@@ -35,6 +35,22 @@ export const columns = (
             {value}
           </a>
           <CopyButton textToCopy={value} />
+        </div>
+      );
+    }
+  },
+  {
+    id: "AI Suggestions",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="AI Suggestions" />
+    ),
+    enableHiding: true,
+    enableSorting: false,
+    cell: ({ row }) => {
+      const { value, id } = row.original;
+
+      return (
+        <div className="flex justify-start w-full">
           {enableAIRecommendation === "true" && (
             <AISuggestionsButton
               value={value}
