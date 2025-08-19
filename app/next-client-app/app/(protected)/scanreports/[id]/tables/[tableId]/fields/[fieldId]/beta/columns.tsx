@@ -60,10 +60,10 @@ export const columns = (
               scanReportId={scanReportId}
               fieldId={row.original.scan_report_field}
             />
-          )}
+        )}
         </div>
       );
-    }
+    },
   },
   {
     id: "Value Description",
@@ -79,12 +79,9 @@ export const columns = (
     enableSorting: true,
     cell: ({ row }) => {
       const { value_description } = row.original;
-      return (
-        <span className="max-w-[200px] whitespace-pre-wrap text-pretty">
-          {value_description}
-        </span>
-      );
-    }
+      return <span className="max-w-[200px] whitespace-pre-wrap text-pretty">
+          {value_description}</span>;
+      },
   },
   {
     id: "Frequency",
@@ -101,7 +98,7 @@ export const columns = (
     cell: ({ row }) => {
       const { frequency } = row.original;
       return <span className="tabular-nums">{frequency}</span>;
-    }
+    },
   },
   {
     id: "Concepts",
@@ -123,7 +120,7 @@ export const columns = (
           />
         </Suspense>
       );
-    }
+    },
   },
   {
     id: "Add Concept",
@@ -141,6 +138,6 @@ export const columns = (
           fieldId={row.original.scan_report_field}
         />
       );
-    }
-  }
+    },
+  },
 ];
