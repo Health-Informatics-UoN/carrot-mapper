@@ -101,6 +101,7 @@ interface MappingRecommendation {
   score: number | null;
   tool_name: string;
   tool_version: string;
+  created_at: Date;
 }
 
 interface ScanReportValueV3 {

@@ -8,7 +8,6 @@ import {
   TooltipProvider,
   TooltipTrigger
 } from "@/components/ui/tooltip";
-import { MappingRecommendation } from "@/types/scanreport";
 import { format } from "date-fns/format";
 import { Brain, Star, Zap } from "lucide-react";
 
