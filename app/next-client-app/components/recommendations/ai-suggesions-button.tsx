@@ -65,11 +65,11 @@ export function AISuggestionsButton({
   // Fetch recommendations from appropriate source
   const fetchRecommendations = async (domainId: string) => {
     if (canUseV3Endpoint()) {
-      // 🗄️ DATABASE: Use v3 endpoint to fetch from mapping_recommendations table
+      // Use v3 endpoint to fetch from mapping_recommendations table
       return await fetchFromV3Endpoint();
     }
 
-    // 🌐 EXTERNAL API: Fallback to Unison service when v3 endpoint not available
+    // Fallback to Unison service when v3 endpoint not available
     return await fetchFromUnisonService(domainId);
   };
 
@@ -78,7 +78,7 @@ export function AISuggestionsButton({
     return Boolean(scanReportId && fieldId);
   };
 
-  // 🗄️ DATABASE: Fetch recommendations from v3 endpoint (mapping_recommendations table)
+  // Fetch recommendations from v3 endpoint (mapping_recommendations table)
   const fetchFromV3Endpoint = async () => {
     const v3Response = await getSuggestionsV3(
       scanReportId!,
@@ -130,7 +130,7 @@ export function AISuggestionsButton({
     }));
   };
 
-  // 🌐 EXTERNAL API: Fetch recommendations from Unison service (external API call)
+  // Fetch recommendations from Unison service (external API call)
   const fetchFromUnisonService = async (domainId: string) => {
     try {
       return await getConceptRecommendationsUnison(value, domainId);
