@@ -60,7 +60,7 @@ export const columns = (
               scanReportId={scanReportId}
               fieldId={row.original.scan_report_field}
             />
-        )}
+            )}
         </div>
       );
     },
@@ -80,7 +80,7 @@ export const columns = (
     cell: ({ row }) => {
       const { value_description } = row.original;
       return <span className="max-w-[200px] whitespace-pre-wrap text-pretty">
-          {value_description}</span>;
+  {value_description}</span>;
       },
   },
   {
