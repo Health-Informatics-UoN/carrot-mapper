@@ -9,6 +9,7 @@ import { saveAs } from "file-saver";
 import { Badge } from "@/components/ui/badge";
 import { downloadFile } from "@/api/files";
 import { toast } from "sonner";
+import { FileDownload } from "@/types/files";
 
 export const columns: ColumnDef<FileDownload>[] = [
   {
@@ -26,7 +27,7 @@ export const columns: ColumnDef<FileDownload>[] = [
       return format(created_at, "d MMM HH:mm");
     },
     enableHiding: true,
-    enableSorting: true,
+    enableSorting: true
   },
   {
     id: "User",
@@ -43,7 +44,7 @@ export const columns: ColumnDef<FileDownload>[] = [
       return <>{user.username}</>;
     },
     enableHiding: true,
-    enableSorting: false,
+    enableSorting: false
   },
   {
     id: "Type",
@@ -60,7 +61,7 @@ export const columns: ColumnDef<FileDownload>[] = [
       return <Badge variant="outline">{file_type.display_name}</Badge>;
     },
     enableHiding: true,
-    enableSorting: false,
+    enableSorting: false
   },
   {
     id: "Download",
@@ -85,6 +86,6 @@ export const columns: ColumnDef<FileDownload>[] = [
       );
     },
     enableHiding: true,
-    enableSorting: false,
-  },
+    enableSorting: false
+  }
 ];

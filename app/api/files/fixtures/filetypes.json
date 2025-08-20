@@ -11,13 +11,21 @@
       "model": "files.filetype",
       "pk": 2,
       "fields": {
+          "value": "mapping_json_v2",
+          "display_name": "Mapping Rules JSON V2"
+      }
+  },
+  {
+      "model": "files.filetype",
+      "pk": 3,
+      "fields": {
           "value": "mapping_csv",
           "display_name": "Mapping Rules CSV"
       }
   },
   {
       "model": "files.filetype",
-      "pk": 3,
+      "pk": 4,
       "fields": {
           "value": "mapping_svg",
           "display_name": "Mapping Rules SVG"
@@ -25,7 +33,7 @@
   },
   {
       "model": "files.filetype",
-      "pk": 4,
+      "pk": 5,
       "fields": {
           "value": "scan_report",
           "display_name": "Scan Report"
@@ -33,7 +41,7 @@
   },
   {
       "model": "files.filetype",
-      "pk": 5,
+      "pk": 6,
       "fields": {
           "value": "data_dictionary",
           "display_name": "Data Dictionary"

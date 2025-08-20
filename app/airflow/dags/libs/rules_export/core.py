@@ -98,7 +98,7 @@ def build_and_upload_rules_file(**kwargs) -> None:
             ),
             "application/json_v2": FileHandlerConfig(
                 lambda: build_rules_json_v2(scan_report_name, scan_report_id),
-                "mapping_json",
+                "mapping_json_v2",
                 "json",
             ),
             # Keep backward compatibility for "json" type
@@ -108,7 +108,11 @@ def build_and_upload_rules_file(**kwargs) -> None:
                     if AIRFLOW_VAR_JSON_VERSION == "v2"
                     else build_rules_json(scan_report_name, scan_report_id)
                 ),
-                "mapping_json",
+                (
+                    "mapping_json_v2"
+                    if AIRFLOW_VAR_JSON_VERSION == "v2"
+                    else "mapping_json"
+                ),
                 "json",
             ),
         }
@@ -120,7 +124,11 @@ def build_and_upload_rules_file(**kwargs) -> None:
         file_extension = config.file_extension
 
         # build file name
-        filename = f"Rules - {scan_report_name} - {scan_report_id} - {datetime.now()}.{file_extension}"
+        if file_type in ["application/json_v1", "application/json_v2"]:
+            version = "V1" if file_type == "application/json_v1" else "V2"
+            filename = f"Rules - {scan_report_name} - {scan_report_id} - {version} - {datetime.now()}.{file_extension}"
+        else:
+            filename = f"Rules - {scan_report_name} - {scan_report_id} - {datetime.now()}.{file_extension}"
 
         # Upload to blob storage
         upload_blob_to_storage(

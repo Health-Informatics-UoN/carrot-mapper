@@ -4,6 +4,7 @@ export type FileTypeFormat = "application/json" | "image/svg+xml" | "text/csv";
 export type FileTypeFormatWithVersion = "application/json_v1" | "application/json_v2" | "image/svg+xml" | "text/csv";
 export type FileTypeValue =
   | "mapping_json"
+  | "mapping_json_v2"
   | "mapping_csv"
   | "mapping_svg"
   | "data_dictionary"
@@ -13,6 +14,7 @@ export interface FileType {
   value: FileTypeValue;
   display_name:
     | "Mapping Rules JSON"
+    | "Mapping Rules JSON V2"
     | "Mapping Rules CSV"
     | "Mapping Rules SVG"
     | "Data Dictionary"
