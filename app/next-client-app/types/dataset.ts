@@ -32,7 +32,7 @@ interface DataSetSRList {
   projects: Project[];
 }
 
-interface User {
+export interface User {
   id: number;
   username: string;
 }

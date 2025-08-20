@@ -1,12 +1,15 @@
-type FileTypeFormat = "application/json" | "image/svg+xml" | "text/csv";
-type FileTypeValue =
+import { User } from "./dataset";
+
+export type FileTypeFormat = "application/json" | "image/svg+xml" | "text/csv";
+export type FileTypeFormatWithVersion = "application/json_v1" | "application/json_v2" | "image/svg+xml" | "text/csv";
+export type FileTypeValue =
   | "mapping_json"
   | "mapping_csv"
   | "mapping_svg"
   | "data_dictionary"
   | "scan_report";
 
-interface FileType {
+export interface FileType {
   value: FileTypeValue;
   display_name:
     | "Mapping Rules JSON"
@@ -16,7 +19,7 @@ interface FileType {
     | "Scan Report";
 }
 
-interface FileDownload {
+export interface FileDownload {
   id: number;
   scan_report: number;
   name: string;

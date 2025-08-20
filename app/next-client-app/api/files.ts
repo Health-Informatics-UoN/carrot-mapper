@@ -2,6 +2,8 @@
 
 import request from "@/lib/api/request";
 import { revalidatePath } from "next/cache";
+import { FileDownload } from "@/types/files";
+import { FileTypeFormat } from "@/types/files";
 
 const fetchKeys = {
   list: (scan_report_id: number, filter?: string) =>
@@ -29,7 +31,7 @@ export async function list(
 
 export async function requestFile(
   scan_report_id: number,
-  file_type: FileTypeFormat
+  file_type: FileTypeFormat | "application/json_v1" | "application/json_v2"
 ): Promise<{ success: boolean; errorMessage?: string }> {
   try {
     await request(fetchKeys.requestFile(scan_report_id), {
