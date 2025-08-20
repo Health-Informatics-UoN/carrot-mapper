@@ -5,7 +5,8 @@ import { Sparkles, Loader2 } from "lucide-react";
 import AISuggestionDialog from "./ai-suggestions-dialog";
 import { getConceptRecommendationsUnison } from "@/api/recommendations";
 import { UnisonConceptItem } from "@/types/recommendation";
-import { addConcept, getSuggestionsV3 } from "@/api/concepts";
+import { addConcept } from "@/api/concepts";
+import { getScanReportValuesV3 } from "@/api/scanreports";
 import { toast } from "sonner";
 import {
   DropdownMenu,
@@ -80,10 +81,11 @@ export function AISuggestionsButton({
 
   // Fetch recommendations from v3 endpoint (mapping_recommendations table)
   const fetchFromV3Endpoint = async () => {
-    const v3Response = await getSuggestionsV3(
+    const v3Response = await getScanReportValuesV3(
       scanReportId!,
       tableId,
-      fieldId!.toString()
+      fieldId!.toString(),
+      undefined
     );
 
     const targetValue = v3Response.results.find(

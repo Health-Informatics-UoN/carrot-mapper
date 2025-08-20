@@ -17,8 +17,8 @@ export const JobStage = [
   },
   {
     id: 5,
-    value: "GENERATE_AI_RECOMMENDATIONS",
-    display_name: "Generate AI-powered mapping recommendations",
+    value: "GENERATE_RECOMMENDATIONS",
+    display_name: "Generate mapping recommendations",
   },
   {
     id: 6,

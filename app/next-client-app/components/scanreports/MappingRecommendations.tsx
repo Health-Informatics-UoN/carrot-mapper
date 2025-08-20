@@ -25,7 +25,7 @@ export function MappingRecommendations({
   if (!recommendations || recommendations.length === 0) {
     return (
       <div className="text-sm text-muted-foreground">
-        No AI recommendations available
+        No recommendations available
       </div>
     );
   }
@@ -106,4 +106,3 @@ export function MappingRecommendations({
     </div>
   );
 }
-
