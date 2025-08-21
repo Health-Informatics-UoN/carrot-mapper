@@ -2,10 +2,10 @@
 import { useState } from "react";
 import { Button } from "../ui/button";
 import { Sparkles, Loader2 } from "lucide-react";
-import AISuggestionDialog from "./ai-suggestions-dialog";
-import { getConceptRecommendationsUnison } from "@/api/recommendations";
+import RecommendationsDialog from "./stored-recommendations-dialog";
 import { UnisonConceptItem } from "@/types/recommendation";
 import { addConcept } from "@/api/concepts";
+import { getScanReportValuesV3 } from "@/api/scanreports";
 import { toast } from "sonner";
 import {
   DropdownMenu,
@@ -17,23 +17,27 @@ import {
 import { domains } from "@/constants/domains";
 import { DropdownMenuItem } from "@radix-ui/react-dropdown-menu";
 
-export function AISuggestionsButton({
+export function StoredRecommendationsButton({
   value,
   tableId,
   rowId,
-  contentType
+  contentType,
+  scanReportId,
+  fieldId
 }: {
   value: string;
   tableId: string;
   rowId: number;
   contentType: string;
+  scanReportId: string;
+  fieldId: number;
 }) {
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [suggestions, setSuggestions] = useState<UnisonConceptItem[]>([]);
   const [domainId, setDomainId] = useState<string>("");
 
-  // Fetches AI suggestions from the API
+  // Fetch V3 mapping recommendations from the database
   const handleClick = async (domainId: string) => {
     if (!value) {
       toast.error("No value provided to search for recommendations");
@@ -43,25 +47,50 @@ export function AISuggestionsButton({
     setIsLoading(true);
 
     try {
-      // Call the getConceptRecommendations function
-      const recommendations = await getConceptRecommendationsUnison(
-        value,
-        domainId
-      );
-      // Filter to get only unique concept IDs
-      const uniqueRecommendations = recommendations.items.filter(
-        (item, index, array) =>
-          array.findIndex((i) => i.conceptId === item.conceptId) === index
+      const v3Response = await getScanReportValuesV3(
+        scanReportId,
+        tableId,
+        fieldId.toString(),
+        undefined
       );
 
-      setSuggestions(uniqueRecommendations);
-      setIsOpen(true);
+      const targetValue = v3Response.results.find(
+        (result) => result.value === value
+      );
+
+      if (targetValue?.mapping_recommendations?.length) {
+        const transformedRecommendations = transformMappingRecommendations(
+          targetValue.mapping_recommendations
+        );
+        setSuggestions(transformedRecommendations);
+        setIsOpen(true);
+      } else {
+        toast.info("No pre-computed recommendations found for this value");
+      }
     } catch (error) {
-      console.error("Error generating suggestions:", error);
-      toast.error("Failed to fetch suggestions. Please try again.");
+      console.error("Error fetching V3 recommendations:", error);
+      toast.error("Failed to fetch recommendations. Please try again.");
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Transform mapping recommendations to expected format
+  const transformMappingRecommendations = (
+    recommendations: MappingRecommendation[]
+  ): UnisonConceptItem[] => {
+    return recommendations.map((rec) => ({
+      accuracy: rec.score ?? null,
+      conceptId: rec.concept.concept_id,
+      conceptName: rec.concept.concept_name,
+      conceptCode: rec.concept.concept_code,
+      vocabulary: rec.concept.vocabulary_id ?? "Unknown",
+      domain: rec.concept.domain_id ?? "Unknown",
+      conceptClass: rec.concept.concept_class_id ?? "Unknown",
+      explanation: rec.score
+        ? `Pre-computed recommendation from ${rec.tool_name} (score: ${rec.score})`
+        : `Pre-computed recommendation from ${rec.tool_name} (no score)`
+    }));
   };
 
   const handleApplySuggestion = async (data: {
@@ -100,7 +129,7 @@ export function AISuggestionsButton({
               ) : (
                 <Sparkles className="h-4 w-4 text-purple-500" />
               )}
-              Suggestions
+              Recommendations
             </Button>
           </div>
         </DropdownMenuTrigger>
@@ -129,7 +158,7 @@ export function AISuggestionsButton({
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <AISuggestionDialog
+      <RecommendationsDialog
         open={isOpen}
         onOpenChange={setIsOpen}
         suggestions={suggestions}
@@ -139,6 +168,7 @@ export function AISuggestionsButton({
         rowId={rowId}
         domainId={domainId}
         contentType={contentType}
+        source="v3"
       />
     </>
   );
