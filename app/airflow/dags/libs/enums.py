@@ -17,4 +17,5 @@ class JobStageType(StrEnum):
     BUILD_CONCEPTS_FROM_DICT = "Build concepts from OMOP Data dictionary"
     REUSE_CONCEPTS = "Reuse concepts from other scan reports"
     GENERATE_RULES = "Generate mapping rules from available concepts"
+    GENERATE_RECOMMENDATIONS = "Generate mapping recommendations"
     DOWNLOAD_RULES = "Generate and download mapping rules JSON"

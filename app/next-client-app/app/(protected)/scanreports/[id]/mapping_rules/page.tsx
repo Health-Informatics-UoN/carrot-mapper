@@ -1,4 +1,3 @@
-import { FilterParameters } from "@/types/filter";
 import { getMappingRulesList } from "@/api/mapping-rules";
 import { objToQuery } from "@/lib/client-utils";
 import { DataTable } from "@/components/data-table";

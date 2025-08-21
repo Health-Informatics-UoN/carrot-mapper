@@ -4,7 +4,6 @@ import { Button } from "../ui/button";
 import { Sparkles, Loader2 } from "lucide-react";
 import AISuggestionDialog from "./ai-suggestions-dialog";
 import { getConceptRecommendationsUnison } from "@/api/recommendations";
-import { UnisonConceptItem } from "@/types/recommendation";
 import { addConcept } from "@/api/concepts";
 import { toast } from "sonner";
 import {
@@ -44,10 +43,8 @@ export function AISuggestionsButton({
 
     try {
       // Call the getConceptRecommendations function
-      const recommendations = await getConceptRecommendationsUnison(
-        value,
-        domainId
-      );
+      const recommendations: UnisonConceptResponse =
+        await getConceptRecommendationsUnison(value, domainId);
       // Filter to get only unique concept IDs
       const uniqueRecommendations = recommendations.items.filter(
         (item, index, array) =>

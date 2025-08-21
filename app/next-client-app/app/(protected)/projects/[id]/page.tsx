@@ -1,6 +1,5 @@
 import { DataTable } from "@/components/data-table";
 import { objToQuery } from "@/lib/client-utils";
-import { FilterParameters } from "@/types/filter";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DataTableFilter } from "@/components/data-table/DataTableFilter";
 import { getDataSets } from "@/api/datasets";

@@ -11,6 +11,19 @@ from mapping.models import (
     ScanReport,
     VisibilityChoices,
 )
+from django.contrib.contenttypes.models import ContentType
+from data.models import Concept
+from mapping.models import (
+    ScanReport,
+    ScanReportTable,
+    ScanReportField,
+    ScanReportValue,
+    MappingRecommendation,
+)
+from api.serializers import (
+    MappingRecommendationSerializerV3,
+    ScanReportValueViewSerializerV3,
+)
 
 
 class TestScanReportEditSerializer(TestCase):
@@ -370,3 +383,87 @@ class TestDatasetEditSerializer(TestCase):
         # check admin can alter admins
         request.user = self.admin_user
         self.assertEqual(serializer.validate_admins(new_admin), new_admin)
+
+
+class TestMappingRecommendationSerializerV3(TestCase):
+    def setUp(self):
+        # Create test data
+        self.scan_report = ScanReport.objects.create(
+            dataset="Test Dataset",
+            visibility="PUBLIC",
+        )
+
+        self.table = ScanReportTable.objects.create(
+            scan_report=self.scan_report,
+            name="Test Table",
+        )
+
+        self.field = ScanReportField.objects.create(
+            scan_report_table=self.table,
+            name="Test Field",
+            description_column="Test Description",
+            type_column="string",
+        )
+
+        self.value = ScanReportValue.objects.create(
+            scan_report_field=self.field,
+            value="test_value",
+            frequency=5,
+        )
+
+        # Create a concept for the recommendation
+        self.concept = Concept.objects.create(
+            concept_id=12345,
+            concept_name="Test Concept",
+            concept_code="TEST123",
+            domain_id="Test",
+            vocabulary_id="Test",
+            concept_class_id="Test",
+            standard_concept="S",
+            valid_start_date="2020-01-01",
+            valid_end_date="2099-12-31",
+        )
+
+        # Create a mapping recommendation
+        content_type = ContentType.objects.get_for_model(ScanReportValue)
+        self.recommendation = MappingRecommendation.objects.create(
+            content_type=content_type,
+            object_id=self.value.id,
+            concept=self.concept,
+            score=0.85,
+            tool_name="test-tool",
+            tool_version="1.0.0",
+        )
+
+    def test_mapping_recommendation_serializer(self):
+        """Test that MappingRecommendationSerializerV3 serializes correctly."""
+        serializer = MappingRecommendationSerializerV3(self.recommendation)
+        data = serializer.data
+
+        self.assertEqual(data["id"], self.recommendation.id)
+        self.assertEqual(data["score"], 0.85)
+        self.assertEqual(data["tool_name"], "test-tool")
+        self.assertEqual(data["tool_version"], "1.0.0")
+        self.assertEqual(data["concept"]["concept_id"], self.concept.concept_id)
+        self.assertEqual(data["concept"]["concept_name"], self.concept.concept_name)
+
+    def test_scan_report_value_v3_serializer_includes_recommendations(self):
+        """Test that ScanReportValueViewSerializerV3 includes mapping recommendations."""
+        serializer = ScanReportValueViewSerializerV3(self.value)
+        data = serializer.data
+
+        # Check that mapping recommendations are included
+        self.assertIn("mapping_recommendations", data)
+        self.assertEqual(len(data["mapping_recommendations"]), 1)
+
+        recommendation_data = data["mapping_recommendations"][0]
+        self.assertEqual(recommendation_data["id"], self.recommendation.id)
+        self.assertEqual(recommendation_data["score"], 0.85)
+        self.assertEqual(recommendation_data["tool_name"], "test-tool")
+        self.assertEqual(recommendation_data["tool_version"], "1.0.0")
+        self.assertEqual(
+            recommendation_data["concept"]["concept_id"], self.concept.concept_id
+        )
+        self.assertEqual(
+            recommendation_data["concept"]["concept_name"], self.concept.concept_name
+        )
