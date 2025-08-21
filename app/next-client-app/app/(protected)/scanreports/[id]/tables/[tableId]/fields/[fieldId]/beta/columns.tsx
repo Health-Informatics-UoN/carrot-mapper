@@ -6,6 +6,7 @@ import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import CopyButton from "@/components/core/CopyButton";
 import AddConceptV3 from "@/components/concepts/AddConceptV3";
+import { AISuggestionsButton } from "@/components/recommendations/ai-suggesions-button";
 import { StoredRecommendationsButton } from "@/components/recommendations/stored-recommendations-button";
 import { enableAIRecommendation } from "@/constants";
 
@@ -40,6 +41,30 @@ export const columns = (
     }
   },
   {
+    id: "Stored Recommendations",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Stored Recommendations" />
+    ),
+    enableHiding: true,
+    enableSorting: false,
+    cell: ({ row }) => {
+      const { value, id } = row.original;
+
+      return (
+        <div className="flex justify-start w-full">
+          <StoredRecommendationsButton
+            value={value}
+            tableId={tableId}
+            rowId={id}
+            contentType="scanreportvalue"
+            scanReportId={scanReportId}
+            fieldId={row.original.scan_report_field}
+          />
+        </div>
+      );
+    }
+  },
+  {
     id: "AI Suggestions",
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="AI Suggestions" />
@@ -51,15 +76,15 @@ export const columns = (
 
       return (
         <div className="flex justify-start w-full">
-          {enableAIRecommendation === "true" && (
-            <StoredRecommendationsButton
+          {enableAIRecommendation === "true" ? (
+            <AISuggestionsButton
               value={value}
               tableId={tableId}
               rowId={id}
               contentType="scanreportvalue"
-              scanReportId={scanReportId}
-              fieldId={row.original.scan_report_field}
             />
+          ) : (
+            <span className="text-gray-400 text-sm">Disabled</span>
           )}
         </div>
       );
