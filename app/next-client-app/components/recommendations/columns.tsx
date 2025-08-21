@@ -2,7 +2,6 @@
 
 import { ColumnDef } from "@tanstack/react-table";
 import { DataTableColumnHeader } from "@/components/data-table/DataTableColumnHeader";
-import { UnisonConceptItem } from "@/types/recommendation";
 import { Button } from "../ui/button";
 import { Tooltips } from "../core/Tooltips";
 

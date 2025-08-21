@@ -1,4 +1,4 @@
-export interface UnisonConceptItem {
+interface UnisonConceptItem {
   accuracy: number | null;
   conceptId: number;
   conceptName: string;
@@ -9,7 +9,18 @@ export interface UnisonConceptItem {
   explanation: string;
 }
 
-export interface UnisonConceptResponse {
+interface UnisonConceptResponse {
   items: UnisonConceptItem[];
   count: number;
+}
+
+interface MappingRecommendation {
+  id: number;
+  content_type: number;
+  object_id: number;
+  concept: ConceptDetail;
+  score: number | null;
+  tool_name: string;
+  tool_version: string;
+  created_at: Date;
 }

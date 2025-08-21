@@ -4,7 +4,6 @@ import { DataTable } from "@/components/data-table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { objToQuery } from "@/lib/client-utils";
 import { ScanReportsTableFilter } from "@/components/scanreports/ScanReportsTableFilter";
-import { FilterParameters } from "@/types/filter";
 import { FileScan } from "lucide-react";
 import { VisibilityState } from "@tanstack/react-table";
 import { Metadata } from "next";

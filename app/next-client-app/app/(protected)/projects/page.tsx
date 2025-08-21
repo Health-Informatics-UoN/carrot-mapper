@@ -2,7 +2,6 @@ import { DataTable } from "@/components/data-table";
 import { columns } from "./columns";
 import { objToQuery } from "@/lib/client-utils";
 import { DataTableFilter } from "@/components/data-table/DataTableFilter";
-import { FilterParameters } from "@/types/filter";
 import { Folders } from "lucide-react";
 import { getProjectsList } from "@/api/projects";
 import { Metadata } from "next";

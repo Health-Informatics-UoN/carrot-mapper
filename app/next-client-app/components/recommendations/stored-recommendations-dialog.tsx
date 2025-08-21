@@ -3,7 +3,6 @@
 import * as React from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { DataTable } from "../data-table";
-import { UnisonConceptItem } from "@/types/recommendation";
 import { columns } from "./columns";
 import { InfoItem } from "../core/InfoItem";
 
@@ -41,14 +40,14 @@ export default function RecommendationsDialog({
 }: RecommendationsDialogProps) {
   const getSourceLabel = () => {
     return source === "v3"
-      ? "V3 Mapping Recommendations"
-      : "AI Mapping Suggestions";
+      ? "Stored Mapping Recommendations"
+      : "Live Mapping Recommendations";
   };
 
   const getSourceDescription = () => {
     return source === "v3"
       ? "Pre-computed mapping recommendations from the database"
-      : "AI-powered Standard Concept Suggestions";
+      : "Mapping recommendations";
   };
 
   return (

@@ -3,7 +3,6 @@
 import * as React from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { DataTable } from "../data-table";
-import { UnisonConceptItem } from "@/types/recommendation";
 import { columns } from "./columns";
 import { recommendationServiceName } from "@/constants";
 import { InfoItem } from "../core/InfoItem";

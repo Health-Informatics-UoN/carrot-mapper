@@ -3,7 +3,6 @@ import { useState } from "react";
 import { Button } from "../ui/button";
 import { Sparkles, Loader2 } from "lucide-react";
 import RecommendationsDialog from "./stored-recommendations-dialog";
-import { UnisonConceptItem } from "@/types/recommendation";
 import { addConcept } from "@/api/concepts";
 import { getScanReportValuesV3 } from "@/api/scanreports";
 import { toast } from "sonner";
