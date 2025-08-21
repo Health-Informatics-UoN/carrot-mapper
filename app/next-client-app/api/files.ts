@@ -2,8 +2,6 @@
 
 import request from "@/lib/api/request";
 import { revalidatePath } from "next/cache";
-import { FileDownload } from "@/types/files";
-import { FileTypeFormat } from "@/types/files";
 
 const fetchKeys = {
   list: (scan_report_id: number, filter?: string) =>

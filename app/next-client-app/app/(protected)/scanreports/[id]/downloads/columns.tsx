@@ -9,7 +9,6 @@ import { saveAs } from "file-saver";
 import { Badge } from "@/components/ui/badge";
 import { downloadFile } from "@/api/files";
 import { toast } from "sonner";
-import { FileDownload } from "@/types/files";
 
 export const columns: ColumnDef<FileDownload>[] = [
   {

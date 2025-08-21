@@ -9,7 +9,6 @@ import { FileJson, FileSpreadsheet } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { requestFile } from "@/api/files";
-import { FileTypeFormat } from "@/types/files";
 
 type Props = { scanreportId: string };
 
