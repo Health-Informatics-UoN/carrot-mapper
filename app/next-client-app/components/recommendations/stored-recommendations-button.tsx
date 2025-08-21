@@ -1,10 +1,9 @@
 "use client";
 import { useState } from "react";
 import { Button } from "../ui/button";
-import { Sparkles, Loader2 } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import RecommendationsDialog from "./stored-recommendations-dialog";
 import { addConcept } from "@/api/concepts";
-import { getScanReportValuesV3 } from "@/api/scanreports";
 import { toast } from "sonner";
 import {
   DropdownMenu,
@@ -21,8 +20,7 @@ export function StoredRecommendationsButton({
   tableId,
   rowId,
   contentType,
-  scanReportId,
-  fieldId
+  mappingRecommendations
 }: {
   value: string;
   tableId: string;
@@ -30,48 +28,30 @@ export function StoredRecommendationsButton({
   contentType: string;
   scanReportId: string;
   fieldId: number;
+  mappingRecommendations: MappingRecommendation[];
 }) {
-  const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [suggestions, setSuggestions] = useState<UnisonConceptItem[]>([]);
   const [domainId, setDomainId] = useState<string>("");
 
-  // Fetch V3 mapping recommendations from the database
-  const handleClick = async (domainId: string) => {
+  // Handle click to show stored recommendations
+  const handleClick = () => {
     if (!value) {
       toast.error("No value provided to search for recommendations");
       return;
     }
 
-    setIsLoading(true);
-
-    try {
-      const v3Response = await getScanReportValuesV3(
-        scanReportId,
-        tableId,
-        fieldId.toString(),
-        undefined
-      );
-
-      const targetValue = v3Response.results.find(
-        (result) => result.value === value
-      );
-
-      if (targetValue?.mapping_recommendations?.length) {
-        const transformedRecommendations = transformMappingRecommendations(
-          targetValue.mapping_recommendations
-        );
-        setSuggestions(transformedRecommendations);
-        setIsOpen(true);
-      } else {
-        toast.info("No pre-computed recommendations found for this value");
-      }
-    } catch (error) {
-      console.error("Error fetching V3 recommendations:", error);
-      toast.error("Failed to fetch recommendations. Please try again.");
-    } finally {
-      setIsLoading(false);
+    if (!mappingRecommendations || mappingRecommendations.length === 0) {
+      toast.info("No pre-computed recommendations found for this value");
+      return;
     }
+
+    // Transform the recommendations we already have
+    const transformedRecommendations = transformMappingRecommendations(
+      mappingRecommendations
+    );
+    setSuggestions(transformedRecommendations);
+    setIsOpen(true);
   };
 
   // Transform mapping recommendations to expected format
@@ -120,41 +100,47 @@ export function StoredRecommendationsButton({
             <Button
               variant="ghost"
               size="sm"
-              className="border-purple-400 hover:bg-purple-100 hover:text-black dark:hover:bg-gray-700 dark:hover:text-white"
-              disabled={isLoading}
+              className={`border-purple-400 hover:bg-purple-100 hover:text-black dark:hover:bg-gray-700 dark:hover:text-white ${
+                !mappingRecommendations || mappingRecommendations.length === 0
+                  ? "opacity-50 cursor-not-allowed"
+                  : ""
+              }`}
+              disabled={
+                !mappingRecommendations || mappingRecommendations.length === 0
+              }
             >
-              {isLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Sparkles className="h-4 w-4 text-purple-500" />
-              )}
-              Recommendations
+              <Sparkles className="h-4 w-4 text-purple-500" />
+              {mappingRecommendations && mappingRecommendations.length > 0
+                ? `Recommendations (${mappingRecommendations.length})`
+                : "No Recommendations"}
             </Button>
           </div>
         </DropdownMenuTrigger>
-        <DropdownMenuContent
-          align="start"
-          className="w-52 overflow-y-auto max-h-96"
-        >
-          <DropdownMenuLabel className="text-black dark:text-white font-semibold text-center">
-            Select Relevant Domain
-          </DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          {domains.map((domain) => {
-            return (
-              <DropdownMenuItem
-                key={domain.id}
-                className="cursor-pointer hover:bg-blue-100 hover:text-black focus:outline-hidden p-1"
-                onClick={() => {
-                  setDomainId(domain.id);
-                  handleClick(domain.id);
-                }}
-              >
-                {domain.id}
-              </DropdownMenuItem>
-            );
-          })}
-        </DropdownMenuContent>
+        {mappingRecommendations && mappingRecommendations.length > 0 && (
+          <DropdownMenuContent
+            align="start"
+            className="w-52 overflow-y-auto max-h-96"
+          >
+            <DropdownMenuLabel className="text-black dark:text-white font-semibold text-center">
+              Select Relevant Domain
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {domains.map((domain) => {
+              return (
+                <DropdownMenuItem
+                  key={domain.id}
+                  className="cursor-pointer hover:bg-blue-100 hover:text-black focus:outline-hidden p-1"
+                  onClick={() => {
+                    setDomainId(domain.id);
+                    handleClick();
+                  }}
+                >
+                  {domain.id}
+                </DropdownMenuItem>
+              );
+            })}
+          </DropdownMenuContent>
+        )}
       </DropdownMenu>
 
       <RecommendationsDialog

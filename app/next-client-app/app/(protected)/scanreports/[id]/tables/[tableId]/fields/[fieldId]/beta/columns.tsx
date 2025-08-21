@@ -48,7 +48,7 @@ export const columns = (
     enableHiding: true,
     enableSorting: false,
     cell: ({ row }) => {
-      const { value, id } = row.original;
+      const { value, id, mapping_recommendations } = row.original;
 
       return (
         <div className="flex justify-start w-full">
@@ -59,6 +59,7 @@ export const columns = (
             contentType="scanreportvalue"
             scanReportId={scanReportId}
             fieldId={row.original.scan_report_field}
+            mappingRecommendations={mapping_recommendations}
           />
         </div>
       );
