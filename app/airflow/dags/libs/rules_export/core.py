@@ -101,7 +101,6 @@ def build_and_upload_rules_file(**kwargs) -> None:
                 "mapping_json_v2",
                 "json",
             ),
-            # Keep backward compatibility for "json" type
             "json": FileHandlerConfig(
                 lambda: (
                     build_rules_json_v2(scan_report_name, scan_report_id)
