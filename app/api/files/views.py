@@ -77,7 +77,7 @@ class FileDownloadView(GenericAPIView, ListModelMixin, RetrieveModelMixin):
             - scan_report_id (int): The ID of the scan report for which the
             file is to be generated.
             - file_type (str): The type of file to generate (e.g.,
-            'application/json' or 'text/csv').
+            'application/json_v1', 'application/json_v2', or 'text/csv').
 
         Upon successful validation of the input, a message is sent to the
         Rules Export Queue, and a job record is created in the database to
@@ -111,20 +111,35 @@ class FileDownloadView(GenericAPIView, ListModelMixin, RetrieveModelMixin):
                 )
             # Get the scan report model to get the scan report name for both Azure and Airflow tasks later on
             scan_report = ScanReport.objects.get(id=scan_report_id)
+
+            # Determine the JSON version for the message
+            json_version = "v1"  # default
+            if file_type == "application/json_v2":
+                json_version = "v2"
+            elif file_type == "application/json_v1":
+                json_version = "v1"
+
             msg = {
                 "scan_report_id": scan_report_id,
                 "scan_report_name": scan_report.dataset,
                 "user_id": request.user.id,
                 "file_type": file_type,
+                "json_version": json_version,
             }
 
             worker_service.trigger_rules_export(msg)
+
             # Create job record for downloading file
+            file_type_description = (
+                "JSON V1"
+                if file_type == "application/json_v1"
+                else "JSON V2" if file_type == "application/json_v2" else "CSV"
+            )
             Job.objects.create(
                 scan_report=ScanReport.objects.get(id=scan_report_id),
                 stage=JobStage.objects.get(value="DOWNLOAD_RULES"),
                 status=StageStatus.objects.get(value="IN_PROGRESS"),
-                details=f"A Mapping Rules {'JSON' if file_type == 'application/json' else 'CSV'} is being generated.",
+                details=f"A Mapping Rules {file_type_description} is being generated.",
             )
         except json.JSONDecodeError:
             return JsonResponse({"error": "Invalid JSON data."}, status=400)

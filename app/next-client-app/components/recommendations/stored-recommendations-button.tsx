@@ -111,7 +111,7 @@ export function StoredRecommendationsButton({
             >
               <Sparkles className="h-4 w-4 text-purple-500" />
               {mappingRecommendations && mappingRecommendations.length > 0
-                ? `Recommendations (${mappingRecommendations.length})`
+                ? "Recommendations"
                 : "No Recommendations"}
             </Button>
           </div>
