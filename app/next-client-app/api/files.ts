@@ -29,7 +29,7 @@ export async function list(
 
 export async function requestFile(
   scan_report_id: number,
-  file_type: FileTypeFormat | "application/json_v1" | "application/json_v2"
+  file_type: FileTypeFormat
 ): Promise<{ success: boolean; errorMessage?: string }> {
   try {
     await request(fetchKeys.requestFile(scan_report_id), {
