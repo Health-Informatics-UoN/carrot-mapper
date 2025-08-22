@@ -189,7 +189,7 @@ def build_and_upload_rules_file(**kwargs) -> None:
                 scan_report=scan_report_id,
                 stage=JobStageType.DOWNLOAD_RULES,
                 status=StageStatusType.FAILED,
-                details="Export rules file failed: {str(e)}",
+                details=f"Export rules file failed: {str(e)}",
             )
             raise e
     except Exception as e:
