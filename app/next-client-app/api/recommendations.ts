@@ -6,7 +6,6 @@ import {
   unisonApiKey,
   recommendationService,
 } from "@/constants";
-import { UnisonConceptResponse } from "@/types/recommendation";
 
 export const getConceptRecommendationsUnison = async (
   // Unison can query by concept name, or concept code (exact match).

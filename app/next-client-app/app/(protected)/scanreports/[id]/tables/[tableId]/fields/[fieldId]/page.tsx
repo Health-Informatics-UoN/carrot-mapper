@@ -5,7 +5,6 @@ import {
   getScanReportValues,
 } from "@/api/scanreports";
 import { objToQuery } from "@/lib/client-utils";
-import { FilterParameters } from "@/types/filter";
 import {
   getAllConceptsFiltered,
   getAllScanReportConcepts,

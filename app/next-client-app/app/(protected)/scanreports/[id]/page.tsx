@@ -4,7 +4,6 @@ import {
   getScanReportTables,
 } from "@/api/scanreports";
 import { objToQuery } from "@/lib/client-utils";
-import { FilterParameters } from "@/types/filter";
 import ScanReportsTableClient from "@/components/scanreports/ScanReportsTableClient";
 import { DataTableFilter } from "@/components/data-table/DataTableFilter";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbList, BreadcrumbPage } from "@/components/ui/breadcrumb";

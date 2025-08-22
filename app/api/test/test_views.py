@@ -20,6 +20,7 @@ from mapping.models import (
     ScanReportTable,
     ScanReportValue,
     VisibilityChoices,
+    MappingRecommendation,
 )
 
 
@@ -673,13 +674,11 @@ class TestScanReportActiveConceptFilterViewSet(TestCase):
             dataset="The Heights of Hobbits",
             visibility=VisibilityChoices.PUBLIC,
             parent_dataset=self.public_dataset,
-            status="COMPLET",
         )
         self.scanreport2 = ScanReport.objects.create(
             dataset="The Kinds of Orcs",
             visibility=VisibilityChoices.RESTRICTED,
             parent_dataset=self.restricted_dataset,
-            status="COMPLET",
         )
 
         # Set up projects
@@ -701,12 +700,6 @@ class TestScanReportActiveConceptFilterViewSet(TestCase):
             name="Field1",
             description_column="",
             type_column="",
-            max_length=32,
-            nrows=0,
-            nrows_checked=0,
-            fraction_empty=0.0,
-            nunique_values=0,
-            fraction_unique=0.0,
         )
         self.scanreportvalue1 = ScanReportValue.objects.create(
             scan_report_field=self.scanreportfield1,
@@ -745,12 +738,6 @@ class TestScanReportActiveConceptFilterViewSet(TestCase):
             name="Field2",
             description_column="",
             type_column="",
-            max_length=32,
-            nrows=0,
-            nrows_checked=0,
-            fraction_empty=0.0,
-            nunique_values=0,
-            fraction_unique=0.0,
         )
         self.scanreportvalue2 = ScanReportValue.objects.create(
             scan_report_field=self.scanreportfield2,
@@ -805,3 +792,82 @@ class TestScanReportActiveConceptFilterViewSet(TestCase):
         az_response_ids = [item["id"] for item in az_response.data]
         self.assertTrue(self.scanreportconcept2.id in az_response_ids)
         self.assertTrue(self.scanreportconcept4.id in az_response_ids)
+
+    def test_scan_report_value_list_v3_includes_recommendations(self):
+        """Test that ScanReportValueListV3 includes mapping recommendations."""
+        # Create test data
+        scan_report = ScanReport.objects.create(
+            dataset="Test Dataset",
+            visibility=VisibilityChoices.PUBLIC,
+            parent_dataset=self.public_dataset,
+        )
+
+        table = ScanReportTable.objects.create(
+            scan_report=scan_report,
+            name="Test Table",
+        )
+
+        field = ScanReportField.objects.create(
+            scan_report_table=table,
+            name="Test Field",
+            description_column="Test Description",
+            type_column="string",
+        )
+
+        value = ScanReportValue.objects.create(
+            scan_report_field=field,
+            value="test_value",
+            frequency=5,
+        )
+
+        # Create a concept for the recommendation
+        concept = Concept.objects.create(
+            concept_id=12345,
+            concept_name="Test Concept",
+            concept_code="TEST123",
+            domain_id="Test",
+            vocabulary_id="Test",
+            concept_class_id="Test",
+            standard_concept="S",
+            valid_start_date="2020-01-01",
+            valid_end_date="2099-12-31",
+        )
+
+        # Create a mapping recommendation
+        content_type = ContentType.objects.get_for_model(ScanReportValue)
+        recommendation = MappingRecommendation.objects.create(
+            content_type=content_type,
+            object_id=value.id,
+            concept=concept,
+            score=0.85,
+            tool_name="test-tool",
+            tool_version="1.0.0",
+        )
+
+        # Make request
+        url = f"/api/v3/scanreports/{scan_report.id}/tables/{table.id}/fields/{field.id}/values/"
+        response = self.client.get(url)
+
+        # Verify response
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+
+        # Check that the value is returned
+        self.assertEqual(len(data["results"]), 1)
+        value_data = data["results"][0]
+
+        # Check that mapping recommendations are included
+        self.assertIn("mapping_recommendations", value_data)
+        self.assertEqual(len(value_data["mapping_recommendations"]), 1)
+
+        recommendation_data = value_data["mapping_recommendations"][0]
+        self.assertEqual(recommendation_data["id"], recommendation.id)
+        self.assertEqual(recommendation_data["score"], 0.85)
+        self.assertEqual(recommendation_data["tool_name"], "test-tool")
+        self.assertEqual(recommendation_data["tool_version"], "1.0.0")
+        self.assertEqual(
+            recommendation_data["concept"]["concept_id"], concept.concept_id
+        )
+        self.assertEqual(
+            recommendation_data["concept"]["concept_name"], concept.concept_name
+        )

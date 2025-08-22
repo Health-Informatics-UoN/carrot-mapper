@@ -933,7 +933,12 @@ class ScanReportValueListV3(ScanReportPermissionMixin, GenericAPIView, ListModel
             ScanReportValue.objects.filter(scan_report_field=self.field)
             .order_by("id")
             .select_related("scan_report_field")
-            .prefetch_related("concepts", "concepts__concept")
+            .prefetch_related(
+                "concepts",
+                "concepts__concept",
+                "mapping_recommendations",
+                "mapping_recommendations__concept",
+            )
         )
 
     def list(self, request, *args, **kwargs):
