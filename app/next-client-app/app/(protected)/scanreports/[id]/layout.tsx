@@ -1,7 +1,4 @@
-import {
-  getScanReport,
-  getScanReportPermissions,
-} from "@/api/scanreports";
+import { getScanReport, getScanReportPermissions } from "@/api/scanreports";
 import { Forbidden } from "@/components/core/Forbidden";
 import { NavGroup } from "@/components/core/nav-group";
 import DeleteDialog from "@/components/scanreports/DeleteDialog";
@@ -14,7 +11,7 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
   DropdownMenuSeparator,
-  DropdownMenuLabel
+  DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -28,7 +25,11 @@ import { UploadStatusOptions } from "@/constants/scanReportStatus";
 import ExportScanReport from "@/components/scanreports/ExportScanReport";
 import { ActionsDownloadMenu } from "./actions-download-menu";
 
-export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const resolvedParams = await params;
   const scanreport = await getScanReport(resolvedParams.id);
   return {
@@ -39,7 +40,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
 export default async function ScanReportLayout(
   props: Readonly<{
-    params: { id: string };
+    params: Promise<{ id: string }>;
     children: React.ReactNode;
   }>
 ) {
@@ -57,11 +58,11 @@ export default async function ScanReportLayout(
     {
       name: "Tables",
       iconName: "TableProperties",
-      matchPrefixes: ["tables"]
+      matchPrefixes: ["tables"],
     },
     { name: "Rules", slug: "mapping_rules", iconName: "Waypoints" },
     { name: "Review Rules", slug: "review_rules", iconName: "SearchCheck" },
-    { name: "Downloads", slug: "downloads", iconName: "Download" }
+    { name: "Downloads", slug: "downloads", iconName: "Download" },
   ];
 
   {
@@ -71,7 +72,7 @@ export default async function ScanReportLayout(
     items.push({
       name: "Edit Details",
       slug: "details",
-      iconName: "Edit"
+      iconName: "Edit",
     });
   }
 
@@ -144,25 +145,28 @@ export default async function ScanReportLayout(
             }
           />
         </div>
-        
       </div>
       <div className="hidden md:flex flex-col md:flex-row md:items-center h-7 text-sm space-y-2 md:space-y-0 divide-y md:divide-y-0 md:divide-x">
         <div className="flex items-center gap-2 text-muted-foreground">
-            Members:{" "}
-            <AvatarList
-              members={[scanreport.author, ...scanreport.viewers, ...scanreport.editors].filter(
-                (member, index, self) =>
-                  index === self.findIndex((m) => m.id === member.id)
-              )}
-            />
+          Members:{" "}
+          <AvatarList
+            members={[
+              scanreport.author,
+              ...scanreport.viewers,
+              ...scanreport.editors,
+            ].filter(
+              (member, index, self) =>
+                index === self.findIndex((m) => m.id === member.id)
+            )}
+          />
         </div>
       </div>
       {/* "Navs" group */}
       <div className="flex flex-col md:flex-row justify-between mt-6 md:mt-0">
         <div>
           <NavGroup
-          path={`/scanreports/${params.id}`}
-          items={items.map(x => ({ ...x, text: x.name }))}
+            path={`/scanreports/${params.id}`}
+            items={items.map((x) => ({ ...x, text: x.name }))}
           />
         </div>
 
