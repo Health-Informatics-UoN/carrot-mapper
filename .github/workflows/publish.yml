@@ -1,4 +1,4 @@
-name: Publish release images to Github Registry
+name: Create Release Images
 
 on:
   release:
@@ -18,12 +18,51 @@ jobs:
       - name: Check out the repo
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@29109295f81e9208d7d86ff1c6c12d2833863392 # v3.6.0
+      # Read source version from pyproject.toml
+      - uses: SebRollen/toml-action@b1b3628f55fc3a28208d4203ada8b737e9687876 # v1.2.0
+        id: read_version
+        with:
+          file: app/api/pyproject.toml
+          field: project.version
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@f95db51fddba0c2d1ec667646a06c2ce06100226 # v3.0.0
+      # Parse version from release tag
+      - name: Parse version from tag
+        id: version
+        uses: release-kit/semver@97491c46500b6e758ced599794164a234b8aa08c # v2.0.7
 
+      # Fail on Version Mismatch
+      - name: Fail on Version Mismatch
+        if: ${{ steps.read_version.outputs.value != steps.version.outputs.full }}
+        run: |
+          echo "::error::Release tag version '${{ steps.version.outputs.full }}' doesn't match source version '${{ steps.read_version.outputs.value }}'"
+          exit 1
+
+      # Check that edge images exist
+      - uses: tyriis/docker-image-tag-exists@71a750a41aa78e4efb0842f538140c5df5b8166f # v2.1.0
+        with:
+          registry: ${{ env.registry }}
+          repository: ${{ env.repo-owner }}/${{ env.app-name }}/frontend
+          tag: edge
+
+      - uses: tyriis/docker-image-tag-exists@71a750a41aa78e4efb0842f538140c5df5b8166f # v2.1.0
+        with:
+          registry: ${{ env.registry }}
+          repository: ${{ env.repo-owner }}/${{ env.app-name }}/backend
+          tag: edge
+
+      - uses: tyriis/docker-image-tag-exists@71a750a41aa78e4efb0842f538140c5df5b8166f # v2.1.0
+        with:
+          registry: ${{ env.registry }}
+          repository: ${{ env.repo-owner }}/${{ env.app-name }}/airflow-webserver
+          tag: edge
+
+      - uses: tyriis/docker-image-tag-exists@71a750a41aa78e4efb0842f538140c5df5b8166f # v2.1.0
+        with:
+          registry: ${{ env.registry }}
+          repository: ${{ env.repo-owner }}/${{ env.app-name }}/airflow-scheduler
+          tag: edge
+
+      # Docker Login
       - name: Docker Login
         uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3.0.0
         with:
@@ -31,45 +70,52 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set timestamp env var
-        run: echo "RUN_TIMESTAMP=$(TZ="Etc/UTC" date +'%Y%m%d%H%M%S')" >> $GITHUB_ENV
-
-      # Tag and build frontend
-      - name: Extract frontend Docker metadata
-        id: frontend_meta
+      # Use metadata action to generate tags
+      - name: Docker Metadata action
+        id: meta
         uses: docker/metadata-action@902fa8ec7d6ecbf8d84d538b9b233a880e428804 # v5.7.0
         with:
-          images: ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/frontend
+          images: |
+            ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/frontend
+            ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/backend
+            ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/airflow-webserver
+            ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/airflow-scheduler
           tags: |
-            ${{ github.event.release.tag_name }}
-            ${{ github.sha }}
-            ${{ env.RUN_TIMESTAMP }}
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}
+            type=semver,pattern={{major}}.{{minor}}
 
-      - name: Build and push frontend image
-        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+      # Retag frontend edge image with release version
+      - name: Push frontend image tags
+        uses: akhilerm/tag-push-action@f35ff2cb99d407368b5c727adbcc14a2ed81d509 # v2.2.0
         with:
-          context: ./app/next-client-app
-          file: ./app/next-client-app/Dockerfile
-          push: true
-          platforms: linux/amd64,linux/arm64
-          tags: ${{ steps.frontend_meta.outputs.tags }}
+          src: ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/frontend:edge
+          dst: ${{ steps.meta.outputs.tags }}
 
-      # Tag and build backend
-      - name: Extract backend Docker metadata
-        id: backend_meta
-        uses: docker/metadata-action@902fa8ec7d6ecbf8d84d538b9b233a880e428804 # v5.7.0
+      # Retag backend edge image with release version
+      - name: Push backend image tags
+        uses: akhilerm/tag-push-action@f35ff2cb99d407368b5c727adbcc14a2ed81d509 # v2.2.0
         with:
-          images: ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/backend
-          tags: |
-            ${{ github.event.release.tag_name }}
-            ${{ github.sha }}
-            ${{ env.RUN_TIMESTAMP }}
+          src: ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/backend:edge
+          dst: ${{ steps.meta.outputs.tags }}
 
-      - name: Build and push backend image
-        uses:  docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+      # Retag Airflow webserver edge image with release version
+      - name: Push Airflow webserver image tags
+        uses: akhilerm/tag-push-action@f35ff2cb99d407368b5c727adbcc14a2ed81d509 # v2.2.0
         with:
-          context: ./app
-          file: ./app/api/Dockerfile
-          push: true
-          platforms: linux/amd64,linux/arm64
-          tags: ${{ steps.backend_meta.outputs.tags }}
+          src: ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/airflow-webserver:edge
+          dst: ${{ steps.meta.outputs.tags }}
+
+      # Retag Airflow scheduler edge image with release version
+      - name: Push Airflow scheduler image tags
+        uses: akhilerm/tag-push-action@f35ff2cb99d407368b5c727adbcc14a2ed81d509 # v2.2.0
+        with:
+          src: ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/airflow-scheduler:edge
+          dst: ${{ steps.meta.outputs.tags }}
+
+      - name: Release Summary
+        run: |
+          echo "✅ Successfully retagged edge images for version: ${{ github.event.release.tag_name }}"
+          echo "📦 Images tagged with: ${{ steps.meta.outputs.tags }}"
+          echo "🔗 Release URL: ${{ github.event.release.html_url }}"
+          echo "📅 Release time: $(date -u)"
