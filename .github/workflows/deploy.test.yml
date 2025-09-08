@@ -1,0 +1,131 @@
+# Deploy to Dev and Test Environments
+#
+# This workflow deploys Docker images to both dev and test environments.
+# It's triggered automatically when build-edge.yml completes, or manually for custom deployments.
+#
+# When to use:
+# - Automatically triggered after edge images are built (production pipeline)
+# - Manually triggered to deploy specific image tags to dev/test
+#
+# What it does:
+# - Deploys to dev environment first
+# - Then deploys to test environment (if dev succeeds)
+# - Validates image existence before deployment
+# - Uses edge tag by default, or custom tag if specified
+
+name: Deploy to Dev and Test
+
+on:
+  workflow_run:
+    workflows: ["Build and Push Edge Images"]
+    types:
+      - completed
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Image tag to deploy (defaults to edge)'
+        required: false
+        default: 'edge'
+
+env:
+  app-name: carrot
+  repo-owner: health-informatics-uon
+  registry: ghcr.io
+
+permissions:
+  contents: read
+
+jobs:
+  deploy-to-dev:
+    runs-on: ubuntu-latest
+    environment: dev
+    steps:
+      # Check that images exist before deploying (only for manual dispatch with custom tags)
+      - uses: tyriis/docker-image-tag-exists@71a750a41aa78e4efb0842f538140c5df5b8166f # v2.1.0
+        if: ${{ github.event.inputs.image_tag != '' && github.event.inputs.image_tag != 'edge' }}
+        with:
+          registry: ${{ env.registry }}
+          repository: ${{ env.repo-owner }}/${{ env.app-name }}/backend
+          tag: ${{ github.event.inputs.image_tag }}
+
+      - uses: tyriis/docker-image-tag-exists@71a750a41aa78e4efb0842f538140c5df5b8166f # v2.1.0
+        if: ${{ github.event.inputs.image_tag != '' && github.event.inputs.image_tag != 'edge' }}
+        with:
+          registry: ${{ env.registry }}
+          repository: ${{ env.repo-owner }}/${{ env.app-name }}/frontend
+          tag: ${{ github.event.inputs.image_tag }}
+
+      - uses: tyriis/docker-image-tag-exists@71a750a41aa78e4efb0842f538140c5df5b8166f # v2.1.0
+        if: ${{ github.event.inputs.image_tag != '' && github.event.inputs.image_tag != 'edge' }}
+        with:
+          registry: ${{ env.registry }}
+          repository: ${{ env.repo-owner }}/${{ env.app-name }}/airflow-webserver
+          tag: ${{ github.event.inputs.image_tag }}
+
+      - uses: tyriis/docker-image-tag-exists@71a750a41aa78e4efb0842f538140c5df5b8166f # v2.1.0
+        if: ${{ github.event.inputs.image_tag != '' && github.event.inputs.image_tag != 'edge' }}
+        with:
+          registry: ${{ env.registry }}
+          repository: ${{ env.repo-owner }}/${{ env.app-name }}/airflow-scheduler
+          tag: ${{ github.event.inputs.image_tag }}
+
+      - name: Deploy Backend to Dev
+        uses: azure/webapps-deploy@2fdd5c3ebb4e540834e86ecc1f6fdcd5539023ee # v3.0.2
+        with:
+          app-name: ${{ vars.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          images: ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/backend:${{ github.event.inputs.image_tag || 'edge' }}
+
+      - name: Deploy Frontend to Dev
+        uses: azure/webapps-deploy@2fdd5c3ebb4e540834e86ecc1f6fdcd5539023ee # v3.0.2
+        with:
+          app-name: ${{ vars.AZURE_WEBAPP_NEXT_NAME }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_NEXT_PUBLISH_PROFILE }}
+          images: ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/frontend:${{ github.event.inputs.image_tag || 'edge' }}
+
+      - name: Deploy Airflow Webserver to Dev
+        uses: azure/webapps-deploy@2fdd5c3ebb4e540834e86ecc1f6fdcd5539023ee # v3.0.2
+        with:
+          app-name: ${{ vars.AIRFLOW_WEBSERVER_NAME }}
+          publish-profile: ${{ secrets.AIRFLOW_WEBSERVER_PUBLISH_PROFILE }}
+          images: ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/airflow-webserver:${{ github.event.inputs.image_tag || 'edge' }}
+
+      - name: Deploy Airflow Scheduler to Dev
+        uses: azure/webapps-deploy@2fdd5c3ebb4e540834e86ecc1f6fdcd5539023ee # v3.0.2
+        with:
+          app-name: ${{ vars.AIRFLOW_SCHEDULER_NAME }}
+          publish-profile: ${{ secrets.AIRFLOW_SCHEDULER_PUBLISH_PROFILE }}
+          images: ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/airflow-scheduler:${{ github.event.inputs.image_tag || 'edge' }}
+
+  deploy-to-test:
+    runs-on: ubuntu-latest
+    environment: test
+    needs: [deploy-to-dev]
+    steps:
+      - name: Deploy Backend to Test
+        uses: azure/webapps-deploy@2fdd5c3ebb4e540834e86ecc1f6fdcd5539023ee # v3.0.2
+        with:
+          app-name: ${{ vars.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          images: ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/backend:${{ github.event.inputs.image_tag || 'edge' }}
+
+      - name: Deploy Frontend to Test
+        uses: azure/webapps-deploy@2fdd5c3ebb4e540834e86ecc1f6fdcd5539023ee # v3.0.2
+        with:
+          app-name: ${{ vars.AZURE_WEBAPP_NEXT_NAME }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_NEXT_PUBLISH_PROFILE }}
+          images: ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/frontend:${{ github.event.inputs.image_tag || 'edge' }}
+
+      - name: Deploy Airflow Webserver to Test
+        uses: azure/webapps-deploy@2fdd5c3ebb4e540834e86ecc1f6fdcd5539023ee # v3.0.2
+        with:
+          app-name: ${{ vars.AIRFLOW_WEBSERVER_NAME }}
+          publish-profile: ${{ secrets.AIRFLOW_WEBSERVER_PUBLISH_PROFILE }}
+          images: ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/airflow-webserver:${{ github.event.inputs.image_tag || 'edge' }}
+
+      - name: Deploy Airflow Scheduler to Test
+        uses: azure/webapps-deploy@2fdd5c3ebb4e540834e86ecc1f6fdcd5539023ee # v3.0.2
+        with:
+          app-name: ${{ vars.AIRFLOW_SCHEDULER_NAME }}
+          publish-profile: ${{ secrets.AIRFLOW_SCHEDULER_PUBLISH_PROFILE }}
+          images: ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/airflow-scheduler:${{ github.event.inputs.image_tag || 'edge' }}
