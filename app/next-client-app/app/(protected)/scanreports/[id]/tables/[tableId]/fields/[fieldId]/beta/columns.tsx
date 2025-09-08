@@ -8,7 +8,7 @@ import CopyButton from "@/components/core/CopyButton";
 import AddConceptV3 from "@/components/concepts/AddConceptV3";
 import { AISuggestionsButton } from "@/components/recommendations/ai-suggesions-button";
 import { StoredRecommendationsButton } from "@/components/recommendations/stored-recommendations-button";
-import { enableAIRecommendation } from "@/constants";
+import { enableAIRecommendation, enableStoredRecommendation } from "@/constants";
 
 export const columns = (
   tableId: string,
@@ -51,6 +51,7 @@ export const columns = (
       const { value, id, mapping_recommendations } = row.original;
 
       return (
+        enableStoredRecommendation === "true" && (
         <div className="flex justify-start w-full">
           <StoredRecommendationsButton
             value={value}
@@ -59,9 +60,10 @@ export const columns = (
             contentType="scanreportvalue"
             scanReportId={scanReportId}
             fieldId={row.original.scan_report_field}
-            mappingRecommendations={mapping_recommendations}
-          />
-        </div>
+              mappingRecommendations={mapping_recommendations}
+            />
+          </div>
+        )
       );
     }
   },
