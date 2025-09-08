@@ -17,6 +17,10 @@ export const enableAIRecommendation = env(
   "NEXT_PUBLIC_ENABLE_AI_RECOMMENDATION"
 );
 
+export const enableStoredRecommendation = env(
+  "NEXT_PUBLIC_ENABLE_STORED_RECOMMENDATION"
+);
+
 export const recommendationServiceName = env(
   "NEXT_PUBLIC_RECOMMENDATION_SERVICE_NAME"
 );
