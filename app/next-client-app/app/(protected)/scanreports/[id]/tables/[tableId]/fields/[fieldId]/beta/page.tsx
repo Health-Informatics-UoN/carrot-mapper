@@ -5,7 +5,6 @@ import {
   getScanReportValuesV3,
 } from "@/api/scanreports";
 import { objToQuery } from "@/lib/client-utils";
-import { FilterParameters } from "@/types/filter";
 import { columns } from "./columns";
 import { ConceptDataTableV3 } from "@/components/concepts/ConceptDataTableV3";
 import { TableBreadcrumbs } from "@/components/scanreports/TableBreadcrumbs";

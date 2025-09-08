@@ -1,7 +1,6 @@
 "use client";
 
 import { CheckIcon } from "@radix-ui/react-icons";
-import { FilterOption } from "@/types/filter";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";

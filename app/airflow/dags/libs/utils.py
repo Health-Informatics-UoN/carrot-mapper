@@ -270,12 +270,19 @@ def _validate_dag_params(
             if param == "file_type":
                 if value == "application/json":
                     value = "json"
+                elif value == "application/json_v1":
+                    value = "application/json_v1"
+                elif value == "application/json_v2":
+                    value = "application/json_v2"
                 elif value == "text/csv":
                     value = "csv"
                 else:
                     errors.append(
-                        f"Invalid {param}: {value}. Must be application/json or text/csv."
+                        f"Invalid {param}: {value}. Must be application/json, application/json_v1, application/json_v2, or text/csv."
                     )
+            elif param == "json_version":
+                if value not in ["v1", "v2"]:
+                    errors.append(f"Invalid {param}: {value}. Must be v1 or v2.")
             validated_params[param] = value
 
     # Validate boolean parameters
@@ -357,7 +364,7 @@ def validate_params_SR_processing(**context):
 def validate_params_rules_export(**context):
     """Validates parameters required for rules export DAG tasks."""
     int_params = ["scan_report_id", "user_id"]
-    string_params = ["file_type", "scan_report_name"]
+    string_params = ["file_type", "scan_report_name", "json_version"]
     return _validate_dag_params(
         int_params=int_params,
         string_params=string_params,

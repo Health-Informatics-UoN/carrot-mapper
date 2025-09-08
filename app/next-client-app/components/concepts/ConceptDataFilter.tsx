@@ -2,7 +2,6 @@
 
 import { FacetsFilter } from "@/components/scanreports/FacetsFilter";
 import { navigateWithSearchParam } from "@/lib/client-utils";
-import { FilterOption } from "@/types/filter";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { DataTableFilter } from "../data-table/DataTableFilter";

@@ -93,6 +93,7 @@ interface ScanReportValue {
   permissions: Permission[];
 }
 
+
 interface ScanReportValueV3 {
   id: number;
   value: string;
@@ -100,4 +101,5 @@ interface ScanReportValueV3 {
   value_description: string;
   scan_report_field: number;
   concepts: ScanReportConceptV3[];
+  mapping_recommendations: MappingRecommendation[];
 }

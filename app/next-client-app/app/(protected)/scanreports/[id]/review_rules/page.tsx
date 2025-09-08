@@ -1,7 +1,6 @@
 import { columns } from "@/app/(protected)/scanreports/[id]/mapping_rules/columns";
 import { getSummaryRules } from "@/api/mapping-rules";
 import { DataTable } from "@/components/data-table";
-import { FilterParameters } from "@/types/filter";
 import { objToQuery } from "@/lib/client-utils";
 import { RulesButton } from "../mapping_rules/rules-buttons";
 import { getScanReport } from "@/api/scanreports";

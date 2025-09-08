@@ -7,6 +7,7 @@
           "display_name": "Mapping Rules JSON"
       }
   },
+  
   {
       "model": "files.filetype",
       "pk": 2,
@@ -38,5 +39,13 @@
           "value": "data_dictionary",
           "display_name": "Data Dictionary"
       }
+  },
+  {
+    "model": "files.filetype",
+    "pk": 6,
+    "fields": {
+        "value": "mapping_json_v2",
+        "display_name": "Mapping Rules JSON V2"
+    }
   }
 ]

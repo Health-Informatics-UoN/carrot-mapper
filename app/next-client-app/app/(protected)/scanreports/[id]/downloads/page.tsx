@@ -1,4 +1,3 @@
-import { FilterParameters } from "@/types/filter";
 import { objToQuery } from "@/lib/client-utils";
 import { DataTable } from "@/components/data-table";
 import { list } from "@/api/files";

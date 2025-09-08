@@ -40,13 +40,22 @@ def pre_process_rules(**kwargs) -> None:
     validated_params = pull_validated_params(kwargs, "validate_params_rules_export")
     scan_report_id = validated_params["scan_report_id"]
     file_type = validated_params["file_type"]
+
+    # Map file types to temp table suffixes
+    if file_type in ["application/json_v1", "application/json_v2"]:
+        temp_table_suffix = "json"
+    elif file_type == "csv":
+        temp_table_suffix = "csv"
+    else:
+        temp_table_suffix = file_type
+
     try:
         #  Create or update the temp table with the processed rules data
         pg_hook.run(
             create_update_temp_rules_table_query
             % {
                 "scan_report_id": scan_report_id,
-                "file_type": file_type,
+                "file_type": temp_table_suffix,
             },
         )
     except Exception as e:
@@ -70,6 +79,9 @@ def build_and_upload_rules_file(**kwargs) -> None:
     user_id = validated_params["user_id"]
     scan_report_name = validated_params["scan_report_name"]
     file_type = validated_params["file_type"]
+    json_version = validated_params.get(
+        "json_version", "v1"
+    )  # default to v1 if not specified
 
     try:
         # Setup file config. (Credit: @AndyRae)
@@ -79,13 +91,27 @@ def build_and_upload_rules_file(**kwargs) -> None:
                 "mapping_csv",
                 "csv",
             ),
+            "application/json_v1": FileHandlerConfig(
+                lambda: build_rules_json(scan_report_name, scan_report_id),
+                "mapping_json",
+                "json",
+            ),
+            "application/json_v2": FileHandlerConfig(
+                lambda: build_rules_json_v2(scan_report_name, scan_report_id),
+                "mapping_json_v2",
+                "json",
+            ),
             "json": FileHandlerConfig(
                 lambda: (
                     build_rules_json_v2(scan_report_name, scan_report_id)
                     if AIRFLOW_VAR_JSON_VERSION == "v2"
                     else build_rules_json(scan_report_name, scan_report_id)
                 ),
-                "mapping_json",
+                (
+                    "mapping_json_v2"
+                    if AIRFLOW_VAR_JSON_VERSION == "v2"
+                    else "mapping_json"
+                ),
                 "json",
             ),
         }
@@ -97,7 +123,11 @@ def build_and_upload_rules_file(**kwargs) -> None:
         file_extension = config.file_extension
 
         # build file name
-        filename = f"Rules - {scan_report_name} - {scan_report_id} - {datetime.now()}.{file_extension}"
+        if file_type in ["application/json_v1", "application/json_v2"]:
+            version = "V1" if file_type == "application/json_v1" else "V2"
+            filename = f"Rules - {scan_report_name} - {scan_report_id} - {version} - {datetime.now()}.{file_extension}"
+        else:
+            filename = f"Rules - {scan_report_name} - {scan_report_id} - {datetime.now()}.{file_extension}"
 
         # Upload to blob storage
         upload_blob_to_storage(
@@ -146,7 +176,11 @@ def build_and_upload_rules_file(**kwargs) -> None:
                 "DROP TABLE IF EXISTS temp_rules_export_%(scan_report_id)s_%(file_type)s"
                 % {
                     "scan_report_id": scan_report_id,
-                    "file_type": file_type,
+                    "file_type": (
+                        "json"
+                        if file_type in ["application/json_v1", "application/json_v2"]
+                        else file_type
+                    ),
                 }
             )
         except Exception as e:
@@ -159,7 +193,7 @@ def build_and_upload_rules_file(**kwargs) -> None:
             )
             raise e
     except Exception as e:
-        logging.error(f"Error creating file entry: {str(e)}")
+        logging.error(f"Error building and uploading rules file: {str(e)}")
         update_job_status(
             scan_report=scan_report_id,
             stage=JobStageType.DOWNLOAD_RULES,

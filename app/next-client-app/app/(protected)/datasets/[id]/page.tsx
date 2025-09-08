@@ -4,8 +4,8 @@ import { DataTable } from "@/components/data-table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { objToQuery } from "@/lib/client-utils";
 import { ScanReportsTableFilter } from "@/components/scanreports/ScanReportsTableFilter";
-import { FilterParameters } from "@/types/filter";
 import { VisibilityState } from "@tanstack/react-table";
+import { EmptyState } from "@/components/ui/empty-state";
 
 interface DataSetListProps {
   params: Promise<{
@@ -35,7 +35,7 @@ export default async function DatasetSRList(props: DataSetListProps) {
   // Define which columns should be hidden by default
   const initialColumnVisibility: VisibilityState = {
     id: false,
-    Dataset: false,
+    Dataset: false
   };
 
   return (
@@ -57,24 +57,40 @@ export default async function DatasetSRList(props: DataSetListProps) {
         </a>
       </TabsList>
       <TabsContent value="active">
-        <DataTable
-          columns={columns}
-          data={scanReports.results}
-          count={scanReports.count}
-          Filter={filter}
-          initialColumnVisibility={initialColumnVisibility}
-          defaultPageSize={defaultPageSize}
-        />
+        {scanReports.results.length > 0 ? (
+          <DataTable
+            columns={columns}
+            data={scanReports.results}
+            count={scanReports.count}
+            Filter={filter}
+            initialColumnVisibility={initialColumnVisibility}
+            defaultPageSize={defaultPageSize}
+          />
+        ) : (
+          <EmptyState
+            icon="filescan"
+            title="No scan reports in this dataset"
+            description="No scan reports found in this dataset yet."
+          />
+        )}
       </TabsContent>
       <TabsContent value="archived">
-        <DataTable
-          columns={columns}
-          data={scanReports.results}
-          count={scanReports.count}
-          Filter={filter}
-          initialColumnVisibility={initialColumnVisibility}
-          defaultPageSize={defaultPageSize}
-        />
+        {scanReports.results.length > 0 ? (
+          <DataTable
+            columns={columns}
+            data={scanReports.results}
+            count={scanReports.count}
+            Filter={filter}
+            initialColumnVisibility={initialColumnVisibility}
+            defaultPageSize={defaultPageSize}
+          />
+        ) : (
+          <EmptyState
+            icon="filescan"
+            title="No archived reports"
+            description="No archived scan reports found in this dataset. Active reports will appear here when archived."
+          />
+        )}
       </TabsContent>
     </Tabs>
   );
