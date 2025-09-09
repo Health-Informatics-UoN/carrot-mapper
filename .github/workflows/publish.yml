@@ -74,16 +74,45 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # Use metadata action to generate tags
-      - name: Docker Metadata action
-        id: meta
+      # Use metadata action to generate tags for frontend
+      - name: Docker Metadata action - Frontend
+        id: meta-frontend
         uses: docker/metadata-action@902fa8ec7d6ecbf8d84d538b9b233a880e428804 # v5.7.0
         with:
-          images: |
-            ${{ env.registry }}/${{ env.REPO_OWNER_LOWER }}/${{ env.app-name }}/frontend
-            ${{ env.registry }}/${{ env.REPO_OWNER_LOWER }}/${{ env.app-name }}/backend
-            ${{ env.registry }}/${{ env.REPO_OWNER_LOWER }}/${{ env.app-name }}/airflow-webserver
-            ${{ env.registry }}/${{ env.REPO_OWNER_LOWER }}/${{ env.app-name }}/airflow-scheduler
+          images: ${{ env.registry }}/${{ env.REPO_OWNER_LOWER }}/${{ env.app-name }}/frontend
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}
+            type=semver,pattern={{major}}.{{minor}}
+
+      # Use metadata action to generate tags for backend
+      - name: Docker Metadata action - Backend
+        id: meta-backend
+        uses: docker/metadata-action@902fa8ec7d6ecbf8d84d538b9b233a880e428804 # v5.7.0
+        with:
+          images: ${{ env.registry }}/${{ env.REPO_OWNER_LOWER }}/${{ env.app-name }}/backend
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}
+            type=semver,pattern={{major}}.{{minor}}
+
+      # Use metadata action to generate tags for airflow-webserver
+      - name: Docker Metadata action - Airflow Webserver
+        id: meta-airflow-webserver
+        uses: docker/metadata-action@902fa8ec7d6ecbf8d84d538b9b233a880e428804 # v5.7.0
+        with:
+          images: ${{ env.registry }}/${{ env.REPO_OWNER_LOWER }}/${{ env.app-name }}/airflow-webserver
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}
+            type=semver,pattern={{major}}.{{minor}}
+
+      # Use metadata action to generate tags for airflow-scheduler
+      - name: Docker Metadata action - Airflow Scheduler
+        id: meta-airflow-scheduler
+        uses: docker/metadata-action@902fa8ec7d6ecbf8d84d538b9b233a880e428804 # v5.7.0
+        with:
+          images: ${{ env.registry }}/${{ env.REPO_OWNER_LOWER }}/${{ env.app-name }}/airflow-scheduler
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}
@@ -94,32 +123,35 @@ jobs:
         uses: akhilerm/tag-push-action@f35ff2cb99d407368b5c727adbcc14a2ed81d509 # v2.2.0
         with:
           src: ${{ env.registry }}/${{ env.REPO_OWNER_LOWER }}/${{ env.app-name }}/frontend:edge
-          dst: ${{ steps.meta.outputs.tags }}
+          dst: ${{ steps.meta-frontend.outputs.tags }}
 
       # Retag backend edge image with release version
       - name: Push backend image tags
         uses: akhilerm/tag-push-action@f35ff2cb99d407368b5c727adbcc14a2ed81d509 # v2.2.0
         with:
           src: ${{ env.registry }}/${{ env.REPO_OWNER_LOWER }}/${{ env.app-name }}/backend:edge
-          dst: ${{ steps.meta.outputs.tags }}
+          dst: ${{ steps.meta-backend.outputs.tags }}
 
       # Retag Airflow webserver edge image with release version
       - name: Push Airflow webserver image tags
         uses: akhilerm/tag-push-action@f35ff2cb99d407368b5c727adbcc14a2ed81d509 # v2.2.0
         with:
           src: ${{ env.registry }}/${{ env.REPO_OWNER_LOWER }}/${{ env.app-name }}/airflow-webserver:edge
-          dst: ${{ steps.meta.outputs.tags }}
+          dst: ${{ steps.meta-airflow-webserver.outputs.tags }}
 
       # Retag Airflow scheduler edge image with release version
       - name: Push Airflow scheduler image tags
         uses: akhilerm/tag-push-action@f35ff2cb99d407368b5c727adbcc14a2ed81d509 # v2.2.0
         with:
           src: ${{ env.registry }}/${{ env.REPO_OWNER_LOWER }}/${{ env.app-name }}/airflow-scheduler:edge
-          dst: ${{ steps.meta.outputs.tags }}
+          dst: ${{ steps.meta-airflow-scheduler.outputs.tags }}
 
       - name: Release Summary
         run: |
           echo "✅ Successfully retagged edge images for version: ${{ github.event.release.tag_name }}"
-          echo "📦 Images tagged with: ${{ steps.meta.outputs.tags }}"
+          echo "📦 Frontend image tagged with: ${{ steps.meta-frontend.outputs.tags }}"
+          echo "📦 Backend image tagged with: ${{ steps.meta-backend.outputs.tags }}"
+          echo "📦 Airflow webserver image tagged with: ${{ steps.meta-airflow-webserver.outputs.tags }}"
+          echo "📦 Airflow scheduler image tagged with: ${{ steps.meta-airflow-scheduler.outputs.tags }}"
           echo "🔗 Release URL: ${{ github.event.release.html_url }}"
           echo "📅 Release time: $(date -u)"
