@@ -18,6 +18,10 @@ jobs:
       - name: Check out the repo
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
+      - name: downcase repo-owner
+        run: |
+          echo "REPO_OWNER_LOWER=${GITHUB_REPOSITORY_OWNER,,}" >>${GITHUB_ENV}
+
       # Read source version from pyproject.toml
       - uses: SebRollen/toml-action@b1b3628f55fc3a28208d4203ada8b737e9687876 # v1.2.0
         id: read_version
@@ -41,25 +45,25 @@ jobs:
       - uses: tyriis/docker-image-tag-exists@71a750a41aa78e4efb0842f538140c5df5b8166f # v2.1.0
         with:
           registry: ${{ env.registry }}
-          repository: ${{ env.repo-owner }}/${{ env.app-name }}/frontend
+          repository: ${{ env.REPO_OWNER_LOWER }}/${{ env.app-name }}/frontend
           tag: edge
 
       - uses: tyriis/docker-image-tag-exists@71a750a41aa78e4efb0842f538140c5df5b8166f # v2.1.0
         with:
           registry: ${{ env.registry }}
-          repository: ${{ env.repo-owner }}/${{ env.app-name }}/backend
+          repository: ${{ env.REPO_OWNER_LOWER }}/${{ env.app-name }}/backend
           tag: edge
 
       - uses: tyriis/docker-image-tag-exists@71a750a41aa78e4efb0842f538140c5df5b8166f # v2.1.0
         with:
           registry: ${{ env.registry }}
-          repository: ${{ env.repo-owner }}/${{ env.app-name }}/airflow-webserver
+          repository: ${{ env.REPO_OWNER_LOWER }}/${{ env.app-name }}/airflow-webserver
           tag: edge
 
       - uses: tyriis/docker-image-tag-exists@71a750a41aa78e4efb0842f538140c5df5b8166f # v2.1.0
         with:
           registry: ${{ env.registry }}
-          repository: ${{ env.repo-owner }}/${{ env.app-name }}/airflow-scheduler
+          repository: ${{ env.REPO_OWNER_LOWER }}/${{ env.app-name }}/airflow-scheduler
           tag: edge
 
       # Docker Login
@@ -76,10 +80,10 @@ jobs:
         uses: docker/metadata-action@902fa8ec7d6ecbf8d84d538b9b233a880e428804 # v5.7.0
         with:
           images: |
-            ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/frontend
-            ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/backend
-            ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/airflow-webserver
-            ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/airflow-scheduler
+            ${{ env.registry }}/${{ env.REPO_OWNER_LOWER }}/${{ env.app-name }}/frontend
+            ${{ env.registry }}/${{ env.REPO_OWNER_LOWER }}/${{ env.app-name }}/backend
+            ${{ env.registry }}/${{ env.REPO_OWNER_LOWER }}/${{ env.app-name }}/airflow-webserver
+            ${{ env.registry }}/${{ env.REPO_OWNER_LOWER }}/${{ env.app-name }}/airflow-scheduler
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}
@@ -89,28 +93,28 @@ jobs:
       - name: Push frontend image tags
         uses: akhilerm/tag-push-action@f35ff2cb99d407368b5c727adbcc14a2ed81d509 # v2.2.0
         with:
-          src: ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/frontend:edge
+          src: ${{ env.registry }}/${{ env.REPO_OWNER_LOWER }}/${{ env.app-name }}/frontend:edge
           dst: ${{ steps.meta.outputs.tags }}
 
       # Retag backend edge image with release version
       - name: Push backend image tags
         uses: akhilerm/tag-push-action@f35ff2cb99d407368b5c727adbcc14a2ed81d509 # v2.2.0
         with:
-          src: ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/backend:edge
+          src: ${{ env.registry }}/${{ env.REPO_OWNER_LOWER }}/${{ env.app-name }}/backend:edge
           dst: ${{ steps.meta.outputs.tags }}
 
       # Retag Airflow webserver edge image with release version
       - name: Push Airflow webserver image tags
         uses: akhilerm/tag-push-action@f35ff2cb99d407368b5c727adbcc14a2ed81d509 # v2.2.0
         with:
-          src: ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/airflow-webserver:edge
+          src: ${{ env.registry }}/${{ env.REPO_OWNER_LOWER }}/${{ env.app-name }}/airflow-webserver:edge
           dst: ${{ steps.meta.outputs.tags }}
 
       # Retag Airflow scheduler edge image with release version
       - name: Push Airflow scheduler image tags
         uses: akhilerm/tag-push-action@f35ff2cb99d407368b5c727adbcc14a2ed81d509 # v2.2.0
         with:
-          src: ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/airflow-scheduler:edge
+          src: ${{ env.registry }}/${{ env.REPO_OWNER_LOWER }}/${{ env.app-name }}/airflow-scheduler:edge
           dst: ${{ steps.meta.outputs.tags }}
 
       - name: Release Summary
