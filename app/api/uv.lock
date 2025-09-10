@@ -4,7 +4,7 @@ requires-python = ">=3.11, <4"
 
 [[package]]
 name = "api"
-version = "4.2.1"
+version = "4.2.2"
 source = { editable = "." }
 dependencies = [
     { name = "azure-common" },
@@ -49,7 +49,7 @@ requires-dist = [
     { name = "azure-storage-blob", specifier = ">=12.25.1,<13" },
     { name = "azure-storage-queue", specifier = ">=12.12.0,<13" },
     { name = "dj-rest-auth", extras = ["with-social"], specifier = "==7.0.1" },
-    { name = "django", specifier = "==5.2.1" },
+    { name = "django", specifier = "==5.2.6" },
     { name = "django-allauth", specifier = "==65.3.0" },
     { name = "django-cors-headers", specifier = ">=4.7.0,<5" },
     { name = "django-extra-views", specifier = ">=0.16.0,<1.0" },
@@ -425,16 +425,16 @@ with-social = [
 
 [[package]]
 name = "django"
-version = "5.2.1"
+version = "5.2.6"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "asgiref" },
     { name = "sqlparse" },
     { name = "tzdata", marker = "sys_platform == 'win32'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ac/10/0d546258772b8f31398e67c85e52c66ebc2b13a647193c3eef8ee433f1a8/django-5.2.1.tar.gz", hash = "sha256:57fe1f1b59462caed092c80b3dd324fd92161b620d59a9ba9181c34746c97284", size = 10818735, upload-time = "2025-05-07T14:06:17.543Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/4c/8c/2a21594337250a171d45dda926caa96309d5136becd1f48017247f9cdea0/django-5.2.6.tar.gz", hash = "sha256:da5e00372763193d73cecbf71084a3848458cecf4cee36b9a1e8d318d114a87b", size = 10858861, upload-time = "2025-09-03T13:04:03.23Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/90/92/7448697b5838b3a1c6e1d2d6a673e908d0398e84dc4f803a2ce11e7ffc0f/django-5.2.1-py3-none-any.whl", hash = "sha256:a9b680e84f9a0e71da83e399f1e922e1ab37b2173ced046b541c72e1589a5961", size = 8301833, upload-time = "2025-05-07T14:06:10.955Z" },
+    { url = "https://files.pythonhosted.org/packages/f5/af/6593f6d21404e842007b40fdeb81e73c20b6649b82d020bb0801b270174c/django-5.2.6-py3-none-any.whl", hash = "sha256:60549579b1174a304b77e24a93d8d9fafe6b6c03ac16311f3e25918ea5a20058", size = 8303111, upload-time = "2025-09-03T13:03:47.808Z" },
 ]
 
 [[package]]
