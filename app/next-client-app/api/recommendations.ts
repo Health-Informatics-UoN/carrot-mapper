@@ -7,7 +7,7 @@ import {
   recommendationServiceName,
 } from "@/constants";
 
-export const getConceptRecommendationsUnison = async (
+export const getRecommendations = async (
   // Unison can query by concept name, or concept code (exact match).
   // The latter is used first in searching, then the former.
   queryValue: string,

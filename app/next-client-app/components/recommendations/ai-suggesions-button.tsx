@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Button } from "../ui/button";
 import { Sparkles, Loader2 } from "lucide-react";
 import AISuggestionDialog from "./ai-suggestions-dialog";
-import { getConceptRecommendationsUnison } from "@/api/recommendations";
+import { getRecommendations } from "@/api/recommendations";
 import { addConcept } from "@/api/concepts";
 import { toast } from "sonner";
 import {
@@ -11,7 +11,7 @@ import {
   DropdownMenuContent,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuTrigger
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { domains } from "@/constants/domains";
 import { DropdownMenuItem } from "@radix-ui/react-dropdown-menu";
@@ -20,7 +20,7 @@ export function AISuggestionsButton({
   value,
   tableId,
   rowId,
-  contentType
+  contentType,
 }: {
   value: string;
   tableId: string;
@@ -43,8 +43,10 @@ export function AISuggestionsButton({
 
     try {
       // Call the getConceptRecommendations function
-      const recommendations: UnisonConceptResponse =
-        await getConceptRecommendationsUnison(value, domainId);
+      const recommendations: UnisonConceptResponse = await getRecommendations(
+        value,
+        domainId
+      );
       // Filter to get only unique concept IDs
       const uniqueRecommendations = recommendations.items.filter(
         (item, index, array) =>
