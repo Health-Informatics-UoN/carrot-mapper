@@ -8,13 +8,13 @@ import {
 } from "@/constants";
 
 export const getRecommendations = async (
-  // Unison can query by concept name, or concept code (exact match).
-  // The latter is used first in searching, then the former.
   queryValue: string,
   domainId: string
 ): Promise<UnisonConceptResponse> => {
   try {
-    //  Unison recommendation service
+    // Unison recommendation service
+    // Unison can query by concept name, or concept code (exact match).
+    // The latter is used first in searching, then the former.
     if (recommendationServiceName === "unison") {
       const endpoint = `${queryValue}?apiKey=${recommendationServiceApiKey}&domain=${domainId}`;
       return await request<UnisonConceptResponse>(endpoint, {
