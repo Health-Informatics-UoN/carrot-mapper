@@ -29,7 +29,7 @@ export function AISuggestionsButton({
 }) {
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
-  const [suggestions, setSuggestions] = useState<UnisonConceptItem[]>([]);
+  const [suggestions, setSuggestions] = useState<RecommendationItem[]>([]);
   const [domainId, setDomainId] = useState<string>("");
 
   // Fetches AI suggestions from the API
@@ -42,11 +42,8 @@ export function AISuggestionsButton({
     setIsLoading(true);
 
     try {
-      // Call the getConceptRecommendations function
-      const recommendations: UnisonConceptResponse = await getRecommendations(
-        value,
-        domainId
-      );
+      const recommendations: RecommendationServiceResponse =
+        await getRecommendations(value, domainId);
       // Filter to get only unique concept IDs
       const uniqueRecommendations = recommendations.items.filter(
         (item, index, array) =>

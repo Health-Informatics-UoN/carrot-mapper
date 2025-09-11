@@ -10,7 +10,7 @@ import { InfoItem } from "../core/InfoItem";
 interface AISuggestionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  suggestions: UnisonConceptItem[];
+  suggestions: RecommendationItem[];
   onApplySuggestion: (data: {
     concept: number;
     object_id: number;

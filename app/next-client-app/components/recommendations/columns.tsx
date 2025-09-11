@@ -16,7 +16,7 @@ export const columns = (
     table_id: string;
   }) => void,
   contentType: string
-): ColumnDef<UnisonConceptItem>[] => [
+): ColumnDef<RecommendationItem>[] => [
   {
     id: "Concept Name",
     header: ({ column }) => (

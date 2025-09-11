@@ -10,7 +10,7 @@ import {
   DropdownMenuContent,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuTrigger
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { domains } from "@/constants/domains";
 import { DropdownMenuItem } from "@radix-ui/react-dropdown-menu";
@@ -20,7 +20,7 @@ export function StoredRecommendationsButton({
   tableId,
   rowId,
   contentType,
-  mappingRecommendations
+  mappingRecommendations,
 }: {
   value: string;
   tableId: string;
@@ -31,7 +31,7 @@ export function StoredRecommendationsButton({
   mappingRecommendations: MappingRecommendation[];
 }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [suggestions, setSuggestions] = useState<UnisonConceptItem[]>([]);
+  const [suggestions, setSuggestions] = useState<RecommendationItem[]>([]);
   const [domainId, setDomainId] = useState<string>("");
 
   // Handle click to show stored recommendations
@@ -57,7 +57,7 @@ export function StoredRecommendationsButton({
   // Transform mapping recommendations to expected format
   const transformMappingRecommendations = (
     recommendations: MappingRecommendation[]
-  ): UnisonConceptItem[] => {
+  ): RecommendationItem[] => {
     return recommendations.map((rec) => ({
       accuracy: rec.score ?? null,
       conceptId: rec.concept.concept_id,
@@ -68,7 +68,7 @@ export function StoredRecommendationsButton({
       conceptClass: rec.concept.concept_class_id ?? "Unknown",
       explanation: rec.score
         ? `Pre-computed recommendation from ${rec.tool_name} (score: ${rec.score})`
-        : `Pre-computed recommendation from ${rec.tool_name} (no score)`
+        : `Pre-computed recommendation from ${rec.tool_name} (no score)`,
     }));
   };
 
