@@ -24,7 +24,7 @@ export const columns = (
     ),
     cell: ({ row }) => {
       const { conceptName } = row.original;
-      return <div className="w-[500px]">{conceptName}</div>;
+      return <div className="w-[500px] whitespace-pre-wrap">{conceptName}</div>;
     },
     enableSorting: false,
     enableHiding: true,
