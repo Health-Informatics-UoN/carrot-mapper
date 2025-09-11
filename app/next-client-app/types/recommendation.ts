@@ -1,4 +1,4 @@
-interface UnisonConceptItem {
+interface RecommendationItem {
   accuracy: number | null;
   conceptId: number;
   conceptName: string;
@@ -9,8 +9,8 @@ interface UnisonConceptItem {
   explanation: string;
 }
 
-interface UnisonConceptResponse {
-  items: UnisonConceptItem[];
+interface RecommendationServiceResponse {
+  items: RecommendationItem[];
   count: number;
 }
 
