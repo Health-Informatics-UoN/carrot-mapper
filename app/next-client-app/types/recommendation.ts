@@ -7,6 +7,8 @@ interface RecommendationItem {
   domain: string;
   conceptClass: string;
   explanation: string;
+  standardConcept?: string;
+  score?: { vector_search: number };
 }
 
 interface RecommendationServiceResponse {
