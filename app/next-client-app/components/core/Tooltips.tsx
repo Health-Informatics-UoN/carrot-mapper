@@ -2,7 +2,7 @@ import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
-  TooltipTrigger
+  TooltipTrigger,
 } from "@/components/ui/tooltip";
 
 import { InfoIcon } from "lucide-react";
@@ -22,7 +22,10 @@ export function Tooltips({
         <TooltipTrigger asChild>
           <InfoIcon className="ml-1 h-4 w-4 text-muted-foreground" />
         </TooltipTrigger>
-        <TooltipContent className="max-w-96 text-center" side={side}>
+        <TooltipContent
+          className="max-w-96 text-center whitespace-pre-wrap"
+          side={side}
+        >
           <p>
             {content}
             {link && (

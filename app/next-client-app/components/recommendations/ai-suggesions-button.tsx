@@ -30,6 +30,7 @@ export function AISuggestionsButton({
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [suggestions, setSuggestions] = useState<RecommendationItem[]>([]);
+  const [metadata, setMetadata] = useState<RecommendationMetadata | null>(null);
   const [domainId, setDomainId] = useState<string>("");
 
   // Fetches AI suggestions from the API
@@ -49,6 +50,9 @@ export function AISuggestionsButton({
         (item, index, array) =>
           array.findIndex((i) => i.conceptId === item.conceptId) === index
       );
+      if (recommendations.metadata) {
+        setMetadata(recommendations.metadata);
+      }
 
       setSuggestions(uniqueRecommendations);
       setIsOpen(true);
@@ -135,6 +139,7 @@ export function AISuggestionsButton({
         rowId={rowId}
         domainId={domainId}
         contentType={contentType}
+        metadata={metadata}
       />
     </>
   );

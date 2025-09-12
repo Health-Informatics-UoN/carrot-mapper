@@ -8,12 +8,20 @@ interface RecommendationItem {
   conceptClass: string;
   explanation: string;
   standardConcept?: string;
-  score?: { vector_search: number };
+  scores?: { vector_search: number };
+}
+
+interface RecommendationMetadata {
+  assistant: string;
+  version: string;
+  pipeline: string;
+  info: string | null;
 }
 
 interface RecommendationServiceResponse {
   items: RecommendationItem[];
-  count: number;
+  count?: number;
+  metadata?: RecommendationMetadata;
 }
 
 interface MappingRecommendation {

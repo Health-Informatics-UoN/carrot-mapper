@@ -23,6 +23,7 @@ interface AISuggestionDialogProps {
   rowId: number;
   domainId: string;
   contentType: string;
+  metadata?: RecommendationMetadata | null;
 }
 
 // Main dialog component combining all parts
@@ -36,6 +37,7 @@ export default function AISuggestionDialog({
   rowId,
   domainId,
   contentType,
+  metadata,
 }: AISuggestionDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -66,6 +68,16 @@ export default function AISuggestionDialog({
               }
               className="py-1 md:py-0 md:px-3"
             />
+            {metadata && (
+              <InfoItem
+                label="Pipeline"
+                value={
+                  metadata.pipeline.charAt(0).toUpperCase() +
+                  metadata.pipeline.slice(1)
+                }
+                className="py-1 md:py-0 md:px-3"
+              />
+            )}
           </div>
         </DialogHeader>
 

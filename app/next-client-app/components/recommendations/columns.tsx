@@ -69,7 +69,14 @@ export const columns = (
     enableSorting: false,
     enableHiding: true,
     cell: ({ row }) => {
-      const { accuracy, explanation } = row.original;
+      const { accuracy, explanation, scores } = row.original;
+      if (scores) {
+        return (
+          <div className="text-center w-full flex items-center justify-center gap-1">
+            {(1 - scores.vector_search) * 100}%
+          </div>
+        );
+      }
       return (
         <div className="text-center w-full flex items-center justify-center gap-1">
           {accuracy}
