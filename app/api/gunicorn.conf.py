@@ -6,7 +6,6 @@ from dotenv import load_dotenv
 
 
 def on_starting(server):
-
     load_dotenv()
 
     if os.getenv("APPLICATIONINSIGHTS_CONNECTION_STRING"):

@@ -1,11 +1,13 @@
-from airflow.providers.microsoft.azure.hooks.wasb import WasbHook
+import logging
+from pathlib import Path
+from typing import Any
+
 from airflow.providers.amazon.aws.hooks.s3 import S3Hook
+from airflow.providers.microsoft.azure.hooks.wasb import WasbHook
+from azure.storage.blob import ContentSettings
+
 from libs.enums import StorageType
 from libs.settings import storage_type
-from pathlib import Path
-import logging
-from typing import Any
-from azure.storage.blob import ContentSettings
 
 
 def get_storage_hook():

@@ -3,11 +3,11 @@ import io
 from datetime import date, datetime, timezone
 from typing import Any
 
+from data.models import Concept, ConceptAncestor
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
 from django.db.models.query import QuerySet
 from graphviz import Digraph
-from data.models import Concept, ConceptAncestor
 from mapping.models import (
     MappingRule,
     OmopField,
@@ -17,6 +17,7 @@ from mapping.models import (
     ScanReportTable,
     ScanReportValue,
 )
+
 from services.enums import ContentTypeModel
 
 

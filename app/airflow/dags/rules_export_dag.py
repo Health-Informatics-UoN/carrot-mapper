@@ -1,14 +1,15 @@
 from datetime import datetime, timedelta
+
 from airflow import DAG
 from airflow.operators.empty import EmptyOperator
+from libs.rules_export.core import build_and_upload_rules_file, pre_process_rules
+from libs.settings import AIRFLOW_DAGRUN_TIMEOUT, AIRFLOW_DEBUG_MODE
 from libs.utils import (
+    connect_to_storage,
     create_task,
-    validate_params_rules_export,
     update_job_status_on_failure,
+    validate_params_rules_export,
 )
-from libs.rules_export.core import pre_process_rules, build_and_upload_rules_file
-from libs.utils import connect_to_storage
-from libs.settings import AIRFLOW_DEBUG_MODE, AIRFLOW_DAGRUN_TIMEOUT
 
 """
 This DAG automates the process of retrieving the mapping rules from the database, 

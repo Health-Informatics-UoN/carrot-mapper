@@ -1,9 +1,9 @@
+from data.models import Concept
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.db.models.constraints import UniqueConstraint
-from data.models import Concept
 
 STATUS_LIVE = "LIVE"
 STATUS_ARCHIVED = "ARCHIVED"

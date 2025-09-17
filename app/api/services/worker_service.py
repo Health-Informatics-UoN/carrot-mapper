@@ -1,13 +1,15 @@
-from requests.auth import HTTPBasicAuth
 import logging
-from urllib.parse import urljoin
-import requests
-from typing import Optional, Dict, Any
-from mapping.models import ScanReport, ScanReportTable
-from services.field_vocab_mappings import get_field_vocab_mappings
-from django.conf import settings
 from abc import ABC, abstractmethod
+from typing import Any, Dict, Optional
+from urllib.parse import urljoin
+
+import requests
+from django.conf import settings
+from mapping.models import ScanReport, ScanReportTable
+from requests.auth import HTTPBasicAuth
+
 from services.enums import WorkerServiceType
+from services.field_vocab_mappings import get_field_vocab_mappings
 
 
 class WorkerService(ABC):

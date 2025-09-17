@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("mapping", "0010_scanreportconcept_confidence_and_more"),
     ]

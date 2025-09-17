@@ -1,10 +1,11 @@
 """Command to create a default superuser if no users exist"""
 
-from django.contrib.auth import get_user_model
-from django.core.management.base import BaseCommand
+import os
+
 import django
 import django.conf as dc
-import os
+from django.contrib.auth import get_user_model
+from django.core.management.base import BaseCommand
 
 
 class Command(BaseCommand):

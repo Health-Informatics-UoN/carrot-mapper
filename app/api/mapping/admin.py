@@ -1,8 +1,10 @@
 from django.contrib import admin
+
 from mapping.models import (
     DataDictionary,
     DataPartner,
     Dataset,
+    MappingRecommendation,
     MappingRule,
     OmopField,
     OmopTable,
@@ -12,7 +14,6 @@ from mapping.models import (
     ScanReportField,
     ScanReportTable,
     ScanReportValue,
-    MappingRecommendation,
 )
 
 

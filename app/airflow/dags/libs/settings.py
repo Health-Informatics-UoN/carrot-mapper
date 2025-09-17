@@ -1,4 +1,5 @@
 import os
+
 from libs.enums import StorageType
 
 storage_type = os.getenv("STORAGE_TYPE", StorageType.MINIO)

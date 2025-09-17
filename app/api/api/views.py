@@ -2,7 +2,62 @@ import datetime
 import os
 import random
 import string
+from importlib.metadata import version
 from typing import Any, Optional
+
+from data.models import Concept
+from datasets.serializers import DataPartnerSerializer
+from django.contrib.auth.models import User
+from django.contrib.contenttypes.models import ContentType
+from django.core.exceptions import ObjectDoesNotExist
+from django.db.models import Q
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
+from django.views.decorators.vary import vary_on_cookie
+from django_filters.rest_framework import DjangoFilterBackend
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiParameter, extend_schema
+from jobs.models import Job, JobStage, StageStatus
+from mapping.models import (
+    DataDictionary,
+    DataPartner,
+    MappingRule,
+    OmopField,
+    ScanReport,
+    ScanReportConcept,
+    ScanReportField,
+    ScanReportTable,
+    ScanReportValue,
+)
+from mapping.permissions import get_user_permissions_on_scan_report
+from rest_framework import status, viewsets
+from rest_framework.filters import OrderingFilter
+from rest_framework.generics import GenericAPIView
+from rest_framework.mixins import (
+    CreateModelMixin,
+    DestroyModelMixin,
+    ListModelMixin,
+    RetrieveModelMixin,
+    UpdateModelMixin,
+)
+from rest_framework.parsers import FormParser, MultiPartParser
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from services.rules import (
+    _find_destination_table,
+    save_mapping_rules,
+)
+from services.rules_export import (
+    get_mapping_rules_json,
+    get_mapping_rules_list,
+    make_dag,
+)
+from services.storage_service import StorageService
+from services.worker_service import get_worker_service
+
 from api.filters import ScanReportAccessFilter, ScanReportValueFilter
 from api.mixins import ScanReportPermissionMixin
 from api.paginations import CustomPagination
@@ -23,60 +78,6 @@ from api.serializers import (
     ScanReportViewSerializerV2,
     UserSerializer,
 )
-from datasets.serializers import DataPartnerSerializer
-from django.contrib.auth.models import User
-from django.contrib.contenttypes.models import ContentType
-from django.core.exceptions import ObjectDoesNotExist
-from django.db.models import Q
-from django.http import HttpResponse
-from django.shortcuts import get_object_or_404
-from django.utils.decorators import method_decorator
-from django.views.decorators.cache import cache_page
-from django.views.decorators.vary import vary_on_cookie
-from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import status, viewsets
-from rest_framework.filters import OrderingFilter
-from rest_framework.generics import GenericAPIView
-from rest_framework.mixins import (
-    CreateModelMixin,
-    DestroyModelMixin,
-    ListModelMixin,
-    RetrieveModelMixin,
-    UpdateModelMixin,
-)
-from rest_framework.parsers import FormParser, MultiPartParser
-from rest_framework.permissions import IsAuthenticated, AllowAny
-from rest_framework.response import Response
-from rest_framework.views import APIView
-from data.models import Concept
-from jobs.models import Job, JobStage, StageStatus
-from mapping.models import (
-    DataDictionary,
-    DataPartner,
-    MappingRule,
-    OmopField,
-    ScanReport,
-    ScanReportConcept,
-    ScanReportField,
-    ScanReportTable,
-    ScanReportValue,
-)
-from drf_spectacular.utils import extend_schema
-from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import OpenApiParameter
-from mapping.permissions import get_user_permissions_on_scan_report
-from services.rules import (
-    _find_destination_table,
-    save_mapping_rules,
-)
-from services.rules_export import (
-    get_mapping_rules_json,
-    get_mapping_rules_list,
-    make_dag,
-)
-from services.storage_service import StorageService
-from services.worker_service import get_worker_service
-from importlib.metadata import version
 
 storage_service = StorageService()
 worker_service = get_worker_service()

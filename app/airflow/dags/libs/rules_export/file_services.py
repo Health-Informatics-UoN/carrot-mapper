@@ -1,16 +1,16 @@
-from typing import Any, Dict, List
-from libs.enums import JobStageType, StageStatusType
-from libs.utils import update_job_status
-import json
-import pandas as pd
-from datetime import datetime, timezone
-from io import BytesIO
-from airflow.providers.postgres.hooks.postgres import PostgresHook
-import io
 import csv
-from datetime import date
+import io
+import json
 import logging
+from datetime import date, datetime, timezone
+from io import BytesIO
+from typing import Any, Dict, List
+
+import pandas as pd
+from airflow.providers.postgres.hooks.postgres import PostgresHook
+from libs.enums import JobStageType, StageStatusType
 from libs.settings import AIRFLOW_DAGRUN_TIMEOUT
+from libs.utils import update_job_status
 
 # PostgreSQL connection hook
 pg_hook = PostgresHook(
@@ -353,19 +353,19 @@ def build_rules_json_v2(scan_report_name: str, scan_report_id: int) -> BytesIO:
 
                 # Adding the person_id_mapping, date_mapping, concept_mapping to the result
                 if person_id_mappings:
-                    result[dest_table_str][source_table_clean][
-                        "person_id_mapping"
-                    ] = person_id_mappings
+                    result[dest_table_str][source_table_clean]["person_id_mapping"] = (
+                        person_id_mappings
+                    )
 
                 if date_mappings:
-                    result[dest_table_str][source_table_clean][
-                        "date_mapping"
-                    ] = date_mappings
+                    result[dest_table_str][source_table_clean]["date_mapping"] = (
+                        date_mappings
+                    )
 
                 if concept_mappings:
-                    result[dest_table_str][source_table_clean][
-                        "concept_mappings"
-                    ] = concept_mappings
+                    result[dest_table_str][source_table_clean]["concept_mappings"] = (
+                        concept_mappings
+                    )
 
         cdm = {
             "metadata": metadata,

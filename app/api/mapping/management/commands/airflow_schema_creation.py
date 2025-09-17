@@ -1,11 +1,11 @@
 import os
+
+from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.db import connection
-from django.conf import settings
 
 
 class Command(BaseCommand):
-
     help = "Create Airflow schema in the database automatically"
 
     _SCHEMA_NAME = "airflow"
@@ -58,7 +58,6 @@ class Command(BaseCommand):
         try:
             self.stdout.write(f"Creating Airflow schema '{self._SCHEMA_NAME}'...")
             with connection.cursor() as cursor:
-
                 # Create the schema in the PostgreSQL database
                 cursor.execute(f"CREATE SCHEMA {self._SCHEMA_NAME};")
                 db_user = settings.DATABASES["default"]["USER"]

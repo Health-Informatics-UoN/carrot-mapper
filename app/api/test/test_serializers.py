@@ -1,29 +1,26 @@
-from api.serializers import ScanReportEditSerializer
+from api.serializers import (
+    MappingRecommendationSerializerV3,
+    ScanReportEditSerializer,
+    ScanReportValueViewSerializerV3,
+)
+from data.models import Concept
 from datasets.serializers import DatasetEditSerializer
 from django.contrib.auth import get_user_model
+from django.contrib.contenttypes.models import ContentType
 from django.test import TestCase
-from rest_framework.serializers import ValidationError
-from rest_framework.test import APIRequestFactory
 from mapping.models import (
     DataPartner,
     Dataset,
+    MappingRecommendation,
     Project,
     ScanReport,
+    ScanReportField,
+    ScanReportTable,
+    ScanReportValue,
     VisibilityChoices,
 )
-from django.contrib.contenttypes.models import ContentType
-from data.models import Concept
-from mapping.models import (
-    ScanReport,
-    ScanReportTable,
-    ScanReportField,
-    ScanReportValue,
-    MappingRecommendation,
-)
-from api.serializers import (
-    MappingRecommendationSerializerV3,
-    ScanReportValueViewSerializerV3,
-)
+from rest_framework.serializers import ValidationError
+from rest_framework.test import APIRequestFactory
 
 
 class TestScanReportEditSerializer(TestCase):

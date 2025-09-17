@@ -47,7 +47,6 @@ def remove_status_objects(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("mapping", "0003_handmade_20220428_1503"),
     ]

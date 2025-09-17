@@ -1,7 +1,7 @@
 from django.db.models.query_utils import Q
-from rest_framework import filters
-from mapping.models import VisibilityChoices, ScanReportValue
 from django_filters import rest_framework as django_filters
+from mapping.models import ScanReportValue, VisibilityChoices
+from rest_framework import filters
 
 
 class HasConceptsFilter(django_filters.BooleanFilter):

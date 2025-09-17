@@ -1,36 +1,35 @@
 from datetime import datetime, timedelta
+
 from airflow import DAG
 from airflow.operators.empty import EmptyOperator
-from libs.auto_mapping.find_R_concepts_to_reuse import (
-    find_matching_field,
-    find_matching_value,
-    create_reusing_concepts,
-    delete_R_concepts,
-)
-
-from libs.auto_mapping.find_standard_V_concepts import (
-    find_standard_concepts,
-    create_standard_concepts,
-)
-
 from libs.auto_mapping.core_get_existing_concepts import (
     delete_mapping_rules,
     find_existing_concepts,
 )
 from libs.auto_mapping.core_prep_rules_creation import (
-    find_dest_table_and_person_field_id,
-    find_date_fields,
-    find_concept_fields,
     find_additional_fields,
+    find_concept_fields,
+    find_date_fields,
+    find_dest_table_and_person_field_id,
 )
 from libs.auto_mapping.core_rules_creation import create_mapping_rules
+from libs.auto_mapping.find_R_concepts_to_reuse import (
+    create_reusing_concepts,
+    delete_R_concepts,
+    find_matching_field,
+    find_matching_value,
+)
+from libs.auto_mapping.find_standard_V_concepts import (
+    create_standard_concepts,
+    find_standard_concepts,
+)
 from libs.auto_mapping.search_recommendations import process_search_recommendations
+from libs.settings import AIRFLOW_DAGRUN_TIMEOUT, AIRFLOW_DEBUG_MODE, SEARCH_ENABLED
 from libs.utils import (
     create_task,
-    validate_params_auto_mapping,
     update_job_status_on_failure,
+    validate_params_auto_mapping,
 )
-from libs.settings import AIRFLOW_DEBUG_MODE, SEARCH_ENABLED, AIRFLOW_DAGRUN_TIMEOUT
 
 """
 This DAG automates the process of creating and reusing concepts from scan reports and generating mapping rules.

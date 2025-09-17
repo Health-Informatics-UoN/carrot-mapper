@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("mapping", "0008_remove_scanreportfield_fraction_empty_and_more"),
     ]

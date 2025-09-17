@@ -4,7 +4,6 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("mapping", "0007_alter_dataset_hidden_alter_mappingstatus_value_and_more"),
     ]

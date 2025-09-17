@@ -1,7 +1,8 @@
-from django.core.management.base import BaseCommand
 from django.core.management import call_command
-from mapping.models import OmopTable
+from django.core.management.base import BaseCommand
 from files.models import FileType
+
+from mapping.models import OmopTable
 
 
 class Command(BaseCommand):

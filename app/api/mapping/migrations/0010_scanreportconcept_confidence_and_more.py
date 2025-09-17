@@ -6,7 +6,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("mapping", "0009_delete_classificationsystem_delete_nlpmodel_and_more"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),

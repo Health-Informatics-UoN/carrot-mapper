@@ -1,12 +1,13 @@
-from api import views
 from django.urls import include, path
-from files.views import FileDownloadView
-from jobs.views import JobView
 from drf_spectacular.views import (
     SpectacularAPIView,
-    SpectacularSwaggerView,
     SpectacularRedocView,
+    SpectacularSwaggerView,
 )
+from files.views import FileDownloadView
+from jobs.views import JobView
+
+from api import views
 
 urlpatterns = [
     path("v2/datasets/", include("datasets.urls")),

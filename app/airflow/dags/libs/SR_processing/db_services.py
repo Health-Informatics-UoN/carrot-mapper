@@ -1,12 +1,13 @@
-from typing import List, Any, Dict, Tuple
-from openpyxl.worksheet.worksheet import Worksheet
-from libs.queries import create_fields_query
 import logging
 from collections import defaultdict
+from typing import Any, Dict, List, Tuple
+
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from libs.enums import JobStageType, StageStatusType
+from libs.queries import create_fields_query
+from libs.settings import AIRFLOW_DAGRUN_TIMEOUT, AIRFLOW_DEBUG_MODE
 from libs.utils import update_job_status
-from libs.settings import AIRFLOW_DEBUG_MODE, AIRFLOW_DAGRUN_TIMEOUT
+from openpyxl.worksheet.worksheet import Worksheet
 
 # PostgreSQL connection hook
 pg_hook = PostgresHook(

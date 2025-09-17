@@ -1,28 +1,28 @@
+import csv
 import logging
 import os
-from openpyxl import load_workbook
-from libs.utils import pull_validated_params
-import csv
 from io import StringIO
+from typing import List, Tuple
+
+from airflow.providers.postgres.hooks.postgres import PostgresHook
+from libs.enums import JobStageType, StageStatusType
+from libs.queries import create_temp_data_dictionary_table_query, create_values_query
+from libs.settings import AIRFLOW_DAGRUN_TIMEOUT
 from libs.SR_processing.db_services import (
     create_field_entries,
-    update_temp_data_dictionary_table,
     create_temp_field_values_table,
     delete_temp_tables,
+    update_temp_data_dictionary_table,
 )
 from libs.SR_processing.helpers import (
-    remove_BOM,
-    process_four_item_dict,
     get_unique_table_names,
+    process_four_item_dict,
+    remove_BOM,
     transform_scan_report_sheet_table,
 )
 from libs.storage_services import download_blob_to_tmp
-from airflow.providers.postgres.hooks.postgres import PostgresHook
-from typing import List, Tuple
-from libs.queries import create_values_query, create_temp_data_dictionary_table_query
-from libs.enums import JobStageType, StageStatusType
-from libs.utils import update_job_status
-from libs.settings import AIRFLOW_DAGRUN_TIMEOUT
+from libs.utils import pull_validated_params, update_job_status
+from openpyxl import load_workbook
 
 # PostgreSQL connection hook
 pg_hook = PostgresHook(
