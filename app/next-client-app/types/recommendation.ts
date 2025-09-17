@@ -8,7 +8,7 @@ interface RecommendationItem {
   conceptClass: string;
   explanation: string;
   standardConcept?: string;
-  scores?: { vector_search: number };
+  scores?: { "vector-search": number };
 }
 
 interface RecommendationMetadata {

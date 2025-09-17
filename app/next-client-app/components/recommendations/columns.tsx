@@ -63,7 +63,7 @@ export const columns = (
     id: "Accuracy",
     header: ({ column }) => (
       <div className="text-center w-full">
-        <DataTableColumnHeader column={column} title="Accuracy/Confidence" />
+        <DataTableColumnHeader column={column} title="Accuracy/Score" />
       </div>
     ),
     enableSorting: false,
@@ -73,7 +73,7 @@ export const columns = (
       if (scores) {
         return (
           <div className="text-center w-full flex items-center justify-center gap-1">
-            {(1 - scores.vector_search) * 100}%
+            {((1 - (scores?.["vector-search"] || 0)) * 100).toFixed(2)}%
           </div>
         );
       }
