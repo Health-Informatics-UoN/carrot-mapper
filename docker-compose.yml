@@ -73,10 +73,9 @@ services:
       - WATCHPACK_POLLING=true
       - NEXT_PUBLIC_ENABLE_REUSE_TRIGGER_OPTION=true
       - NEXT_PUBLIC_ENABLE_AI_RECOMMENDATION=true
-      - NEXT_PUBLIC_RECOMMENDATION_SERVICE_NAME=unison
-      - RECOMMENDATION_SERVICE=unison
-      - UNISON_API_KEY=unison-api-key
-      - UNISON_BASE_URL=https://api.hyperunison.com/api/public/suggester/generate
+      - NEXT_PUBLIC_RECOMMENDATION_SERVICE=unison
+      - RECOMMENDATION_SERVICE_BASE_URL=https://api.hyperunison.com/api/public/suggester/generate
+      - RECOMMENDATION_SERVICE_API_KEY=unison-api-key
       - NEXT_PUBLIC_BODY_SIZE_LIMIT=31457280
     volumes:
       - ./app/next-client-app:/app

@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Button } from "../ui/button";
 import { Sparkles, Loader2 } from "lucide-react";
 import AISuggestionDialog from "./ai-suggestions-dialog";
-import { getConceptRecommendationsUnison } from "@/api/recommendations";
+import { getRecommendations } from "@/api/recommendations";
 import { addConcept } from "@/api/concepts";
 import { toast } from "sonner";
 import {
@@ -11,7 +11,7 @@ import {
   DropdownMenuContent,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuTrigger
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { domains } from "@/constants/domains";
 import { DropdownMenuItem } from "@radix-ui/react-dropdown-menu";
@@ -20,7 +20,7 @@ export function AISuggestionsButton({
   value,
   tableId,
   rowId,
-  contentType
+  contentType,
 }: {
   value: string;
   tableId: string;
@@ -29,7 +29,8 @@ export function AISuggestionsButton({
 }) {
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
-  const [suggestions, setSuggestions] = useState<UnisonConceptItem[]>([]);
+  const [suggestions, setSuggestions] = useState<RecommendationItem[]>([]);
+  const [metadata, setMetadata] = useState<RecommendationMetadata | null>(null);
   const [domainId, setDomainId] = useState<string>("");
 
   // Fetches AI suggestions from the API
@@ -42,14 +43,16 @@ export function AISuggestionsButton({
     setIsLoading(true);
 
     try {
-      // Call the getConceptRecommendations function
-      const recommendations: UnisonConceptResponse =
-        await getConceptRecommendationsUnison(value, domainId);
+      const recommendations: RecommendationServiceResponse =
+        await getRecommendations(value, domainId);
       // Filter to get only unique concept IDs
       const uniqueRecommendations = recommendations.items.filter(
         (item, index, array) =>
           array.findIndex((i) => i.conceptId === item.conceptId) === index
       );
+      if (recommendations.metadata) {
+        setMetadata(recommendations.metadata);
+      }
 
       setSuggestions(uniqueRecommendations);
       setIsOpen(true);
@@ -136,6 +139,7 @@ export function AISuggestionsButton({
         rowId={rowId}
         domainId={domainId}
         contentType={contentType}
+        metadata={metadata}
       />
     </>
   );

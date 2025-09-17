@@ -16,7 +16,7 @@ export const columns = (
     table_id: string;
   }) => void,
   contentType: string
-): ColumnDef<UnisonConceptItem>[] => [
+): ColumnDef<RecommendationItem>[] => [
   {
     id: "Concept Name",
     header: ({ column }) => (
@@ -24,7 +24,7 @@ export const columns = (
     ),
     cell: ({ row }) => {
       const { conceptName } = row.original;
-      return <div className="w-[500px]">{conceptName}</div>;
+      return <div className="w-[500px] whitespace-pre-wrap">{conceptName}</div>;
     },
     enableSorting: false,
     enableHiding: true,
@@ -63,13 +63,20 @@ export const columns = (
     id: "Accuracy",
     header: ({ column }) => (
       <div className="text-center w-full">
-        <DataTableColumnHeader column={column} title="Accuracy/Confidence" />
+        <DataTableColumnHeader column={column} title="Accuracy/Score" />
       </div>
     ),
     enableSorting: false,
     enableHiding: true,
     cell: ({ row }) => {
-      const { accuracy, explanation } = row.original;
+      const { accuracy, explanation, scores } = row.original;
+      if (scores) {
+        return (
+          <div className="text-center w-full flex items-center justify-center gap-1">
+            {((1 - (scores?.["vector-search"] || 0)) * 100).toFixed(2)}%
+          </div>
+        );
+      }
       return (
         <div className="text-center w-full flex items-center justify-center gap-1">
           {accuracy}

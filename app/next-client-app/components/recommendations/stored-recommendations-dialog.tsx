@@ -9,7 +9,7 @@ import { InfoItem } from "../core/InfoItem";
 interface RecommendationsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  suggestions: UnisonConceptItem[];
+  suggestions: RecommendationItem[];
   onApplySuggestion: (data: {
     concept: number;
     object_id: number;
@@ -36,7 +36,7 @@ export default function RecommendationsDialog({
   rowId,
   domainId,
   contentType,
-  source
+  source,
 }: RecommendationsDialogProps) {
   const getSourceLabel = () => {
     return source === "v3"

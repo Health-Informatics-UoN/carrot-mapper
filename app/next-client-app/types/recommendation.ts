@@ -1,4 +1,4 @@
-interface UnisonConceptItem {
+interface RecommendationItem {
   accuracy: number | null;
   conceptId: number;
   conceptName: string;
@@ -7,11 +7,21 @@ interface UnisonConceptItem {
   domain: string;
   conceptClass: string;
   explanation: string;
+  standardConcept?: string;
+  scores?: { "vector-search": number };
 }
 
-interface UnisonConceptResponse {
-  items: UnisonConceptItem[];
-  count: number;
+interface RecommendationMetadata {
+  assistant: string;
+  version: string;
+  pipeline: string;
+  info: string | null;
+}
+
+interface RecommendationServiceResponse {
+  items: RecommendationItem[];
+  count?: number;
+  metadata?: RecommendationMetadata;
 }
 
 interface MappingRecommendation {
