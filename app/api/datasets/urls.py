@@ -1,5 +1,6 @@
-from datasets import views
 from django.urls import path
+
+from datasets import views
 
 urlpatterns = [
     path(

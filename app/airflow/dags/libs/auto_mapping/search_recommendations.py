@@ -1,9 +1,10 @@
+import logging
+
+from airflow.providers.postgres.hooks.postgres import PostgresHook
+from libs.settings import AIRFLOW_DAGRUN_TIMEOUT
 from libs.utils import (
     pull_validated_params,
 )
-from airflow.providers.postgres.hooks.postgres import PostgresHook
-import logging
-from libs.settings import AIRFLOW_DAGRUN_TIMEOUT
 
 # PostgreSQL connection hook
 pg_hook = PostgresHook(

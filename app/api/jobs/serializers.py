@@ -1,5 +1,6 @@
 from rest_framework import serializers
-from .models import StageStatus, Job, JobStage
+
+from .models import Job, JobStage, StageStatus
 
 
 class StageStatusSerializer(serializers.ModelSerializer):
@@ -15,7 +16,6 @@ class JobStageSerializer(serializers.ModelSerializer):
 
 
 class JobSerializer(serializers.ModelSerializer):
-
     stage = JobStageSerializer()
     status = StageStatusSerializer()
 

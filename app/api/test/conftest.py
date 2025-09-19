@@ -2,12 +2,12 @@ from typing import Generator
 
 import psycopg2
 import pytest
+from data.models import Concept, ConceptRelationship
 from django.conf import settings
 from django.core.management import call_command
 from django.db import connection
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 from pytest_django import DjangoDbBlocker
-from data.models import Concept, ConceptRelationship
 
 
 def run_sql(db: str, sql: str):

@@ -1,14 +1,15 @@
+from api.paginations import CustomPagination
 from django_filters.rest_framework import DjangoFilterBackend
+from mapping.models import Project
+from mapping.permissions import CanViewProject
+from rest_framework.filters import OrderingFilter
+from rest_framework.generics import ListAPIView, RetrieveAPIView
+from rest_framework.permissions import IsAuthenticated
+
 from projects.serializers import (
     ProjectDatasetSerializer,
     ProjectSerializer,
 )
-from rest_framework.generics import ListAPIView, RetrieveAPIView
-from rest_framework.permissions import IsAuthenticated
-from mapping.models import Project
-from mapping.permissions import CanViewProject
-from api.paginations import CustomPagination
-from rest_framework.filters import OrderingFilter
 
 
 class ProjectList(ListAPIView):

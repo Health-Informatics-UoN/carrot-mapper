@@ -1,17 +1,18 @@
+import logging
+
+from airflow.providers.postgres.hooks.postgres import PostgresHook
+from libs.queries import (
+    find_concept_fields_query,
+    find_dates_fields_query,
+    find_dest_table_and_person_field_id_query,
+)
+from libs.settings import AIRFLOW_DAGRUN_TIMEOUT
 from libs.utils import (
-    update_job_status,
     JobStageType,
     StageStatusType,
     pull_validated_params,
+    update_job_status,
 )
-from airflow.providers.postgres.hooks.postgres import PostgresHook
-import logging
-from libs.queries import (
-    find_dest_table_and_person_field_id_query,
-    find_dates_fields_query,
-    find_concept_fields_query,
-)
-from libs.settings import AIRFLOW_DAGRUN_TIMEOUT
 
 # PostgreSQL connection hook
 pg_hook = PostgresHook(

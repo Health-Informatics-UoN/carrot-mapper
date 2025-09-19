@@ -1,7 +1,7 @@
 from typing import List, Optional
-from django.db import transaction
 
 from data.models import Concept
+from django.db import transaction
 from mapping.models import (
     MappingRule,
     OmopField,

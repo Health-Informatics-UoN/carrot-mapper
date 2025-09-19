@@ -1,9 +1,10 @@
 import logging
 from typing import List
 
-from mapping.models import ScanReportTable, ScanReportField
-from services.storage_service import StorageService
+from mapping.models import ScanReportField, ScanReportTable
+
 from services.models import VocabularyMapping
+from services.storage_service import StorageService
 
 logger = logging.getLogger("test_table_mapping_logger")
 

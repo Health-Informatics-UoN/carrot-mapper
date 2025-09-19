@@ -1,14 +1,17 @@
 import csv
 import logging
 import os
+from enum import StrEnum
 from io import BytesIO
 from typing import IO, Any, AnyStr, Dict, Iterable, Optional, Tuple, Union
-from enum import StrEnum
 
 import openpyxl  # type: ignore
-from azure.storage.blob import BlobServiceClient  # type: ignore
-from azure.storage.blob import ContentSettings
+from azure.storage.blob import (
+    BlobServiceClient,  # type: ignore
+    ContentSettings,
+)
 from minio import Minio
+
 from services.utils import (
     process_four_item_dict,
     process_three_item_dict,
@@ -395,7 +398,6 @@ class StorageService:
             file_size = len(file_content)
 
         if self._minio_client:
-
             try:
                 self._minio_client.put_object(
                     container,

@@ -1,7 +1,8 @@
 import os
-from django.core.management.base import BaseCommand  # type: ignore
-from azure.storage.queue import QueueServiceClient  # type: ignore
+
 from azure.storage.blob import BlobServiceClient  # type: ignore
+from azure.storage.queue import QueueServiceClient  # type: ignore
+from django.core.management.base import BaseCommand  # type: ignore
 from minio import Minio  # type: ignore
 
 

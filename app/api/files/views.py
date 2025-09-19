@@ -1,17 +1,19 @@
 import json
+
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
+from drf_spectacular.utils import extend_schema
+from jobs.models import Job, JobStage, StageStatus
+from mapping.models import ScanReport
 from rest_framework.filters import OrderingFilter
 from rest_framework.generics import GenericAPIView
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
 from rest_framework.permissions import IsAuthenticated
-from files.paginations import CustomPagination
-from jobs.models import Job, JobStage, StageStatus
-from mapping.models import ScanReport
-from drf_spectacular.utils import extend_schema
 from services.storage_service import StorageService
 from services.worker_service import get_worker_service
+
+from files.paginations import CustomPagination
 
 from .models import FileDownload
 from .serializers import FileDownloadSerializer
@@ -133,7 +135,9 @@ class FileDownloadView(GenericAPIView, ListModelMixin, RetrieveModelMixin):
             file_type_description = (
                 "JSON V1"
                 if file_type == "application/json_v1"
-                else "JSON V2" if file_type == "application/json_v2" else "CSV"
+                else "JSON V2"
+                if file_type == "application/json_v2"
+                else "CSV"
             )
             Job.objects.create(
                 scan_report=ScanReport.objects.get(id=scan_report_id),

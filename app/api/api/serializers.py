@@ -1,34 +1,33 @@
 import csv
-from collections import Counter
+from collections import Counter, defaultdict
 from io import BytesIO, StringIO
 
-from collections import defaultdict
-from api.logger import logger
-
 import openpyxl  # type: ignore
+from config.settings import DATA_UPLOAD_MAX_MEMORY_SIZE
+from data.models import Concept
 from datasets.serializers import DatasetSerializer
 from django.contrib.auth.models import User
 from drf_dynamic_fields import DynamicFieldsMixin  # type: ignore
-from openpyxl.workbook.workbook import Workbook  # type: ignore
-from rest_framework import serializers
-from rest_framework.exceptions import NotFound, ParseError, PermissionDenied
-from data.models import Concept
 from mapping.models import (
     Dataset,
+    MappingRecommendation,
+    MappingStatus,
     ScanReport,
     ScanReportConcept,
     ScanReportField,
     ScanReportTable,
     ScanReportValue,
-    VisibilityChoices,
     UploadStatus,
-    MappingStatus,
-    MappingRecommendation,
+    VisibilityChoices,
 )
-from users.serializers import UserSerializer
 from mapping.permissions import has_editorship, is_admin, is_az_function_user
+from openpyxl.workbook.workbook import Workbook  # type: ignore
+from rest_framework import serializers
+from rest_framework.exceptions import NotFound, ParseError, PermissionDenied
 from services.rules_export import analyse_concepts
-from config.settings import DATA_UPLOAD_MAX_MEMORY_SIZE
+from users.serializers import UserSerializer
+
+from api.logger import logger
 
 
 class ConceptSerializerV2(serializers.ModelSerializer):
@@ -51,7 +50,6 @@ class ConceptSerializerV2(serializers.ModelSerializer):
 
 
 class ConceptSerializerV3(DynamicFieldsMixin, serializers.ModelSerializer):
-
     class Meta:
         model = Concept
         fields = [
@@ -430,8 +428,7 @@ class ScanReportFilesSerializer(DynamicFieldsMixin, serializers.ModelSerializer)
             fo_only = set(expected_sheetnames).difference(actual_sheetnames)
             errors.append(
                 ParseError(
-                    "Tables in Field Overview sheet do not "
-                    "match the sheets supplied."
+                    "Tables in Field Overview sheet do not match the sheets supplied."
                 )
             )
             if sheets_only:

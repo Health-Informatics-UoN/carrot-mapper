@@ -1,20 +1,21 @@
-from libs.utils import (
-    update_job_status,
-    JobStageType,
-    StageStatusType,
-    pull_validated_params,
-)
-from airflow.providers.postgres.hooks.postgres import PostgresHook
 import logging
+
+from airflow.providers.postgres.hooks.postgres import PostgresHook
 from libs.queries import (
+    create_reuse_concept_query,
     create_temp_reuse_table_query,
     find_m_concepts_query,
     find_m_concepts_query_field_level,
     find_object_id_query,
     validate_reused_concepts_query,
-    create_reuse_concept_query,
 )
 from libs.settings import AIRFLOW_DAGRUN_TIMEOUT
+from libs.utils import (
+    JobStageType,
+    StageStatusType,
+    pull_validated_params,
+    update_job_status,
+)
 
 # PostgreSQL connection hook
 pg_hook = PostgresHook(

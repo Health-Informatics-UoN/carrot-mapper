@@ -1,5 +1,5 @@
-from django.test import TestCase
 import mapping.management.commands.default_super_user as dsu
+from django.test import TestCase
 
 
 def mocks(command):

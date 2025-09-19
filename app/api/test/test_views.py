@@ -7,12 +7,11 @@ from datasets.views import DatasetIndex
 from django.contrib.auth import get_user_model
 from django.contrib.contenttypes.models import ContentType
 from django.test import TestCase, TransactionTestCase
-from rest_framework.authtoken.models import Token
-from rest_framework.test import APIClient, APIRequestFactory, force_authenticate
 from mapping.models import (
     Concept,
     DataPartner,
     Dataset,
+    MappingRecommendation,
     Project,
     ScanReport,
     ScanReportConcept,
@@ -20,8 +19,9 @@ from mapping.models import (
     ScanReportTable,
     ScanReportValue,
     VisibilityChoices,
-    MappingRecommendation,
 )
+from rest_framework.authtoken.models import Token
+from rest_framework.test import APIClient, APIRequestFactory, force_authenticate
 
 
 class TestDatasetListView(TestCase):

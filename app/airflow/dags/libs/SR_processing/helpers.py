@@ -1,7 +1,8 @@
-from typing import List, Any, Dict
-from openpyxl.worksheet.worksheet import Worksheet
 import logging
 from collections import defaultdict
+from typing import Any, Dict, List
+
+from openpyxl.worksheet.worksheet import Worksheet
 
 
 def get_unique_table_names(worksheet: Worksheet) -> List[str]:
