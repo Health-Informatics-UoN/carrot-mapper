@@ -4,10 +4,10 @@ import { options as authOptions } from "@/auth/options";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { scan_report_id: string; file_id: string } },
+  { params }: { params: Promise<{ scan_report_id: string; file_id: string }> },
 ) {
   try {
-    const { scan_report_id, file_id } = params;
+    const { scan_report_id, file_id } = await params;
 
     // Get the session for authentication
     const session = await getServerSession(authOptions);
