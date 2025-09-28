@@ -26,7 +26,7 @@ export const columns: ColumnDef<FileDownload>[] = [
       return format(created_at, "d MMM HH:mm");
     },
     enableHiding: true,
-    enableSorting: true
+    enableSorting: true,
   },
   {
     id: "User",
@@ -43,7 +43,7 @@ export const columns: ColumnDef<FileDownload>[] = [
       return <>{user.username}</>;
     },
     enableHiding: true,
-    enableSorting: false
+    enableSorting: false,
   },
   {
     id: "Type",
@@ -60,7 +60,7 @@ export const columns: ColumnDef<FileDownload>[] = [
       return <Badge variant="outline">{file_type.display_name}</Badge>;
     },
     enableHiding: true,
-    enableSorting: false
+    enableSorting: false,
   },
   {
     id: "Download",
@@ -69,12 +69,15 @@ export const columns: ColumnDef<FileDownload>[] = [
       const { id, scan_report, name } = row.original;
       const handleDownload = async () => {
         const response = await downloadFile(scan_report, id);
-        if (response.success && response.blob) {
-          // Use the blob directly
+        if (response.success && response.downloadUrl) {
+          // Use the streaming download URL
+          window.open(response.downloadUrl, "_blank");
+        } else if (response.success && response.blob) {
+          // Fallback for SR exporting (blob approach)
           saveAs(response.blob, name);
         } else {
           toast.error(
-            `Error downloading file: ${(response.errorMessage as any).message}`
+            `Error downloading file: ${response.errorMessage || "Unknown error"}`,
           );
         }
       };
@@ -85,6 +88,6 @@ export const columns: ColumnDef<FileDownload>[] = [
       );
     },
     enableHiding: true,
-    enableSorting: false
-  }
+    enableSorting: false,
+  },
 ];
