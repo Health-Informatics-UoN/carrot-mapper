@@ -83,7 +83,10 @@ export const columns: ColumnDef<FileDownload>[] = [
       };
       return (
         <Button variant={"outline"} onClick={handleDownload}>
-          Download <Download />
+          Download{" "}
+          <a href={`/api/download/${scan_report}/${id}`} target="_blank">
+            <Download />
+          </a>
         </Button>
       );
     },
