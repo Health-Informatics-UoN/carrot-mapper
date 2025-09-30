@@ -15,6 +15,16 @@ const nextConfig = {
       bodySizeLimit: MAX_FILE_SIZE_BYTES,
     },
   },
+  // Optimize build performance
+  swcMinify: true,
+  compiler: {
+    removeConsole: process.env.NODE_ENV === "production",
+  },
+  // Enable build caching
+  onDemandEntries: {
+    maxInactiveAge: 25 * 1000,
+    pagesBufferLength: 2,
+  },
   async redirects() {
     return [
       {
