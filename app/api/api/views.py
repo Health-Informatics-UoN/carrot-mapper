@@ -1589,4 +1589,6 @@ class HealthCheckView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
-        return Response({"status": "healthy"}, status=status.HTTP_200_OK)
+        return Response(
+            {"status": "healthy", "version": version("api")}, status=status.HTTP_200_OK
+        )
