@@ -113,6 +113,8 @@ jobs:
           push: true
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.frontend_meta.outputs.tags }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       # Build and push Airflow webserver
       - name: Extract Airflow webserver Docker metadata
