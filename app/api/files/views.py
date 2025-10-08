@@ -154,7 +154,9 @@ class FileDownloadView(
             file_type_description = (
                 "JSON V1"
                 if file_type == "application/json_v1"
-                else "JSON V2" if file_type == "application/json_v2" else "CSV"
+                else "JSON V2"
+                if file_type == "application/json_v2"
+                else "CSV"
             )
             Job.objects.create(
                 scan_report=ScanReport.objects.get(id=scan_report_id),
