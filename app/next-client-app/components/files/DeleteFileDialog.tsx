@@ -1,0 +1,81 @@
+"use client";
+
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger
+} from "../ui/dialog";
+import { toast } from "sonner";
+import { Button } from "../ui/button";
+import { deleteFile } from "@/api/files";
+import { useRouter } from "next/navigation";
+import { Trash2 } from "lucide-react";
+
+interface DeleteFileDialogProps {
+  fileId: number;
+  scanReportId: number;
+  fileName: string;
+  isOpen?: boolean;
+  setOpen?: (isOpen: boolean) => void;
+  needTrigger?: boolean;
+}
+
+const DeleteFileDialog = ({
+  fileId,
+  scanReportId,
+  fileName,
+  isOpen,
+  setOpen = () => {},
+  needTrigger = false
+}: DeleteFileDialogProps) => {
+  const router = useRouter();
+
+  const handleDelete = async () => {
+    const response = await deleteFile(scanReportId, fileId);
+    if (response.success) {
+      toast.success(`File "${fileName}" deleted successfully`);
+      router.refresh();
+    } else {
+      toast.error(
+        `Failed to delete file: ${response.errorMessage || "Unknown error"}`
+      );
+    }
+    setOpen(false);
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={() => setOpen(false)}>
+      {needTrigger && (
+        <DialogTrigger asChild>
+          <Button variant="destructive" size="sm">
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </DialogTrigger>
+      )}
+      <DialogContent>
+        <DialogHeader className="text-start">
+          <DialogTitle>Delete File</DialogTitle>
+          <DialogDescription>
+            Are you sure you want to delete "{fileName}"? This action cannot be
+            undone and will permanently remove the file from storage.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter className="flex-col space-y-2 sm:space-y-0 sm:space-x-2">
+          <Button variant="destructive" onClick={handleDelete}>
+            Delete
+          </Button>
+          <DialogClose asChild>
+            <Button variant="outline">Cancel</Button>
+          </DialogClose>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+export default DeleteFileDialog;

@@ -12,6 +12,8 @@ const fetchKeys = {
     file_id
       ? `v2/scanreports/${scan_report_id}/rules/downloads/${file_id}/`
       : `v2/scanreports/${scan_report_id}/download/`,
+  deleteFile: (scan_report_id: number, file_id: number) =>
+    `v2/scanreports/${scan_report_id}/rules/downloads/${file_id}/`,
 };
 
 export async function list(
@@ -75,6 +77,21 @@ export async function downloadFile(
       const downloadUrl = `/api/download/${scan_report_id}/${file_id}`;
       return { success: true, downloadUrl };
     }
+  } catch (error: any) {
+    return { success: false, errorMessage: error.message };
+  }
+}
+
+export async function deleteFile(
+  scan_report_id: number,
+  file_id: number,
+): Promise<{ success: boolean; errorMessage?: string }> {
+  try {
+    await request(fetchKeys.deleteFile(scan_report_id, file_id), {
+      method: "DELETE",
+    });
+    revalidatePath(`/scanreports/${scan_report_id}/downloads`);
+    return { success: true };
   } catch (error: any) {
     return { success: false, errorMessage: error.message };
   }

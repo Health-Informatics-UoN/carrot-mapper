@@ -9,6 +9,7 @@ import { saveAs } from "file-saver";
 import { Badge } from "@/components/ui/badge";
 import { downloadFile } from "@/api/files";
 import { toast } from "sonner";
+import DeleteFileDialog from "@/components/files/DeleteFileDialog";
 
 export const columns: ColumnDef<FileDownload>[] = [
   {
@@ -92,4 +93,21 @@ export const columns: ColumnDef<FileDownload>[] = [
     enableHiding: true,
     enableSorting: false,
   },
+  {
+    id: "Delete",
+    header: ({ column }) => <DataTableColumnHeader column={column} title="" />,
+    cell: ({ row }) => {
+      const { id, scan_report, name } = row.original;
+      return (
+        <DeleteFileDialog
+          fileId={id}
+          scanReportId={scan_report}
+          fileName={name}
+          needTrigger={true}
+        />
+      );
+    },
+    enableHiding: true,
+    enableSorting: false
+  }
 ];
