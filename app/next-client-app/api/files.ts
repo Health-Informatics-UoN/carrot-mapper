@@ -13,7 +13,7 @@ const fetchKeys = {
       ? `v2/scanreports/${scan_report_id}/rules/downloads/${file_id}/`
       : `v2/scanreports/${scan_report_id}/download/`,
   deleteFile: (scan_report_id: number, file_id: number) =>
-    `v2/scanreports/${scan_report_id}/rules/downloads/${file_id}/`,
+    `v2/scanreports/${scan_report_id}/rules/delete/${file_id}/`,
 };
 
 export async function list(

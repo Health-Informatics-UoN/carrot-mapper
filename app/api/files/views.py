@@ -66,14 +66,10 @@ class FileDownloadView(
         scan_report_id = self.kwargs["scanreport_pk"]
         scan_report = get_object_or_404(ScanReport, pk=scan_report_id)
 
-        # Hide files older than retention period (default: 30 days)
-        retention_days = int(os.getenv("FILE_RETENTION_DAYS", "30"))
-        cutoff_date = timezone.now() - timedelta(days=retention_days)
-
-        # Only show recent, non-deleted files
+        # Return all non-deleted files
+        # Frontend will handle hiding files older than FILE_RETENTION_DAYS
         return FileDownload.objects.filter(
             scan_report=scan_report,
-            created_at__gte=cutoff_date,
             deleted_at__isnull=True,
         )
 
@@ -154,9 +150,7 @@ class FileDownloadView(
             file_type_description = (
                 "JSON V1"
                 if file_type == "application/json_v1"
-                else "JSON V2"
-                if file_type == "application/json_v2"
-                else "CSV"
+                else "JSON V2" if file_type == "application/json_v2" else "CSV"
             )
             Job.objects.create(
                 scan_report=ScanReport.objects.get(id=scan_report_id),
@@ -201,6 +195,7 @@ class FileDownloadView(
 
             # Mark as deleted but keep record for audit
             file_download.deleted_at = timezone.now()
+            file_download.deleted_by = request.user
             file_download.save()
 
             return HttpResponse(status=204)
