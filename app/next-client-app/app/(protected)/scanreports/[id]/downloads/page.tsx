@@ -3,7 +3,7 @@ import { list } from "@/api/files";
 import { columns } from "./columns";
 import { getJobs } from "@/api/scanreports";
 import { DownloadStatus } from "./download-status";
-import { FileDownloadsTable } from "./FileDownloadsTable";
+import { FileDownloadsTable } from "@/components/files/FileDownloadsTable";
 
 interface DownloadsProps {
   params: Promise<{
