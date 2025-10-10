@@ -35,7 +35,7 @@ class FileDownloadView(
     - Download a specific file by its primary key.
     - Request the generation of a file for download by sending a message to a queue.
     - Delete a file manually from storage and database.
-    - Automatically filter files older than FILE_RETENTION_DAYS from the list.
+    - Automatically filter files older than OLD_FILE_THRESHOLD from the list.
     Attributes:
         serializer_class (Serializer): The serializer class used for file downloads.
         filter_backends (list): The list of filter backends for filtering querysets.
@@ -45,7 +45,7 @@ class FileDownloadView(
     Methods:
         get_queryset():
             Retrieves the queryset of FileDownload objects filtered by the scan report ID
-            and age (files older than FILE_RETENTION_DAYS are excluded).
+            and age (files older than OLD_FILE_THRESHOLD are excluded).
         get(request, *args, **kwargs):
             Handles GET requests. If a primary key is provided, it downloads the file.
             Otherwise, it returns a paginated list of files.
@@ -67,7 +67,7 @@ class FileDownloadView(
         scan_report = get_object_or_404(ScanReport, pk=scan_report_id)
 
         # Return all non-deleted files
-        # Frontend will handle hiding files older than FILE_RETENTION_DAYS
+        # Frontend will handle hiding files older than OLD_FILE_THRESHOLD
         return FileDownload.objects.filter(
             scan_report=scan_report,
             deleted_at__isnull=True,
@@ -150,9 +150,7 @@ class FileDownloadView(
             file_type_description = (
                 "JSON V1"
                 if file_type == "application/json_v1"
-                else "JSON V2"
-                if file_type == "application/json_v2"
-                else "CSV"
+                else "JSON V2" if file_type == "application/json_v2" else "CSV"
             )
             Job.objects.create(
                 scan_report=ScanReport.objects.get(id=scan_report_id),

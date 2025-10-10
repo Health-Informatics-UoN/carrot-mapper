@@ -5,7 +5,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@/components/data-table";
 import { Button } from "@/components/ui/button";
 import { Eye, EyeOff } from "lucide-react";
-import { FILE_RETENTION_DAYS } from "@/constants/config";
+import { OLD_FILE_THRESHOLD } from "@/constants/config";
 
 interface FileDownloadsTableProps {
   data: FileDownload[];
@@ -26,7 +26,7 @@ export function FileDownloadsTable({
 
   const cutoffDate = useMemo(() => {
     const millisecondsPerDay = 24 * 60 * 60 * 1000;
-    return new Date(Date.now() - FILE_RETENTION_DAYS * millisecondsPerDay);
+    return new Date(Date.now() - OLD_FILE_THRESHOLD * millisecondsPerDay);
   }, []);
 
   const { recentFiles, oldFiles } = useMemo(() => {

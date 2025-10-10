@@ -77,7 +77,7 @@ services:
       - RECOMMENDATION_SERVICE_BASE_URL=https://api.hyperunison.com/api/public/suggester/generate
       - RECOMMENDATION_SERVICE_API_KEY=unison-api-key
       - NEXT_PUBLIC_BODY_SIZE_LIMIT=31457280
-      - NEXT_PUBLIC_FILE_RETENTION_DAYS=30
+      - NEXT_PUBLIC_OLD_FILE_THRESHOLD=30
     volumes:
       - ./app/next-client-app:/app
       - /app/node_modules
