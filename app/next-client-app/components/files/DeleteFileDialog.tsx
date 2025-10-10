@@ -4,6 +4,7 @@ import {
   Dialog,
   DialogClose,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -59,11 +60,11 @@ const DeleteFileDialog = ({
       <DialogContent>
         <DialogHeader className="text-start">
           <DialogTitle>Delete File</DialogTitle>
+          <DialogDescription>
+            Are you sure you want to delete "{fileName}"? This action cannot be
+            undone and will permanently remove the file from storage.
+          </DialogDescription>
         </DialogHeader>
-        <p className="text-sm text-muted-foreground">
-          Are you sure you want to delete "{fileName}"? This action cannot be
-          undone and will permanently remove the file from storage.
-        </p>
         <DialogFooter className="flex-col space-y-2 sm:space-y-0 sm:space-x-2">
           <Button variant="destructive" onClick={handleDelete}>
             Delete
