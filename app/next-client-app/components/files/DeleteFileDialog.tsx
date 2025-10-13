@@ -14,6 +14,7 @@ import { Button } from "../ui/button";
 import { deleteFile } from "@/api/files";
 import { useRouter } from "next/navigation";
 import { Trash2 } from "lucide-react";
+import { useState } from "react";
 
 interface DeleteFileDialogProps {
   fileId: number;
@@ -29,26 +30,29 @@ const DeleteFileDialog = ({
   scanReportId,
   fileName,
   isOpen,
-  setOpen = () => {},
+  setOpen,
   needTrigger = false
 }: DeleteFileDialogProps) => {
   const router = useRouter();
+  const [internalOpen, setInternalOpen] = useState(false);
+  const dialogOpen = isOpen !== undefined ? isOpen : internalOpen;
+  const setDialogOpen = setOpen || setInternalOpen;
 
   const handleDelete = async () => {
     const response = await deleteFile(scanReportId, fileId);
     if (response.success) {
       toast.success(`File "${fileName}" deleted successfully`);
       router.refresh();
+      setDialogOpen(false); // This will close dialog after successful deletion
     } else {
       toast.error(
         `Failed to delete file: ${response.errorMessage || "Unknown error"}`
       );
     }
-    setOpen(false);
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={() => setOpen(false)}>
+    <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
       {needTrigger && (
         <DialogTrigger asChild>
           <Button variant="destructive" size="sm">
