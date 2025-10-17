@@ -1,14 +1,17 @@
 import json
+import os
+from datetime import timedelta
 
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema
 from jobs.models import Job, JobStage, StageStatus
 from mapping.models import ScanReport
 from rest_framework.filters import OrderingFilter
 from rest_framework.generics import GenericAPIView
-from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
+from rest_framework.mixins import DestroyModelMixin, ListModelMixin, RetrieveModelMixin
 from rest_framework.permissions import IsAuthenticated
 from services.storage_service import StorageService
 from services.worker_service import get_worker_service
@@ -22,13 +25,17 @@ storage_service = StorageService()
 worker_service = get_worker_service()
 
 
-class FileDownloadView(GenericAPIView, ListModelMixin, RetrieveModelMixin):
+class FileDownloadView(
+    GenericAPIView, ListModelMixin, RetrieveModelMixin, DestroyModelMixin
+):
     """
     A view for handling file downloads and file generation requests.
     This view provides functionality to:
     - Retrieve a list of downloadable files associated with a specific scan report.
     - Download a specific file by its primary key.
     - Request the generation of a file for download by sending a message to a queue.
+    - Delete a file manually from storage and database.
+    - Return all non-deleted files (frontend handles auto-hiding based on age).
     Attributes:
         serializer_class (Serializer): The serializer class used for file downloads.
         filter_backends (list): The list of filter backends for filtering querysets.
@@ -37,12 +44,14 @@ class FileDownloadView(GenericAPIView, ListModelMixin, RetrieveModelMixin):
         ordering (str): The default ordering for querysets.
     Methods:
         get_queryset():
-            Retrieves the queryset of FileDownload objects filtered by the scan report ID.
+            Retrieves all non-deleted FileDownload objects for a scan report.
         get(request, *args, **kwargs):
             Handles GET requests. If a primary key is provided, it downloads the file.
             Otherwise, it returns a paginated list of files.
         post(request, *args, **kwargs):
             Handles POST requests to request the generation of a file for download.
+        delete(request, *args, **kwargs):
+            Handles DELETE requests to manually remove a file from storage and database.
     """
 
     serializer_class = FileDownloadSerializer
@@ -56,7 +65,12 @@ class FileDownloadView(GenericAPIView, ListModelMixin, RetrieveModelMixin):
         scan_report_id = self.kwargs["scanreport_pk"]
         scan_report = get_object_or_404(ScanReport, pk=scan_report_id)
 
-        return FileDownload.objects.filter(scan_report=scan_report)
+        # Return all non-deleted files
+        # Frontend will handle hiding files older than OLD_FILE_THRESHOLD
+        return FileDownload.objects.filter(
+            scan_report=scan_report,
+            deleted_at__isnull=True,
+        )
 
     def get(self, request, *args, **kwargs):
         if "pk" in kwargs:
@@ -151,3 +165,40 @@ class FileDownloadView(GenericAPIView, ListModelMixin, RetrieveModelMixin):
             return JsonResponse({"error": "Internal server error."}, status=500)
 
         return HttpResponse(status=202)
+
+    def delete(self, request, *args, **kwargs):
+        """
+        Handles DELETE requests to soft-delete a file from storage.
+
+        This allows users to immediately delete unwanted files before the automatic
+        retention period expires. The physical file is removed from storage (Azure/MinIO)
+        but the database record is kept for audit purposes with a deleted_at timestamp.
+
+        Args:
+            request: The HTTP request object.
+            *args: Variable length argument list.
+            **kwargs: Must contain 'pk' - the primary key of the FileDownload to delete.
+
+        Returns:
+            - 204 No Content: If the file is successfully deleted.
+            - 404 Not Found: If the file doesn't exist.
+            - 500 Internal Server Error: If an error occurs during deletion.
+        """
+        try:
+            file_download = get_object_or_404(FileDownload, pk=kwargs["pk"])
+
+            # Delete the physical file from storage if file_url exists
+            if file_download.file_url:
+                try:
+                    storage_service.delete_file(file_download.file_url, "rules-exports")
+                except Exception:
+                    pass  # File may not exist in storage
+
+            # Mark as deleted but keep record for audit
+            file_download.deleted_at = timezone.now()
+            file_download.deleted_by = request.user
+            file_download.save()
+
+            return HttpResponse(status=204)
+        except Exception:
+            return JsonResponse({"error": "Internal server error."}, status=500)

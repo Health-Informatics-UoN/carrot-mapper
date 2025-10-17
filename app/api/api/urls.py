@@ -80,6 +80,11 @@ urlpatterns = [
         name="scan-report-downloads-get",
     ),
     path(
+        "v2/scanreports/<int:scanreport_pk>/rules/delete/<int:pk>/",
+        FileDownloadView.as_view(),
+        name="delete-rules-export-file",
+    ),
+    path(
         "v2/scanreports/<int:pk>/tables/<int:table_pk>/",
         views.ScanReportTableDetailV2.as_view(),
         name="scan-report-table-detail",
