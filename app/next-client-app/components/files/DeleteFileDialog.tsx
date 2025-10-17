@@ -43,7 +43,7 @@ const DeleteFileDialog = ({
     if (response.success) {
       toast.success(`File "${fileName}" deleted successfully`);
       router.refresh();
-      setDialogOpen(false); // This will close dialog after successful deletion
+      setDialogOpen(false);
     } else {
       toast.error(
         `Failed to delete file: ${response.errorMessage || "Unknown error"}`
