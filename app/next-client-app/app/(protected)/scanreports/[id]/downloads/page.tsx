@@ -1,9 +1,9 @@
 import { objToQuery } from "@/lib/client-utils";
-import { DataTable } from "@/components/data-table";
 import { list } from "@/api/files";
 import { columns } from "./columns";
 import { getJobs } from "@/api/scanreports";
 import { DownloadStatus } from "./download-status";
+import { FileDownloadsTable } from "@/components/files/FileDownloadsTable";
 
 interface DownloadsProps {
   params: Promise<{
@@ -16,14 +16,12 @@ export default async function Downloads(props: DownloadsProps) {
   const searchParams = await props.searchParams;
   const params = await props.params;
 
-  const {
-    id
-  } = params;
+  const { id } = params;
 
   const defaultPageSize = 20;
   const defaultParams = {
     p: 1,
-    page_size: defaultPageSize,
+    page_size: defaultPageSize
   };
   const combinedParams = { ...defaultParams, ...searchParams };
   const query = objToQuery(combinedParams);
@@ -39,7 +37,7 @@ export default async function Downloads(props: DownloadsProps) {
   return (
     <div>
       {filesList && (
-        <DataTable
+        <FileDownloadsTable
           columns={columns}
           data={filesList.results}
           count={filesList.count}

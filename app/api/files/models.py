@@ -40,6 +40,8 @@ class FileDownload(BaseModel):
         user (User, optional): The user who generated the file. Defaults to None.
         file_type (FileType): The type of the file.
         file_url (str, optional): The URL for downloading the file. Defaults to None.
+        deleted_at (datetime, optional): Timestamp when the file was deleted. Defaults to None.
+        deleted_by (User, optional): The user who deleted the file. Defaults to None.
 
     Returns:
         str: The name of the file.
@@ -55,6 +57,14 @@ class FileDownload(BaseModel):
     )
     file_type = models.ForeignKey(FileType, on_delete=models.CASCADE)
     file_url = models.CharField(max_length=500, null=True, blank=True)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    deleted_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name="deleted_files",
+    )
 
     def __str__(self):
         return str(self.name)
