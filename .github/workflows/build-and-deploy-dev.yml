@@ -4,7 +4,7 @@
 # It builds Docker images from the current branch and deploys them to dev only.
 #
 # When to use:
-# - Testing feature branches before merging to master
+# - Testing feature branches before merging to main
 # - Manual testing of changes in a controlled environment
 # - Debugging issues that need to be tested in dev
 #

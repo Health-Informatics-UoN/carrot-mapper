@@ -1,14 +1,14 @@
 # Build and Push Edge Images
 #
-# This workflow builds Docker images from the master branch and pushes them to the registry.
+# This workflow builds Docker images from the main branch and pushes them to the registry.
 # These images are tagged as 'edge' and represent the latest production-ready code.
 #
 # When to use:
-# - Automatically triggered when code is pushed to master
+# - Automatically triggered when code is pushed to main
 # - Manually triggered to rebuild edge images
 #
 # What it does:
-# - Builds backend, frontend, and Airflow images from master branch
+# - Builds backend, frontend, and Airflow images from main branch
 # - Tags images as 'edge', commit SHA, and timestamp
 # - Pushes images to GitHub Container Registry
 # - Triggers the deploy.test.yml workflow when completed
@@ -18,7 +18,7 @@ name: Build and Push Edge Images
 on:
   push:
     branches:
-      - master
+      - main
   workflow_dispatch:
 
 env:
