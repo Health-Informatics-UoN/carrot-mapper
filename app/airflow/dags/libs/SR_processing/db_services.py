@@ -8,7 +8,6 @@ from libs.queries import create_fields_query
 from libs.settings import AIRFLOW_DAGRUN_TIMEOUT, AIRFLOW_DEBUG_MODE
 from libs.utils import update_job_status
 from openpyxl.worksheet.worksheet import Worksheet
-from psycopg2.extras import execute_values
 
 # PostgreSQL connection hook
 pg_hook = PostgresHook(
@@ -106,35 +105,28 @@ def update_temp_data_dictionary_table(
                         }
                     )
 
-        # Insert records into the temporary table using execute_values for fast bulk inserts
+        # Insert records into the temporary table
         if dictionary_records:
-            conn = pg_hook.get_conn()
-            cursor = conn.cursor()
-            try:
-                execute_values(
-                    cursor,
-                    f"""
-                    INSERT INTO temp_data_dictionary_{scan_report_id}
-                        (table_name, field_name, value, value_description)
-                    VALUES %s
-                    """,
-                    [
-                        (
-                            d["table_name"],
-                            d["field_name"],
-                            d["value"],
-                            d["value_description"],
-                        )
-                        for d in dictionary_records
-                    ],
-                )
-                conn.commit()
-            except Exception:
-                conn.rollback()
-                raise
-            finally:
-                cursor.close()
-                conn.close()
+            pg_hook.insert_rows(
+                table=f"temp_data_dictionary_{scan_report_id}",
+                rows=[
+                    (
+                        d["table_name"],
+                        d["field_name"],
+                        d["value"],
+                        d["value_description"],
+                    )
+                    for d in dictionary_records
+                ],
+                target_fields=[
+                    "table_name",
+                    "field_name",
+                    "value",
+                    "value_description",
+                ],
+                fast_executemany=True,
+                commit_every=3000,
+            )
 
         logging.info(
             f"Created temporary data dictionary table with {len(dictionary_records)} records"
@@ -205,34 +197,25 @@ def create_temp_field_values_table(
                     }
                 )
 
-        # Using execute_values() for fast bulk inserts (see notes above)
         if field_values_data:
-            conn = pg_hook.get_conn()
-            cursor = conn.cursor()
-            try:
-                execute_values(
-                    cursor,
-                    f"""
-                    INSERT INTO temp_field_values_{table_id}
-                        (field_name, value, frequency)
-                    VALUES %s
-                    """,
-                    [
-                        (
-                            d["field_name"],
-                            d["value"],
-                            d["frequency"],
-                        )
-                        for d in field_values_data
-                    ],
-                )
-                conn.commit()
-            except Exception:
-                conn.rollback()
-                raise
-            finally:
-                cursor.close()
-                conn.close()
+            pg_hook.insert_rows(
+                table=f"temp_field_values_{table_id}",
+                rows=[
+                    (
+                        d["field_name"],
+                        d["value"],
+                        d["frequency"],
+                    )
+                    for d in field_values_data
+                ],
+                target_fields=[
+                    "field_name",
+                    "value",
+                    "frequency",
+                ],
+                fast_executemany=True,
+                commit_every=3000,
+            )
 
     except Exception as e:
         logging.error(f"Error creating data dictionary table: {str(e)}")
