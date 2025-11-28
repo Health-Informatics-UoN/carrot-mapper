@@ -125,7 +125,7 @@ def update_temp_data_dictionary_table(
                     "value_description",
                 ],
                 fast_executemany=True,
-                commit_every=0,  # commit every row to avoid transaction overhead
+                commit_every=10000,  # commit every 10k
             )
 
         logging.info(
@@ -214,7 +214,7 @@ def create_temp_field_values_table(
                     "frequency",
                 ],
                 fast_executemany=True,
-                commit_every=0,  # commit every row to avoid transaction overhead
+                commit_every=10000,  # commit every 10k
             )
 
     except Exception as e:
