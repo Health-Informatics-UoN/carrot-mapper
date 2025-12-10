@@ -1,8 +1,8 @@
 import os
 
-from azure.storage.blob import BlobServiceClient  # type: ignore
-from django.core.management.base import BaseCommand  # type: ignore
-from minio import Minio  # type: ignore
+from azure.storage.blob import BlobServiceClient
+from django.core.management.base import BaseCommand
+from minio import Minio
 
 
 class Command(BaseCommand):
