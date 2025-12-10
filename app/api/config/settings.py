@@ -240,7 +240,7 @@ RULES_QUEUE_NAME = os.environ.get("RULES_QUEUE_NAME", "rules-queue")
 
 # Auth
 
-ACCOUNT_EMAIL_REQUIRED = False
+ACCOUNT_SIGNUP_FIELDS = ['username*', 'password1*',]
 ACCOUNT_EMAIL_VERIFICATION = "none"
 
 SIMPLE_JWT = {
