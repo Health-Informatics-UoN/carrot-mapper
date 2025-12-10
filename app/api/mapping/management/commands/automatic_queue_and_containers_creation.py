@@ -1,7 +1,6 @@
 import os
 
 from azure.storage.blob import BlobServiceClient  # type: ignore
-from azure.storage.queue import QueueServiceClient  # type: ignore
 from django.core.management.base import BaseCommand  # type: ignore
 from minio import Minio  # type: ignore
 
@@ -29,42 +28,7 @@ class Command(BaseCommand):
 
     CONTAINERS = ["scan-reports", "data-dictionaries", "rules-exports", "airflow-logs"]
 
-    def _create_azure_queues(self, queue_service: str):
-        """
-        Creates the required Azure Queues.
-
-        Args:
-            queue_service: QueueServiceClient instance.
-
-        Returns:
-            - Creates queue if it doesn't exist
-            - If the queue exists, it will skip and
-            returns a message.
-        """
-        try:
-            for queue_name in self.QUEUES:
-                queue_client = queue_service.get_queue_client(queue_name)
-                try:
-                    # Check if the queue exists
-                    queue_client.get_queue_properties()
-                    self.stdout.write(
-                        self.style.WARNING(
-                            f"Queue '{queue_name}' already exists. Skipping creation."
-                        )
-                    )
-                # If the queue does not exist, create it
-                except Exception:
-                    queue_client.create_queue()
-                    self.stdout.write(
-                        self.style.SUCCESS(
-                            f"Queue '{queue_name}' created successfully."
-                        )
-                    )
-
-        except Exception as e:
-            raise ValueError(f"Error when creating Azure Queue: {e}")
-
-    def _create_blob_containers(self, blob_service: str):
+    def _create_blob_containers(self, blob_service: BlobServiceClient):
         """
         Creates the required Azure Blob Containers.
 
@@ -96,7 +60,7 @@ class Command(BaseCommand):
         except Exception as e:
             raise ValueError(f"Error when creating Azure Blob Container: {e}")
 
-    def _create_minio_buckets(self, minio_client: str):
+    def _create_minio_buckets(self, minio_client: Minio):
         """
         Creates the required MinIO Buckets.
 
@@ -145,15 +109,11 @@ class Command(BaseCommand):
             return
 
         try:
-            queue_service = QueueServiceClient.from_connection_string(
-                self.AZURE_CONN_STRING
-            )
             blob_service = BlobServiceClient.from_connection_string(
                 self.AZURE_CONN_STRING
             )
 
-            # Create Queues and Blob Containers
-            self._create_azure_queues(queue_service)
+            # Create Blob Containers
             self._create_blob_containers(blob_service)
 
             self.stdout.write(self.style.SUCCESS("Azurite Storage setup complete."))
