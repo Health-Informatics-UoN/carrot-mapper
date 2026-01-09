@@ -953,7 +953,7 @@ wheels = [
 
 [[package]]
 name = "carrot-airflow"
-version = "4.2.5"
+version = "4.2.8"
 source = { virtual = "." }
 dependencies = [
     { name = "apache-airflow" },
