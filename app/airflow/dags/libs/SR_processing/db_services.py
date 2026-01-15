@@ -5,9 +5,14 @@ from typing import Any, Dict, List, Tuple
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from libs.enums import JobStageType, StageStatusType
 from libs.queries import create_fields_query
-from libs.settings import AIRFLOW_DAGRUN_TIMEOUT, AIRFLOW_DEBUG_MODE
+from libs.settings import (
+    AIRFLOW_DAGRUN_TIMEOUT,
+    AIRFLOW_DEBUG_MODE,
+    EXECUTE_VALUES_PAGE_SIZE,
+)
 from libs.utils import update_job_status
 from openpyxl.worksheet.worksheet import Worksheet
+from psycopg2.extras import execute_values
 
 # PostgreSQL connection hook
 pg_hook = PostgresHook(
@@ -107,26 +112,26 @@ def update_temp_data_dictionary_table(
 
         # Insert records into the temporary table
         if dictionary_records:
-            pg_hook.insert_rows(
-                table=f"temp_data_dictionary_{scan_report_id}",
-                rows=[
-                    (
-                        d["table_name"],
-                        d["field_name"],
-                        d["value"],
-                        d["value_description"],
+            # Get a database connection - this automatically commits on success or rolls back on error
+            with pg_hook.get_conn() as conn:
+                # Create a cursor for executing SQL - this automatically closes when we're done
+                with conn.cursor() as cursor:
+                    # Bulk insert all records efficiently using execute_values
+                    execute_values(
+                        cursor,
+                        f"INSERT INTO temp_data_dictionary_{scan_report_id} (table_name, field_name, value, value_description) VALUES %s",
+                        [
+                            (
+                                d["table_name"],
+                                d["field_name"],
+                                d["value"],
+                                d["value_description"],
+                            )
+                            for d in dictionary_records
+                        ],
+                        page_size=EXECUTE_VALUES_PAGE_SIZE,
                     )
-                    for d in dictionary_records
-                ],
-                target_fields=[
-                    "table_name",
-                    "field_name",
-                    "value",
-                    "value_description",
-                ],
-                fast_executemany=True,
-                commit_every=10000,  # commit every 10k
-            )
+                    conn.commit()
 
         logging.info(
             f"Created temporary data dictionary table with {len(dictionary_records)} records"
@@ -198,24 +203,18 @@ def create_temp_field_values_table(
                 )
 
         if field_values_data:
-            pg_hook.insert_rows(
-                table=f"temp_field_values_{table_id}",
-                rows=[
-                    (
-                        d["field_name"],
-                        d["value"],
-                        d["frequency"],
+            with pg_hook.get_conn() as conn:
+                with conn.cursor() as cursor:
+                    execute_values(
+                        cursor,
+                        f"INSERT INTO temp_field_values_{table_id} (field_name, value, frequency) VALUES %s",
+                        [
+                            (d["field_name"], d["value"], d["frequency"])
+                            for d in field_values_data
+                        ],
+                        page_size=EXECUTE_VALUES_PAGE_SIZE,
                     )
-                    for d in field_values_data
-                ],
-                target_fields=[
-                    "field_name",
-                    "value",
-                    "frequency",
-                ],
-                fast_executemany=True,
-                commit_every=10000,  # commit every 10k
-            )
+                    conn.commit()
 
     except Exception as e:
         logging.error(f"Error creating data dictionary table: {str(e)}")
