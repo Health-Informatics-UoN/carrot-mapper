@@ -42,7 +42,7 @@
     "react-dom": "^19.1.0",
     "react-select": "^5.8.0",
     "react-tooltip": "^5.28.0",
-    "shadcn": "^2.1.0",
+    "shadcn": "^3.6.3",
     "sharp": "^0.33.4",
     "sonner": "^1.4.41",
     "tailwind-merge": "^2.5.1",
