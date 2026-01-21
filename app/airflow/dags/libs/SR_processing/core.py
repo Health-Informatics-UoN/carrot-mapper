@@ -157,6 +157,9 @@ def process_and_create_scan_report_entries(**kwargs) -> None:
             logging.error(
                 f"Error inserting tables into mapping_scanreporttable: {str(e)}"
             )
+            # Clean up temp tables before updating job status to fail
+            if table_pairs:
+                delete_temp_tables(scan_report_id, table_pairs)
             update_job_status(
                 stage=JobStageType.UPLOAD_SCAN_REPORT,
                 status=StageStatusType.FAILED,
@@ -172,6 +175,7 @@ def process_and_create_scan_report_entries(**kwargs) -> None:
 
         except Exception as e:
             logging.error(f"Error creating scan report fields: {str(e)}")
+            delete_temp_tables(scan_report_id, table_pairs)
             update_job_status(
                 stage=JobStageType.UPLOAD_SCAN_REPORT,
                 status=StageStatusType.FAILED,
@@ -192,8 +196,12 @@ def process_and_create_scan_report_entries(**kwargs) -> None:
                         "scan_report_id": scan_report_id,
                     },
                 )
+            # TEST: Forced failure to test temp table cleanup
+            raise Exception("TEST: Forced failure to test temp table cleanup")
         except Exception as e:
             logging.error(f"Error creating scan report values: {str(e)}")
+            # Clean up temp tables before failing
+            delete_temp_tables(scan_report_id, table_pairs)
             update_job_status(
                 stage=JobStageType.UPLOAD_SCAN_REPORT,
                 status=StageStatusType.FAILED,
