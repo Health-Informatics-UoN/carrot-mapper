@@ -196,8 +196,6 @@ def process_and_create_scan_report_entries(**kwargs) -> None:
                         "scan_report_id": scan_report_id,
                     },
                 )
-            # TEST: Forced failure to test temp table cleanup
-            raise Exception("TEST: Forced failure to test temp table cleanup")
         except Exception as e:
             logging.error(f"Error creating scan report values: {str(e)}")
             # Clean up temp tables before failing
