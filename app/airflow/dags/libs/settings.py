@@ -17,4 +17,7 @@ SEARCH_ENABLED = os.getenv("SEARCH_ENABLED", "false").lower()
 # Timedelta for dagrun_timeout in minutes
 AIRFLOW_DAGRUN_TIMEOUT = os.getenv("AIRFLOW_DAGRUN_TIMEOUT", 60)
 
+# Page size for bulk database inserts (execute_values)
+EXECUTE_VALUES_PAGE_SIZE = int(os.getenv("EXECUTE_VALUES_PAGE_SIZE", 10000))
+
 AIRFLOW_VAR_JSON_VERSION = os.getenv("AIRFLOW_VAR_JSON_VERSION", "v1")
