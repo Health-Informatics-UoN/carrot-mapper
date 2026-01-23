@@ -198,7 +198,6 @@ def process_and_create_scan_report_entries(**kwargs) -> None:
                 )
         except Exception as e:
             logging.error(f"Error creating scan report values: {str(e)}")
-            # Clean up temp tables before failing
             delete_temp_tables(scan_report_id, table_pairs)
             update_job_status(
                 stage=JobStageType.UPLOAD_SCAN_REPORT,
