@@ -7,7 +7,12 @@ from libs.SR_processing.core import (
     process_and_create_scan_report_entries,
     process_data_dictionary,
 )
-from libs.utils import connect_to_storage, create_task, validate_params_SR_processing
+from libs.utils import (
+    connect_to_storage,
+    create_task,
+    delete_temp_tables_on_failure,
+    validate_params_SR_processing,
+)
 
 """
 This DAG automates the process of creating scan report tables, fields and values 
@@ -44,6 +49,7 @@ dag = DAG(
     catchup=False,
     is_paused_upon_creation=False,
     dagrun_timeout=timedelta(minutes=float(AIRFLOW_DAGRUN_TIMEOUT)),
+    on_failure_callback=delete_temp_tables_on_failure,
 )
 
 # TODO: add validate for DD file size: DATA_UPLOAD_MAX_MEMORY_SIZE :(

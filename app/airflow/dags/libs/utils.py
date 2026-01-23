@@ -214,6 +214,57 @@ def update_job_status_on_failure(context):
         logging.error(f"Failed to update job status on skipped task: {str(e)}")
 
 
+def delete_temp_tables_on_failure(context):
+    """
+    Delete temporary tables when the DAG fails or times out.
+
+    This handles cleanup when failures happen outside the normal pipeline code, like
+    timeouts or external errors. Since the tables are already in the database even if
+    the DAG fails, we query mapping_scanreporttable to find all tables for this
+    scan_report_id, then delete the temp tables (temp_data_dictionary and
+    temp_field_values).
+
+    Args:
+        context: Airflow execution context containing task_instance, dag, dag_run, etc.
+    """
+    try:
+        dag_run = context["dag_run"]
+        dag_run_conf = dag_run.conf or {}
+        scan_report_id = dag_run_conf.get("scan_report_id")
+
+        if not scan_report_id:
+            logging.warning(
+                f"No scan_report_id found in DAG run configuration, skipping temp table cleanup"
+            )
+            return
+
+        query = """
+            SELECT name, id 
+            FROM mapping_scanreporttable 
+            WHERE scan_report_id = %(scan_report_id)s
+        """
+        records = pg_hook.get_records(
+            query, parameters={"scan_report_id": scan_report_id}
+        )
+
+        table_pairs = [(record[0], record[1]) for record in records] if records else []
+
+        if table_pairs:
+            from libs.SR_processing.db_services import delete_temp_tables
+
+            delete_temp_tables(scan_report_id, table_pairs)
+            logging.info(
+                f"Successfully deleted temporary tables for scan_report_id={scan_report_id}"
+            )
+        else:
+            logging.info(
+                f"No tables found for scan_report_id={scan_report_id}, no temp tables to delete"
+            )
+
+    except Exception as e:
+        logging.error(f"Failed to delete temporary tables on failure: {str(e)}")
+
+
 def create_task(task_id, python_callable, dag, provide_context=True):
     """Create a task in the DAG"""
     return PythonOperator(
