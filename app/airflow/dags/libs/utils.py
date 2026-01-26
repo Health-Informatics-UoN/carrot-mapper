@@ -247,6 +247,8 @@ def delete_temp_tables_on_failure(context):
             query, parameters={"scan_report_id": scan_report_id}
         )
 
+        # Each record here is a (name, id) tuple from mapping_scanreporttable.
+        # We're building a list of (table_name, table_id) pairs to use for cleaning up any temporary tables.
         table_pairs = [(record[0], record[1]) for record in records] if records else []
 
         if table_pairs:
