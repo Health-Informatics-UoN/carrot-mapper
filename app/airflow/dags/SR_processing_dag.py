@@ -10,7 +10,7 @@ from libs.SR_processing.core import (
 from libs.utils import (
     connect_to_storage,
     create_task,
-    delete_temp_tables_on_failure,
+    handle_failure_and_cleanup_temp_tables,
     validate_params_SR_processing,
 )
 
@@ -49,7 +49,7 @@ dag = DAG(
     catchup=False,
     is_paused_upon_creation=False,
     dagrun_timeout=timedelta(minutes=float(AIRFLOW_DAGRUN_TIMEOUT)),
-    on_failure_callback=delete_temp_tables_on_failure,
+    on_failure_callback=handle_failure_and_cleanup_temp_tables,
 )
 
 # TODO: add validate for DD file size: DATA_UPLOAD_MAX_MEMORY_SIZE :(

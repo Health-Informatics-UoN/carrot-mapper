@@ -1,6 +1,8 @@
 import ast
 import json
 import logging
+import multiprocessing
+import time
 from typing import Any, Dict, List, Optional, TypedDict
 
 from airflow.models.connection import Connection
@@ -16,6 +18,7 @@ from libs.settings import (
     AIRFLOW_VAR_MINIO_ENDPOINT,
     AIRFLOW_VAR_MINIO_SECRET_KEY,
     AIRFLOW_VAR_WASB_CONNECTION_STRING,
+    TEMP_TABLE_CLEANUP_DELAY_SEC,
     storage_type,
 )
 
@@ -158,6 +161,7 @@ def update_job_status_on_failure(context):
     Args:
         context: Airflow execution context containing task_instance, dag, dag_run, etc.
     """
+    logging.info("update_job_status_on_failure callback triggered")
     try:
         # Extract information from Airflow context
         task_instance = context["task_instance"]
@@ -214,7 +218,7 @@ def update_job_status_on_failure(context):
         logging.error(f"Failed to update job status on skipped task: {str(e)}")
 
 
-def delete_temp_tables_on_failure(context):
+def handle_failure_and_cleanup_temp_tables(context):
     """
     Delete temporary tables when the DAG fails or times out.
 
@@ -224,47 +228,104 @@ def delete_temp_tables_on_failure(context):
     scan_report_id, then delete the temp tables (temp_data_dictionary and
     temp_field_values).
 
+    When a timeout occurs, the task that was running may still be creating temporary tables in the background.
+    To minimize the risk of leaving orphaned temp tables, this function attempts to delete them immediately,
+    then waits TEMP_TABLE_CLEANUP_DELAY_SEC seconds and tries deleting them again. This approach helps ensure that
+    any tables appearing after the first cleanup attempt are also removed.
+
+
     Args:
         context: Airflow execution context containing task_instance, dag, dag_run, etc.
     """
     try:
         dag_run = context["dag_run"]
+        dag = context.get("dag")
         dag_run_conf = dag_run.conf or {}
         scan_report_id = dag_run_conf.get("scan_report_id")
 
         if not scan_report_id:
             logging.warning(
-                f"No scan_report_id found in DAG run configuration, skipping temp table cleanup"
+                "No scan_report_id found in DAG run configuration, skipping temp table cleanup"
             )
             return
 
+        # Update job status to FAILED for scan_report_processing DAG
+        if dag and dag.dag_id == "scan_report_processing":
+            try:
+                update_job_status(
+                    stage=JobStageType.UPLOAD_SCAN_REPORT,
+                    status=StageStatusType.FAILED,
+                    scan_report=scan_report_id,
+                    details="Scan report processing DAG timed out or failed.",
+                )
+                logging.info(
+                    "Updated job status to FAILED for scan_report_id=%s",
+                    scan_report_id,
+                )
+            except Exception as e:
+                logging.error("Failed to update job status on failure: %s", str(e))
+        # Query the database to get the temporary tables for the scan report
         query = """
-            SELECT name, id 
-            FROM mapping_scanreporttable 
+            SELECT name, id
+            FROM mapping_scanreporttable
             WHERE scan_report_id = %(scan_report_id)s
         """
-        records = pg_hook.get_records(
-            query, parameters={"scan_report_id": scan_report_id}
-        )
+        from libs.SR_processing.db_services import delete_temp_tables
 
-        # Each record here is a (name, id) tuple from mapping_scanreporttable.
-        # We're building a list of (table_name, table_id) pairs to use for cleaning up any temporary tables.
-        table_pairs = [(record[0], record[1]) for record in records] if records else []
+        # This is a helper function to cleanup temp tables
+        def _cleanup_temp_tables():
+            records = pg_hook.get_records(
+                query, parameters={"scan_report_id": scan_report_id}
+            )
+            table_pairs = (
+                [(record[0], record[1]) for record in records] if records else []
+            )
+            if table_pairs:
+                logging.info(
+                    "Table pairs for scan_report_id=%s: %s (n=%d)",
+                    scan_report_id,
+                    table_pairs,
+                    len(table_pairs),
+                )
+                delete_temp_tables(scan_report_id, table_pairs)
+            return table_pairs
 
+        # First cleanup: drop any tables we know about now
+        table_pairs = _cleanup_temp_tables()
         if table_pairs:
-            from libs.SR_processing.db_services import delete_temp_tables
-
-            delete_temp_tables(scan_report_id, table_pairs)
             logging.info(
-                f"Successfully deleted temporary tables for scan_report_id={scan_report_id}"
+                "First cleanup: deleted temp tables for scan_report_id=%s",
+                scan_report_id,
+            )
+
+        # Sleep so the timed-out task can finish creating tables
+        delay = TEMP_TABLE_CLEANUP_DELAY_SEC
+        logging.info(
+            "Sleeping %s s before second cleanup for scan_report_id=%s",
+            delay,
+            scan_report_id,
+        )
+        time.sleep(delay)
+
+        # Second cleanup: re-query and drop again (catch tables created after first cleanup)
+        second_pairs = _cleanup_temp_tables()
+        if second_pairs:
+            logging.info(
+                "Second cleanup: deleted temp tables for scan_report_id=%s (n=%d)",
+                scan_report_id,
+                len(second_pairs),
             )
         else:
             logging.info(
-                f"No tables found for scan_report_id={scan_report_id}, no temp tables to delete"
+                "Second cleanup: no additional tables for scan_report_id=%s",
+                scan_report_id,
             )
+        logging.info(
+            "Completed temp table cleanup for scan_report_id=%s", scan_report_id
+        )
 
     except Exception as e:
-        logging.error(f"Failed to delete temporary tables on failure: {str(e)}")
+        logging.error("Failed to delete temporary tables on failure: %s", str(e))
 
 
 def create_task(task_id, python_callable, dag, provide_context=True):
