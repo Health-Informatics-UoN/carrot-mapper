@@ -18,7 +18,7 @@ from libs.settings import (
     AIRFLOW_VAR_MINIO_ENDPOINT,
     AIRFLOW_VAR_MINIO_SECRET_KEY,
     AIRFLOW_VAR_WASB_CONNECTION_STRING,
-    TEMP_TABLE_CLEANUP_DELAY_SEC,
+    TEMP_TABLE_CLEANUP_DELAY,
     storage_type,
 )
 
@@ -230,7 +230,7 @@ def handle_failure_and_cleanup_temp_tables(context):
 
     When a timeout occurs, the task that was running may still be creating temporary tables in the background.
     To minimize the risk of leaving orphaned temp tables, this function attempts to delete them immediately,
-    then waits TEMP_TABLE_CLEANUP_DELAY_SEC seconds and tries deleting them again. This approach helps ensure that
+    then waits TEMP_TABLE_CLEANUP_DELAY seconds and tries deleting them again. This approach helps ensure that
     any tables appearing after the first cleanup attempt are also removed.
 
 
@@ -299,7 +299,7 @@ def handle_failure_and_cleanup_temp_tables(context):
             )
 
         # Sleep so the timed-out task can finish creating tables
-        delay = TEMP_TABLE_CLEANUP_DELAY_SEC
+        delay = TEMP_TABLE_CLEANUP_DELAY
         logging.info(
             "Sleeping %s s before second cleanup for scan_report_id=%s",
             delay,

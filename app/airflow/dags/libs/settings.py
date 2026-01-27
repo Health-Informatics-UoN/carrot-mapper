@@ -17,9 +17,9 @@ SEARCH_ENABLED = os.getenv("SEARCH_ENABLED", "false").lower()
 # Timedelta for dagrun_timeout in minutes
 AIRFLOW_DAGRUN_TIMEOUT = os.getenv("AIRFLOW_DAGRUN_TIMEOUT", 60)
 
-# In failure callback, temp table cleanup is performed twice. 
+# In failure callback, temp table cleanup is performed twice.
 # This delay (seconds) gives the timed-out task time to finish creating tables.
-TEMP_TABLE_CLEANUP_DELAY_SEC = int(os.getenv("TEMP_TABLE_CLEANUP_DELAY_SEC", "40"))
+TEMP_TABLE_CLEANUP_DELAY = int(os.getenv("TEMP_TABLE_CLEANUP_DELAY", "40"))
 
 # Page size for bulk database inserts (execute_values)
 EXECUTE_VALUES_PAGE_SIZE = int(os.getenv("EXECUTE_VALUES_PAGE_SIZE", 10000))
