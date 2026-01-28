@@ -218,6 +218,28 @@ def update_job_status_on_failure(context):
         logging.error(f"Failed to update job status on skipped task: {str(e)}")
 
 
+def cleanup_temp_tables_for_scan_report(scan_report_id: int) -> list:
+    """
+    Clean up temporary tables for a scan report.
+
+    Delete temporary tables (temp_data_dictionary and temp_field_values) for all tables
+    linked to the provided scan_report_id in mapping_scanreporttable. Returns a list of
+    (table_name, table_id) pairs that were cleaned up.
+    """
+    from libs.SR_processing.db_services import delete_temp_tables
+
+    query = """
+        SELECT name, id
+        FROM mapping_scanreporttable
+        WHERE scan_report_id = %(scan_report_id)s
+    """
+    records = pg_hook.get_records(query, parameters={"scan_report_id": scan_report_id})
+    table_pairs = [(record[0], record[1]) for record in records] if records else []
+    if table_pairs:
+        delete_temp_tables(scan_report_id, table_pairs)
+    return table_pairs
+
+
 def handle_failure_and_cleanup_temp_tables(context):
     """
     Delete temporary tables when the DAG fails or times out.
@@ -229,9 +251,8 @@ def handle_failure_and_cleanup_temp_tables(context):
     temp_field_values).
 
     When a timeout occurs, the task that was running may still be creating temporary tables in the background.
-    To minimize the risk of leaving orphaned temp tables, this function attempts to delete them immediately,
-    then waits TEMP_TABLE_CLEANUP_DELAY seconds and tries deleting them again. This approach helps ensure that
-    any tables appearing after the first cleanup attempt are also removed.
+    This function waits TEMP_TABLE_CLEANUP_DELAY seconds first so any in-flight table creation can finish,
+    then runs a single cleanup pass. Cleanup is not urgent, so waiting once is simpler than cleaning twice.
 
 
     Args:
@@ -264,61 +285,17 @@ def handle_failure_and_cleanup_temp_tables(context):
                 )
             except Exception as e:
                 logging.error("Failed to update job status on failure: %s", str(e))
-        # Query the database to get the temporary tables for the scan report
-        query = """
-            SELECT name, id
-            FROM mapping_scanreporttable
-            WHERE scan_report_id = %(scan_report_id)s
-        """
-        from libs.SR_processing.db_services import delete_temp_tables
 
-        # This is a helper function to cleanup temp tables
-        def _cleanup_temp_tables():
-            records = pg_hook.get_records(
-                query, parameters={"scan_report_id": scan_report_id}
-            )
-            table_pairs = (
-                [(record[0], record[1]) for record in records] if records else []
-            )
-            if table_pairs:
-                logging.info(
-                    "Table pairs for scan_report_id=%s: %s (n=%d)",
-                    scan_report_id,
-                    table_pairs,
-                    len(table_pairs),
-                )
-                delete_temp_tables(scan_report_id, table_pairs)
-            return table_pairs
-
-        # First cleanup: drop any tables we know about now
-        table_pairs = _cleanup_temp_tables()
-        if table_pairs:
-            logging.info(
-                "First cleanup: deleted temp tables for scan_report_id=%s",
-                scan_report_id,
-            )
-
-        # Sleep so the timed-out task can finish creating tables
+        # Wait so a timed-out task can finish creating tables, then delete the temporary tables
         delay = TEMP_TABLE_CLEANUP_DELAY
-        logging.info(
-            "Sleeping %s s before second cleanup for scan_report_id=%s",
-            delay,
-            scan_report_id,
-        )
         time.sleep(delay)
 
-        # Second cleanup: re-query and drop again (catch tables created after first cleanup)
-        second_pairs = _cleanup_temp_tables()
-        if second_pairs:
+        table_pairs = cleanup_temp_tables_for_scan_report(scan_report_id)
+        if table_pairs:
             logging.info(
-                "Second cleanup: deleted temp tables for scan_report_id=%s (n=%d)",
+                "Deleted temp tables for scan_report_id=%s (n=%d)",
                 scan_report_id,
-                len(second_pairs),
-            )
-        else:
-            logging.info(
-                "Second cleanup: no additional tables for scan_report_id=%s",
-                scan_report_id,
+                len(table_pairs),
             )
         logging.info(
             "Completed temp table cleanup for scan_report_id=%s", scan_report_id
