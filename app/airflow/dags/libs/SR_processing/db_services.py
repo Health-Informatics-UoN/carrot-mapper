@@ -239,13 +239,16 @@ def delete_temp_tables(scan_report_id: int, table_pairs: List[Tuple[str, int]]) 
         logging.error(f"Error deleting temporary tables: {str(e)}")
         raise e
 
-def cleanup_temp_tables_for_scan_report(scan_report_id: int) -> list:
+
+def cleanup_temp_tables_for_scan_report(scan_report_id: int) -> List[Tuple[str, int]]:
     """
     Clean up temporary tables for a scan report.
 
-    Delete temporary tables (temp_data_dictionary and temp_field_values) for all tables
-    linked to the provided scan_report_id in mapping_scanreporttable. Returns a list of
-    (table_name, table_id) pairs that were cleaned up.
+    Deletes temporary tables (temp_data_dictionary and temp_field_values) for all tables
+    associated with the given scan_report_id in mapping_scanreporttable.
+
+    Returns:
+        List of (table_name, table_id) tuples for the tables that were cleaned up.
     """
 
     query = """
