@@ -218,28 +218,6 @@ def update_job_status_on_failure(context):
         logging.error(f"Failed to update job status on skipped task: {str(e)}")
 
 
-def cleanup_temp_tables_for_scan_report(scan_report_id: int) -> list:
-    """
-    Clean up temporary tables for a scan report.
-
-    Delete temporary tables (temp_data_dictionary and temp_field_values) for all tables
-    linked to the provided scan_report_id in mapping_scanreporttable. Returns a list of
-    (table_name, table_id) pairs that were cleaned up.
-    """
-    from libs.SR_processing.db_services import delete_temp_tables
-
-    query = """
-        SELECT name, id
-        FROM mapping_scanreporttable
-        WHERE scan_report_id = %(scan_report_id)s
-    """
-    records = pg_hook.get_records(query, parameters={"scan_report_id": scan_report_id})
-    table_pairs = [(record[0], record[1]) for record in records] if records else []
-    if table_pairs:
-        delete_temp_tables(scan_report_id, table_pairs)
-    return table_pairs
-
-
 def handle_failure_and_cleanup_temp_tables(context):
     """
     Delete temporary tables when the DAG fails or times out.
@@ -289,6 +267,9 @@ def handle_failure_and_cleanup_temp_tables(context):
         # Wait so a timed-out task can finish creating tables, then delete the temporary tables
         delay = TEMP_TABLE_CLEANUP_DELAY
         time.sleep(delay)
+
+        # I did this to avoid circular import
+        from libs.SR_processing.db_services import cleanup_temp_tables_for_scan_report
 
         table_pairs = cleanup_temp_tables_for_scan_report(scan_report_id)
         if table_pairs:
