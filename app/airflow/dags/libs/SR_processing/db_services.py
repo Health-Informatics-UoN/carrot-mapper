@@ -264,6 +264,7 @@ def cleanup_temp_tables_for_scan_report(scan_report_id: int) -> List[Tuple[str, 
         delete_temp_tables(scan_report_id, table_pairs)
     return table_pairs
 
+
 def handle_failure_and_cleanup_temp_tables(context):
     """
     Delete temporary tables when the DAG fails or times out.
