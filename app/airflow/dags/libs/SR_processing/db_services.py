@@ -1,4 +1,5 @@
 import logging
+import time
 from collections import defaultdict
 from typing import Any, Dict, List, Tuple
 
@@ -9,6 +10,7 @@ from libs.settings import (
     AIRFLOW_DAGRUN_TIMEOUT,
     AIRFLOW_DEBUG_MODE,
     EXECUTE_VALUES_PAGE_SIZE,
+    TEMP_TABLE_CLEANUP_DELAY,
 )
 from libs.utils import update_job_status
 from openpyxl.worksheet.worksheet import Worksheet
@@ -261,3 +263,67 @@ def cleanup_temp_tables_for_scan_report(scan_report_id: int) -> List[Tuple[str, 
     if table_pairs:
         delete_temp_tables(scan_report_id, table_pairs)
     return table_pairs
+
+def handle_failure_and_cleanup_temp_tables(context):
+    """
+    Delete temporary tables when the DAG fails or times out.
+
+    This handles cleanup when failures happen outside the normal pipeline code, like
+    timeouts or external errors. Since the tables are already in the database even if
+    the DAG fails, we query mapping_scanreporttable to find all tables for this
+    scan_report_id, then delete the temp tables (temp_data_dictionary and
+    temp_field_values).
+
+    When a timeout occurs, the task that was running may still be creating temporary tables in the background.
+    This function waits TEMP_TABLE_CLEANUP_DELAY seconds first so any in-flight table creation can finish,
+    then runs a single cleanup pass. Cleanup is not urgent, so waiting once is simpler than cleaning twice.
+
+
+    Args:
+        context: Airflow execution context containing task_instance, dag, dag_run, etc.
+    """
+    try:
+        dag_run = context["dag_run"]
+        dag = context.get("dag")
+        dag_run_conf = dag_run.conf or {}
+        scan_report_id = dag_run_conf.get("scan_report_id")
+
+        if not scan_report_id:
+            logging.warning(
+                "No scan_report_id found in DAG run configuration, skipping temp table cleanup"
+            )
+            return
+
+        # Update job status to FAILED for scan_report_processing DAG
+        if dag and dag.dag_id == "scan_report_processing":
+            try:
+                update_job_status(
+                    stage=JobStageType.UPLOAD_SCAN_REPORT,
+                    status=StageStatusType.FAILED,
+                    scan_report=scan_report_id,
+                    details="Scan report processing DAG timed out or failed.",
+                )
+                logging.info(
+                    "Updated job status to FAILED for scan_report_id=%s",
+                    scan_report_id,
+                )
+            except Exception as e:
+                logging.error("Failed to update job status on failure: %s", str(e))
+
+        # Wait so a timed-out task can finish creating tables, then delete the temporary tables
+        delay = TEMP_TABLE_CLEANUP_DELAY
+        time.sleep(delay)
+
+        table_pairs = cleanup_temp_tables_for_scan_report(scan_report_id)
+        if table_pairs:
+            logging.info(
+                "Deleted temp tables for scan_report_id=%s (n=%d)",
+                scan_report_id,
+                len(table_pairs),
+            )
+        logging.info(
+            "Completed temp table cleanup for scan_report_id=%s", scan_report_id
+        )
+
+    except Exception as e:
+        logging.error("Failed to delete temporary tables on failure: %s", str(e))

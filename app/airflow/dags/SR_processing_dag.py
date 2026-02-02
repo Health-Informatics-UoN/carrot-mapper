@@ -10,9 +10,9 @@ from libs.SR_processing.core import (
 from libs.utils import (
     connect_to_storage,
     create_task,
-    handle_failure_and_cleanup_temp_tables,
     validate_params_SR_processing,
 )
+from libs.SR_processing.db_services import handle_failure_and_cleanup_temp_tables
 
 """
 This DAG automates the process of creating scan report tables, fields and values 
