@@ -1,6 +1,7 @@
 import ast
 import json
 import logging
+import time
 from typing import Any, Dict, List, Optional, TypedDict
 
 from airflow.models.connection import Connection
@@ -158,6 +159,7 @@ def update_job_status_on_failure(context):
     Args:
         context: Airflow execution context containing task_instance, dag, dag_run, etc.
     """
+    logging.info("update_job_status_on_failure callback triggered")
     try:
         # Extract information from Airflow context
         task_instance = context["task_instance"]
