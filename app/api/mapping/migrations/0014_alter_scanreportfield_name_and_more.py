@@ -4,20 +4,19 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('mapping', '0013_alter_datadictionary_id_alter_datapartner_id_and_more'),
+        ("mapping", "0013_alter_datadictionary_id_alter_datapartner_id_and_more"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='scanreportfield',
-            name='name',
+            model_name="scanreportfield",
+            name="name",
             field=models.CharField(db_index=True, max_length=2048),
         ),
         migrations.AlterField(
-            model_name='scanreportvalue',
-            name='value',
+            model_name="scanreportvalue",
+            name="value",
             field=models.CharField(db_index=True, max_length=2048),
         ),
     ]
