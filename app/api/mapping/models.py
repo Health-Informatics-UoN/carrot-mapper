@@ -333,7 +333,7 @@ class ScanReportField(BaseModel):
     """
 
     scan_report_table = models.ForeignKey(ScanReportTable, on_delete=models.CASCADE)
-    name = models.CharField(max_length=512, db_index=True)
+    name = models.CharField(max_length=2048, db_index=True)
     description_column = models.CharField(max_length=512)
     type_column = models.CharField(max_length=32)
     ignore_column = models.CharField(max_length=64, blank=True, null=True)
@@ -394,7 +394,7 @@ class ScanReportValue(BaseModel):
     """
 
     scan_report_field = models.ForeignKey(ScanReportField, on_delete=models.CASCADE)
-    value = models.CharField(max_length=128, db_index=True)
+    value = models.CharField(max_length=2048, db_index=True)
     frequency = models.IntegerField()
     conceptID = models.IntegerField(default=-1)  # TODO rename it to concept_id
     concepts = GenericRelation(ScanReportConcept)
