@@ -137,12 +137,14 @@ export function CreateScanReportForm({
         validationSchema={validationSchema}
         validateOnChange={false}
         validateOnBlur={false}
-        onSubmit={(data) => {
+        onSubmit={async (data) => {
+        // Return a Promise so Formik sets isSubmitting and prevents submitting multiple times
           toast.info("Validating and uploading...");
-          handleSubmit(data);
+          await handleSubmit(data);
         }}
       >
-        {({ values, handleChange, handleSubmit, setFieldValue }) => (
+        {({ values, handleChange, handleSubmit, setFieldValue, isSubmitting }) => (
+        // added isSubmitting to the form to disable the submit button while upload is in progress
           <form
             className="w-full max-w-2xl"
             onSubmit={handleSubmit}
@@ -365,6 +367,7 @@ export function CreateScanReportForm({
                 <Button
                   type="submit"
                   disabled={
+                    isSubmitting ||
                     values.dataPartner === 0 ||
                     values.dataset === 0 ||
                     values.dataset === -1 ||
