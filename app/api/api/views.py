@@ -1182,7 +1182,7 @@ class ScanReportConceptDetailV2(GenericAPIView, DestroyModelMixin):
         return self.destroy(request, *args, **kwargs)
 
 
-class MappingRulesList(APIView):
+class MappingRulesList(ScanReportPermissionMixin, APIView):
     """
     API View to handle operations related to mapping rules.
 
@@ -1502,7 +1502,7 @@ class AnalyseRulesV2(ScanReportPermissionMixin, GenericAPIView, RetrieveModelMix
     filterset_fields = ["id"]
 
 
-class DownloadScanReportViewSet(viewsets.ViewSet):
+class DownloadScanReportViewSet(ScanReportPermissionMixin, viewsets.ViewSet):
     """
     A ViewSet for handling the download of scan reports.
     Methods:
