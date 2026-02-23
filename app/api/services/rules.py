@@ -281,7 +281,9 @@ def _get_date_rules(
     return date_rules
 
 
-def _find_destination_table(concept: Concept, table: ScanReportTable) -> Optional[OmopTable]:
+def _find_destination_table(
+    concept: Concept, table: ScanReportTable
+) -> Optional[OmopTable]:
     """
     Get the destination table for a given Concept
 
@@ -349,7 +351,7 @@ def save_mapping_rules(
     destination_table = _find_destination_table(concept, source_table)
     if destination_table is None:
         return []
-    
+
     # check whether the person_id and date events for this table are valid
     # if not, we dont want to create any rules for this concept
     if not _validate_person_id_and_date(source_table):

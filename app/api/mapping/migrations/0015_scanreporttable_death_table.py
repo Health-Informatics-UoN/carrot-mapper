@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('mapping', '0014_alter_scanreportfield_name_and_more'),
+        ("mapping", "0014_alter_scanreportfield_name_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='scanreporttable',
-            name='death_table',
+            model_name="scanreporttable",
+            name="death_table",
             field=models.BooleanField(default=False, null=True),
         ),
     ]
