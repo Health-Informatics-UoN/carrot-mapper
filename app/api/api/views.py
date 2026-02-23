@@ -1101,7 +1101,7 @@ class ScanReportConceptListV2(
                 status=status.HTTP_400_BAD_REQUEST,
             )
         # validate the destination_table
-        destination_table = _find_destination_table(concept)
+        destination_table = _find_destination_table(concept, table)
         if destination_table is None:
             return Response(
                 {
