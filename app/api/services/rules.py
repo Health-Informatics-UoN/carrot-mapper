@@ -295,13 +295,13 @@ def _find_destination_table(
     """
     domain = concept.domain_id.lower()
     # get the omop field for the source_concept_id for this domain
-    # if the domain is "meas value" then point directly to its field and table
-    if domain == "meas value":
-        omop_field = _get_omop_field("value_as_concept_id", "measurement")
+    
     # For death tables (not gender, race, ethnicity) use cause_source_concept_id
-    elif table.death_table and domain not in ["gender", "race", "ethnicity"]:
+    if table.death_table and domain not in ["gender", "race", "ethnicity"]:
         omop_field = _get_omop_field("cause_source_concept_id", "death")
-    #  if the domain is "specimen" or "spec anatomic site" then point directly to one field in the table "specimen"
+    elif domain == "meas value":
+        omop_field = _get_omop_field("value_as_concept_id", "measurement")
+    # if the domain is "specimen" or "spec anatomic site" then point directly to one field in the table "specimen"
     elif domain == "specimen" or domain == "spec anatomic site":
         omop_field = _get_omop_field("specimen_concept_id", "specimen")
     else:
