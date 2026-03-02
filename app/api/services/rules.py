@@ -295,7 +295,7 @@ def _find_destination_table(
     """
     domain = concept.domain_id.lower()
     # get the omop field for the source_concept_id for this domain
-    
+
     # For death tables (not gender, race, ethnicity) use cause_source_concept_id
     if table.death_table and domain not in ["gender", "race", "ethnicity"]:
         omop_field = _get_omop_field("cause_source_concept_id", "death")
