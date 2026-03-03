@@ -161,7 +161,8 @@ SET
             (omop_table.table = 'measurement' AND omop_field.field = 'measurement_datetime') OR
             (omop_table.table = 'observation' AND omop_field.field = 'observation_datetime') OR
             (omop_table.table = 'procedure_occurrence' AND omop_field.field = 'procedure_datetime') OR
-            (omop_table.table = 'specimen' AND omop_field.field = 'specimen_datetime')
+            (omop_table.table = 'specimen' AND omop_field.field = 'specimen_datetime') OR
+            (omop_table.table = 'death' AND omop_field.field = 'death_datetime')
         )
         LIMIT 1
     ),
