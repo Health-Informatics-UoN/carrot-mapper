@@ -39,7 +39,7 @@ m_date_field_mapper = {
         "device_exposure_end_datetime",
     ],
     "specimen": ["specimen_datetime"],
-    "death": ["death_date"],
+    "death": ["death_datetime"],
 }
 
 
