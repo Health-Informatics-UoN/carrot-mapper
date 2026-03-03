@@ -139,6 +139,11 @@ LEFT JOIN mapping_omoptable AS omop_table ON
 -- Because concepts may or may not have the standard_concept_id, in general. And we prefer to use the standard_concept_id, if it exists.
 WHERE target_concept.concept_id = COALESCE(temp_existing_concepts.standard_concept_id, temp_existing_concepts.source_concept_id);
 
+-- When the scan report table is a death table, override dest_table_id to the death OMOP table so rules show destination table: death, field: cause_concept_id
+UPDATE temp_existing_concepts_%(table_id)s temp_existing_concepts
+SET dest_table_id = (SELECT id FROM mapping_omoptable WHERE "table" = 'death' LIMIT 1)
+WHERE (SELECT death_table FROM mapping_scanreporttable WHERE id = %(table_id)s) = TRUE;
+
 -- Update person field ID
 UPDATE temp_existing_concepts_%(table_id)s temp_existing_concepts
 SET dest_person_field_id = omop_field.id
@@ -204,34 +209,40 @@ SELECT
     temp_existing_concepts.object_id,
     target_concept.domain_id,
     target_concept.concept_id AS concept_id,
-    -- Use domain-specific source_concept_field_id
-    (SELECT omop_field.id 
-    FROM mapping_omopfield AS omop_field 
-    WHERE omop_field.table_id = temp_existing_concepts.dest_table_id 
-    AND omop_field.field = 
-        CASE 
-            WHEN target_concept.domain_id = 'Spec Anatomic Site' THEN 'anatomic_site_source_concept_id'  -- Not applicable for Specimen table
+    -- Source concept field: death table uses cause_source_concept_id, others use domain-based name
+    (SELECT omop_field.id
+    FROM mapping_omopfield AS omop_field
+    JOIN mapping_omoptable AS omop_table ON omop_table.id = omop_field.table_id
+    WHERE omop_field.table_id = temp_existing_concepts.dest_table_id
+    AND omop_field.field =
+        CASE
+            WHEN omop_table.table = 'death' THEN 'cause_source_concept_id'
+            WHEN target_concept.domain_id = 'Spec Anatomic Site' THEN 'anatomic_site_source_concept_id'
             ELSE LOWER(target_concept.domain_id) || '_source_concept_id'
         END
     LIMIT 1) AS source_concept_field_id,
 
-    -- Use domain-specific source_value_field_id
-    (SELECT omop_field.id 
-    FROM mapping_omopfield AS omop_field 
-    WHERE omop_field.table_id = temp_existing_concepts.dest_table_id 
-    AND omop_field.field = 
-        CASE 
+    -- Source value field: death table uses cause_source_value, others use domain-based name
+    (SELECT omop_field.id
+    FROM mapping_omopfield AS omop_field
+    JOIN mapping_omoptable AS omop_table ON omop_table.id = omop_field.table_id
+    WHERE omop_field.table_id = temp_existing_concepts.dest_table_id
+    AND omop_field.field =
+        CASE
+            WHEN omop_table.table = 'death' THEN 'cause_source_value'
             WHEN target_concept.domain_id = 'Spec Anatomic Site' THEN 'anatomic_site_source_value'
             ELSE LOWER(target_concept.domain_id) || '_source_value'
         END
     LIMIT 1) AS source_value_field_id,
 
-    -- Use domain-specific dest_concept_field_id
-    (SELECT omop_field.id 
-    FROM mapping_omopfield AS omop_field 
-    WHERE omop_field.table_id = temp_existing_concepts.dest_table_id 
-    AND omop_field.field = 
-        CASE 
+    -- Dest concept field: death table uses cause_concept_id, others use domain-based name
+    (SELECT omop_field.id
+    FROM mapping_omopfield AS omop_field
+    JOIN mapping_omoptable AS omop_table ON omop_table.id = omop_field.table_id
+    WHERE omop_field.table_id = temp_existing_concepts.dest_table_id
+    AND omop_field.field =
+        CASE
+            WHEN omop_table.table = 'death' THEN 'cause_concept_id'
             WHEN target_concept.domain_id = 'Spec Anatomic Site' THEN 'anatomic_site_concept_id'
             ELSE LOWER(target_concept.domain_id) || '_concept_id'
         END
@@ -293,7 +304,8 @@ WITH
             AND map_status.value = 'COMPLETE'
             AND scan_report.id != %(scan_report_id)s
     ),
-    -- Find values in eligible scan reports that have M-type concepts tied
+    -- Find values in eligible scan reports that have M-type concepts tied.
+    -- Only reuse from tables with the same death_table flag (death tables get death concepts only; non-death never get death concepts).
     values_with_m_concepts AS (
         SELECT
             sr_value.value AS matching_value_name,
@@ -306,6 +318,7 @@ WITH
         FROM eligible_reports AS eligible_report
         JOIN mapping_scanreporttable AS sr_table ON sr_table.scan_report_id = eligible_report.id
             AND sr_table.name = %(current_table_name)s
+            AND (SELECT death_table FROM mapping_scanreporttable WHERE id = %(table_id)s) IS NOT DISTINCT FROM sr_table.death_table
         JOIN mapping_scanreportfield AS sr_field ON sr_field.scan_report_table_id = sr_table.id
         JOIN mapping_scanreportvalue AS sr_value ON sr_value.scan_report_field_id = sr_field.id
         JOIN mapping_scanreportconcept AS sr_concept ON sr_concept.object_id = sr_value.id
@@ -345,7 +358,8 @@ WITH
             AND map_status.value = 'COMPLETE'
             AND scan_report.id != %(scan_report_id)s
     ),
-    -- Find fields in eligible scan reports that have M-type concepts tied
+    -- Find fields in eligible scan reports that have M-type concepts tied.
+    -- Match only tables with an identical death_table setting to ensure concepts from death tables are reused only with other death tables, and non-death tables only with non-death.
     fields_with_m_concepts AS (
         SELECT
             sr_field.name AS matching_field_name,
@@ -356,6 +370,7 @@ WITH
         FROM eligible_reports AS eligible_report
         JOIN mapping_scanreporttable AS sr_table ON sr_table.scan_report_id = eligible_report.id
             AND sr_table.name = %(current_table_name)s
+            AND (SELECT death_table FROM mapping_scanreporttable WHERE id = %(table_id)s) IS NOT DISTINCT FROM sr_table.death_table
         JOIN mapping_scanreportfield AS sr_field ON sr_field.scan_report_table_id = sr_table.id
         JOIN mapping_scanreportconcept AS sr_concept ON sr_concept.object_id = sr_field.id
             AND sr_concept.content_type_id = (SELECT id FROM field_content_type)
@@ -372,6 +387,7 @@ SELECT
 FROM fields_with_m_concepts;
 """
 
+# Only set object_id if the death_table flag for the current table matches the source table (identified by source_scanreport_id and matching_table_name).
 find_object_id_query = """
     UPDATE temp_reuse_concepts_%(table_id)s AS temp_table
         SET object_id = 
@@ -405,7 +421,14 @@ find_object_id_query = """
                         )
                     LIMIT 1)
                 ELSE NULL
-            END;
+            END
+    WHERE (SELECT death_table FROM mapping_scanreporttable WHERE id = %(table_id)s) IS NOT DISTINCT FROM (
+        SELECT sr_table.death_table
+        FROM mapping_scanreporttable AS sr_table
+        WHERE sr_table.scan_report_id = temp_table.source_scanreport_id
+          AND sr_table.name = temp_table.matching_table_name
+        LIMIT 1
+    );
 """
 
 
