@@ -422,12 +422,18 @@ find_object_id_query = """
                     LIMIT 1)
                 ELSE NULL
             END
+    -- We only want to reuse concepts between tables where the "death_table" status matches.
+    -- To do this, we're checking if the "death_table" flag is the same for:
+    --   1. The current scan report table (id = %(table_id)s)
+    --   2. The source scan report table we're trying to reuse from (using name and source_scanreport_id)
+    -- The "IS NOT DISTINCT FROM" comparison treats NULL values as equivalent, so if both tables have "death_table" as NULL, that's also accepted as a match.
     WHERE (SELECT death_table FROM mapping_scanreporttable WHERE id = %(table_id)s) IS NOT DISTINCT FROM (
         SELECT sr_table.death_table
         FROM mapping_scanreporttable AS sr_table
         WHERE sr_table.scan_report_id = temp_table.source_scanreport_id
           AND sr_table.name = temp_table.matching_table_name
         LIMIT 1
+    )
     );
 """
 
