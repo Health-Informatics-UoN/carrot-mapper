@@ -32,7 +32,7 @@ dependencies = [
     "dj-rest-auth[with-social]==7.0.1",
     "minio==7.2.18",
     "drf-spectacular==0.29.0",
-    "django-allauth==65.13.0",
+    "django-allauth==65.14.1",
     "psycopg2-binary==2.9.11",
 ]
 
