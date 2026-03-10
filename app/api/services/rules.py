@@ -23,6 +23,7 @@ m_allowed_tables = [
     "procedure_occurrence",
     "device_exposure",
     "specimen",
+    "death",
 ]
 
 # look up of date-events in all the allowed (destination) tables
@@ -38,6 +39,7 @@ m_date_field_mapper = {
         "device_exposure_end_datetime",
     ],
     "specimen": ["specimen_datetime"],
+    "death": ["death_datetime"],
 }
 
 
@@ -279,7 +281,9 @@ def _get_date_rules(
     return date_rules
 
 
-def _find_destination_table(concept: Concept) -> Optional[OmopTable]:
+def _find_destination_table(
+    concept: Concept, table: ScanReportTable
+) -> Optional[OmopTable]:
     """
     Get the destination table for a given Concept
 
@@ -291,10 +295,13 @@ def _find_destination_table(concept: Concept) -> Optional[OmopTable]:
     """
     domain = concept.domain_id.lower()
     # get the omop field for the source_concept_id for this domain
-    # if the domain is "meas value" then point directly to its field and table
-    if domain == "meas value":
+
+    # For death tables (not gender, race, ethnicity) use cause_source_concept_id
+    if table.death_table and domain not in ["gender", "race", "ethnicity"]:
+        omop_field = _get_omop_field("cause_source_concept_id", "death")
+    elif domain == "meas value":
         omop_field = _get_omop_field("value_as_concept_id", "measurement")
-    #  if the domain is "specimen" or "spec anatomic site" then point directly to one field in the table "specimen"
+    # if the domain is "specimen" or "spec anatomic site" then point directly to one field in the table "specimen"
     elif domain == "specimen" or domain == "spec anatomic site":
         omop_field = _get_omop_field("specimen_concept_id", "specimen")
     else:
@@ -337,12 +344,13 @@ def save_mapping_rules(
     # Convert "spec anatomic site" to "anatomic_site" to match the name in OMOP CDM
     if domain == "spec anatomic site":
         domain = "anatomic_site"
-    # start looking up what table we're looking at
-    destination_table = _find_destination_table(concept)
-    if destination_table is None:
-        return []
 
     source_table = source_field.scan_report_table
+
+    # start looking up what table we're looking at
+    destination_table = _find_destination_table(concept, source_table)
+    if destination_table is None:
+        return []
 
     # check whether the person_id and date events for this table are valid
     # if not, we dont want to create any rules for this concept
@@ -359,6 +367,10 @@ def save_mapping_rules(
         scan_report, scan_report_concept, source_table, destination_table
     )
     rules += date_rules
+
+    # Convert domain of concepts added to Death table to "CAUSE", in order to facilitate the get OMOP field process
+    if source_table.death_table and domain not in ["gender", "race", "ethnicity"]:
+        domain = "cause"
 
     # In case of domain = "meas value", this rule will not be generated.
     # And because of the conversion of domain in the line after "rules.append(rule_domain_value_as_concept_id)", this block needs to be upfront

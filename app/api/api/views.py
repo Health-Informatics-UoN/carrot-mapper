@@ -1101,7 +1101,7 @@ class ScanReportConceptListV2(
                 status=status.HTTP_400_BAD_REQUEST,
             )
         # validate the destination_table
-        destination_table = _find_destination_table(concept)
+        destination_table = _find_destination_table(concept, table)
         if destination_table is None:
             return Response(
                 {
@@ -1182,7 +1182,7 @@ class ScanReportConceptDetailV2(GenericAPIView, DestroyModelMixin):
         return self.destroy(request, *args, **kwargs)
 
 
-class MappingRulesList(APIView):
+class MappingRulesList(ScanReportPermissionMixin, APIView):
     """
     API View to handle operations related to mapping rules.
 
@@ -1502,7 +1502,7 @@ class AnalyseRulesV2(ScanReportPermissionMixin, GenericAPIView, RetrieveModelMix
     filterset_fields = ["id"]
 
 
-class DownloadScanReportViewSet(viewsets.ViewSet):
+class DownloadScanReportViewSet(ScanReportPermissionMixin, viewsets.ViewSet):
     """
     A ViewSet for handling the download of scan reports.
     Methods:

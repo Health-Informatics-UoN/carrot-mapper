@@ -12,6 +12,8 @@
 # - Then deploys to test environment (if dev succeeds)
 # - Validates image existence before deployment
 # - Uses edge tag by default, or custom tag if specified
+# - When triggered by build-edge, uses commit SHA so Azure actually pulls a new image
+# - When manually triggered, uses provided tag or edge  
 
 name: Deploy to Dev and Test
 
@@ -39,6 +41,8 @@ jobs:
   deploy-to-dev:
     runs-on: ubuntu-latest
     environment: dev
+    env:
+      IMAGE_TAG: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.event.inputs.image_tag || 'edge' }}
     steps:
       # Check that images exist before deploying (only for manual dispatch with custom tags)
       - uses: tyriis/docker-image-tag-exists@71a750a41aa78e4efb0842f538140c5df5b8166f # v2.1.0
@@ -74,58 +78,60 @@ jobs:
         with:
           app-name: ${{ vars.AZURE_WEBAPP_NAME }}
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-          images: ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/backend:${{ github.event.inputs.image_tag || 'edge' }}
+          images: ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/backend:${{ env.IMAGE_TAG }}
 
       - name: Deploy Frontend to Dev
         uses: azure/webapps-deploy@2fdd5c3ebb4e540834e86ecc1f6fdcd5539023ee # v3.0.2
         with:
           app-name: ${{ vars.AZURE_WEBAPP_NEXT_NAME }}
           publish-profile: ${{ secrets.AZURE_WEBAPP_NEXT_PUBLISH_PROFILE }}
-          images: ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/frontend:${{ github.event.inputs.image_tag || 'edge' }}
+          images: ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/frontend:${{ env.IMAGE_TAG }}
 
       - name: Deploy Airflow Webserver to Dev
         uses: azure/webapps-deploy@2fdd5c3ebb4e540834e86ecc1f6fdcd5539023ee # v3.0.2
         with:
           app-name: ${{ vars.AIRFLOW_WEBSERVER_NAME }}
           publish-profile: ${{ secrets.AIRFLOW_WEBSERVER_PUBLISH_PROFILE }}
-          images: ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/airflow-webserver:${{ github.event.inputs.image_tag || 'edge' }}
+          images: ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/airflow-webserver:${{ env.IMAGE_TAG }}
 
       - name: Deploy Airflow Scheduler to Dev
         uses: azure/webapps-deploy@2fdd5c3ebb4e540834e86ecc1f6fdcd5539023ee # v3.0.2
         with:
           app-name: ${{ vars.AIRFLOW_SCHEDULER_NAME }}
           publish-profile: ${{ secrets.AIRFLOW_SCHEDULER_PUBLISH_PROFILE }}
-          images: ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/airflow-scheduler:${{ github.event.inputs.image_tag || 'edge' }}
+          images: ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/airflow-scheduler:${{ env.IMAGE_TAG }}
 
   deploy-to-test:
     runs-on: ubuntu-latest
     environment: test
     needs: [deploy-to-dev]
+    env:
+      IMAGE_TAG: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.event.inputs.image_tag || 'edge' }}
     steps:
       - name: Deploy Backend to Test
         uses: azure/webapps-deploy@2fdd5c3ebb4e540834e86ecc1f6fdcd5539023ee # v3.0.2
         with:
           app-name: ${{ vars.AZURE_WEBAPP_NAME }}
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-          images: ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/backend:${{ github.event.inputs.image_tag || 'edge' }}
+          images: ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/backend:${{ env.IMAGE_TAG }}
 
       - name: Deploy Frontend to Test
         uses: azure/webapps-deploy@2fdd5c3ebb4e540834e86ecc1f6fdcd5539023ee # v3.0.2
         with:
           app-name: ${{ vars.AZURE_WEBAPP_NEXT_NAME }}
           publish-profile: ${{ secrets.AZURE_WEBAPP_NEXT_PUBLISH_PROFILE }}
-          images: ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/frontend:${{ github.event.inputs.image_tag || 'edge' }}
+          images: ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/frontend:${{ env.IMAGE_TAG }}
 
       - name: Deploy Airflow Webserver to Test
         uses: azure/webapps-deploy@2fdd5c3ebb4e540834e86ecc1f6fdcd5539023ee # v3.0.2
         with:
           app-name: ${{ vars.AIRFLOW_WEBSERVER_NAME }}
           publish-profile: ${{ secrets.AIRFLOW_WEBSERVER_PUBLISH_PROFILE }}
-          images: ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/airflow-webserver:${{ github.event.inputs.image_tag || 'edge' }}
+          images: ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/airflow-webserver:${{ env.IMAGE_TAG }}
 
       - name: Deploy Airflow Scheduler to Test
         uses: azure/webapps-deploy@2fdd5c3ebb4e540834e86ecc1f6fdcd5539023ee # v3.0.2
         with:
           app-name: ${{ vars.AIRFLOW_SCHEDULER_NAME }}
           publish-profile: ${{ secrets.AIRFLOW_SCHEDULER_PUBLISH_PROFILE }}
-          images: ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/airflow-scheduler:${{ github.event.inputs.image_tag || 'edge' }}
+          images: ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/airflow-scheduler:${{ env.IMAGE_TAG }}
