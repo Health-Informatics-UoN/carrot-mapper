@@ -43,7 +43,7 @@ Workflow steps:
 6. Create reusable concepts based on matches
 7. Collect all existing concepts
 8. Identify destination tables and person field IDs
-9. Find date fields for each concept
+9. Find date fields for each concept (incl. death_datetime for death table)
 10. Find concept fields for mapping
 11. Find additional fields needed for mapping
 12. Create mapping rules based on all collected information
@@ -54,7 +54,7 @@ mapping rules connecting source data to OMOP-compliant destination tables.
 """
 #  TODO: for now the creation of mapping rules will use the source_concept_id of temp_reuse_concepts table.
 # When we can distinguish between standard and non-standard concepts, we will use them accordingly in the create_mapping_rules function of reuse.
-# TODO: for death table, only reuse when the source table is death table as well
+# When reusing concepts for the death table, only consider other death tables. (See the death_table filter in find_m_concepts_query.)
 # NOTE: when the DB is huge, the performance of the DAG will be affected by refreshing the existing R concepts. --> consider to only refresh the R Mapping rules
 # TODO: should we add `value` column in MAPPINGRULE model? in order to filter the mapping rule based on the SR value?
 # TODO: add the source_concept_id to the UI
