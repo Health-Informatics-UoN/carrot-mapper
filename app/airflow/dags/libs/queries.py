@@ -434,7 +434,7 @@ find_object_id_query = """
           AND sr_table.name = temp_table.matching_table_name
         LIMIT 1
     )
-    );
+
 """
 
 
