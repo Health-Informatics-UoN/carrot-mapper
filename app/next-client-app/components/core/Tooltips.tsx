@@ -6,13 +6,14 @@ import {
 } from "@/components/ui/tooltip";
 
 import { InfoIcon } from "lucide-react";
+import { ReactElement } from "react";
 
 export function Tooltips({
   content,
   link,
   side = "top",
 }: {
-  content: string;
+  content: string | ReactElement;
   link?: string;
   side?: "top" | "bottom" | "left" | "right";
 }) {
@@ -26,24 +27,28 @@ export function Tooltips({
           className="max-w-96 text-center whitespace-pre-wrap"
           side={side}
         >
-          <p>
-            {content}
-            {link && (
-              <>
-                {" "}
-                Find out more{" "}
-                <a
-                  href={link}
-                  className="underline"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  here
-                </a>
-                .
-              </>
-            )}
-          </p>
+          {typeof content === "string" ? (
+            <p>
+              {content}
+              {link && (
+                <>
+                  {" "}
+                  Find out more{" "}
+                  <a
+                    href={link}
+                    className="underline"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    here
+                  </a>
+                  .
+                </>
+              )}
+            </p>
+          ) : (
+            content
+          )}
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>

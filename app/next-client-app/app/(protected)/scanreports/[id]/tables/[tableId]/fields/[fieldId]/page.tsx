@@ -72,7 +72,9 @@ export default async function ScanReportsValue(props: ScanReportsValueProps) {
           id={id}
           tableId={tableId}
           fieldId={fieldId}
-          tableName={table.name}
+          tableName={
+            table.death_table ? `${table.name} (Death table)` : table.name
+          }
           fieldName={field.name}
           variant="field"
         />

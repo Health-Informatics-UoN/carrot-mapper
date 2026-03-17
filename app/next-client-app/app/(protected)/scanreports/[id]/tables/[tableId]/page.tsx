@@ -60,7 +60,11 @@ export default async function ScanReportsField(props: ScanReportsFieldProps) {
       <TableBreadcrumbs
         id={id}
         tableId={tableId}
-        tableName={tableName.name}
+        tableName={
+          tableName.death_table
+            ? `${tableName.name} (Death table)`
+            : tableName.name
+        }
         variant="table"
       />
       <div>
