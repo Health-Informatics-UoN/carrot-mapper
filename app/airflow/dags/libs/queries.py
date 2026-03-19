@@ -24,6 +24,20 @@ create_existing_concepts_table_query = """
 
 
 find_existing_concepts_query = """
+    -- This check marks the current table as a "death table" if the user specifically chose the "death_date" field for the date_event.
+    -- We include this here to ensure that any downstream automapping logic that depends on knowing if a table is a "death table" (for example, only assigning death concepts to death tables) will behave correctly.
+    -- The check is performed right before we pull existing concepts so the information is always up-to-date in automapping flows.
+    UPDATE mapping_scanreporttable
+    SET death_table = TRUE
+    WHERE id = %(table_id)s
+      AND date_event_id IS NOT NULL
+      AND EXISTS (
+          SELECT 1
+          FROM mapping_scanreportfield f
+          WHERE f.id = mapping_scanreporttable.date_event_id
+            AND LOWER(TRIM(f.name)) = 'death_date'
+      );
+
     INSERT INTO temp_existing_concepts_%(table_id)s (
         object_id, sr_concept_id, source_concept_id, content_type_id
     )
@@ -139,7 +153,9 @@ LEFT JOIN mapping_omoptable AS omop_table ON
 -- Because concepts may or may not have the standard_concept_id, in general. And we prefer to use the standard_concept_id, if it exists.
 WHERE target_concept.concept_id = COALESCE(temp_existing_concepts.standard_concept_id, temp_existing_concepts.source_concept_id);
 
--- When the scan report table is a death table, override dest_table_id to the death OMOP table so rules show destination table: death, field: cause_concept_id
+-- If the scan report table has the "death_table" flag set to TRUE, set the destination table to OMOP's "death" table.
+-- This ensures that mapping rules will use "death" as the destination table and, for example, will select "cause_concept_id" as the mapped field.
+-- Note: The "death_table" flag may have been set automatically if a date_event was mapped to the "death_date" field earlier in the workflow.
 UPDATE temp_existing_concepts_%(table_id)s temp_existing_concepts
 SET dest_table_id = (SELECT id FROM mapping_omoptable WHERE "table" = 'death' LIMIT 1)
 WHERE (SELECT death_table FROM mapping_scanreporttable WHERE id = %(table_id)s) = TRUE;
