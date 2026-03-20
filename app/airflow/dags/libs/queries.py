@@ -24,9 +24,7 @@ create_existing_concepts_table_query = """
 
 
 find_existing_concepts_query = """
-    -- This check marks the current table as a "death table" if the user specifically chose the "death_date" field for the date_event.
-    -- We include this here to ensure that any downstream automapping logic that depends on knowing if a table is a "death table" (for example, only assigning death concepts to death tables) will behave correctly.
-    -- The check is performed right before we pull existing concepts so the information is always up-to-date in automapping flows.
+    -- If the date_event is "death_date", mark this as a death table.
     UPDATE mapping_scanreporttable
     SET death_table = TRUE
     WHERE id = %(table_id)s
