@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { updateScanReportTable } from "@/api/scanreports";
 import { Check, Save, X } from "lucide-react";
 import { toast } from "sonner";
 import { FormDataFilter } from "../form-components/FormikUtils";
-import { Formik } from "formik";
+import { Formik, useFormikContext } from "formik";
 import { FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription } from "@/components/ui/form";
 import { FormikSelect } from "../form-components/FormikSelect";
 import { useRouter } from "next/navigation";
@@ -31,6 +31,39 @@ interface FormData {
   death_table: boolean;
 }
 
+function DeathDateModalController({
+  deathDateFieldId,
+  setIsDialogOpen,
+  pendingRevertRef,
+}: {
+  deathDateFieldId?: number;
+  setIsDialogOpen: (open: boolean) => void;
+  pendingRevertRef: React.MutableRefObject<number | null | undefined>;
+}) {
+  const { values, setFieldValue } = useFormikContext<FormData>();
+  const prevDateEventRef = useRef(values.dateEvent);
+
+  useEffect(() => {
+    const prev = prevDateEventRef.current;
+    const next = values.dateEvent;
+    prevDateEventRef.current = next;
+
+    if (!deathDateFieldId || next === prev) return;
+
+    if (next === deathDateFieldId && !values.death_table) {
+      pendingRevertRef.current = prev ?? null;
+      setIsDialogOpen(true);
+      return;
+    }
+
+    if (values.death_table && next !== deathDateFieldId) {
+      setFieldValue("death_table", false);
+    }
+  }, [deathDateFieldId, values.dateEvent, values.death_table]);
+
+  return null;
+}
+
 export function ScanReportTableUpdateForm({
   scanreportFields,
   scanreportTable,
@@ -46,6 +79,7 @@ export function ScanReportTableUpdateForm({
 }) {
   const router = useRouter();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const pendingDateEventRevertRef = useRef<number | null | undefined>(undefined);
   const canUpdate =
     permissions.includes("CanEdit") || permissions.includes("CanAdmin");
 
@@ -53,6 +87,9 @@ export function ScanReportTableUpdateForm({
 
   const initialPersonId = FormDataFilter<ScanReportField>(personId);
   const initialDateEvent = FormDataFilter<ScanReportField>(dateEvent);
+  const deathDateField = scanreportFields.find(
+    (field) => field.name?.trim().toLowerCase() === "death_date",
+  );
 
   const handleSubmit = async (data: FormData) => {
     const submittingData = {
@@ -92,6 +129,11 @@ export function ScanReportTableUpdateForm({
       {({ handleSubmit, values, setFieldValue }) => (
         <form className="w-full max-w-2xl" onSubmit={handleSubmit}>
           <div className="flex flex-col gap-5">
+            <DeathDateModalController
+              deathDateFieldId={deathDateField?.id}
+              setIsDialogOpen={setIsDialogOpen}
+              pendingRevertRef={pendingDateEventRevertRef}
+            />
 
             <FormItem>
               <FormLabel>Person ID</FormLabel>
@@ -134,7 +176,16 @@ export function ScanReportTableUpdateForm({
                 <Tooltips
                   content="In the Carrot data standard, death data is provided in a separate file (e.g. death.csv). Mark Yes if this table contains that death data to be mapped to the OMOP Death table."
                 />
-                <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <Dialog
+                  open={isDialogOpen}
+                  onOpenChange={(open) => {
+                    setIsDialogOpen(open);
+                    if (!open && pendingDateEventRevertRef.current !== undefined) {
+                      setFieldValue("dateEvent", pendingDateEventRevertRef.current);
+                      pendingDateEventRevertRef.current = undefined;
+                    }
+                  }}
+                >
                   <DialogContent>
                     <DialogHeader>
                       <DialogTitle>Please Confirm Your Choice</DialogTitle>
@@ -176,6 +227,7 @@ export function ScanReportTableUpdateForm({
                       <Button
                         type="button"
                         onClick={() => {
+                          pendingDateEventRevertRef.current = undefined;
                           setFieldValue("death_table", true);
                           setIsDialogOpen(false);
                         }}

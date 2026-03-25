@@ -24,18 +24,6 @@ create_existing_concepts_table_query = """
 
 
 find_existing_concepts_query = """
-    -- If the date_event is "death_date", mark this as a death table.
-    UPDATE mapping_scanreporttable
-    SET death_table = TRUE
-    WHERE id = %(table_id)s
-      AND date_event_id IS NOT NULL
-      AND EXISTS (
-          SELECT 1
-          FROM mapping_scanreportfield f
-          WHERE f.id = mapping_scanreporttable.date_event_id
-            AND LOWER(TRIM(f.name)) = 'death_date'
-      );
-
     INSERT INTO temp_existing_concepts_%(table_id)s (
         object_id, sr_concept_id, source_concept_id, content_type_id
     )
@@ -153,7 +141,6 @@ WHERE target_concept.concept_id = COALESCE(temp_existing_concepts.standard_conce
 
 -- If the scan report table has the "death_table" flag set to TRUE, set the destination table to OMOP's "death" table.
 -- This ensures that mapping rules will use "death" as the destination table and, for example, will select "cause_concept_id" as the mapped field.
--- Note: The "death_table" flag may have been set automatically if a date_event was mapped to the "death_date" field earlier in the workflow.
 UPDATE temp_existing_concepts_%(table_id)s temp_existing_concepts
 SET dest_table_id = (SELECT id FROM mapping_omoptable WHERE "table" = 'death' LIMIT 1)
 WHERE (SELECT death_table FROM mapping_scanreporttable WHERE id = %(table_id)s) = TRUE;

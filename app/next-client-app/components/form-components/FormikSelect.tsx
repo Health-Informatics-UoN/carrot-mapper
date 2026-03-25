@@ -1,8 +1,6 @@
 import { Field, FieldInputProps, FieldProps, FormikProps } from "formik";
 import Select from "react-select";
 import makeAnimated from "react-select/animated";
-import config from "@/tailwind.config";
-import { useTheme } from "next-themes";
 
 type Option = Object & {
   value: number;
@@ -36,8 +34,8 @@ const CustomSelect = ({
 
   const onChange = (newValue: any, actionMeta: any) => {
     const selectedValues = isMulti
-      ? (newValue as Option[]).map((option) => option.value)
-      : (newValue as Option).value;
+      ? ((newValue as Option[] | null) ?? []).map((option) => option.value)
+      : ((newValue as Option | null)?.value ?? null);
 
     form.setFieldValue(field.name, selectedValues);
   };
