@@ -12,7 +12,7 @@ license = "MIT"
 
 [dependency-groups]
 test = [
-    "pytest>=7.4.0,<8",
+    "pytest>=8.4.2,<9",
     "pytest-cov>=4.1.0,<5",
     "coverage>=7.3.0,<8",
 ]
