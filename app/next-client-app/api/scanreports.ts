@@ -149,6 +149,7 @@ export async function getScanReportTable(
       permissions: [],
       jobs: [],
       trigger_reuse: true,
+      death_table: false,
     };
   }
 }

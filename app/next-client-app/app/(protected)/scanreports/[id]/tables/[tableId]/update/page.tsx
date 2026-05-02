@@ -74,7 +74,7 @@ export default async function UpdateTable(props: UpdateTableProps) {
     <div>
       <Link href={`/scanreports/${id}/tables/${tableId}`}>
         <Button variant={"secondary"} className="mb-3">
-          Update Table: {table.name}
+          Update Table: {table.name} {table.death_table && "(Death table)"}
         </Button>
       </Link>
       {(table.date_event === null || table.person_id === null) && (

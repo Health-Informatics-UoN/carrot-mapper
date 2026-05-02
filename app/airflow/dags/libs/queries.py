@@ -139,7 +139,8 @@ LEFT JOIN mapping_omoptable AS omop_table ON
 -- Because concepts may or may not have the standard_concept_id, in general. And we prefer to use the standard_concept_id, if it exists.
 WHERE target_concept.concept_id = COALESCE(temp_existing_concepts.standard_concept_id, temp_existing_concepts.source_concept_id);
 
--- When the scan report table is a death table, override dest_table_id to the death OMOP table so rules show destination table: death, field: cause_concept_id
+-- If the scan report table has the "death_table" flag set to TRUE, set the destination table to OMOP's "death" table.
+-- This ensures that mapping rules will use "death" as the destination table and, for example, will select "cause_concept_id" as the mapped field.
 UPDATE temp_existing_concepts_%(table_id)s temp_existing_concepts
 SET dest_table_id = (SELECT id FROM mapping_omoptable WHERE "table" = 'death' LIMIT 1)
 WHERE (SELECT death_table FROM mapping_scanreporttable WHERE id = %(table_id)s) = TRUE;

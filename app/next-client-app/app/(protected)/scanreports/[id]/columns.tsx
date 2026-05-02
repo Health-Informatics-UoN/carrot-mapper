@@ -3,6 +3,7 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { DataTableColumnHeader } from "@/components/data-table/DataTableColumnHeader";
 import { EditButton } from "@/components/scanreports/EditButton";
+import { Tooltips } from "@/components/core/Tooltips";
 import JobDialog from "@/components/jobs/JobDialog";
 import { FindGeneralStatus, DivideJobs } from "@/components/jobs/JobUtils";
 import Link from "next/link";
@@ -85,6 +86,28 @@ export const columns: ColumnDef<ScanReportTable>[] = [
             table_name={name}
             generalStatus={generalStatus}
           />
+        </div>
+      );
+    }
+  },
+  {
+    id: "note",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Note" />
+    ),
+    cell: ({ row }) => {
+      const { death_table } = row.original;
+      return (
+        <div>
+          {death_table && (
+            <h3 className="flex">
+              {" "}
+              Death table
+              <Tooltips
+                content="This table is marked as a Death table. In the Carrot data standard, death data is typically provided in a separate file (e.g. death.csv) for mapping to the OMOP Death table."
+              />
+            </h3>
+          )}
         </div>
       );
     }
