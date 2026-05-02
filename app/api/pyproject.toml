@@ -17,7 +17,7 @@ dependencies = [
     "django-extra-views>=0.16.0,<1.0",
     "djangorestframework==3.16.1",
     "django-filter==25.2",
-    "requests==2.32.5",
+    "requests==2.33.0",
     "azure-common>=1.1.28,<2",
     "azure-storage-queue==12.14.1",
     "azure-storage-blob==12.27.1",
@@ -32,7 +32,7 @@ dependencies = [
     "dj-rest-auth[with-social]==7.0.1",
     "minio==7.2.18",
     "drf-spectacular==0.29.0",
-    "django-allauth==65.13.0",
+    "django-allauth==65.14.1",
     "psycopg2-binary==2.9.11",
 ]
 
