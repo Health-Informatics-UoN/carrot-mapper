@@ -3,7 +3,7 @@
 import { DataTable } from "@/components/data-table";
 
 interface CustomDataTableProps<T> {
-  scanReportsData: ScanReportValueV3[];
+  scanReportsData: T[];
   canEdit: boolean;
   count: number;
   defaultPageSize: 10 | 20 | 30 | 40 | 50;

@@ -871,3 +871,132 @@ class TestScanReportActiveConceptFilterViewSet(TestCase):
         self.assertEqual(
             recommendation_data["concept"]["concept_name"], concept.concept_name
         )
+class TestScanReportFieldListViewset(TestCase):
+   def setUp(self):
+      # Set up Data Partner
+        self.data_partner = DataPartner.objects.create(name="Silvan Elves")
+
+        # Set up datasets
+        self.public_dataset = Dataset.objects.create(
+            name="The Shire",
+            visibility=VisibilityChoices.PUBLIC,
+            data_partner=self.data_partner,
+        )
+
+        self.scan_report = ScanReport.objects.create(
+             dataset="Test Dataset",
+            visibility=VisibilityChoices.PUBLIC,
+            parent_dataset=self.public_dataset,
+        )
+
+        self.table = ScanReportTable.objects.create(
+            scan_report=self.scan_report,
+            name="Test Table",
+        )
+
+        self.field = ScanReportField.objects.create(
+            scan_report_table=self.table,
+            name="Test Field",
+            description_column="Test Description",
+            type_column="string",
+        )
+
+        self.concept = Concept.objects.create(
+            concept_id=12345,
+            concept_name="Test Concept",
+            concept_code="TEST123",
+            domain_id="Test",
+            vocabulary_id="Test",
+            concept_class_id="Test",
+            standard_concept="S",
+            valid_start_date="2020-01-01",
+            valid_end_date="2099-12-31",
+        )
+
+        field_content_type = ContentType.objects.get_for_model(ScanReportField)
+        self.recommendation = MappingRecommendation.objects.create(
+            content_type=field_content_type,
+            object_id=self.field.id,
+            concept=self.concept,
+            score=0.85,
+            tool_name="test-tool",
+            tool_version="1.0.0",
+        )
+        self.scan_report_concept = ScanReportConcept.objects.create(
+            content_type=field_content_type,
+            object_id=self.field.id,
+            concept=self.concept,
+        )
+
+        self.client = APIClient()
+        self.url = f"/api/v3/scanreports/{self.scan_report.id}/tables/{self.table.id}/fields/"
+   @mock.patch.dict(os.environ, {"AZ_FUNCTION_USER": "az_functions"})
+   def test_scan_report_field_list_v3_includes_recommendations(self):
+        """Test that ScanReportFieldListV3 includes mapping recommendations."""
+
+        response = self.client.get(self.url)
+        # Verify response
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+
+        # Check that the field is returned
+        self.assertEqual(len(data["results"]), 1)
+        field_data = data["results"][0]
+
+        # Check that mapping recommendations are included
+        self.assertIn("mapping_recommendations", field_data)
+        self.assertEqual(len(field_data["mapping_recommendations"]), 1)
+
+        recommendation_data = field_data["mapping_recommendations"][0]
+        self.assertEqual(recommendation_data["id"], self.recommendation.id)
+        self.assertEqual(recommendation_data["score"], 0.85)
+        self.assertEqual(recommendation_data["tool_name"], "test-tool")
+        self.assertEqual(recommendation_data["tool_version"], "1.0.0")
+        self.assertEqual(
+            recommendation_data["concept"]["concept_id"], self.concept.concept_id
+        )
+        self.assertEqual(
+            recommendation_data["concept"]["concept_name"], self.concept.concept_name
+        )
+   @mock.patch.dict(os.environ, {"AZ_FUNCTION_USER": "az_functions"})
+   def test_scan_report_field_list_v3_includes_concepts(self):
+        """Test that ScanReportFieldListV3 includes concepts."""
+
+        response = self.client.get(self.url)
+        # Verify response
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+
+        # Check that the field is returned
+        self.assertEqual(len(data["results"]), 1)
+        field_data = data["results"][0]
+        # Check that concepts are included
+        self.assertIn("concepts", field_data)
+        self.assertEqual(len(field_data["concepts"]), 1)
+
+        concept_data = field_data["concepts"][0]
+        self.assertEqual(concept_data["id"], self.scan_report_concept.id)
+        self.assertEqual(concept_data["concept"]["concept_id"], 12345)
+        self.assertEqual(concept_data["concept"]["concept_name"], "Test Concept")
+        self.assertEqual(concept_data["concept"]["concept_code"], "TEST123")
+
+   @mock.patch.dict(os.environ, {"AZ_FUNCTION_USER": "az_functions"})
+   def test_scan_report_field_list_v3_filter_has_concepts_false(self):
+        """Test that ?has_concepts=false returns only fields with no concepts."""
+        # Add a second field with no concepts attached
+        unmapped_field = ScanReportField.objects.create(
+            scan_report_table=self.table,
+            name="Unmapped Field",
+            description_column="No concepts here",
+            type_column="string",
+        )
+
+        response = self.client.get(f"{self.url}?has_concepts=false")
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+
+        # Only the unmapped field should be returned; the mapped one from setUp
+        # has a ScanReportConcept attached and should be filtered out.
+        self.assertEqual(len(data["results"]), 1)
+        self.assertEqual(data["results"][0]["id"], unmapped_field.id)

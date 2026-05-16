@@ -11,7 +11,7 @@ const getCurrentEpochTime = () => {
 };
 
 export const options: NextAuthOptions = {
-  secret: process.env.AUTH_SECRET,
+  secret: process.env.NEXTAUTH_SECRET,
   session: {
     strategy: "jwt",
     maxAge: BACKEND_REFRESH_TOKEN_LIFETIME,
@@ -31,7 +31,7 @@ export const options: NextAuthOptions = {
       async authorize(credentials, req) {
         try {
           const response = await fetch(
-            process.env.NEXTAUTH_BACKEND_URL + "auth/login/",
+            process.env.BACKEND_URL + "/api/auth/login/",
             {
               method: "POST",
               headers: {

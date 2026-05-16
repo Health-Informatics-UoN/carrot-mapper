@@ -30,7 +30,7 @@ export function ConceptTagsV3({
       setOptimisticConcepts(conceptId);
       await deleteConceptV3(
         conceptId,
-        `/scanreports/${scanReportId}/tables/${tableId}/fields/${fieldId}/beta`
+        `/scanreports/${scanReportId}/tables/${tableId}/fields/${fieldId}`
       );
       toast.success("Concept Id Deleted");
     } catch (error) {

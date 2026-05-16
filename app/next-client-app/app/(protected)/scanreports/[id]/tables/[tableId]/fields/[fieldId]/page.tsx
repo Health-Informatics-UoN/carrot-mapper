@@ -2,19 +2,16 @@ import {
   getScanReportField,
   getScanReportPermissions,
   getScanReportTable,
-  getScanReportValues,
+  getScanReportValuesV3,
 } from "@/api/scanreports";
 import { objToQuery } from "@/lib/client-utils";
-import {
-  getAllConceptsFiltered,
-  getAllScanReportConcepts,
-} from "@/api/concepts";
-import { ConceptDataTable } from "@/components/concepts/ConceptDataTable";
 import { columns } from "./columns";
+import { ConceptDataTableV3 } from "@/components/concepts/ConceptDataTableV3";
 import { TableBreadcrumbs } from "@/components/scanreports/TableBreadcrumbs";
-import Link from "next/link";
+import { ConceptDataFilter } from "@/components/concepts/ConceptDataFilter";
 import { Button } from "@/components/ui/button";
-import { Sparkles } from "lucide-react";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 
 interface ScanReportsValueProps {
   params: Promise<{
@@ -29,11 +26,7 @@ export default async function ScanReportsValue(props: ScanReportsValueProps) {
   const searchParams = await props.searchParams;
   const params = await props.params;
 
-  const {
-    id,
-    tableId,
-    fieldId
-  } = params;
+  const { id, tableId, fieldId } = params;
 
   const defaultPageSize = 20;
   const defaultParams = {
@@ -44,27 +37,19 @@ export default async function ScanReportsValue(props: ScanReportsValueProps) {
   const permissions = await getScanReportPermissions(id);
   const table = await getScanReportTable(id, tableId);
   const field = await getScanReportField(id, tableId, fieldId);
-  const scanReportsValues = await getScanReportValues(
+  const scanReportsValues = await getScanReportValuesV3(
     id,
     tableId,
     fieldId,
-    query
+    query,
   );
 
-  const scanReportsConcepts =
-    scanReportsValues.results.length > 0
-      ? await getAllScanReportConcepts(
-          `object_id__in=${scanReportsValues.results
-            .map((item) => item.id)
-            .join(",")}`
-        )
-      : [];
-  const conceptsFilter =
-    scanReportsConcepts.length > 0
-      ? await getAllConceptsFiltered(
-          scanReportsConcepts?.map((item) => item.concept).join(",")
-        )
-      : [];
+  const filter = <ConceptDataFilter />;
+
+  const canEdit =
+    permissions.permissions.includes("CanEdit") ||
+    permissions.permissions.includes("CanAdmin");
+
   return (
     <div>
       <div className="flex justify-between items-center">
@@ -76,21 +61,17 @@ export default async function ScanReportsValue(props: ScanReportsValueProps) {
           fieldName={field.name}
           variant="field"
         />
-        <Button variant="link" asChild><Link href={`${fieldId}/beta`}>Try the new experience <Sparkles className="text-carrot-brand" /></Link></Button>
       </div>
-      
       <div>
-        <ConceptDataTable
+        <ConceptDataTableV3
           count={scanReportsValues.count}
-          permissions={permissions}
-          scanReportsConcepts={scanReportsConcepts}
-          conceptsFilter={conceptsFilter}
+          canEdit={canEdit}
           scanReportsData={scanReportsValues.results}
           defaultPageSize={defaultPageSize}
           columns={columns}
-          filterCol="value"
-          filterText="value "
           tableId={tableId}
+          scanReportId={id}
+          Filter={filter}
         />
       </div>
     </div>
