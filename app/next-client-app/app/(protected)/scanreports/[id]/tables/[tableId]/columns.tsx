@@ -109,9 +109,6 @@ export const columns = (
       id: "Add Concept",
       header: "",
       cell: ({ row }) => {
-        // const { scan_report_table, id, permissions } = row.original;
-        // const canEdit =
-        //   permissions.includes("CanEdit") || permissions.includes("CanAdmin");
         return (
           <AddConceptV3
             rowId={row.original.id}

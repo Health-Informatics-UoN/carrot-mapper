@@ -39,21 +39,6 @@ export default async function ScanReportsField(props: ScanReportsFieldProps) {
   const scanReportsFields = await getScanReportFieldsV3(id, tableId, query);
   const permissions = await getScanReportPermissions(id);
 
-  // const scanReportsConcepts =
-  //   scanReportsFields.results.length > 0
-  //     ? await getAllScanReportConcepts(
-  //         `object_id__in=${scanReportsFields.results
-  //           .map((item) => item.id)
-  //           .join(",")}`,
-  //       )
-  //     : [];
-
-  // const conceptsFilter =
-  //   scanReportsConcepts.length > 0
-  //     ? await getAllConceptsFiltered(
-  //         scanReportsConcepts?.map((item) => item.concept).join(","),
-  //       )
-  //     : [];
 
   const canEdit = permissions.permissions.includes("CanEdit") ||
   permissions.permissions.includes("CanAdmin");
