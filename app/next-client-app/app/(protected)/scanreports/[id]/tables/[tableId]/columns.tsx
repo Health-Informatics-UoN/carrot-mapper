@@ -114,7 +114,7 @@ export const columns = (
             rowId={row.original.id}
             tableId={tableId}
             contentType="scanreportfield"
-            disabled={false}
+            disabled={!canEdit}
             scanReportId={scanReportId}
             fieldId={row.original.id}
           />
