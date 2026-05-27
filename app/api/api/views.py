@@ -884,11 +884,6 @@ class ScanReportFieldIndexV3(ScanReportPermissionMixin, GenericAPIView, ListMode
             )
         )
 
-    def list(self, request, *args, **kwargs):
-        return super().list(request, *args, **kwargs)
-
-
-
 class ScanReportValueListV2(ScanReportPermissionMixin, GenericAPIView, ListModelMixin):
     """
     A view for listing ScanReportValue objects associated with a

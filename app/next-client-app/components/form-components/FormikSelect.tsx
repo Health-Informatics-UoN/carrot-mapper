@@ -1,4 +1,5 @@
 import { Field, FieldInputProps, FieldProps, FormikProps } from "formik";
+import { useId } from "react";
 import Select from "react-select";
 import makeAnimated from "react-select/animated";
 import config from "@/tailwind.config";
@@ -26,6 +27,7 @@ const CustomSelect = ({
   isDisabled: boolean;
   required?: boolean;
 }) => {
+  const instanceId = useId();
   const animatedComponents = makeAnimated();
 
   // Optional: detect dark mode for better contrast
@@ -53,6 +55,7 @@ const CustomSelect = ({
 
   return (
     <Select
+      instanceId={instanceId}
       name={field.name}
       value={selected()}
       onChange={onChange}

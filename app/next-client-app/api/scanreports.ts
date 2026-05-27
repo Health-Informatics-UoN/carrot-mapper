@@ -319,21 +319,6 @@ export async function getScanReportValuesV3(
   }
 }
 
-export async function getAllScanReportFieldsV3(
-  scanReportId: string,
-  tableId: string,
-  filter: string | undefined,
-): Promise<ScanReportFieldV3[]> {
-  try {
-    return await fetchAllPages<ScanReportFieldV3>(
-      fetchKeys.fieldsV3(scanReportId, tableId, filter),
-    );
-  } catch (error) {
-    console.warn("Failed to fetch data.");
-    return [];
-  }
-}
-
 export async function getScanReportFieldsV3(
   scanReportId: string,
   tableId: string,
