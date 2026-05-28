@@ -735,6 +735,7 @@ class ScanReportFieldListSerializerV2(DynamicFieldsMixin, serializers.ModelSeria
         model = ScanReportField
         fields = "__all__"
 
+
 class ScanReportTableListSerializerV2(DynamicFieldsMixin, serializers.ModelSerializer):
     date_event = ScanReportFieldListSerializerV2()
     person_id = ScanReportFieldListSerializerV2()
@@ -826,7 +827,9 @@ class ScanReportValueViewSerializerV3(serializers.ModelSerializer):
 
 class ScanReportFieldListSerializerV3(serializers.ModelSerializer):
     concepts = ScanReportConceptSerializerV2(many=True, read_only=True)
-    mapping_recommendations = MappingRecommendationSerializerV3(many=True, read_only=True)
+    mapping_recommendations = MappingRecommendationSerializerV3(
+        many=True, read_only=True
+    )
 
     class Meta:
         model = ScanReportField

@@ -825,6 +825,7 @@ class ScanReportFieldDetailV2(
             return ScanReportFieldEditSerializer
         return super().get_serializer_class()
 
+
 class ScanReportFieldIndexV3(ScanReportPermissionMixin, GenericAPIView, ListModelMixin):
     """
     A view that provides a list of ScanReportField objects associated
@@ -887,6 +888,7 @@ class ScanReportFieldIndexV3(ScanReportPermissionMixin, GenericAPIView, ListMode
                 "mapping_recommendations__concept",
             )
         )
+
 
 class ScanReportValueListV2(ScanReportPermissionMixin, GenericAPIView, ListModelMixin):
     """

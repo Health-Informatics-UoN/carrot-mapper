@@ -109,7 +109,6 @@ urlpatterns = [
         views.ScanReportConceptDetailV3.as_view(),
         name="scan-report-concepts-detail",
     ),
-
     path(
         "v3/scanreports/<int:pk>/tables/<int:table_pk>/fields/",
         views.ScanReportFieldIndexV3.as_view(),

@@ -871,9 +871,11 @@ class TestScanReportActiveConceptFilterViewSet(TestCase):
         self.assertEqual(
             recommendation_data["concept"]["concept_name"], concept.concept_name
         )
+
+
 class TestScanReportFieldListViewset(TestCase):
-   def setUp(self):
-      # Set up Data Partner
+    def setUp(self):
+        # Set up Data Partner
         self.data_partner = DataPartner.objects.create(name="Silvan Elves")
 
         # Set up datasets
@@ -884,7 +886,7 @@ class TestScanReportFieldListViewset(TestCase):
         )
 
         self.scan_report = ScanReport.objects.create(
-             dataset="Test Dataset",
+            dataset="Test Dataset",
             visibility=VisibilityChoices.PUBLIC,
             parent_dataset=self.public_dataset,
         )
@@ -929,9 +931,12 @@ class TestScanReportFieldListViewset(TestCase):
         )
 
         self.client = APIClient()
-        self.url = f"/api/v3/scanreports/{self.scan_report.id}/tables/{self.table.id}/fields/"
-   @mock.patch.dict(os.environ, {"AZ_FUNCTION_USER": "az_functions"})
-   def test_scan_report_field_list_v3_includes_recommendations(self):
+        self.url = (
+            f"/api/v3/scanreports/{self.scan_report.id}/tables/{self.table.id}/fields/"
+        )
+
+    @mock.patch.dict(os.environ, {"AZ_FUNCTION_USER": "az_functions"})
+    def test_scan_report_field_list_v3_includes_recommendations(self):
         """Test that ScanReportFieldListV3 includes mapping recommendations."""
 
         response = self.client.get(self.url)
@@ -958,8 +963,9 @@ class TestScanReportFieldListViewset(TestCase):
         self.assertEqual(
             recommendation_data["concept"]["concept_name"], self.concept.concept_name
         )
-   @mock.patch.dict(os.environ, {"AZ_FUNCTION_USER": "az_functions"})
-   def test_scan_report_field_list_v3_includes_concepts(self):
+
+    @mock.patch.dict(os.environ, {"AZ_FUNCTION_USER": "az_functions"})
+    def test_scan_report_field_list_v3_includes_concepts(self):
         """Test that ScanReportFieldListV3 includes concepts."""
 
         response = self.client.get(self.url)
@@ -980,8 +986,8 @@ class TestScanReportFieldListViewset(TestCase):
         self.assertEqual(concept_data["concept"]["concept_name"], "Test Concept")
         self.assertEqual(concept_data["concept"]["concept_code"], "TEST123")
 
-   @mock.patch.dict(os.environ, {"AZ_FUNCTION_USER": "az_functions"})
-   def test_scan_report_field_list_v3_filter_has_concepts_false(self):
+    @mock.patch.dict(os.environ, {"AZ_FUNCTION_USER": "az_functions"})
+    def test_scan_report_field_list_v3_filter_has_concepts_false(self):
         """Test that ?has_concepts=false returns only fields with no concepts."""
         # Add a second field with no concepts attached
         unmapped_field = ScanReportField.objects.create(

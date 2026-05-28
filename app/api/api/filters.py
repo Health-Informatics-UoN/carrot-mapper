@@ -151,10 +151,12 @@ class ScanReportValueFilter(django_filters.FilterSet):
             "value": ["in", "icontains"],
         }
 
+
 class ScanReportFieldFilter(django_filters.FilterSet):
     """
     Custom filterset for ScanReportField model.
     """
+
     has_concepts = HasConceptsFilter()
     creation_type = CreationTypeFilter()
 
