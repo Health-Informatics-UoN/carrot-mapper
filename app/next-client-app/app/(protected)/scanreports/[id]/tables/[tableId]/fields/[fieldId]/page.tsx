@@ -9,9 +9,6 @@ import { columns } from "./columns";
 import { ConceptDataTableV3 } from "@/components/concepts/ConceptDataTableV3";
 import { TableBreadcrumbs } from "@/components/scanreports/TableBreadcrumbs";
 import { ConceptDataFilter } from "@/components/concepts/ConceptDataFilter";
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 
 interface ScanReportsValueProps {
   params: Promise<{
@@ -44,7 +41,7 @@ export default async function ScanReportsValue(props: ScanReportsValueProps) {
     query,
   );
 
-  const filter = <ConceptDataFilter />;
+  const filter = <ConceptDataFilter showUnmappedFilter />;
 
   const canEdit =
     permissions.permissions.includes("CanEdit") ||

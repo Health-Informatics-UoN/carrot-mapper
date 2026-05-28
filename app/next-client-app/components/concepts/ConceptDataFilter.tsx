@@ -26,7 +26,7 @@ const ConceptDataOptions = [
     },
 ]
 
-export function ConceptDataFilter() {
+export function ConceptDataFilter({ showUnmappedFilter = false }: { showUnmappedFilter?: boolean }) {
   const router = useRouter();
   const searchParam = useSearchParams();
 
@@ -103,16 +103,18 @@ export function ConceptDataFilter() {
         handleSelect={handleSelectOption}
         handleClear={() => (setOptions([]), handleFacetsFilter())}
         />
-        <div className="flex items-center gap-2">
-          <Checkbox
-            id="unmapped-only"
-            checked={unmappedOnly}
-            onCheckedChange={(checked) => handleUnmappedToggle(checked === true)}
-          />
-          <Label htmlFor="unmapped-only" className="cursor-pointer">
-            Unmapped only
-          </Label>
-        </div>
+        {showUnmappedFilter && (
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="unmapped-only"
+              checked={unmappedOnly}
+              onCheckedChange={(checked) => handleUnmappedToggle(checked === true)}
+            />
+            <Label htmlFor="unmapped-only" className="cursor-pointer">
+              Unmapped only
+            </Label>
+          </div>
+        )}
     </div>
   );
 }
