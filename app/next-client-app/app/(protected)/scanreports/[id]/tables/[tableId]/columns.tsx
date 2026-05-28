@@ -136,7 +136,7 @@ export const columns = (
       enableHiding: true,
       enableSorting: false,
       cell: ({ row }) => {
-        const { name, id, scan_report_table } = row.original;
+        const { name, id } = row.original;
         return (
           <AISuggestionsButton
             value={name}
