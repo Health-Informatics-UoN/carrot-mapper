@@ -1,6 +1,6 @@
 [project]
 name = "carrot-airflow"
-version = "4.3.3"
+dynamic = ["version"]
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -15,3 +15,14 @@ dependencies = [
     "types-openpyxl>=3.1.5.20250506",
     "types-psycopg2>=2.9.21.20250318",
 ]
+
+[build-system]
+requires = ["setuptools>=61.0", "setuptools_scm>=8"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools_scm]
+# pyproject.toml lives two directories below the monorepo root, where .git is.
+root = "../.."
+# This project isn't pip-installed inside the Docker image (see Dockerfile), so
+# fallback_version only matters for local/CI tooling run outside a git checkout.
+fallback_version = "0.0.0.dev0"

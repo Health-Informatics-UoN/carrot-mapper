@@ -1,6 +1,6 @@
 [project]
 name = "api"
-version = "4.3.3"
+dynamic = ["version"]
 description = "Web app for Carrot-Mapper"
 
 authors = [
@@ -51,7 +51,7 @@ default-groups = [
 ]
 
 [build-system]
-requires = ["setuptools>=61.0"]
+requires = ["setuptools>=61.0", "setuptools_scm>=8"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
@@ -63,6 +63,13 @@ packages = [
     "datasets",
     "projects"
 ]
+
+[tool.setuptools_scm]
+# pyproject.toml lives two directories below the monorepo root, where .git is.
+root = "../.."
+# In Docker builds .git isn't present in the build context; the version is
+# instead supplied via the SETUPTOOLS_SCM_PRETEND_VERSION env var (see Dockerfile).
+fallback_version = "0.0.0.dev0"
 
 [tool.pytest.ini_options]
 minversion = "6.0"

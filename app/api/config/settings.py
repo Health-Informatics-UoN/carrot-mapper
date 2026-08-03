@@ -16,7 +16,12 @@ from datetime import timedelta
 from dotenv import load_dotenv
 from services.enums import WorkerServiceType
 
+from api.logger import logger
+from api.version import __version__
+
 load_dotenv()
+
+logger.info(f"Starting Carrot Mapper API version {__version__}")
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

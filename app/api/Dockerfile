@@ -15,6 +15,12 @@ ENV PATH=/home/django/.local/bin:$PATH
 
 # ---- Install Dependencies using UV & Remove caches & tooling artefacts
 USER root
+
+# Version is resolved from git tags by CI (semantic-release) and passed in here,
+# since the build context doesn't include .git for setuptools_scm to inspect.
+ARG API_VERSION=0.0.0.dev0
+ENV SETUPTOOLS_SCM_PRETEND_VERSION=${API_VERSION}
+
 RUN uv pip install --no-cache-dir --system . && \
     rm -rf /root/.cargo /root/.rustup
 

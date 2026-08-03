@@ -4,7 +4,6 @@ requires-python = ">=3.11, <4"
 
 [[package]]
 name = "api"
-version = "4.2.8"
 source = { editable = "." }
 dependencies = [
     { name = "azure-common" },
