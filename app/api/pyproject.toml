@@ -51,25 +51,39 @@ default-groups = [
 ]
 
 [build-system]
-requires = ["setuptools>=61.0", "setuptools_scm>=8"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
 
-[tool.setuptools]
+[tool.hatch.build.targets.wheel]
+# Explicit list since these are flat top-level Django apps, not a single
+# src/api-style package hatchling could auto-detect from the project name.
+# Kept in sync with INSTALLED_APPS/imports in config/settings.py.
 packages = [
     "api",
     "authn",
     "config",
-    "static",
+    "data",
     "datasets",
-    "projects"
+    "files",
+    "jobs",
+    "mapping",
+    "projects",
+    "services",
+    "static",
+    "test",
+    "users",
 ]
 
-[tool.setuptools_scm]
-# pyproject.toml lives two directories below the monorepo root, where .git is.
-root = "../.."
+[tool.hatch.version]
+source = "vcs"
 # In Docker builds .git isn't present in the build context; the version is
 # instead supplied via the SETUPTOOLS_SCM_PRETEND_VERSION env var (see Dockerfile).
-fallback_version = "0.0.0.dev0"
+# hatch-vcs delegates to setuptools_scm under the hood, so that env var still works.
+fallback-version = "0.0.0.dev0"
+
+[tool.hatch.version.raw-options]
+# pyproject.toml lives two directories below the monorepo root, where .git is.
+root = "../.."
 
 [tool.pytest.ini_options]
 minversion = "6.0"
