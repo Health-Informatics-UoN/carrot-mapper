@@ -49,6 +49,7 @@ default-groups = [
     "test",
     "dev",
 ]
+exclude-newer = "7 days"
 
 [build-system]
 requires = ["hatchling", "hatch-vcs"]

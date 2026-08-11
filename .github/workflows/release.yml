@@ -31,9 +31,6 @@ jobs:
       image-name: carrot/backend
       image-description: "Carrot Mapper API (Django backend)"
       registry: ghcr.io
-      # Context is the monorepo root (not ./app) so .git is present for
-      # hatch-vcs to resolve the version from git tags at build time -
-      # see app/api/pyproject.toml and app/api/Dockerfile.
       context: .
       dockerfile: app/api/Dockerfile
       platforms: linux/amd64,linux/arm64
