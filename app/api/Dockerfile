@@ -38,7 +38,7 @@ RUN git config --global --add safe.directory / && \
 # ----------------------------
 FROM python:3.11-slim
 
-ENV PYTHONUNBUFFERED 1
+ENV PYTHONUNBUFFERED=1
 EXPOSE 8000
 WORKDIR /api
 
