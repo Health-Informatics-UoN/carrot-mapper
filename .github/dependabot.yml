@@ -9,7 +9,7 @@ updates:
       time: "09:00"
       timezone: "Europe/London"
     cooldown: 
-      default-days: 3
+      default-days: 7
     commit-message:
       prefix: "fix(dependencies): "
     groups:
@@ -32,7 +32,7 @@ updates:
       time: "09:00"
       timezone: "Europe/London"
     cooldown: 
-      default-days: 3
+      default-days: 7
     commit-message:
       prefix: "fix(dependencies): "
     groups:
@@ -55,7 +55,7 @@ updates:
       time: "09:00"
       timezone: "Europe/London"
     cooldown: 
-      default-days: 3
+      default-days: 7
     commit-message:
       prefix: "fix(dependencies): "
   - package-ecosystem: "github-actions"
@@ -66,7 +66,7 @@ updates:
       time: "09:00"
       timezone: "Europe/London"
     cooldown: 
-      default-days: 3
+      default-days: 7
     commit-message:
       prefix: "chore(dependencies): "
     groups:
