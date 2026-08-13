@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { JSX } from "react";
 
 import { DataTable } from "@/components/data-table";
 import { RefreshButton } from "../jobs/RefreshButton";
