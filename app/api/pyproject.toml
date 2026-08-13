@@ -11,33 +11,33 @@ requires-python = "~=3.11"
 license = "MIT"
 
 dependencies = [
-    "django==5.2.8",
+    "django==5.2.16",
     "openpyxl==3.1.5",
-    "django-select2==8.4.3",
+    "django-select2==8.4.8",
     "django-extra-views>=0.16.0,<1.0",
-    "djangorestframework==3.16.1",
+    "djangorestframework==3.17.2",
     "django-filter==25.2",
     "requests==2.34.2",
     "azure-common>=1.1.28,<2",
-    "azure-storage-queue==12.14.1",
-    "azure-storage-blob==12.27.1",
-    "whitenoise==6.11.0",
+    "azure-storage-queue==12.17.0",
+    "azure-storage-blob==12.30.0",
+    "whitenoise==6.12.0",
     "gunicorn==23.0.0",
     "graphviz==0.21",
     "drf-dynamic-fields>=0.4.0,<0.5",
     "django-cors-headers==4.9.0",
-    "python-dotenv==1.2.1",
-    "azure-monitor-opentelemetry==1.8.2",
+    "python-dotenv==1.2.2",
+    "azure-monitor-opentelemetry==1.8.9",
     "djangorestframework-simplejwt==5.5.1",
-    "dj-rest-auth[with-social]==7.0.1",
-    "minio==7.2.18",
-    "drf-spectacular==0.29.0",
-    "django-allauth==65.13.0",
-    "psycopg2-binary==2.9.11",
+    "dj-rest-auth[with-social]==7.2.0",
+    "minio==7.2.20",
+    "drf-spectacular==0.30.0",
+    "django-allauth==65.18.0",
+    "psycopg2-binary==2.9.12",
 ]
 
 [dependency-groups]
-test = ["pytest-django>=4.8.0,<5"]
+test = ["pytest-django>=4.13.0,<5"]
 dev = [
     "django-stubs>=5.2.0,<6",
     "djangorestframework-stubs>=3.16.0,<4",
