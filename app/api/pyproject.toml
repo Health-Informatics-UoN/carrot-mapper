@@ -26,7 +26,7 @@ dependencies = [
     "graphviz==0.21",
     "drf-dynamic-fields>=0.4.0,<0.5",
     "django-cors-headers==4.9.0",
-    "python-dotenv==1.2.1",
+    "python-dotenv==1.2.2",
     "azure-monitor-opentelemetry==1.8.2",
     "djangorestframework-simplejwt==5.5.1",
     "dj-rest-auth[with-social]==7.0.1",
