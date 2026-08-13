@@ -12,6 +12,6 @@ on:
 
 jobs:
   main:
-    uses: health-informatics-uon/workflows/.github/workflows/pr-title.yml@1.4.13
+    uses: health-informatics-uon/workflows/.github/workflows/pr-title.yml@1.5.0
     permissions:
       pull-requests: read
