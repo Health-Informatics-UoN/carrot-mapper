@@ -1,6 +1,6 @@
 [project]
 name = "api"
-version = "4.3.3"
+dynamic = ["version"]
 description = "Web app for Carrot-Mapper"
 
 authors = [
@@ -49,20 +49,47 @@ default-groups = [
     "test",
     "dev",
 ]
+exclude-newer = "7 days"
 
 [build-system]
-requires = ["setuptools>=61.0"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
 
-[tool.setuptools]
+[tool.hatch.build.targets.wheel]
+# Explicit list since these are flat top-level Django apps, not a single
+# src/api-style package hatchling could auto-detect from the project name.
+# Kept in sync with INSTALLED_APPS/imports in config/settings.py.
 packages = [
     "api",
     "authn",
     "config",
-    "static",
+    "data",
     "datasets",
-    "projects"
+    "files",
+    "jobs",
+    "mapping",
+    "projects",
+    "services",
+    "static",
+    "test",
+    "users",
 ]
+
+[tool.hatch.version]
+source = "vcs"
+# Used only if .git is missing from the build context entirely (see Dockerfile).
+fallback-version = "0.0.0.dev0"
+
+[tool.hatch.version.raw-options]
+# pyproject.toml lives two directories below the monorepo root, where .git is.
+# The release CI build sets its Docker build context to the monorepo root
+# specifically so .git is present here for hatch-vcs to read tags from.
+root = "../.."
+# The Docker build context only copies in app/api and .git (not the full
+# working tree - see Dockerfile), which git would otherwise see as "dirty"
+# since tracked files elsewhere in the repo appear deleted. Dropping the local
+# version segment avoids that copy artefact leaking into the resolved version.
+local_scheme = "no-local-version"
 
 [tool.pytest.ini_options]
 minversion = "6.0"

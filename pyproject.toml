@@ -30,3 +30,5 @@ default-groups = [
     "test",
     "dev",
 ]
+exclude-newer = "7 days"
+

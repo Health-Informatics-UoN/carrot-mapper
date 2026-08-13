@@ -20,11 +20,13 @@ jobs:
       - name: Run Ruff Checks
         uses: astral-sh/ruff-action@39f75e526a505e26a302f8796977b50c13720edf # v3.2.1
         with:
+          version: "0.13.0"
           args: "check --select I ."
       
       - name: Run Ruff Format
         uses: astral-sh/ruff-action@39f75e526a505e26a302f8796977b50c13720edf # v3.2.1
         with:
+          version: "0.13.0"
           args: "format --check --diff"
 
   build:
@@ -37,8 +39,7 @@ jobs:
         with:
           submodules: "recursive"
       - name: Build the docker image
-        working-directory: ./app
-        run: docker build -f api/Dockerfile -t ccom-build:latest .
+        run: docker build -f app/api/Dockerfile -t ccom-build:latest .
       - name: Install Node.js
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:

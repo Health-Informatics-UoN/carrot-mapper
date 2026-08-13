@@ -1,0 +1,79 @@
+
+version: 2
+updates:
+  - package-ecosystem: "uv"
+    directory: "/app/api"
+    schedule:
+      interval: "monthly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Europe/London"
+    cooldown: 
+      default-days: 7
+    commit-message:
+      prefix: "fix(dependencies): "
+    groups:
+      python-minor-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+      python-major:
+        patterns:
+          - "*"
+        update-types:
+          - "major"
+  - package-ecosystem: "uv"
+    directory: "/app/airflow"
+    schedule:
+      interval: "monthly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Europe/London"
+    cooldown: 
+      default-days: 7
+    commit-message:
+      prefix: "fix(dependencies): "
+    groups:
+      python-minor-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+      python-major:
+        patterns:
+          - "*"
+        update-types:
+          - "major"
+  - package-ecosystem: "npm"
+    directory: "/app/next-client-app"
+    schedule:
+      interval: "monthly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Europe/London"
+    cooldown: 
+      default-days: 7
+    commit-message:
+      prefix: "fix(dependencies): "
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Europe/London"
+    cooldown: 
+      default-days: 7
+    commit-message:
+      prefix: "chore(dependencies): "
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+          - "major"

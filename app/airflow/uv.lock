@@ -994,8 +994,7 @@ wheels = [
 
 [[package]]
 name = "carrot-airflow"
-version = "4.2.9"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
     { name = "apache-airflow" },
     { name = "apache-airflow-providers-amazon" },

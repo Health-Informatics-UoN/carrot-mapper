@@ -1,0 +1,124 @@
+# Release pipeline using health-informatics-uon/workflows reusable workflows:
+# https://github.com/Health-Informatics-UoN/workflows/blob/main/docs/samples/release.container.md
+#
+# This is a monorepo releasing four images under one shared version, so one
+# semantic-release job feeds four publish-container / semver-container pairs
+# rather than the single-image sample.
+name: Release
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  packages: write
+  id-token: write
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  release:
+    uses: health-informatics-uon/workflows/.github/workflows/semantic-release.yml@1.5.0
+    with:
+      node-version: "24"
+    secrets: inherit
+
+  publish-backend:
+    needs: release
+    uses: health-informatics-uon/workflows/.github/workflows/publish-container.yml@1.5.0
+    with:
+      image-name: carrot/backend
+      image-description: "Carrot Mapper API (Django backend)"
+      registry: ghcr.io
+      context: .
+      dockerfile: app/api/Dockerfile
+      platforms: linux/amd64,linux/arm64
+    secrets: inherit
+
+  publish-frontend:
+    needs: release
+    uses: health-informatics-uon/workflows/.github/workflows/publish-container.yml@1.5.0
+    with:
+      image-name: carrot/frontend
+      image-description: "Carrot Mapper frontend (Next.js)"
+      registry: ghcr.io
+      context: ./app/next-client-app
+      dockerfile: app/next-client-app/Dockerfile
+      platforms: linux/amd64,linux/arm64
+      build-args: |
+        APP_VERSION=${{ needs.release.outputs.release-tag }}
+    secrets: inherit
+
+  publish-airflow-webserver:
+    needs: release
+    uses: health-informatics-uon/workflows/.github/workflows/publish-container.yml@1.5.0
+    with:
+      image-name: carrot/airflow-webserver
+      image-description: "Carrot Mapper Airflow webserver"
+      registry: ghcr.io
+      context: ./app/airflow
+      dockerfile: app/airflow/Dockerfile
+      platforms: linux/amd64,linux/arm64
+      build-args: |
+        AIRFLOW_COMPONENT=webserver
+        AIRFLOW_APP_VERSION=${{ needs.release.outputs.release-tag }}
+    secrets: inherit
+
+  publish-airflow-scheduler:
+    needs: release
+    uses: health-informatics-uon/workflows/.github/workflows/publish-container.yml@1.5.0
+    with:
+      image-name: carrot/airflow-scheduler
+      image-description: "Carrot Mapper Airflow scheduler"
+      registry: ghcr.io
+      context: ./app/airflow
+      dockerfile: app/airflow/Dockerfile
+      platforms: linux/amd64,linux/arm64
+      build-args: |
+        AIRFLOW_COMPONENT=scheduler
+        AIRFLOW_APP_VERSION=${{ needs.release.outputs.release-tag }}
+    secrets: inherit
+
+  # Promotes each edge image to semver tags (e.g. 1.2.3, 1.2, 1) - only runs when
+  # semantic-release actually cut a new version, and only retags the image that was
+  # just built above rather than rebuilding it.
+  semver-backend:
+    needs: [release, publish-backend]
+    if: needs.release.outputs.release-created == 'true'
+    uses: health-informatics-uon/workflows/.github/workflows/semver-container.yml@1.5.0
+    with:
+      image-name: carrot/backend
+      registry: ghcr.io
+      tag: ${{ needs.release.outputs.release-tag }}
+    secrets: inherit
+
+  semver-frontend:
+    needs: [release, publish-frontend]
+    if: needs.release.outputs.release-created == 'true'
+    uses: health-informatics-uon/workflows/.github/workflows/semver-container.yml@1.5.0
+    with:
+      image-name: carrot/frontend
+      registry: ghcr.io
+      tag: ${{ needs.release.outputs.release-tag }}
+    secrets: inherit
+
+  semver-airflow-webserver:
+    needs: [release, publish-airflow-webserver]
+    if: needs.release.outputs.release-created == 'true'
+    uses: health-informatics-uon/workflows/.github/workflows/semver-container.yml@1.5.0
+    with:
+      image-name: carrot/airflow-webserver
+      registry: ghcr.io
+      tag: ${{ needs.release.outputs.release-tag }}
+    secrets: inherit
+
+  semver-airflow-scheduler:
+    needs: [release, publish-airflow-scheduler]
+    if: needs.release.outputs.release-created == 'true'
+    uses: health-informatics-uon/workflows/.github/workflows/semver-container.yml@1.5.0
+    with:
+      image-name: carrot/airflow-scheduler
+      registry: ghcr.io
+      tag: ${{ needs.release.outputs.release-tag }}
+    secrets: inherit
