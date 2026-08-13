@@ -34,11 +34,11 @@ interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
   count: number;
-  Filter?: JSX.Element;
+  Filter?: React.JSX.Element;
   viewColumns?: boolean;
   paginated?: boolean;
   overflow?: boolean;
-  RefreshButton?: JSX.Element;
+  RefreshButton?: React.JSX.Element;
   defaultPageSize?: 10 | 20 | 30 | 40 | 50;
   initialColumnVisibility?: VisibilityState;
 }
