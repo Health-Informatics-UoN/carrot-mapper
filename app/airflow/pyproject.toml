@@ -12,7 +12,7 @@ dependencies = [
     "pandas>=2.2.3",
     "pandas-stubs>=2.2.3.250308",
     "types-openpyxl>=3.1.5.20250506",
-    "types-psycopg2>=2.9.21.20250318",
+    "types-psycopg2>=2.9.21.20260724",
 ]
 
 [build-system]
