@@ -3,11 +3,12 @@ import {
   CircleSlash,
   Folders,
   Database,
-  FileScan
+  FileScan,
+  Library
 } from "lucide-react";
 
 interface EmptyStateProps {
-  icon?: "folders" | "database" | "filescan" | "circle-slash";
+  icon?: "folders" | "database" | "filescan" | "circle-slash" | "library";
   title: string;
   description: string;
 }
@@ -25,6 +26,8 @@ export function EmptyState({
         return Database;
       case "filescan":
         return FileScan;
+      case "library":
+        return Library;
       case "circle-slash":
       default:
         return CircleSlash;

@@ -5,8 +5,6 @@ import string
 from importlib.metadata import version
 from typing import Any, Optional
 
-from data.models import Concept
-from datasets.serializers import DataPartnerSerializer
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist
@@ -19,19 +17,6 @@ from django.views.decorators.vary import vary_on_cookie
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
-from jobs.models import Job, JobStage, StageStatus
-from mapping.models import (
-    DataDictionary,
-    DataPartner,
-    MappingRule,
-    OmopField,
-    ScanReport,
-    ScanReportConcept,
-    ScanReportField,
-    ScanReportTable,
-    ScanReportValue,
-)
-from mapping.permissions import get_user_permissions_on_scan_report
 from rest_framework import status, viewsets
 from rest_framework.filters import OrderingFilter
 from rest_framework.generics import GenericAPIView
@@ -46,17 +31,6 @@ from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from services.rules import (
-    _find_destination_table,
-    save_mapping_rules,
-)
-from services.rules_export import (
-    get_mapping_rules_json,
-    get_mapping_rules_list,
-    make_dag,
-)
-from services.storage_service import StorageService
-from services.worker_service import get_worker_service
 
 from api.filters import (
     ScanReportAccessFilter,
@@ -82,7 +56,34 @@ from api.serializers import (
     ScanReportValueViewSerializerV3,
     ScanReportViewSerializerV2,
     UserSerializer,
+    VocabularySerializer,
 )
+from data.models import Concept, Vocabulary
+from datasets.serializers import DataPartnerSerializer
+from jobs.models import Job, JobStage, StageStatus
+from mapping.models import (
+    DataDictionary,
+    DataPartner,
+    MappingRule,
+    OmopField,
+    ScanReport,
+    ScanReportConcept,
+    ScanReportField,
+    ScanReportTable,
+    ScanReportValue,
+)
+from mapping.permissions import get_user_permissions_on_scan_report
+from services.rules import (
+    _find_destination_table,
+    save_mapping_rules,
+)
+from services.rules_export import (
+    get_mapping_rules_json,
+    get_mapping_rules_list,
+    make_dag,
+)
+from services.storage_service import StorageService
+from services.worker_service import get_worker_service
 
 storage_service = StorageService()
 worker_service = get_worker_service()
@@ -149,6 +150,48 @@ class ConceptFilterViewSetV2(GenericAPIView, ListModelMixin):
         "concept_code": ["in", "exact"],
         "vocabulary_id": ["in", "exact"],
     }
+
+    def get(self, request, *args, **kwargs):
+        return self.list(request, *args, **kwargs)
+
+
+class VocabularyListView(GenericAPIView, ListModelMixin):
+    """
+    A view for listing the OMOP Vocabulary reference table.
+
+    Exposes the vocabularies loaded into the OMOP CDM, so users can see
+    which vocabularies and versions are available before mapping or
+    building a data dictionary.
+
+    Attributes:
+        queryset (QuerySet): The base queryset for retrieving Vocabulary
+            objects, ordered by `vocabulary_id`.
+        serializer_class (Serializer): The serializer class used for
+            serializing Vocabulary objects.
+        filter_backends (list): A list of filter backends to apply to
+            the queryset.
+        ordering_fields (list): Fields that can be used for ordering.
+        filterset_fields (dict): A dictionary defining the fields that
+            can be filtered and the types of filtering allowed for each
+            field.
+        pagination_class (Pagination): The pagination class used for
+            paginating the results.
+
+    Methods:
+        get(request, *args, **kwargs):
+            Handles GET requests to retrieve a filtered, ordered and
+            paginated list of Vocabulary objects.
+    """
+
+    queryset = Vocabulary.objects.all().order_by("vocabulary_id")
+    serializer_class = VocabularySerializer
+    filter_backends = [DjangoFilterBackend, OrderingFilter]
+    ordering_fields = ["vocabulary_id", "vocabulary_name", "vocabulary_version"]
+    filterset_fields = {
+        "vocabulary_id": ["in", "exact", "icontains"],
+        "vocabulary_name": ["icontains"],
+    }
+    pagination_class = CustomPagination
 
     def get(self, request, *args, **kwargs):
         return self.list(request, *args, **kwargs)

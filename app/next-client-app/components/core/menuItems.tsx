@@ -4,6 +4,7 @@ import {
   FileScan,
   Folders,
   Github,
+  Library,
   LogIn,
   LucideIcon,
   Upload,
@@ -32,6 +33,7 @@ export const sidebarItems: SidebarItems = {
       href: "/scanreports/create/",
       icon: Upload,
     },
+    { label: "Vocabularies", href: "/vocabularies/", icon: Library },
     {
       href: "https://carrot.ac.uk/documentation",
       icon: BookMarked,

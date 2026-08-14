@@ -4,10 +4,10 @@ from drf_spectacular.views import (
     SpectacularRedocView,
     SpectacularSwaggerView,
 )
-from files.views import FileDownloadView
-from jobs.views import JobView
 
 from api import views
+from files.views import FileDownloadView
+from jobs.views import JobView
 
 urlpatterns = [
     path("v2/datasets/", include("datasets.urls")),
@@ -122,6 +122,11 @@ urlpatterns = [
         r"v2/omop/conceptsfilter/",
         views.ConceptFilterViewSetV2.as_view(),
         name="v2conceptsfilter",
+    ),
+    path(
+        r"v2/omop/vocabularies/",
+        views.VocabularyListView.as_view(),
+        name="vocabularies-list",
     ),
     path("v2/schema/", SpectacularAPIView.as_view(), name="schema"),
     path(

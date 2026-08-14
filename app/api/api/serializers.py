@@ -3,11 +3,16 @@ from collections import Counter, defaultdict
 from io import BytesIO, StringIO
 
 import openpyxl  # type: ignore
-from config.settings import DATA_UPLOAD_MAX_MEMORY_SIZE
-from data.models import Concept
-from datasets.serializers import DatasetSerializer
 from django.contrib.auth.models import User
 from drf_dynamic_fields import DynamicFieldsMixin  # type: ignore
+from openpyxl.workbook.workbook import Workbook  # type: ignore
+from rest_framework import serializers
+from rest_framework.exceptions import NotFound, ParseError, PermissionDenied
+
+from api.logger import logger
+from config.settings import DATA_UPLOAD_MAX_MEMORY_SIZE
+from data.models import Concept, Vocabulary
+from datasets.serializers import DatasetSerializer
 from mapping.models import (
     Dataset,
     MappingRecommendation,
@@ -21,13 +26,8 @@ from mapping.models import (
     VisibilityChoices,
 )
 from mapping.permissions import has_editorship, is_admin, is_az_function_user
-from openpyxl.workbook.workbook import Workbook  # type: ignore
-from rest_framework import serializers
-from rest_framework.exceptions import NotFound, ParseError, PermissionDenied
 from services.rules_export import analyse_concepts
 from users.serializers import UserSerializer
-
-from api.logger import logger
 
 
 class ConceptSerializerV2(serializers.ModelSerializer):
@@ -64,6 +64,12 @@ class ConceptSerializerV3(DynamicFieldsMixin, serializers.ModelSerializer):
             "valid_end_date",
             "invalid_reason",
         ]
+
+
+class VocabularySerializer(DynamicFieldsMixin, serializers.ModelSerializer):
+    class Meta:
+        model = Vocabulary
+        fields = "__all__"
 
 
 class UploadStatusSerializer(serializers.ModelSerializer):
