@@ -1,16 +1,10 @@
 import { columns } from "./columns";
 import {
-  getScanReportFields,
   getScanReportFieldsV3,
   getScanReportPermissions,
   getScanReportTable,
 } from "@/api/scanreports";
 import { objToQuery } from "@/lib/client-utils";
-import {
-  getAllConceptsFiltered,
-  getAllScanReportConcepts,
-} from "@/api/concepts";
-import { ConceptDataTable } from "@/components/concepts/ConceptDataTable";
 import { TableBreadcrumbs } from "@/components/scanreports/TableBreadcrumbs";
 import { ConceptDataTableV3 } from "@/components/concepts/ConceptDataTableV3";
 import { ConceptDataFilter } from "@/components/concepts/ConceptDataFilter";
@@ -35,24 +29,27 @@ export default async function ScanReportsField(props: ScanReportsFieldProps) {
   };
   const combinedParams = { ...defaultParams, ...searchParams };
   const query = objToQuery(combinedParams);
-  const tableName = await getScanReportTable(id, tableId);
-  const scanReportsFields = await getScanReportFieldsV3(id, tableId, query);
-  const permissions = await getScanReportPermissions(id);
-
+  const [tableName, scanReportsFields, permissions] = await Promise.all([
+    getScanReportTable(id, tableId),
+    getScanReportFieldsV3(id, tableId, query),
+    getScanReportPermissions(id),
+  ]);
 
   const canEdit = permissions.permissions.includes("CanEdit") ||
   permissions.permissions.includes("CanAdmin");
 
   const filter = <ConceptDataFilter />;
 
+  const breadcrumbs = await TableBreadcrumbs({
+    id,
+    tableId,
+    tableName: tableName.name,
+    variant: "table",
+  });
+
   return (
     <div>
-      <TableBreadcrumbs
-        id={id}
-        tableId={tableId}
-        tableName={tableName.name}
-        variant="table"
-      />
+      {breadcrumbs}
       <div>
         <ConceptDataTableV3
           count={scanReportsFields.count}

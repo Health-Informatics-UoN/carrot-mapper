@@ -34,15 +34,12 @@ export default async function ScanReportsValue(props: ScanReportsValueProps) {
   };
   const combinedParams = { ...defaultParams, ...searchParams };
   const query = objToQuery(combinedParams);
-  const permissions = await getScanReportPermissions(id);
-  const table = await getScanReportTable(id, tableId);
-  const field = await getScanReportField(id, tableId, fieldId);
-  const scanReportsValues = await getScanReportValuesV3(
-    id,
-    tableId,
-    fieldId,
-    query,
-  );
+  const [permissions, table, field, scanReportsValues] = await Promise.all([
+    getScanReportPermissions(id),
+    getScanReportTable(id, tableId),
+    getScanReportField(id, tableId, fieldId),
+    getScanReportValuesV3(id, tableId, fieldId, query),
+  ]);
 
   const filter = <ConceptDataFilter />;
 
@@ -50,17 +47,19 @@ export default async function ScanReportsValue(props: ScanReportsValueProps) {
     permissions.permissions.includes("CanEdit") ||
     permissions.permissions.includes("CanAdmin");
 
+  const breadcrumbs = await TableBreadcrumbs({
+    id,
+    tableId,
+    fieldId,
+    tableName: table.name,
+    fieldName: field.name,
+    variant: "field",
+  });
+
   return (
     <div>
       <div className="flex justify-between items-center">
-        <TableBreadcrumbs
-          id={id}
-          tableId={tableId}
-          fieldId={fieldId}
-          tableName={table.name}
-          fieldName={field.name}
-          variant="field"
-        />
+        {breadcrumbs}
         <Button variant="link" asChild><Link href={`/scanreports/${id}/tables/${tableId}/fields/${fieldId}`}>Back to old experience <ArrowLeft className="text-carrot-brand" /></Link></Button>
       </div>
       <div>
