@@ -14,7 +14,7 @@ import {
   DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import { Suspense } from "react";
-import { Skeleton } from "@/components/ui/skeleton";
+import { ScanReportTableSkeleton } from "@/components/scanreports/ScanReportTableSkeleton";
 import { format } from "date-fns/format";
 import { InfoItem } from "@/components/core/InfoItem";
 import { notFound } from "next/navigation";
@@ -193,7 +193,7 @@ export default async function ScanReportLayout(
         </div>
       </div>
       <Boundary>
-        <Suspense fallback={<Skeleton className="h-full w-full" />}>
+        <Suspense fallback={<ScanReportTableSkeleton />}>
           {children}
         </Suspense>
       </Boundary>

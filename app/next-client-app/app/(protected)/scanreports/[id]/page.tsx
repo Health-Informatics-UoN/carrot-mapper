@@ -28,10 +28,11 @@ export default async function ScanReportsTable(props: ScanReportsTableProps) {
   const combinedParams = { ...defaultParams, ...searchParams };
   const query = objToQuery(combinedParams);
   const filter = <DataTableFilter filter="name" />;
-  const scanReportsTables = await getScanReportTables(id, query);
-  const permissions = await getScanReportPermissions(id);
-  // Get data about jobs then inject it to the SR table data
-  const jobs = await getJobs(id);
+  const [scanReportsTables, permissions, jobs] = await Promise.all([
+    getScanReportTables(id, query),
+    getScanReportPermissions(id),
+    getJobs(id),
+  ]);
   const scanReportsResult = scanReportsTables.results.map((table) => {
     table.permissions = permissions.permissions;
     if (jobs) {
