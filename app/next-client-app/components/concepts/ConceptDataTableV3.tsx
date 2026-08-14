@@ -1,5 +1,6 @@
 "use client";
 
+import type { JSX } from "react";
 import { DataTable } from "@/components/data-table";
 
 interface CustomDataTableProps<T> {

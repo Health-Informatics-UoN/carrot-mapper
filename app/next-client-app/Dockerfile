@@ -8,6 +8,18 @@ RUN npm ci
 
 # Copy sources & build Next.js
 COPY . .
+
+# Version is resolved from git tags by CI (semantic-release) and passed in here,
+# since npm has no built-in equivalent of computing a version from VCS at build
+# time. This patches package.json in the built image only - the committed file
+# keeps its placeholder value for local dev. /api/health reads this at runtime.
+# CI passes an empty string on non-release builds (no tag was cut) - guard against
+# that rather than handing npm an empty version, which would fail the build.
+ARG APP_VERSION=0.0.0-dev
+RUN if [ -n "$APP_VERSION" ]; then \
+      npm version --no-git-tag-version --allow-same-version "$APP_VERSION"; \
+    fi
+
 RUN npm run build
 
 # 2. Runner (multi-arch)

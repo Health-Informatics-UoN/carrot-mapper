@@ -1,17 +1,37 @@
 [project]
 name = "carrot-airflow"
-version = "4.3.3"
+dynamic = ["version"]
 description = "Add your description here"
-readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "apache-airflow>=2.10.5,<3.0",
-    "apache-airflow-providers-amazon>=9.7.0",
+    "apache-airflow-providers-amazon>=9.33.0",
     "apache-airflow-providers-microsoft-azure>=12.3.1",
     "apache-airflow-providers-postgres>=6.1.1",
     "openpyxl>=3.1.5",
     "pandas>=2.2.3",
     "pandas-stubs>=2.2.3.250308",
-    "types-openpyxl>=3.1.5.20250506",
-    "types-psycopg2>=2.9.21.20250318",
+    "types-openpyxl>=3.1.5.20260724",
+    "types-psycopg2>=2.9.21.20260724",
 ]
+
+[build-system]
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+# dags/ has no __init__.py, so hatchling can't auto-detect a package matching
+# the project name ("carrot_airflow") the way setuptools' looser discovery did.
+# Listed explicitly purely so `uv lock`/`uv sync` can build this project at all;
+# this project isn't pip-installed inside the Docker image (see Dockerfile).
+packages = ["dags"]
+
+[tool.hatch.version]
+source = "vcs"
+# This project isn't pip-installed inside the Docker image (see Dockerfile), so
+# fallback-version only matters for local/CI tooling run outside a git checkout.
+fallback-version = "0.0.0.dev0"
+
+[tool.hatch.version.raw-options]
+# pyproject.toml lives two directories below the monorepo root, where .git is.
+root = "../.."

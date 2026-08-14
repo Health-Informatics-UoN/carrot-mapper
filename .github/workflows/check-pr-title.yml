@@ -1,0 +1,17 @@
+# Enforces conventional-commit PR titles, required for semantic-release (release.yml)
+# to correctly determine version bumps from squash-merge commit messages.
+name: "Check PR title"
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - edited
+      - synchronize
+
+jobs:
+  main:
+    uses: health-informatics-uon/workflows/.github/workflows/pr-title.yml@1.5.0
+    permissions:
+      pull-requests: read

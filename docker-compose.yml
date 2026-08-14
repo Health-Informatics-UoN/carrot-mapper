@@ -88,8 +88,8 @@ services:
   api:
     image: carrot-backend
     build:
-      context: app
-      dockerfile: api/Dockerfile
+      context: .
+      dockerfile: app/api/Dockerfile
     ports:
       - 8000:8000
     environment:

@@ -1,6 +1,6 @@
 [project]
 name = "api"
-version = "4.3.3"
+dynamic = ["version"]
 description = "Web app for Carrot-Mapper"
 
 authors = [
@@ -11,35 +11,35 @@ requires-python = "~=3.11"
 license = "MIT"
 
 dependencies = [
-    "django==5.2.8",
+    "django==5.2.17",
     "openpyxl==3.1.5",
-    "django-select2==8.4.3",
+    "django-select2==8.4.8",
     "django-extra-views>=0.16.0,<1.0",
-    "djangorestframework==3.16.1",
-    "django-filter==25.2",
-    "requests==2.32.5",
+    "djangorestframework==3.17.2",
+    "django-filter==26.1",
+    "requests==2.34.2",
     "azure-common>=1.1.28,<2",
-    "azure-storage-queue==12.14.1",
-    "azure-storage-blob==12.27.1",
-    "whitenoise==6.11.0",
-    "gunicorn==23.0.0",
+    "azure-storage-queue==12.17.0",
+    "azure-storage-blob==12.30.0",
+    "whitenoise==6.12.0",
+    "gunicorn==26.0.0",
     "graphviz==0.21",
     "drf-dynamic-fields>=0.4.0,<0.5",
     "django-cors-headers==4.9.0",
-    "python-dotenv==1.2.1",
-    "azure-monitor-opentelemetry==1.8.2",
+    "python-dotenv==1.2.2",
+    "azure-monitor-opentelemetry==1.8.9",
     "djangorestframework-simplejwt==5.5.1",
-    "dj-rest-auth[with-social]==7.0.1",
-    "minio==7.2.18",
-    "drf-spectacular==0.29.0",
-    "django-allauth==65.13.0",
-    "psycopg2-binary==2.9.11",
+    "dj-rest-auth[with-social]==7.2.0",
+    "minio==7.2.20",
+    "drf-spectacular==0.30.0",
+    "django-allauth==65.18.0",
+    "psycopg2-binary==2.9.12",
 ]
 
 [dependency-groups]
-test = ["pytest-django>=4.8.0,<5"]
+test = ["pytest-django>=4.13.0,<5"]
 dev = [
-    "django-stubs>=5.2.0,<6",
+    "django-stubs>=6.0.8,<7",
     "djangorestframework-stubs>=3.16.0,<4",
     "django-filter-stubs>=0.1.3,<0.2",
     ]
@@ -49,20 +49,47 @@ default-groups = [
     "test",
     "dev",
 ]
+exclude-newer = "7 days"
 
 [build-system]
-requires = ["setuptools>=61.0"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
 
-[tool.setuptools]
+[tool.hatch.build.targets.wheel]
+# Explicit list since these are flat top-level Django apps, not a single
+# src/api-style package hatchling could auto-detect from the project name.
+# Kept in sync with INSTALLED_APPS/imports in config/settings.py.
 packages = [
     "api",
     "authn",
     "config",
-    "static",
+    "data",
     "datasets",
-    "projects"
+    "files",
+    "jobs",
+    "mapping",
+    "projects",
+    "services",
+    "static",
+    "test",
+    "users",
 ]
+
+[tool.hatch.version]
+source = "vcs"
+# Used only if .git is missing from the build context entirely (see Dockerfile).
+fallback-version = "0.0.0.dev0"
+
+[tool.hatch.version.raw-options]
+# pyproject.toml lives two directories below the monorepo root, where .git is.
+# The release CI build sets its Docker build context to the monorepo root
+# specifically so .git is present here for hatch-vcs to read tags from.
+root = "../.."
+# The Docker build context only copies in app/api and .git (not the full
+# working tree - see Dockerfile), which git would otherwise see as "dirty"
+# since tracked files elsewhere in the repo appear deleted. Dropping the local
+# version segment avoids that copy artefact leaking into the resolved version.
+local_scheme = "no-local-version"
 
 [tool.pytest.ini_options]
 minversion = "6.0"
