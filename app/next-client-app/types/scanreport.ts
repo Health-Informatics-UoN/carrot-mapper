@@ -103,3 +103,12 @@ interface ScanReportValueV3 {
   concepts: ScanReportConceptV3[];
   mapping_recommendations: MappingRecommendation[];
 }
+
+interface ScanReportFieldV3 {
+  id: number;
+  name: string;
+  description_column: string;
+  type_column: string;
+  concepts: ScanReportConceptV3[];
+  mapping_recommendations: MappingRecommendation[];
+}

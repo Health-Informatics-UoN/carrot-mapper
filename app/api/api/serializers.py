@@ -825,6 +825,24 @@ class ScanReportValueViewSerializerV3(serializers.ModelSerializer):
         ]
 
 
+class ScanReportFieldListSerializerV3(serializers.ModelSerializer):
+    concepts = ScanReportConceptSerializerV2(many=True, read_only=True)
+    mapping_recommendations = MappingRecommendationSerializerV3(
+        many=True, read_only=True
+    )
+
+    class Meta:
+        model = ScanReportField
+        fields = [
+            "id",
+            "name",
+            "description_column",
+            "type_column",
+            "concepts",
+            "mapping_recommendations",
+        ]
+
+
 class ScanReportValueViewSerializerV2(serializers.ModelSerializer):
     class Meta:
         model = ScanReportValue

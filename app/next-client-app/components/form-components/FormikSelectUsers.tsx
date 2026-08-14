@@ -9,7 +9,7 @@ import {
 import Select from "react-select";
 import makeAnimated from "react-select/animated";
 import { getDataUsers } from "@/api/datasets";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { FindAndFormat } from "./FormikUtils";
 import { getAllProjects } from "@/api/projects";
 
@@ -49,6 +49,7 @@ const CustomSelect = ({
   form: FormikProps<any>;
   isDisabled: boolean;
 }) => {
+  const instanceId = useId();
   const animatedComponents = makeAnimated();
   const onChange = (newValue: any, actionMeta: any) => {
     const selectedValues = isMulti
@@ -70,6 +71,7 @@ const CustomSelect = ({
 
   return (
     <Select
+      instanceId={instanceId}
       name={field.name}
       value={selected()}
       onChange={onChange}

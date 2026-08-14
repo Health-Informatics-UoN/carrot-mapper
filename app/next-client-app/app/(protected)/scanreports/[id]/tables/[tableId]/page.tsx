@@ -1,6 +1,7 @@
 import { columns } from "./columns";
 import {
   getScanReportFields,
+  getScanReportFieldsV3,
   getScanReportPermissions,
   getScanReportTable,
 } from "@/api/scanreports";
@@ -11,6 +12,8 @@ import {
 } from "@/api/concepts";
 import { ConceptDataTable } from "@/components/concepts/ConceptDataTable";
 import { TableBreadcrumbs } from "@/components/scanreports/TableBreadcrumbs";
+import { ConceptDataTableV3 } from "@/components/concepts/ConceptDataTableV3";
+import { ConceptDataFilter } from "@/components/concepts/ConceptDataFilter";
 
 interface ScanReportsFieldProps {
   params: Promise<{
@@ -24,10 +27,7 @@ export default async function ScanReportsField(props: ScanReportsFieldProps) {
   const searchParams = await props.searchParams;
   const params = await props.params;
 
-  const {
-    id,
-    tableId
-  } = params;
+  const { id, tableId } = params;
 
   const defaultPageSize = 20;
   const defaultParams = {
@@ -36,24 +36,14 @@ export default async function ScanReportsField(props: ScanReportsFieldProps) {
   const combinedParams = { ...defaultParams, ...searchParams };
   const query = objToQuery(combinedParams);
   const tableName = await getScanReportTable(id, tableId);
-  const scanReportsFields = await getScanReportFields(id, tableId, query);
+  const scanReportsFields = await getScanReportFieldsV3(id, tableId, query);
   const permissions = await getScanReportPermissions(id);
 
-  const scanReportsConcepts =
-    scanReportsFields.results.length > 0
-      ? await getAllScanReportConcepts(
-          `object_id__in=${scanReportsFields.results
-            .map((item) => item.id)
-            .join(",")}`,
-        )
-      : [];
 
-  const conceptsFilter =
-    scanReportsConcepts.length > 0
-      ? await getAllConceptsFiltered(
-          scanReportsConcepts?.map((item) => item.concept).join(","),
-        )
-      : [];
+  const canEdit = permissions.permissions.includes("CanEdit") ||
+  permissions.permissions.includes("CanAdmin");
+
+  const filter = <ConceptDataFilter />;
 
   return (
     <div>
@@ -64,17 +54,15 @@ export default async function ScanReportsField(props: ScanReportsFieldProps) {
         variant="table"
       />
       <div>
-        <ConceptDataTable
+        <ConceptDataTableV3
           count={scanReportsFields.count}
-          permissions={permissions}
-          scanReportsConcepts={scanReportsConcepts}
-          conceptsFilter={conceptsFilter}
+          canEdit={canEdit}
           scanReportsData={scanReportsFields.results}
           defaultPageSize={defaultPageSize}
           columns={columns}
-          filterCol="name"
-          filterText="field "
           tableId={tableId}
+          scanReportId={id}
+          Filter={filter}
         />
       </div>
     </div>

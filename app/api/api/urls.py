@@ -109,6 +109,11 @@ urlpatterns = [
         views.ScanReportConceptDetailV3.as_view(),
         name="scan-report-concepts-detail",
     ),
+    path(
+        "v3/scanreports/<int:pk>/tables/<int:table_pk>/fields/",
+        views.ScanReportFieldIndexV3.as_view(),
+        name="scan-report-fields-v3",
+    ),
     path(r"user/me/", views.UserDetailView.as_view(), name="currentuser"),
     path(r"v2/users/", views.UserViewSet.as_view(), name="users-list"),
     path(r"v2/usersfilter/", views.UserFilterViewSet.as_view(), name="usersfilter"),

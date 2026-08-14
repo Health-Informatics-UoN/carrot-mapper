@@ -58,7 +58,11 @@ from services.rules_export import (
 from services.storage_service import StorageService
 from services.worker_service import get_worker_service
 
-from api.filters import ScanReportAccessFilter, ScanReportValueFilter
+from api.filters import (
+    ScanReportAccessFilter,
+    ScanReportFieldFilter,
+    ScanReportValueFilter,
+)
 from api.mixins import ScanReportPermissionMixin
 from api.paginations import CustomPagination
 from api.serializers import (
@@ -70,6 +74,7 @@ from api.serializers import (
     ScanReportEditSerializer,
     ScanReportFieldEditSerializer,
     ScanReportFieldListSerializerV2,
+    ScanReportFieldListSerializerV3,
     ScanReportFilesSerializer,
     ScanReportTableEditSerializer,
     ScanReportTableListSerializerV2,
@@ -819,6 +824,70 @@ class ScanReportFieldDetailV2(
         if self.request.method in ["PUT", "PATCH"]:
             return ScanReportFieldEditSerializer
         return super().get_serializer_class()
+
+
+class ScanReportFieldIndexV3(ScanReportPermissionMixin, GenericAPIView, ListModelMixin):
+    """
+    A view that provides a list of ScanReportField objects associated
+    with a specific ScanReportTable. Each field is returned with its
+    nested ``concepts`` and ``mapping_recommendations`` so the client
+    can render concept tags without follow-up requests. This view
+    supports filtering (including ``has_concepts`` and
+    ``creation_type``), ordering, and pagination.
+
+    Attributes:
+        serializer_class (Serializer): The serializer class used for
+            serializing the ScanReportField objects (V3 — includes
+            nested concepts and mapping recommendations).
+        filterset_class (FilterSet): The filterset used for filtering,
+            including the ``has_concepts`` and ``creation_type``
+            filters.
+        filter_backends (list): List of filter backends used for
+            filtering and ordering.
+        ordering_fields (list): Fields that can be used for ordering
+            the results.
+        pagination_class (Pagination): The pagination class used for
+            paginating the results.
+
+    Methods:
+        get(request, *args, **kwargs):
+            Handles GET requests and retrieves the ScanReportTable
+            object based on the provided table_pk. Returns a list of
+            ScanReportField objects associated with the table.
+        get_queryset():
+            Returns the queryset of ScanReportField objects filtered by
+            the associated ScanReportTable, with ``select_related`` and
+            ``prefetch_related`` applied to avoid N+1 queries when
+            serializing nested concepts and mapping recommendations.
+        list(request, *args, **kwargs):
+            Returns the paginated and serialized list of
+            ScanReportField objects. Caching is intentionally omitted
+            (unlike V2) so concept edits are reflected immediately.
+    """
+
+    filterset_class = ScanReportFieldFilter
+    filter_backends = [DjangoFilterBackend, OrderingFilter]
+    ordering_fields = ["name", "description_column", "type_column"]
+    pagination_class = CustomPagination
+    serializer_class = ScanReportFieldListSerializerV3
+
+    @extend_schema(responses=ScanReportFieldListSerializerV3)
+    def get(self, request, *args, **kwargs):
+        self.table = get_object_or_404(ScanReportTable, pk=kwargs["table_pk"])
+        return self.list(request, *args, **kwargs)
+
+    def get_queryset(self):
+        return (
+            ScanReportField.objects.filter(scan_report_table=self.table)
+            .order_by("id")
+            .select_related("scan_report_table")
+            .prefetch_related(
+                "concepts",
+                "concepts__concept",
+                "mapping_recommendations",
+                "mapping_recommendations__concept",
+            )
+        )
 
 
 class ScanReportValueListV2(ScanReportPermissionMixin, GenericAPIView, ListModelMixin):
