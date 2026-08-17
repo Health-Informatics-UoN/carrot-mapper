@@ -49,7 +49,7 @@ export default async function Projects(props: ProjectListProps) {
           <EmptyState
             icon="folders"
             title="No projects yet"
-            description="Create your first Project to start organizing Datasets, or ask a Project admin to add you as a member."
+            description="Create your first Project to start organising Datasets, or ask a Project admin to add you as a member."
           />
         )}
       </div>
