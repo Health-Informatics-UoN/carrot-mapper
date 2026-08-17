@@ -1,8 +1,8 @@
-from typing import Generator
+from collections.abc import Generator
 
 import psycopg2
 import pytest
-from data.models import Concept, ConceptRelationship
+from data.models import Concept, ConceptRelationship, Vocabulary
 from django.conf import settings
 from django.core.management import call_command
 from django.db import connection
@@ -60,7 +60,7 @@ def django_db_setup(
     settings.DATABASES["default"]["NAME"] = db_name
 
     # Create all the OMOP tables that might be referenced during tests
-    omop_models = [Concept, ConceptRelationship]
+    omop_models = [Concept, ConceptRelationship, Vocabulary]
 
     with django_db_blocker.unblock():
         with connection.schema_editor() as schema_editor:

@@ -3,6 +3,7 @@ from datetime import date
 from unittest import mock
 
 import pytest
+from data.models import Vocabulary
 from datasets.views import DatasetIndex
 from django.contrib.auth import get_user_model
 from django.contrib.contenttypes.models import ContentType
@@ -1006,3 +1007,52 @@ class TestScanReportFieldListViewset(TestCase):
         # has a ScanReportConcept attached and should be filtered out.
         self.assertEqual(len(data["results"]), 1)
         self.assertEqual(data["results"][0]["id"], unmapped_field.id)
+
+
+class TestVocabularyListView(TestCase):
+    def setUp(self):
+        User = get_user_model()
+        self.user = User.objects.create(username="samwise", password="taterstew")
+
+        self.snomed = Vocabulary.objects.create(
+            vocabulary_id="SNOMED",
+            vocabulary_name="Systematic Nomenclature of Medicine - Clinical Terms",
+            vocabulary_reference="OMOP generated",
+            vocabulary_version="SNOMED CT Release 20230601",
+            vocabulary_concept_id=44819097,
+        )
+        self.icd10 = Vocabulary.objects.create(
+            vocabulary_id="ICD10",
+            vocabulary_name="International Classification of Diseases, Tenth Revision",
+            vocabulary_reference="WHO",
+            vocabulary_version="ICD10 2011",
+            vocabulary_concept_id=44819126,
+        )
+
+        self.client = APIClient()
+        self.url = "/api/v2/omop/vocabularies/"
+
+    def test_requires_authentication(self):
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 401)
+
+    def test_lists_vocabularies(self):
+        self.client.force_authenticate(self.user)
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["count"], 2)
+        vocabulary_ids = {v["vocabulary_id"] for v in data["results"]}
+        self.assertEqual(vocabulary_ids, {"SNOMED", "ICD10"})
+        # Default ordering is by vocabulary_id
+        self.assertEqual(data["results"][0]["vocabulary_id"], "ICD10")
+
+    def test_filter_by_vocabulary_id(self):
+        self.client.force_authenticate(self.user)
+        response = self.client.get(self.url, {"vocabulary_id": "SNOMED"})
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["count"], 1)
+        self.assertEqual(data["results"][0]["vocabulary_id"], "SNOMED")

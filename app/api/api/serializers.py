@@ -4,7 +4,7 @@ from io import BytesIO, StringIO
 
 import openpyxl  # type: ignore
 from config.settings import DATA_UPLOAD_MAX_MEMORY_SIZE
-from data.models import Concept
+from data.models import Concept, Vocabulary
 from datasets.serializers import DatasetSerializer
 from django.contrib.auth.models import User
 from drf_dynamic_fields import DynamicFieldsMixin  # type: ignore
@@ -64,6 +64,12 @@ class ConceptSerializerV3(DynamicFieldsMixin, serializers.ModelSerializer):
             "valid_end_date",
             "invalid_reason",
         ]
+
+
+class VocabularySerializer(DynamicFieldsMixin, serializers.ModelSerializer):
+    class Meta:
+        model = Vocabulary
+        fields = "__all__"
 
 
 class UploadStatusSerializer(serializers.ModelSerializer):

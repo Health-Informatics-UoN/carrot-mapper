@@ -5,7 +5,7 @@ import string
 from importlib.metadata import version
 from typing import Any, Optional
 
-from data.models import Concept
+from data.models import Concept, Vocabulary
 from datasets.serializers import DataPartnerSerializer
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
@@ -82,6 +82,7 @@ from api.serializers import (
     ScanReportValueViewSerializerV3,
     ScanReportViewSerializerV2,
     UserSerializer,
+    VocabularySerializer,
 )
 
 storage_service = StorageService()
@@ -149,6 +150,48 @@ class ConceptFilterViewSetV2(GenericAPIView, ListModelMixin):
         "concept_code": ["in", "exact"],
         "vocabulary_id": ["in", "exact"],
     }
+
+    def get(self, request, *args, **kwargs):
+        return self.list(request, *args, **kwargs)
+
+
+class VocabularyListView(GenericAPIView, ListModelMixin):
+    """
+    A view for listing the OMOP Vocabulary reference table.
+
+    Exposes the vocabularies loaded into the OMOP CDM, so users can see
+    which vocabularies and versions are available before mapping or
+    building a data dictionary.
+
+    Attributes:
+        queryset (QuerySet): The base queryset for retrieving Vocabulary
+            objects, ordered by `vocabulary_id`.
+        serializer_class (Serializer): The serializer class used for
+            serializing Vocabulary objects.
+        filter_backends (list): A list of filter backends to apply to
+            the queryset.
+        ordering_fields (list): Fields that can be used for ordering.
+        filterset_fields (dict): A dictionary defining the fields that
+            can be filtered and the types of filtering allowed for each
+            field.
+        pagination_class (Pagination): The pagination class used for
+            paginating the results.
+
+    Methods:
+        get(request, *args, **kwargs):
+            Handles GET requests to retrieve a filtered, ordered and
+            paginated list of Vocabulary objects.
+    """
+
+    queryset = Vocabulary.objects.all().order_by("vocabulary_id")
+    serializer_class = VocabularySerializer
+    filter_backends = [DjangoFilterBackend, OrderingFilter]
+    ordering_fields = ["vocabulary_id", "vocabulary_name", "vocabulary_version"]
+    filterset_fields = {
+        "vocabulary_id": ["in", "exact", "icontains"],
+        "vocabulary_name": ["icontains"],
+    }
+    pagination_class = CustomPagination
 
     def get(self, request, *args, **kwargs):
         return self.list(request, *args, **kwargs)
@@ -331,7 +374,7 @@ class ScanReportIndexV2(GenericAPIView, ListModelMixin, CreateModelMixin):
         valid_parent_dataset = validatedData.get("parent_dataset")
 
         rand = "".join(random.choices(string.ascii_lowercase + string.digits, k=8))
-        dt = "{:%Y%m%d-%H%M%S}".format(datetime.datetime.now())
+        dt = f"{datetime.datetime.now():%Y%m%d-%H%M%S}"
 
         # Create an entry in ScanReport for the uploaded Scan Report
         scan_report = ScanReport.objects.create(

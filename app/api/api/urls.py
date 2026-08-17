@@ -123,6 +123,11 @@ urlpatterns = [
         views.ConceptFilterViewSetV2.as_view(),
         name="v2conceptsfilter",
     ),
+    path(
+        r"v2/omop/vocabularies/",
+        views.VocabularyListView.as_view(),
+        name="vocabularies-list",
+    ),
     path("v2/schema/", SpectacularAPIView.as_view(), name="schema"),
     path(
         "v2/schema/swagger-ui/",
