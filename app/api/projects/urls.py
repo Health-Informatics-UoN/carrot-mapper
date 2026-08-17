@@ -9,4 +9,9 @@ urlpatterns = [
         views.ProjectDetail.as_view(),
         name="project_detail",
     ),
+    path(
+        "<int:pk>/permissions/",
+        views.ProjectPermissionView.as_view(),
+        name="project_permissions",
+    ),
 ]

@@ -8,6 +8,7 @@ from rest_framework.request import Request
 
 from mapping.models import (
     Dataset,
+    Project,
     ScanReport,
     ScanReportField,
     ScanReportTable,
@@ -313,6 +314,19 @@ def is_admin(obj: Any, request: Request) -> bool:
     return False
 
 
+def is_project_admin(obj: Project, request: Request) -> bool:
+    """Check the admin permission on a project.
+
+    Args:
+        obj (Project): The project to check the permissions on.
+        request (Request): The request with the User instance.
+
+    Returns:
+        bool: `True` if the request's user has permission, else `False`.
+    """
+    return Project.objects.filter(id=obj.id, admins__id=request.user.id).exists()
+
+
 class IsAuthor(permissions.BasePermission):
     message = "You are not the author of this scan report."
 
@@ -331,6 +345,16 @@ class CanViewProject(permissions.BasePermission):
         Return `True` if the User's ID is in the Project's members.
         """
         return obj.members.filter(id=request.user.id).exists()
+
+
+class CanAdminProject(permissions.BasePermission):
+    message = "You are not an admin of this project."
+
+    def has_object_permission(self, request, view, obj):
+        """
+        Return `True` if the User's ID is in the Project's admins.
+        """
+        return is_project_admin(obj, request)
 
 
 class CanView(permissions.BasePermission):
@@ -416,6 +440,32 @@ def get_user_permissions_on_dataset(request, dataset_id):
 
         return permissions
     except Dataset.DoesNotExist:
+        return []
+
+
+def get_user_permissions_on_project(request, project_id):
+    """
+    Retrieve the list of permissions a user has on a specific project.
+
+    Args:
+        request (HttpRequest): The HTTP request object containing the authenticated user.
+        project_id (int): The primary key of the project.
+
+    Returns:
+        list: A list of permission strings the user has on the project.
+              Returns an empty list if the project does not exist or if the user has no permissions.
+    """
+    try:
+        project = Project.objects.get(id=project_id)
+        permissions = []
+
+        if CanViewProject().has_object_permission(request, None, project):
+            permissions.append("CanView")
+        if CanAdminProject().has_object_permission(request, None, project):
+            permissions.append("CanAdmin")
+
+        return permissions
+    except Project.DoesNotExist:
         return []
 
 

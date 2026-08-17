@@ -4,8 +4,10 @@ import { objToQuery } from "@/lib/client-utils";
 import { DataTableFilter } from "@/components/data-table/DataTableFilter";
 import { Folders } from "lucide-react";
 import { getProjectsList } from "@/api/projects";
+import { getDataUsers } from "@/api/datasets";
 import { Metadata } from "next";
 import { EmptyState } from "@/components/ui/empty-state";
+import { CreateProjectDialog } from "@/components/projects/CreateProjectDialog";
 
 export const metadata: Metadata = {
   title: "Projects | Carrot Mapper",
@@ -24,6 +26,7 @@ export default async function Projects(props: ProjectListProps) {
   const combinedParams = { ...defaultParams, ...searchParams };
   const query = objToQuery(combinedParams);
   const projects = await getProjectsList(query);
+  const users = await getDataUsers();
 
   const filter = <DataTableFilter filter="name" />;
 
@@ -32,6 +35,7 @@ export default async function Projects(props: ProjectListProps) {
       <div className="flex font-semibold text-xl items-center">
         <Folders className="mr-2 text-orange-700" />
         <h2>Projects</h2>
+        <CreateProjectDialog users={users} />
       </div>
       <div>
         {projects.results.length > 0 ? (
@@ -45,7 +49,7 @@ export default async function Projects(props: ProjectListProps) {
           <EmptyState
             icon="folders"
             title="No projects yet"
-            description="Contact your administrator to be added to a project."
+            description="Create your first Project to start organizing Datasets, or ask a Project admin to add you as a member."
           />
         )}
       </div>

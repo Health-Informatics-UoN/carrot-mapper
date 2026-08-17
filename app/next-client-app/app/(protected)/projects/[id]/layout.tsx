@@ -31,6 +31,11 @@ const items = [
     slug: "",
     iconName: "Database",
   },
+  {
+    name: "Edit Details",
+    slug: "details",
+    iconName: "Edit",
+  },
 ];
 
 export default async function DatasetLayout({ params, children }: LayoutProps) {
@@ -68,6 +73,15 @@ export default async function DatasetLayout({ params, children }: LayoutProps) {
             Members:{" "}
             <AvatarList
               members={[...project.members].filter(
+                (member, index, self) =>
+                  index === self.findIndex((m) => m.id === member.id)
+              )}
+            />
+        </div>
+        <div className="flex items-center gap-2 text-muted-foreground md:pl-3">
+            Admins:{" "}
+            <AvatarList
+              members={[...project.admins].filter(
                 (member, index, self) =>
                   index === self.findIndex((m) => m.id === member.id)
               )}

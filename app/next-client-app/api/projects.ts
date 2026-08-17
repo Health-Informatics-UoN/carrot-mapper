@@ -1,5 +1,7 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import request from "@/lib/api/request";
 import { fetchAllPages } from "@/lib/api/utils";
 
@@ -7,6 +9,8 @@ const fetchKeys = {
   list: (filter?: string) => (filter ? `projects/?${filter}` : "projects/"),
   projectsDataset: (dataset: string) => `projects/?dataset=${dataset}`,
   project: (id: string) => `projects/${id}/`,
+  permissions: (id: string) => `projects/${id}/permissions/`,
+  create: "projects/",
 };
 
 export async function getProjectsList(
@@ -47,4 +51,45 @@ export async function getProject(id: string): Promise<Project | null> {
   } catch (error) {
     return null;
   }
+}
+
+export async function getProjectPermissions(
+  id: string
+): Promise<PermissionsResponse> {
+  try {
+    return await request<PermissionsResponse>(fetchKeys.permissions(id));
+  } catch (error) {
+    console.warn("Failed to fetch data.");
+    return { permissions: [] };
+  }
+}
+
+export async function createProject(data: {}) {
+  try {
+    await request(fetchKeys.create, {
+      method: "POST",
+      headers: {
+        "Content-type": "application/json",
+      },
+      body: JSON.stringify(data),
+    });
+    revalidatePath("/projects/");
+  } catch (error: any) {
+    return { errorMessage: error.message };
+  }
+}
+
+export async function updateProjectDetails(id: number, data: {}) {
+  try {
+    await request(fetchKeys.project(String(id)), {
+      method: "PATCH",
+      headers: {
+        "Content-type": "application/json",
+      },
+      body: JSON.stringify(data),
+    });
+  } catch (error: any) {
+    return { errorMessage: error.message };
+  }
+  redirect(`/projects/${id}/`);
 }

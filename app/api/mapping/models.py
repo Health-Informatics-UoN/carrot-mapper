@@ -1,9 +1,10 @@
-from data.models import Concept
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.db.models.constraints import UniqueConstraint
+
+from data.models import Concept
 
 STATUS_LIVE = "LIVE"
 STATUS_ARCHIVED = "ARCHIVED"
@@ -490,6 +491,12 @@ class Project(BaseModel):
     )
     members = models.ManyToManyField(
         settings.AUTH_USER_MODEL, related_name="projects", related_query_name="project"
+    )
+    admins = models.ManyToManyField(
+        settings.AUTH_USER_MODEL,
+        related_name="project_admins",
+        related_query_name="project_admin",
+        blank=True,
     )
 
     class Meta:
