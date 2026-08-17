@@ -4,10 +4,10 @@ from drf_spectacular.views import (
     SpectacularRedocView,
     SpectacularSwaggerView,
 )
-
-from api import views
 from files.views import FileDownloadView
 from jobs.views import JobView
+
+from api import views
 
 urlpatterns = [
     path("v2/datasets/", include("datasets.urls")),

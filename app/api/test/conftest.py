@@ -1,14 +1,13 @@
-from typing import Generator
+from collections.abc import Generator
 
 import psycopg2
 import pytest
+from data.models import Concept, ConceptRelationship, Vocabulary
 from django.conf import settings
 from django.core.management import call_command
 from django.db import connection
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 from pytest_django import DjangoDbBlocker
-
-from data.models import Concept, ConceptRelationship, Vocabulary
 
 
 def run_sql(db: str, sql: str):
