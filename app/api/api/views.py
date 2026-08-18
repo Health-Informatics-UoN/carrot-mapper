@@ -5,6 +5,7 @@ import string
 from importlib.metadata import version
 from typing import Any, Optional
 
+from activity_log.models import ScopeType, Verb
 from data.models import Concept, Vocabulary
 from datasets.serializers import DataPartnerSerializer
 from django.contrib.auth.models import User
@@ -31,7 +32,7 @@ from mapping.models import (
     ScanReportTable,
     ScanReportValue,
 )
-from mapping.permissions import get_user_permissions_on_scan_report
+from mapping.permissions import SCAN_REPORT_QUERIES, get_user_permissions_on_scan_report
 from rest_framework import status, viewsets
 from rest_framework.filters import OrderingFilter
 from rest_framework.generics import GenericAPIView
@@ -46,6 +47,7 @@ from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from services.activity_log import record as record_activity
 from services.rules import (
     _find_destination_table,
     save_mapping_rules,
@@ -450,6 +452,19 @@ class ScanReportIndexV2(GenericAPIView, ListModelMixin, CreateModelMixin):
         # send to the workers service
         worker_service.trigger_scan_report_processing(message_body)
 
+        record_activity(
+            scope_type=ScopeType.SCAN_REPORT,
+            scope_id=scan_report.id,
+            verb=Verb.SCAN_REPORT_UPLOADED,
+            actor=self.request.user,
+            object_type="scanreport",
+            object_id=scan_report.id,
+            detail={
+                "scan_report_name": scan_report.dataset,
+                "file_name": scan_report.name,
+            },
+        )
+
 
 class ScanReportDetailV2(
     ScanReportPermissionMixin,
@@ -515,6 +530,64 @@ class ScanReportDetailV2(
 
     def patch(self, request, *args, **kwargs):
         return self.partial_update(request, *args, **kwargs)
+
+    def perform_update(self, serializer):
+        """
+        Diffs the human-editable fields before/after the update and, if
+        anything actually changed, records one `scanreport.updated` entry
+        describing the change. Fields that aren't edited through this form
+        (upload_status, ...) are deliberately not tracked here.
+        """
+        instance: ScanReport = serializer.instance
+        before_name = instance.dataset
+        before_visibility = instance.visibility
+        before_author = instance.author.username if instance.author else None
+        before_mapping_status = (
+            instance.mapping_status.value if instance.mapping_status else None
+        )
+        before_viewers = set(instance.viewers.values_list("username", flat=True))
+        before_editors = set(instance.editors.values_list("username", flat=True))
+
+        super().perform_update(serializer)
+
+        detail = {}
+        if instance.dataset != before_name:
+            detail["name_from"] = before_name
+            detail["name_to"] = instance.dataset
+        if instance.visibility != before_visibility:
+            detail["visibility_from"] = before_visibility
+            detail["visibility_to"] = instance.visibility
+        after_author = instance.author.username if instance.author else None
+        if after_author != before_author:
+            detail["author_from"] = before_author
+            detail["author_to"] = after_author
+        after_mapping_status = (
+            instance.mapping_status.value if instance.mapping_status else None
+        )
+        if after_mapping_status != before_mapping_status:
+            detail["mapping_status_from"] = before_mapping_status
+            detail["mapping_status_to"] = after_mapping_status
+        after_viewers = set(instance.viewers.values_list("username", flat=True))
+        if added := sorted(after_viewers - before_viewers):
+            detail["viewers_added"] = added
+        if removed := sorted(before_viewers - after_viewers):
+            detail["viewers_removed"] = removed
+        after_editors = set(instance.editors.values_list("username", flat=True))
+        if added := sorted(after_editors - before_editors):
+            detail["editors_added"] = added
+        if removed := sorted(before_editors - after_editors):
+            detail["editors_removed"] = removed
+
+        if detail:
+            record_activity(
+                scope_type=ScopeType.SCAN_REPORT,
+                scope_id=instance.id,
+                verb=Verb.SCAN_REPORT_UPDATED,
+                actor=self.request.user,
+                object_type="scanreport",
+                object_id=instance.id,
+                detail=detail,
+            )
 
     def delete(self, request, *args, **kwargs):
         return self.destroy(request, *args, **kwargs)
@@ -718,6 +791,20 @@ class ScanReportTableDetailV2(
             table=instance,
             data_dictionary_name=data_dictionary_name,
             trigger_reuse_concepts=instance.trigger_reuse,
+        )
+
+        record_activity(
+            scope_type=ScopeType.SCAN_REPORT,
+            scope_id=scan_report_instance.id,
+            verb=Verb.AUTOMAP_RAN,
+            actor=request.user,
+            object_type="scanreporttable",
+            object_id=instance.id,
+            detail={
+                "table_id": instance.id,
+                "table_name": instance.name,
+                "trigger_reuse_concepts": instance.trigger_reuse,
+            },
         )
 
         # Create Job records if no errors
@@ -1184,16 +1271,16 @@ class ScanReportConceptListV2(
 
         # Get the domain and data type of the field for the check below
         domain = concept.domain_id.lower()
-        # If users add the concept at "SR_Field" level
-        try:
-            field_datatype = ScanReportField.objects.get(
+        # Resolve the field the concept is being added to: directly, if
+        # added at "SR_Field" level, or via its parent field, if added at
+        # "SR_Value" level.
+        if content_type_str == "scanreportfield":
+            source_field = ScanReportField.objects.get(pk=body["object_id"])
+        else:
+            source_field = ScanReportValue.objects.get(
                 pk=body["object_id"]
-            ).type_column
-        # If users add the concept at "SR_Value" level
-        except:
-            field_datatype = ScanReportValue.objects.get(
-                pk=body["object_id"]
-            ).scan_report_field.type_column
+            ).scan_report_field
+        field_datatype = source_field.type_column
 
         # Checking field's datatype for concept with domain Observation
         if domain == "observation" and field_datatype.lower() not in [
@@ -1248,6 +1335,21 @@ class ScanReportConceptListV2(
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        record_activity(
+            scope_type=ScopeType.SCAN_REPORT,
+            scope_id=table.scan_report_id,
+            verb=Verb.MAPPING_ADDED,
+            actor=request.user,
+            object_type=content_type_str,
+            object_id=body["object_id"],
+            detail={
+                "concept_id": concept.concept_id,
+                "concept_name": concept.concept_name,
+                "table_name": source_field.scan_report_table.name,
+                "field_name": source_field.name,
+            },
+        )
+
         headers = self.get_success_headers(serializer.data)
         return Response(
             serializer.data, status=status.HTTP_201_CREATED, headers=headers
@@ -1291,7 +1393,42 @@ class ScanReportConceptDetailV2(GenericAPIView, DestroyModelMixin):
     serializer_class = ScanReportConceptSerializer
 
     def delete(self, request, *args, **kwargs):
-        return self.destroy(request, *args, **kwargs)
+        instance: ScanReportConcept = self.get_object()
+
+        content_object = instance.content_object
+        source_field = (
+            content_object.scan_report_field
+            if isinstance(content_object, ScanReportValue)
+            else content_object
+        )
+        scan_report_query = SCAN_REPORT_QUERIES.get(type(content_object))
+        scan_report = scan_report_query(content_object) if scan_report_query else None
+        object_type = instance.content_type.model
+        object_id = instance.object_id
+        concept_id = instance.concept.concept_id
+        concept_name = instance.concept.concept_name
+        table_name = source_field.scan_report_table.name
+        field_name = source_field.name
+
+        response = self.destroy(request, *args, **kwargs)
+
+        if scan_report is not None:
+            record_activity(
+                scope_type=ScopeType.SCAN_REPORT,
+                scope_id=scan_report.id,
+                verb=Verb.MAPPING_DELETED,
+                actor=request.user,
+                object_type=object_type,
+                object_id=object_id,
+                detail={
+                    "concept_id": concept_id,
+                    "concept_name": concept_name,
+                    "table_name": table_name,
+                    "field_name": field_name,
+                },
+            )
+
+        return response
 
 
 class MappingRulesList(ScanReportPermissionMixin, APIView):

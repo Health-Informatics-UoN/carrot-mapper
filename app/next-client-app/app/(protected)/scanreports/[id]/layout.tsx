@@ -42,7 +42,7 @@ export default async function ScanReportLayout(
   props: Readonly<{
     params: Promise<{ id: string }>;
     children: React.ReactNode;
-  }>
+  }>,
 ) {
   const params = await props.params;
 
@@ -63,6 +63,7 @@ export default async function ScanReportLayout(
     { name: "Rules", slug: "mapping_rules", iconName: "Waypoints" },
     { name: "Review Rules", slug: "review_rules", iconName: "SearchCheck" },
     { name: "Downloads", slug: "downloads", iconName: "Download" },
+    { name: "Logs", slug: "logs", iconName: "History" },
   ];
 
   {
@@ -84,7 +85,7 @@ export default async function ScanReportLayout(
 
   if (
     !requiredPermissions.some((permission) =>
-      permissions.permissions.includes(permission)
+      permissions.permissions.includes(permission),
     )
   ) {
     return <Forbidden />;
@@ -156,7 +157,7 @@ export default async function ScanReportLayout(
               ...scanreport.editors,
             ].filter(
               (member, index, self) =>
-                index === self.findIndex((m) => m.id === member.id)
+                index === self.findIndex((m) => m.id === member.id),
             )}
           />
         </div>
@@ -193,9 +194,7 @@ export default async function ScanReportLayout(
         </div>
       </div>
       <Boundary>
-        <Suspense fallback={<ScanReportTableSkeleton />}>
-          {children}
-        </Suspense>
+        <Suspense fallback={<ScanReportTableSkeleton />}>{children}</Suspense>
       </Boundary>
     </div>
   );

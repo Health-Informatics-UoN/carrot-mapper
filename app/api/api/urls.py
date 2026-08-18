@@ -1,3 +1,4 @@
+from activity_log.views import ScanReportActivityLogView
 from django.urls import include, path
 from drf_spectacular.views import (
     SpectacularAPIView,
@@ -34,6 +35,11 @@ urlpatterns = [
         "v2/scanreports/<int:pk>/jobs/",
         JobView.as_view(),
         name="scan-report-jobs",
+    ),
+    path(
+        "v2/scanreports/<int:pk>/logs/",
+        ScanReportActivityLogView.as_view(),
+        name="scan-report-logs",
     ),
     path(
         "v2/scanreports/<int:pk>/tables/",
