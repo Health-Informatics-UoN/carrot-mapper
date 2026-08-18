@@ -1056,3 +1056,115 @@ class TestVocabularyListView(TestCase):
         data = response.json()
         self.assertEqual(data["count"], 1)
         self.assertEqual(data["results"][0]["vocabulary_id"], "SNOMED")
+
+
+class TestProjectCreateView(TestCase):
+    def setUp(self):
+        User = get_user_model()
+        self.user = User.objects.create(username="frodo", password="thering")
+        Token.objects.create(user=self.user)
+
+        self.client = APIClient()
+
+    def test_any_authenticated_user_can_create_project(self):
+        self.client.force_authenticate(self.user)
+        response = self.client.post(
+            "/api/projects/", data={"name": "The Shire"}, format="json"
+        )
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.data.get("name"), "The Shire")
+
+    def test_creator_becomes_member_and_admin(self):
+        self.client.force_authenticate(self.user)
+        response = self.client.post(
+            "/api/projects/", data={"name": "The Shire"}, format="json"
+        )
+        project = Project.objects.get(id=response.data.get("id"))
+        self.assertIn(self.user, project.members.all())
+        self.assertIn(self.user, project.admins.all())
+
+    def test_unauthenticated_user_cannot_create_project(self):
+        response = self.client.post(
+            "/api/projects/", data={"name": "The Shire"}, format="json"
+        )
+        self.assertEqual(response.status_code, 401)
+
+
+class TestProjectUpdateView(TestCase):
+    def setUp(self):
+        User = get_user_model()
+        self.admin_user = User.objects.create(username="gandalf", password="thegrey")
+        Token.objects.create(user=self.admin_user)
+        self.non_admin_member = User.objects.create(
+            username="aragorn", password="strider"
+        )
+        Token.objects.create(user=self.non_admin_member)
+        self.non_member = User.objects.create(username="balrog", password="flame")
+        Token.objects.create(user=self.non_member)
+
+        self.project = Project.objects.create(name="The Fellowship of the Ring")
+        self.project.members.add(self.admin_user, self.non_admin_member)
+        self.project.admins.add(self.admin_user)
+
+        self.client = APIClient()
+
+    def test_admin_can_update(self):
+        self.client.force_authenticate(self.admin_user)
+        response = self.client.patch(
+            f"/api/projects/{self.project.id}/", data={"name": "The Two Towers"}
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data.get("name"), "The Two Towers")
+
+    def test_non_admin_member_forbidden(self):
+        self.client.force_authenticate(self.non_admin_member)
+        response = self.client.patch(
+            f"/api/projects/{self.project.id}/", data={"name": "The Two Towers"}
+        )
+        self.assertEqual(response.status_code, 403)
+
+    def test_non_member_forbidden(self):
+        self.client.force_authenticate(self.non_member)
+        response = self.client.patch(
+            f"/api/projects/{self.project.id}/", data={"name": "The Two Towers"}
+        )
+        self.assertEqual(response.status_code, 403)
+
+    def test_admin_can_add_another_admin(self):
+        self.client.force_authenticate(self.admin_user)
+        response = self.client.patch(
+            f"/api/projects/{self.project.id}/",
+            data={"admins": [self.admin_user.id, self.non_admin_member.id]},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.project.refresh_from_db()
+        self.assertIn(self.non_admin_member, self.project.admins.all())
+
+
+class TestProjectPermissionView(TestCase):
+    def setUp(self):
+        User = get_user_model()
+        self.admin_user = User.objects.create(username="gandalf", password="thegrey")
+        Token.objects.create(user=self.admin_user)
+        self.non_admin_member = User.objects.create(
+            username="aragorn", password="strider"
+        )
+        Token.objects.create(user=self.non_admin_member)
+
+        self.project = Project.objects.create(name="The Fellowship of the Ring")
+        self.project.members.add(self.admin_user, self.non_admin_member)
+        self.project.admins.add(self.admin_user)
+
+        self.client = APIClient()
+
+    def test_admin_permissions(self):
+        self.client.force_authenticate(self.admin_user)
+        response = self.client.get(f"/api/projects/{self.project.id}/permissions/")
+        self.assertEqual(response.status_code, 200)
+        self.assertCountEqual(response.data.get("permissions"), ["CanView", "CanAdmin"])
+
+    def test_non_admin_member_permissions(self):
+        self.client.force_authenticate(self.non_admin_member)
+        response = self.client.get(f"/api/projects/{self.project.id}/permissions/")
+        self.assertEqual(response.status_code, 200)
+        self.assertCountEqual(response.data.get("permissions"), ["CanView"])

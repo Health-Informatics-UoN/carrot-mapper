@@ -12,12 +12,14 @@ from mapping.models import (
 )
 from mapping.permissions import (
     CanAdmin,
+    CanAdminProject,
     CanEdit,
     CanView,
     CanViewProject,
     has_editorship,
     has_viewership,
     is_admin,
+    is_project_admin,
 )
 from projects.views import ProjectDetail
 from rest_framework.authtoken.models import Token
@@ -423,6 +425,72 @@ class TestCanViewProject(TestCase):
             token=self.user_without_perm.auth_token,
         )
         # Assert the user not on the project doesn't have permission to see the view
+        self.assertFalse(
+            self.permission.has_object_permission(request, self.view, self.project)
+        )
+
+
+class TestCanAdminProject(TestCase):
+    def setUp(self):
+        User = get_user_model()
+        # Create user who is an admin of the Project
+        self.admin_user = User.objects.create(username="gandalf", password="thegrey")
+        Token.objects.create(user=self.admin_user)
+
+        # Create user who is a member but not an admin of the Project
+        self.member_user = User.objects.create(username="aragorn", password="strider")
+        Token.objects.create(user=self.member_user)
+
+        # Create user who is not a member of the Project at all
+        self.non_member_user = User.objects.create(
+            username="balrog", password="youshallnotpass"
+        )
+        Token.objects.create(user=self.non_member_user)
+
+        # Create the project
+        self.project = Project.objects.create(name="The Fellowship of the Ring")
+        self.project.members.add(self.admin_user, self.member_user)
+        self.project.admins.add(self.admin_user)
+
+        # Request factory for setting up requests
+        self.factory = APIRequestFactory()
+        # The instance of the view required for the permission class
+        self.view = ProjectDetail.as_view()
+
+        # The permission class
+        self.permission = CanAdminProject()
+
+    def test_project_admin_can_admin(self):
+        request = self.factory.patch(f"/projects/{self.project.id}")
+        request.user = self.admin_user
+        force_authenticate(
+            request, user=self.admin_user, token=self.admin_user.auth_token
+        )
+        self.assertTrue(is_project_admin(self.project, request))
+        self.assertTrue(
+            self.permission.has_object_permission(request, self.view, self.project)
+        )
+
+    def test_project_member_cannot_admin(self):
+        request = self.factory.patch(f"/projects/{self.project.id}")
+        request.user = self.member_user
+        force_authenticate(
+            request, user=self.member_user, token=self.member_user.auth_token
+        )
+        self.assertFalse(is_project_admin(self.project, request))
+        self.assertFalse(
+            self.permission.has_object_permission(request, self.view, self.project)
+        )
+
+    def test_non_member_cannot_admin(self):
+        request = self.factory.patch(f"/projects/{self.project.id}")
+        request.user = self.non_member_user
+        force_authenticate(
+            request,
+            user=self.non_member_user,
+            token=self.non_member_user.auth_token,
+        )
+        self.assertFalse(is_project_admin(self.project, request))
         self.assertFalse(
             self.permission.has_object_permission(request, self.view, self.project)
         )

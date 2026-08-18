@@ -198,6 +198,7 @@ class ProjectAdmin(admin.ModelAdmin):
     filter_horizontal = (
         "datasets",
         "members",
+        "admins",
     )
     list_display = (
         "name",
