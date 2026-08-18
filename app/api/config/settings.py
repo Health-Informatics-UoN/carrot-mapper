@@ -70,6 +70,7 @@ INSTALLED_APPS = [
     "mapping",
     "files",
     "jobs",
+    "activity_log",
     "rest_framework",
     "django_filters",
     "rest_framework.authtoken",
