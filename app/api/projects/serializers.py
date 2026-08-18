@@ -51,8 +51,8 @@ class ProjectCreateSerializer(DynamicFieldsMixin, serializers.ModelSerializer):
         model = Project
         fields = ["id", "name", "members", "admins", "created_at"]
         extra_kwargs = {
-            "members": {"required": False},
-            "admins": {"required": False},
+            "members": {"required": False, "allow_empty": True},
+            "admins": {"required": False, "allow_empty": True},
         }
 
 
