@@ -10,10 +10,17 @@ import { Separator } from "../ui/separator";
 import { Drawer, DrawerContent, DrawerTrigger } from "../ui/drawer";
 import { useEffect, useState } from "react";
 import { ModeToggle } from "./mode-toggle";
+import { NotificationBell } from "./NotificationBell";
 import { sidebarItems } from "./menuItems";
 import { cn } from "@/lib/utils";
 
-export function Sidebar({ userName }: { userName?: string }) {
+export function Sidebar({
+  userName,
+  unreadCount = 0,
+}: {
+  userName?: string;
+  unreadCount?: number;
+}) {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   useEffect(() => {
@@ -65,13 +72,13 @@ export function Sidebar({ userName }: { userName?: string }) {
                           icon={link.icon}
                           className={cn(
                             "w-full",
-                            "hover:bg-muted hover:text-foreground transition-colors"
+                            "hover:bg-muted hover:text-foreground transition-colors",
                           )}
                         >
                           {link.label}
                         </SidebarButton>
                       </Link>
-                    )
+                    ),
                   )}
                 </div>
                 {userName && (
@@ -135,7 +142,8 @@ export function Sidebar({ userName }: { userName?: string }) {
           </div>
         </Link>
       </div>
-      <div className="justify-end">
+      <div className="flex items-center justify-end gap-1">
+        {userName && <NotificationBell initialUnreadCount={unreadCount} />}
         <ModeToggle />
       </div>
     </div>

@@ -15,6 +15,15 @@ dependencies = [
     "types-psycopg2>=2.9.21.20260724",
 ]
 
+[dependency-groups]
+test = [
+    "pytest>=8.3.0",
+    "pytest-mock>=3.14.0",
+]
+
+[tool.uv]
+default-groups = ["test"]
+
 [build-system]
 requires = ["hatchling", "hatch-vcs"]
 build-backend = "hatchling.build"
@@ -35,3 +44,13 @@ fallback-version = "0.0.0.dev0"
 [tool.hatch.version.raw-options]
 # pyproject.toml lives two directories below the monorepo root, where .git is.
 root = "../.."
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+addopts = "-ra -q"
+testpaths = ["test"]
+# dags/ has no __init__.py (see the hatchling packages comment above), so
+# `from libs.x import y` (the import style every DAG module already uses)
+# only resolves if dags/ is on sys.path - this mirrors how Airflow itself
+# adds its DAGS_FOLDER to sys.path at runtime.
+pythonpath = ["dags"]

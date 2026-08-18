@@ -6,6 +6,7 @@ from typing import List, Tuple
 
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from libs.enums import JobStageType, StageStatusType
+from libs.notifications import NotificationType, create_notification
 from libs.queries import create_temp_data_dictionary_table_query, create_values_query
 from libs.settings import AIRFLOW_DAGRUN_TIMEOUT
 from libs.SR_processing.db_services import (
@@ -224,4 +225,10 @@ def process_and_create_scan_report_entries(**kwargs) -> None:
         stage=JobStageType.UPLOAD_SCAN_REPORT,
         status=StageStatusType.COMPLETE,
         scan_report=scan_report_id,
+    )
+    create_notification(
+        scan_report_id=scan_report_id,
+        notif_type=NotificationType.SCAN_REPORT_PROCESSING_COMPLETE,
+        text="Your scan report has finished processing",
+        url=f"/scanreports/{scan_report_id}",
     )

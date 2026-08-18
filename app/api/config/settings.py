@@ -14,6 +14,7 @@ import os
 from datetime import timedelta
 
 from dotenv import load_dotenv
+
 from services.enums import WorkerServiceType
 
 load_dotenv()
@@ -71,6 +72,7 @@ INSTALLED_APPS = [
     "files",
     "jobs",
     "activity_log",
+    "notifications",
     "rest_framework",
     "django_filters",
     "rest_framework.authtoken",

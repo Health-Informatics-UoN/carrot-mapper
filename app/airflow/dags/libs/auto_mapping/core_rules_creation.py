@@ -2,6 +2,7 @@ import logging
 
 from airflow.exceptions import AirflowException
 from airflow.providers.postgres.hooks.postgres import PostgresHook
+from libs.notifications import NotificationType, create_notification
 from libs.settings import AIRFLOW_DAGRUN_TIMEOUT, AIRFLOW_DEBUG_MODE
 from libs.utils import (
     JobStageType,
@@ -50,11 +51,11 @@ def create_mapping_rules(**kwargs) -> None:
     INSERT INTO mapping_mappingrule (
         created_at, updated_at, omop_field_id, source_field_id, concept_id, scan_report_id, approved
     )
-    SELECT 
+    SELECT
         NOW(), NOW(), field_id, source_id, sr_concept_id, %(scan_report_id)s, TRUE
     FROM temp_existing_concepts_%(table_id)s AS temp_table
     CROSS JOIN LATERAL (
-        VALUES 
+        VALUES
             (dest_person_field_id, %(person_id_field)s),
             (dest_date_field_id, %(date_field_id)s),
             (dest_start_date_field_id, %(date_field_id)s),
@@ -85,6 +86,12 @@ def create_mapping_rules(**kwargs) -> None:
             stage=JobStageType.GENERATE_RULES,
             status=StageStatusType.COMPLETE,
             details="Successfully (re-)created mapping rules for all existing concepts",
+        )
+        create_notification(
+            scan_report_id=scan_report_id,
+            notif_type=NotificationType.AUTOMAP_COMPLETE,
+            text="Auto-mapping has finished for your scan report",
+            url=f"/scanreports/{scan_report_id}",
         )
         if AIRFLOW_DEBUG_MODE == "true":
             return

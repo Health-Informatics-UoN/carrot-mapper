@@ -19,3 +19,4 @@ vocabs
 .mypy_cache
 build
 *.egg-info
+CLAUDE.md
