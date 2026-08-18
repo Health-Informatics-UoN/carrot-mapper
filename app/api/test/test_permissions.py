@@ -3,10 +3,6 @@ from unittest import mock
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase
-from rest_framework.authtoken.models import Token
-from rest_framework.generics import GenericAPIView
-from rest_framework.test import APIRequestFactory, force_authenticate
-
 from mapping.models import (
     DataPartner,
     Dataset,
@@ -26,6 +22,9 @@ from mapping.permissions import (
     is_project_admin,
 )
 from projects.views import ProjectDetail
+from rest_framework.authtoken.models import Token
+from rest_framework.generics import GenericAPIView
+from rest_framework.test import APIRequestFactory, force_authenticate
 
 
 class TestHasViewership(TestCase):

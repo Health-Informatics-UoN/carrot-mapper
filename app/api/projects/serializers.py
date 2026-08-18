@@ -1,8 +1,7 @@
 from drf_dynamic_fields import DynamicFieldsMixin  # type: ignore
-from rest_framework import serializers
-
 from mapping.models import Project
 from mapping.permissions import is_project_admin
+from rest_framework import serializers
 from users.serializers import UserSerializer
 
 

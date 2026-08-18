@@ -1,6 +1,13 @@
+from api.paginations import CustomPagination
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema
+from mapping.models import Project
+from mapping.permissions import (
+    CanAdminProject,
+    CanViewProject,
+    get_user_permissions_on_project,
+)
 from rest_framework import status
 from rest_framework.filters import OrderingFilter
 from rest_framework.generics import GenericAPIView
@@ -14,13 +21,6 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from api.paginations import CustomPagination
-from mapping.models import Project
-from mapping.permissions import (
-    CanAdminProject,
-    CanViewProject,
-    get_user_permissions_on_project,
-)
 from projects.serializers import (
     ProjectCreateSerializer,
     ProjectDatasetSerializer,
