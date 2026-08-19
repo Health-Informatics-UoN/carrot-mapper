@@ -9,9 +9,14 @@ import { InfoItem } from "@/components/core/InfoItem";
 import Link from "next/link";
 import { getProject } from "@/api/projects";
 import { AvatarList } from "@/components/core/avatar-list";
+import { DescriptionPopover } from "@/components/core/DescriptionPopover";
 import { ReactNode } from "react";
 
-export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const resolvedParams = await params;
   const project = await getProject(resolvedParams.id);
   return {
@@ -59,6 +64,10 @@ export default async function DatasetLayout({ params, children }: LayoutProps) {
         <h2>{"/"}</h2>
         <Folders className="text-orange-700" />
         <h2>{project?.name}</h2>
+        <DescriptionPopover
+          description={project.description}
+          title="Project description"
+        />
       </div>
 
       <div className="flex flex-col md:flex-row md:items-center text-sm space-y-2 md:space-y-0 divide-y md:divide-y-0 md:divide-x">
@@ -70,22 +79,22 @@ export default async function DatasetLayout({ params, children }: LayoutProps) {
       </div>
       <div className="hidden md:flex flex-col md:flex-row md:items-center h-7 text-sm space-y-2 md:space-y-0 divide-y md:divide-y-0 md:divide-x">
         <div className="flex items-center gap-2 text-muted-foreground">
-            Members:{" "}
-            <AvatarList
-              members={[...project.members].filter(
-                (member, index, self) =>
-                  index === self.findIndex((m) => m.id === member.id)
-              )}
-            />
+          Members:{" "}
+          <AvatarList
+            members={[...project.members].filter(
+              (member, index, self) =>
+                index === self.findIndex((m) => m.id === member.id),
+            )}
+          />
         </div>
         <div className="flex items-center gap-2 text-muted-foreground md:pl-3">
-            Admins:{" "}
-            <AvatarList
-              members={[...project.admins].filter(
-                (member, index, self) =>
-                  index === self.findIndex((m) => m.id === member.id)
-              )}
-            />
+          Admins:{" "}
+          <AvatarList
+            members={[...project.admins].filter(
+              (member, index, self) =>
+                index === self.findIndex((m) => m.id === member.id),
+            )}
+          />
         </div>
       </div>
       {/* "Navs" group */}
