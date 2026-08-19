@@ -7,6 +7,12 @@ from drf_spectacular.views import (
 )
 from files.views import FileDownloadView
 from jobs.views import JobView
+from notifications.views import (
+    NotificationListView,
+    NotificationMarkAllReadView,
+    NotificationMarkReadView,
+    NotificationUnreadCountView,
+)
 
 from api import views
 
@@ -119,6 +125,26 @@ urlpatterns = [
         "v3/scanreports/<int:pk>/tables/<int:table_pk>/fields/",
         views.ScanReportFieldIndexV3.as_view(),
         name="scan-report-fields-v3",
+    ),
+    path(
+        "v2/notifications/",
+        NotificationListView.as_view(),
+        name="notification-list",
+    ),
+    path(
+        "v2/notifications/unread-count/",
+        NotificationUnreadCountView.as_view(),
+        name="notification-unread-count",
+    ),
+    path(
+        "v2/notifications/read-all/",
+        NotificationMarkAllReadView.as_view(),
+        name="notification-mark-all-read",
+    ),
+    path(
+        "v2/notifications/<int:pk>/read/",
+        NotificationMarkReadView.as_view(),
+        name="notification-mark-read",
     ),
     path(r"user/me/", views.UserDetailView.as_view(), name="currentuser"),
     path(r"v2/users/", views.UserViewSet.as_view(), name="users-list"),

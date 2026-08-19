@@ -1,7 +1,6 @@
 import ast
 import json
 import logging
-import time
 from typing import Any, Dict, List, Optional, TypedDict
 
 from airflow.models.connection import Connection
@@ -11,6 +10,7 @@ from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.utils.session import create_session
 
 from libs.enums import JobStageType, StageStatusType, StorageType
+from libs.notifications import NotificationType, create_notification
 from libs.settings import (
     AIRFLOW_DAGRUN_TIMEOUT,
     AIRFLOW_VAR_MINIO_ACCESS_KEY,
@@ -96,7 +96,7 @@ def update_job_status(
     update_sr_job_query = """
         UPDATE mapping_scanreport
         SET upload_status_id = (
-            SELECT id FROM mapping_uploadstatus 
+            SELECT id FROM mapping_uploadstatus
             WHERE value = %(status_value)s
         ),
         upload_status_details = %(details)s
@@ -106,7 +106,7 @@ def update_job_status(
     job_update_query = """
         UPDATE jobs_job
         SET status_id = (
-            SELECT id FROM jobs_stagestatus 
+            SELECT id FROM jobs_stagestatus
             WHERE value = %(status_value)s
         ),
         details = %(details)s,
@@ -116,7 +116,7 @@ def update_job_status(
             WHERE scan_report_id = %(scan_report)s
             {additional_conditions}
             AND stage_id IN (
-                SELECT id FROM jobs_jobstage 
+                SELECT id FROM jobs_jobstage
                 WHERE value = %(stage_value)s
             )
             ORDER BY updated_at DESC
@@ -211,6 +211,21 @@ def update_job_status_on_failure(context):
             scan_report_table=table_id,
             details=f"Task '{task_instance.task_id}' was timed-out or failed due to an unexpected error.",
         )
+
+        if dag.dag_id == "auto_mapping":
+            create_notification(
+                scan_report_id=scan_report_id,
+                notif_type=NotificationType.AUTOMAP_FAILED,
+                text="Auto-mapping failed for your scan report",
+                url=f"/scanreports/{scan_report_id}",
+            )
+        elif dag.dag_id == "rules_export":
+            create_notification(
+                scan_report_id=scan_report_id,
+                notif_type=NotificationType.RULES_EXPORT_FAILED,
+                text="Your rules export failed",
+                url=f"/scanreports/{scan_report_id}/downloads",
+            )
 
     except Exception as e:
         logging.error(f"Failed to update job status on skipped task: {str(e)}")
