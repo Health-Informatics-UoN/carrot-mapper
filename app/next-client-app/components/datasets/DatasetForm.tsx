@@ -3,8 +3,16 @@
 import { updateDatasetDetails } from "@/api/datasets";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Save } from "lucide-react";
-import { FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription } from "@/components/ui/form";
+import {
+  FormField,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormMessage,
+  FormDescription,
+} from "@/components/ui/form";
 import { Switch } from "@/components/ui/switch";
 import { Formik } from "formik";
 import { toast } from "sonner";
@@ -14,6 +22,7 @@ import { useState } from "react";
 
 interface FormData {
   name: string;
+  description: string;
   visibility: string;
   dataPartner: number;
   viewers: number[];
@@ -39,7 +48,7 @@ export function DatasetForm({
   const canUpdate = permissions.includes("CanAdmin");
   // State control for viewers fields
   const [publicVisibility, setPublicVisibility] = useState<boolean>(
-    dataset.visibility === "PUBLIC" ? true : false
+    dataset.visibility === "PUBLIC" ? true : false,
   );
 
   // Making options suitable for React Select
@@ -48,7 +57,7 @@ export function DatasetForm({
   const projectOptions = FormDataFilter<Project>(projects);
   // Find the intial data partner which is required when adding Dataset
   const initialPartner = dataPartners.find(
-    (partner) => dataset.data_partner.id === partner.id
+    (partner) => dataset.data_partner.id === partner.id,
   )!;
   // Find and make initial data suitable for React select
   const initialPartnerFilter = FormDataFilter<DataPartner>(initialPartner);
@@ -57,12 +66,13 @@ export function DatasetForm({
   const initialAdminsFilter = FormDataFilter<User>(dataset.admins);
   const initialProjectFilter = FindAndFormat<Project>(
     projects,
-    dataset.projects.map((project) => project.id)
+    dataset.projects.map((project) => project.id),
   );
 
   const handleSubmit = async (data: FormData) => {
     const submittingData = {
       name: data.name,
+      description: data.description,
       visibility: data.visibility,
       data_partner: data.dataPartner,
       viewers: data.viewers || [],
@@ -82,12 +92,13 @@ export function DatasetForm({
     <Formik
       initialValues={{
         name: dataset.name,
+        description: dataset.description ?? "",
         visibility: dataset.visibility, // Should be "PUBLIC" or "RESTRICTED"
         viewers: initialViewersFilter.map((viewer) => viewer.value),
         editors: initialEditorsFilter.map((editor) => editor.value),
         dataPartner: initialPartnerFilter[0].value,
         admins: initialAdminsFilter.map((admin) => admin.value),
-        projects: initialProjectFilter.map((project) => project.value)
+        projects: initialProjectFilter.map((project) => project.value),
       }}
       onSubmit={(data) => {
         handleSubmit(data);
@@ -96,20 +107,37 @@ export function DatasetForm({
       {({ values, handleChange, handleSubmit }) => (
         <form className="w-full max-w-2xl" onSubmit={handleSubmit}>
           <div className="flex flex-col gap-5">
-
             <FormField name="name">
               {({ field }) => (
                 <FormItem>
                   <FormLabel>Name</FormLabel>
-                  <FormDescription>
-                    Name of the dataset.
-                  </FormDescription>
+                  <FormDescription>Name of the dataset.</FormDescription>
                   <FormControl>
                     <Input
                       {...field}
                       placeholder={dataset.name}
                       onChange={handleChange}
                       name="name"
+                      disabled={!canUpdate}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            </FormField>
+
+            <FormField name="description">
+              {({ field }) => (
+                <FormItem>
+                  <FormLabel>Description</FormLabel>
+                  <FormDescription>
+                    Optional description of the dataset.
+                  </FormDescription>
+                  <FormControl>
+                    <Textarea
+                      {...field}
+                      onChange={handleChange}
+                      name="description"
                       disabled={!canUpdate}
                     />
                   </FormControl>
@@ -150,7 +178,9 @@ export function DatasetForm({
                           });
                           setPublicVisibility(checked);
                         }}
-                        defaultChecked={dataset.visibility === "PUBLIC" ? true : false}
+                        defaultChecked={
+                          dataset.visibility === "PUBLIC" ? true : false
+                        }
                         disabled={!canUpdate}
                       />
                     </FormControl>
@@ -160,7 +190,8 @@ export function DatasetForm({
                     </span>
                   </div>
                   <FormDescription>
-                    If a Dataset is shared, then all users with access to any project associated to the Dataset can see them.
+                    If a Dataset is shared, then all users with access to any
+                    project associated to the Dataset can see them.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -171,7 +202,8 @@ export function DatasetForm({
               <FormItem>
                 <FormLabel>Viewers</FormLabel>
                 <FormDescription>
-                  All Dataset admins and editors also have Dataset viewer permissions.
+                  All Dataset admins and editors also have Dataset viewer
+                  permissions.
                 </FormDescription>
                 <FormControl>
                   <FormikSelect
@@ -204,7 +236,8 @@ export function DatasetForm({
             <FormItem>
               <FormLabel>Admins</FormLabel>
               <FormDescription>
-                All Dataset admins also have Dataset editor permissions. Dataset admins also have Scan Report editor permissions.
+                All Dataset admins also have Dataset editor permissions. Dataset
+                admins also have Scan Report editor permissions.
               </FormDescription>
               <FormControl>
                 <FormikSelect
@@ -234,10 +267,7 @@ export function DatasetForm({
             </FormItem>
 
             <div className="flex mt-3">
-              <Button
-                type="submit"
-                disabled={!canUpdate}
-              >
+              <Button type="submit" disabled={!canUpdate}>
                 <Save />
                 Save
               </Button>

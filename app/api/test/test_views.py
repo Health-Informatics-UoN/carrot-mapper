@@ -237,6 +237,18 @@ class TestDatasetUpdateView(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response_data.get("name"), "The Two Towers")
 
+    def test_update_description(self):
+        # Authenticate admin user
+        self.client.force_authenticate(self.admin_user)
+        #  Make the request
+        response = self.client.patch(
+            f"/api/v2/datasets/{self.dataset.id}/",
+            data={"description": "Home of the Shire-folk"},
+        )
+        # Ensure admin user can update the Dataset's description
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data.get("description"), "Home of the Shire-folk")
+
     def test_non_admin_member_forbidden(self):
         # Authenticate non admin user
         self.client.force_authenticate(self.non_admin_user)
@@ -1074,6 +1086,16 @@ class TestProjectCreateView(TestCase):
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.data.get("name"), "The Shire")
 
+    def test_can_create_project_with_description(self):
+        self.client.force_authenticate(self.user)
+        response = self.client.post(
+            "/api/projects/",
+            data={"name": "The Shire", "description": "A peaceful land of hobbits"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.data.get("description"), "A peaceful land of hobbits")
+
     def test_creator_becomes_member_and_admin(self):
         self.client.force_authenticate(self.user)
         response = self.client.post(
@@ -1115,6 +1137,16 @@ class TestProjectUpdateView(TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data.get("name"), "The Two Towers")
+
+    def test_admin_can_update_description(self):
+        self.client.force_authenticate(self.admin_user)
+        response = self.client.patch(
+            f"/api/projects/{self.project.id}/",
+            data={"description": "The war of the ring"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.project.refresh_from_db()
+        self.assertEqual(self.project.description, "The war of the ring")
 
     def test_non_admin_member_forbidden(self):
         self.client.force_authenticate(self.non_admin_member)

@@ -130,6 +130,7 @@ class ScanReportViewSerializerV2(DynamicFieldsMixin, serializers.ModelSerializer
             "id",
             "name",
             "dataset",
+            "description",
             "parent_dataset",
             "data_partner",
             "mapping_status",
@@ -630,6 +631,7 @@ class ScanReportCreateSerializer(DynamicFieldsMixin, serializers.ModelSerializer
             "viewers",
             "editors",
             "dataset",
+            "description",
             "parent_dataset",
             "visibility",
         )

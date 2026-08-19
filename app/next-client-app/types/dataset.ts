@@ -4,6 +4,7 @@ interface DatasetStrict {
 }
 
 interface DataSet extends DatasetStrict {
+  description: string | null;
   hidden: boolean;
   visibility: string;
   created_at: string;
@@ -23,6 +24,7 @@ interface DataSetSRList {
   created_at: Date;
   updated_at: Date;
   name: string;
+  description: string | null;
   visibility: string;
   hidden: boolean | null;
   data_partner: DataPartner;

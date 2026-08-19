@@ -40,6 +40,7 @@ class DatasetAndDataPartnerViewSerializer(
         fields = (
             "id",
             "name",
+            "description",
             "data_partner",
             "admins",
             "visibility",
@@ -61,6 +62,7 @@ class DatasetViewSerializerV2(DynamicFieldsMixin, serializers.ModelSerializer):
         fields = (
             "id",
             "name",
+            "description",
             "data_partner",
             "admins",
             "visibility",
@@ -79,6 +81,7 @@ class DatasetCreateSerializerV2(DynamicFieldsMixin, serializers.ModelSerializer)
         fields = (
             "id",
             "name",
+            "description",
             "data_partner",
             "admins",
             "visibility",
@@ -136,6 +139,7 @@ class DatasetEditSerializer(DynamicFieldsMixin, serializers.ModelSerializer):
         fields = (
             "id",
             "name",
+            "description",
             "data_partner",
             "admins",
             "visibility",

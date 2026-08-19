@@ -2,8 +2,16 @@
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { AlertCircle, Plus, SquarePlus } from "lucide-react";
-import { FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription } from "@/components/ui/form";
+import {
+  FormField,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormMessage,
+  FormDescription,
+} from "@/components/ui/form";
 import { Switch } from "@/components/ui/switch";
 import { Formik } from "formik";
 import { toast } from "sonner";
@@ -16,6 +24,7 @@ import { createDataset } from "@/api/datasets";
 
 interface FormData {
   name: string;
+  description: string;
   visibility: string;
   viewers: number[];
   editors: number[];
@@ -46,6 +55,7 @@ export function CreateDatasetForm({
   const handleSubmit = async (data: FormData) => {
     const submittingData = {
       name: data.name,
+      description: data.description,
       visibility: data.visibility,
       data_partner: data.dataPartner,
       viewers: data.viewers || [],
@@ -102,6 +112,7 @@ export function CreateDatasetForm({
           admins: [],
           visibility: "PUBLIC", // Always use "PUBLIC" or "RESTRICTED" for backend compatibility
           name: "",
+          description: "",
           projects: 0,
         }}
         onSubmit={(data) => {
@@ -110,34 +121,51 @@ export function CreateDatasetForm({
         }}
       >
         {({ values, handleChange, handleSubmit }) => (
-                  <form className="w-full max-w-2xl" onSubmit={handleSubmit}>
-          <div className="flex flex-col gap-5">
+          <form className="w-full max-w-2xl" onSubmit={handleSubmit}>
+            <div className="flex flex-col gap-5">
+              <FormField name="name">
+                {({ field }) => (
+                  <FormItem>
+                    <FormLabel>Dataset Name</FormLabel>
+                    <FormDescription>Name of the new Dataset.</FormDescription>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        onChange={handleChange}
+                        name="name"
+                        required
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              </FormField>
 
-                <FormField name="name">
-                  {({ field }) => (
-                    <FormItem>
-                      <FormLabel>Dataset Name</FormLabel>
-                      <FormDescription>
-                        Name of the new Dataset.
-                      </FormDescription>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          onChange={handleChange}
-                          name="name"
-                          required
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                </FormField>
+              <FormField name="description">
+                {({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description</FormLabel>
+                    <FormDescription>
+                      Optional description of the new Dataset.
+                    </FormDescription>
+                    <FormControl>
+                      <Textarea
+                        {...field}
+                        onChange={handleChange}
+                        name="description"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              </FormField>
 
-                {!dataPartnerID && (
+              {!dataPartnerID && (
                 <FormItem>
                   <FormLabel>Data Partner</FormLabel>
                   <FormDescription>
-                    The Data Partner that owns the Dataset of the new Scan Report.
+                    The Data Partner that owns the Dataset of the new Scan
+                    Report.
                   </FormDescription>
                   <FormControl>
                     <FormikSelect
@@ -151,11 +179,12 @@ export function CreateDatasetForm({
                   </FormControl>
                 </FormItem>
               )}
-              
+
               <FormItem>
                 <FormLabel>Projects</FormLabel>
                 <FormDescription>
-                  A Project is the highest-level object. A single Dataset may live in more than one Project.
+                  A Project is the highest-level object. A single Dataset may
+                  live in more than one Project.
                 </FormDescription>
                 <FormControl>
                   <FormikSelect
@@ -190,11 +219,15 @@ export function CreateDatasetForm({
                       </FormControl>
                       <span className="text-sm">
                         {/* Show user-friendly label */}
-                        {values.visibility === "PUBLIC" ? "Shared" : "Restricted"}
+                        {values.visibility === "PUBLIC"
+                          ? "Shared"
+                          : "Restricted"}
                       </span>
                     </div>
                     <FormDescription>
-                      If a Dataset is shared, then all users with access to any project associated to the Dataset will have Dataset viewer permissions.
+                      If a Dataset is shared, then all users with access to any
+                      project associated to the Dataset will have Dataset viewer
+                      permissions.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -205,7 +238,8 @@ export function CreateDatasetForm({
                 <FormItem>
                   <FormLabel>Viewers</FormLabel>
                   <FormDescription>
-                    Members of the chosen projects above. All Dataset admins and editors also have Dataset viewer permissions.
+                    Members of the chosen projects above. All Dataset admins and
+                    editors also have Dataset viewer permissions.
                   </FormDescription>
                   <FormControl>
                     <FormikSelectUsers
@@ -225,7 +259,8 @@ export function CreateDatasetForm({
               <FormItem>
                 <FormLabel>Editors</FormLabel>
                 <FormDescription>
-                  Members of the chosen projects above. Dataset admins and editors also have Scan Report editor permissions.
+                  Members of the chosen projects above. Dataset admins and
+                  editors also have Scan Report editor permissions.
                 </FormDescription>
                 <FormControl>
                   <FormikSelectUsers
@@ -244,7 +279,8 @@ export function CreateDatasetForm({
               <FormItem>
                 <FormLabel>Admins</FormLabel>
                 <FormDescription>
-                  Members of the chosen projects above. Dataset admins and editors also have Scan Report editor permissions.
+                  Members of the chosen projects above. Dataset admins and
+                  editors also have Scan Report editor permissions.
                 </FormDescription>
                 <FormControl>
                   <FormikSelectUsers

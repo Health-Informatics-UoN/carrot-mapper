@@ -2,8 +2,16 @@
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Save } from "lucide-react";
-import { FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription } from "@/components/ui/form";
+import {
+  FormField,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormMessage,
+  FormDescription,
+} from "@/components/ui/form";
 import { Switch } from "@/components/ui/switch";
 import { Formik } from "formik";
 import { toast } from "sonner";
@@ -14,6 +22,7 @@ import { updateScanReport } from "@/api/scanreports";
 
 interface FormData {
   name: string;
+  description: string;
   visibility: string;
   author: number;
   viewers: number[];
@@ -26,7 +35,7 @@ export function ScanReportDetailsForm({
   scanreport,
   users,
   permissions,
-  isAuthor
+  isAuthor,
 }: {
   datasetList: DataSetSRList[];
   scanreport: ScanReport;
@@ -38,7 +47,7 @@ export function ScanReportDetailsForm({
   const canUpdate = permissions.includes("CanAdmin") || isAuthor;
   // State control for viewers fields
   const [publicVisibility, setPublicVisibility] = useState<boolean>(
-    scanreport.visibility === "PUBLIC" ? true : false
+    scanreport.visibility === "PUBLIC" ? true : false,
   );
 
   // Making options suitable for React Select
@@ -46,7 +55,7 @@ export function ScanReportDetailsForm({
   const parentDatasetOptions = FormDataFilter<DataSetSRList>(datasetList);
   // Find the intial parent dataset and author which is required when adding Dataset
   const initialParentDataset = datasetList.find(
-    (dataset) => scanreport.parent_dataset.name === dataset.name // parent's dataset is unique (set by the models.py) so can be used to find the initial parent dataset here
+    (dataset) => scanreport.parent_dataset.name === dataset.name, // parent's dataset is unique (set by the models.py) so can be used to find the initial parent dataset here
   )!;
 
   const initialAuthor = users.find((user) => scanreport.author.id === user.id)!;
@@ -60,17 +69,18 @@ export function ScanReportDetailsForm({
   const handleSubmit = async (data: FormData) => {
     const submittingData = {
       dataset: data.name,
+      description: data.description,
       visibility: data.visibility,
       parent_dataset: data.parent_dataset,
       viewers: data.viewers || [],
       editors: data.editors || [],
-      author: data.author
+      author: data.author,
     };
 
     const response = await updateScanReport(
       scanreport.id,
       submittingData,
-      true // "true" for the value "needRedirect"
+      true, // "true" for the value "needRedirect"
     );
     if (response) {
       toast.error(`Update Scan Report failed. Error: ${response.errorMessage}`);
@@ -83,11 +93,12 @@ export function ScanReportDetailsForm({
     <Formik
       initialValues={{
         name: scanreport.dataset,
+        description: scanreport.description ?? "",
         visibility: scanreport.visibility,
         author: initialAuthorFilter[0].value,
         viewers: initialViewersFilter.map((viewer) => viewer.value),
         editors: initialEditorsFilter.map((editor) => editor.value),
-        parent_dataset: initialDatasetFilter[0].value
+        parent_dataset: initialDatasetFilter[0].value,
       }}
       onSubmit={(data) => {
         handleSubmit(data);
@@ -96,20 +107,38 @@ export function ScanReportDetailsForm({
       {({ values, handleChange, handleSubmit }) => (
         <form className="w-full max-w-2xl" onSubmit={handleSubmit}>
           <div className="flex flex-col gap-5">
-
             <FormField name="name">
               {({ field }) => (
                 <FormItem>
                   <FormLabel>Name</FormLabel>
-                  <FormDescription>
-                    Name of the Scan Report.
-                  </FormDescription>
+                  <FormDescription>Name of the Scan Report.</FormDescription>
                   <FormControl>
                     <Input
                       {...field}
                       value={values.name}
                       onChange={handleChange}
                       name="name"
+                      disabled={!canUpdate}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            </FormField>
+
+            <FormField name="description">
+              {({ field }) => (
+                <FormItem>
+                  <FormLabel>Description</FormLabel>
+                  <FormDescription>
+                    Optional description of the Scan Report.
+                  </FormDescription>
+                  <FormControl>
+                    <Textarea
+                      {...field}
+                      value={values.description}
+                      onChange={handleChange}
+                      name="description"
                       disabled={!canUpdate}
                     />
                   </FormControl>
@@ -145,8 +174,8 @@ export function ScanReportDetailsForm({
                           handleChange({
                             target: {
                               name: "visibility",
-                              value: checked ? "PUBLIC" : "RESTRICTED"
-                            }
+                              value: checked ? "PUBLIC" : "RESTRICTED",
+                            },
                           });
                           setPublicVisibility(checked);
                         }}
@@ -160,7 +189,9 @@ export function ScanReportDetailsForm({
                     </span>
                   </div>
                   <FormDescription>
-                    To see the contents of the Scan Report, the Scan Report must be shared, or users must be an author/editor/viewer of the Scan Report.
+                    To see the contents of the Scan Report, the Scan Report must
+                    be shared, or users must be an author/editor/viewer of the
+                    Scan Report.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -188,7 +219,8 @@ export function ScanReportDetailsForm({
             <FormItem>
               <FormLabel>Editors</FormLabel>
               <FormDescription>
-                Editors of a Scan Report can add/remove concepts, update tables and update fields.
+                Editors of a Scan Report can add/remove concepts, update tables
+                and update fields.
               </FormDescription>
               <FormControl>
                 <FormikSelect
@@ -218,12 +250,9 @@ export function ScanReportDetailsForm({
             </FormItem>
 
             <div className="flex mt-3">
-              <Button
-                type="submit"
-                disabled={!canUpdate}
-              >
+              <Button type="submit" disabled={!canUpdate}>
                 <Save />
-                Save 
+                Save
               </Button>
             </div>
           </div>

@@ -1,6 +1,7 @@
 interface ScanReport {
   id: number;
   dataset: string;
+  description: string | null;
   parent_dataset: DatasetStrict;
   data_partner: string;
   mapping_status: {
@@ -92,7 +93,6 @@ interface ScanReportValue {
   concepts?: Concept[];
   permissions: Permission[];
 }
-
 
 interface ScanReportValueV3 {
   id: number;
