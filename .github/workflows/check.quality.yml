@@ -14,7 +14,34 @@ jobs:
           submodules: "recursive"
           ref: ${{ github.ref }}
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+
       - name: Run Ruff Checks
         uses: astral-sh/ruff-action@278981a28ce3188b1e39527901f38254bf3aac89 # v4.1.0
         with:
           version: "0.13.0"
+          args: "check --select I ."
+      
+      - name: Run Ruff Format
+        uses: astral-sh/ruff-action@278981a28ce3188b1e39527901f38254bf3aac89 # v4.1.0
+        with:
+          version: "0.13.0"
+          args: "format --check --diff"
+
+  build_frontend:
+    runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, '[ci skip]')"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: "recursive"
+      - name: Install Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "20"
+      - name: Install dependencies and build Next.js app
+        run: |
+          npm install
+          npm run build
+        working-directory: app/next-client-app
