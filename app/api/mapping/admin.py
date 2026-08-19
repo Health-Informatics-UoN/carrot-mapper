@@ -8,6 +8,7 @@ from mapping.models import (
     MappingRule,
     OmopField,
     OmopTable,
+    Profile,
     Project,
     ScanReport,
     ScanReportConcept,
@@ -206,6 +207,15 @@ class ProjectAdmin(admin.ModelAdmin):
     )
 
 
+class ProfileAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "user",
+        "data_partner",
+        "orcid",
+    )
+
+
 class MappingRecommendationAdmin(admin.ModelAdmin):
     list_display = (
         "id",
@@ -236,4 +246,5 @@ admin.site.register(DataDictionary, DataDictionaryAdmin)
 admin.site.register(ScanReportConcept, ScanReportConceptAdmin)
 admin.site.register(Dataset, DatasetAdmin)
 admin.site.register(Project, ProjectAdmin)
+admin.site.register(Profile, ProfileAdmin)
 admin.site.register(MappingRecommendation, MappingRecommendationAdmin)

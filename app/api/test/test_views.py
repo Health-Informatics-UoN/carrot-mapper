@@ -1200,3 +1200,105 @@ class TestProjectPermissionView(TestCase):
         response = self.client.get(f"/api/projects/{self.project.id}/permissions/")
         self.assertEqual(response.status_code, 200)
         self.assertCountEqual(response.data.get("permissions"), ["CanView"])
+
+
+class TestUserProfileDetailView(TestCase):
+    def setUp(self):
+        User = get_user_model()
+        self.user1 = User.objects.create(username="frodo", password="thering")
+        Token.objects.create(user=self.user1)
+        self.user2 = User.objects.create(username="samwise", password="taterstew")
+        Token.objects.create(user=self.user2)
+
+        self.data_partner = DataPartner.objects.create(name="Silvan Elves")
+
+        self.client = APIClient()
+
+    def test_unauthenticated_user_cannot_view_profile(self):
+        response = self.client.get(f"/api/v2/users/{self.user1.id}/")
+        self.assertEqual(response.status_code, 401)
+
+    def test_can_view_own_profile(self):
+        self.client.force_authenticate(self.user1)
+        response = self.client.get(f"/api/v2/users/{self.user1.id}/")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data.get("username"), "frodo")
+        self.assertIsNone(response.data.get("profile").get("data_partner"))
+        self.assertIsNone(response.data.get("profile").get("orcid"))
+
+    def test_can_view_another_users_profile(self):
+        self.client.force_authenticate(self.user1)
+        response = self.client.get(f"/api/v2/users/{self.user2.id}/")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data.get("username"), "samwise")
+
+    def test_can_update_own_profile(self):
+        self.client.force_authenticate(self.user1)
+        response = self.client.patch(
+            f"/api/v2/users/{self.user1.id}/",
+            data={
+                "data_partner": self.data_partner.id,
+                "orcid": "0000-0001-2345-6789",
+            },
+            format="json",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.user1.profile.refresh_from_db()
+        self.assertEqual(self.user1.profile.data_partner, self.data_partner)
+        self.assertEqual(self.user1.profile.orcid, "0000-0001-2345-6789")
+
+    def test_cannot_update_another_users_profile(self):
+        self.client.force_authenticate(self.user1)
+        response = self.client.patch(
+            f"/api/v2/users/{self.user2.id}/",
+            data={"orcid": "0000-0001-2345-6789"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 403)
+        self.user2.profile.refresh_from_db()
+        self.assertIsNone(self.user2.profile.orcid)
+
+    def test_invalid_orcid_is_rejected(self):
+        self.client.force_authenticate(self.user1)
+        response = self.client.patch(
+            f"/api/v2/users/{self.user1.id}/",
+            data={"orcid": "not-an-orcid"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 400)
+
+
+class TestUserSharedProjectsView(TestCase):
+    def setUp(self):
+        User = get_user_model()
+        self.user1 = User.objects.create(username="frodo", password="thering")
+        Token.objects.create(user=self.user1)
+        self.user2 = User.objects.create(username="samwise", password="taterstew")
+        Token.objects.create(user=self.user2)
+        self.user3 = User.objects.create(username="pippin", password="secondbreakfast")
+        Token.objects.create(user=self.user3)
+
+        self.shared_project = Project.objects.create(name="The Fellowship of the Ring")
+        self.shared_project.members.add(self.user1, self.user2)
+
+        self.solo_project = Project.objects.create(name="The Shire")
+        self.solo_project.members.add(self.user1)
+
+        self.client = APIClient()
+
+    def test_unauthenticated_user_cannot_view_shared_projects(self):
+        response = self.client.get(f"/api/v2/users/{self.user2.id}/shared-projects/")
+        self.assertEqual(response.status_code, 401)
+
+    def test_returns_only_shared_projects(self):
+        self.client.force_authenticate(self.user1)
+        response = self.client.get(f"/api/v2/users/{self.user2.id}/shared-projects/")
+        self.assertEqual(response.status_code, 200)
+        project_names = [project.get("name") for project in response.data]
+        self.assertCountEqual(project_names, ["The Fellowship of the Ring"])
+
+    def test_returns_empty_list_when_no_shared_projects(self):
+        self.client.force_authenticate(self.user1)
+        response = self.client.get(f"/api/v2/users/{self.user3.id}/shared-projects/")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data, [])

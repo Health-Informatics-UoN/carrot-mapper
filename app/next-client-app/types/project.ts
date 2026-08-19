@@ -6,3 +6,8 @@ interface Project {
   admins: User[];
   created_at: Date;
 }
+
+interface ProjectName {
+  id: number;
+  name: string;
+}

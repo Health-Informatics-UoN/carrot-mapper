@@ -44,7 +44,7 @@ export const MenuBar = async ({ user }: { user?: User | null }) => {
           <div className="flex items-center gap-2">
             <ModeToggle />
             {user && <NotificationsLink initialUnreadCount={unreadCount} />}
-            <UserMenu username={user?.username} />
+            <UserMenu id={user?.id} username={user?.username} />
           </div>
         </div>
       </div>

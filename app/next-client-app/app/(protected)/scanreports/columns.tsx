@@ -80,6 +80,15 @@ export const columns: ColumnDef<ScanReport>[] = [
     ),
     enableHiding: true,
     enableSorting: true,
+    cell: ({ row }) => {
+      const { author } = row.original;
+      if (!author) return null;
+      return (
+        <Link href={`/users/${author.id}/`} className="hover:underline">
+          {author.username}
+        </Link>
+      );
+    },
   },
   {
     id: "Uploaded",

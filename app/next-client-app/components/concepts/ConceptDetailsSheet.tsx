@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo } from "react";
+import Link from "next/link";
 import {
   Sheet,
   SheetContent,
@@ -99,7 +100,7 @@ function ConceptEditForm({
         {
           description: data.description,
           confidence: data.confidence,
-        }
+        },
       );
 
       if (response) {
@@ -206,9 +207,12 @@ export function ConceptDetailsSheet({
   const [error, setError] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
 
-  const handleUpdateConcept = useMemo(() => (updatedDetail: ScanReportConceptDetailV3) => {
-    setConceptDetail(updatedDetail);
-  }, []);
+  const handleUpdateConcept = useMemo(
+    () => (updatedDetail: ScanReportConceptDetailV3) => {
+      setConceptDetail(updatedDetail);
+    },
+    [],
+  );
 
   useEffect(() => {
     if (isOpen && scanReportId && tableId && fieldId) {
@@ -221,11 +225,14 @@ export function ConceptDetailsSheet({
             tableId,
             fieldId,
             valueId?.toString() || "",
-            concept.id.toString()
+            concept.id.toString(),
           );
           setConceptDetail(detail);
         } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : "Failed to fetch concept detail";
+          const errorMessage =
+            error instanceof Error
+              ? error.message
+              : "Failed to fetch concept detail";
           setError(errorMessage);
           console.error("Failed to fetch concept detail:", error);
         } finally {
@@ -263,11 +270,7 @@ export function ConceptDetailsSheet({
                 </div>
               )}
 
-              {error && (
-                <div className="text-red-600 py-2">
-                  Error: {error}
-                </div>
-              )}
+              {error && <div className="text-red-600 py-2">Error: {error}</div>}
 
               {conceptDetail && !isLoading && (
                 <>
@@ -276,15 +279,24 @@ export function ConceptDetailsSheet({
                       <InfoItem
                         label="Created At"
                         value={new Date(
-                          conceptDetail.created_at
+                          conceptDetail.created_at,
                         ).toLocaleString()}
                       />
                     </div>
                     <div>
-                      <InfoItem
-                        label="Created By"
-                        value={conceptDetail.created_by?.username || "Unknown"}
-                      />
+                      <h3 className="text-muted-foreground">
+                        Created By:{" "}
+                        {conceptDetail.created_by ? (
+                          <Link
+                            href={`/users/${conceptDetail.created_by.id}/`}
+                            className="text-foreground hover:underline"
+                          >
+                            {conceptDetail.created_by.username}
+                          </Link>
+                        ) : (
+                          <span className="text-foreground">Unknown</span>
+                        )}
+                      </h3>
                     </div>
                     <div>
                       <InfoItem

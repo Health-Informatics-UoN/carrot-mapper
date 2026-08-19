@@ -1,10 +1,12 @@
-from activity_log.views import ScanReportActivityLogView
 from django.urls import include, path
 from drf_spectacular.views import (
     SpectacularAPIView,
     SpectacularRedocView,
     SpectacularSwaggerView,
 )
+
+from activity_log.views import ScanReportActivityLogView
+from api import views
 from files.views import FileDownloadView
 from jobs.views import JobView
 from notifications.views import (
@@ -13,8 +15,6 @@ from notifications.views import (
     NotificationMarkReadView,
     NotificationUnreadCountView,
 )
-
-from api import views
 
 urlpatterns = [
     path("v2/datasets/", include("datasets.urls")),
@@ -149,6 +149,16 @@ urlpatterns = [
     path(r"user/me/", views.UserDetailView.as_view(), name="currentuser"),
     path(r"v2/users/", views.UserViewSet.as_view(), name="users-list"),
     path(r"v2/usersfilter/", views.UserFilterViewSet.as_view(), name="usersfilter"),
+    path(
+        r"v2/users/<int:pk>/",
+        views.UserProfileDetailView.as_view(),
+        name="user-profile-detail",
+    ),
+    path(
+        r"v2/users/<int:pk>/shared-projects/",
+        views.UserSharedProjectsView.as_view(),
+        name="user-shared-projects",
+    ),
     path(r"v2/datapartners/", views.DataPartnerViewSet.as_view(), name="datapartners"),
     path(
         r"v2/omop/conceptsfilter/",
