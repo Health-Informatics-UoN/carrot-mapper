@@ -16,7 +16,7 @@ export const columns: ColumnDef<ActivityLog>[] = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Occurred" />
     ),
-    cell: ({ row }) => format(row.original.occurred_at, "d MMM HH:mm"),
+    cell: ({ row }) => format(row.original.occurred_at, "d MMM yyyy HH:mm"),
     enableHiding: true,
     enableSorting: false,
   },

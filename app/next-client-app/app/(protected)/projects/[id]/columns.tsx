@@ -27,7 +27,7 @@ export const columns: ColumnDef<DataSet>[] = [
     enableSorting: true,
     cell: ({ row }) => {
       const date = new Date(row.original.created_at);
-      return format(date, "d MMM HH:mm");
+      return format(date, "d MMM yyyy HH:mm");
     },
   },
   {
