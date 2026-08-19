@@ -5,6 +5,9 @@ import string
 from importlib.metadata import version
 from typing import Any, Optional
 
+from activity_log.models import ScopeType, Verb
+from data.models import Concept, Vocabulary
+from datasets.serializers import DataPartnerSerializer
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist
@@ -17,6 +20,21 @@ from django.views.decorators.vary import vary_on_cookie
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
+from jobs.models import Job, JobStage, StageStatus
+from mapping.models import (
+    DataDictionary,
+    DataPartner,
+    MappingRule,
+    OmopField,
+    Project,
+    ScanReport,
+    ScanReportConcept,
+    ScanReportField,
+    ScanReportTable,
+    ScanReportValue,
+)
+from mapping.permissions import SCAN_REPORT_QUERIES, get_user_permissions_on_scan_report
+from projects.serializers import ProjectNameSerializer
 from rest_framework import status, viewsets
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.filters import OrderingFilter
@@ -32,8 +50,21 @@ from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from services.activity_log import record as record_activity
+from services.rules import (
+    _find_destination_table,
+    save_mapping_rules,
+)
+from services.rules_export import (
+    get_mapping_rules_json,
+    get_mapping_rules_list,
+    make_dag,
+)
+from services.storage_service import StorageService
+from services.worker_service import get_worker_service
+from users.models import Profile
+from users.serializers import ProfileEditSerializer, UserProfileSerializer
 
-from activity_log.models import ScopeType, Verb
 from api.filters import (
     ScanReportAccessFilter,
     ScanReportFieldFilter,
@@ -60,37 +91,6 @@ from api.serializers import (
     UserSerializer,
     VocabularySerializer,
 )
-from data.models import Concept, Vocabulary
-from datasets.serializers import DataPartnerSerializer
-from jobs.models import Job, JobStage, StageStatus
-from mapping.models import (
-    DataDictionary,
-    DataPartner,
-    MappingRule,
-    OmopField,
-    Project,
-    ScanReport,
-    ScanReportConcept,
-    ScanReportField,
-    ScanReportTable,
-    ScanReportValue,
-)
-from mapping.permissions import SCAN_REPORT_QUERIES, get_user_permissions_on_scan_report
-from projects.serializers import ProjectNameSerializer
-from services.activity_log import record as record_activity
-from services.rules import (
-    _find_destination_table,
-    save_mapping_rules,
-)
-from services.rules_export import (
-    get_mapping_rules_json,
-    get_mapping_rules_list,
-    make_dag,
-)
-from services.storage_service import StorageService
-from services.worker_service import get_worker_service
-from users.models import Profile
-from users.serializers import ProfileEditSerializer, UserProfileSerializer
 
 storage_service = StorageService()
 worker_service = get_worker_service()

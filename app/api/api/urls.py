@@ -1,12 +1,10 @@
+from activity_log.views import ScanReportActivityLogView
 from django.urls import include, path
 from drf_spectacular.views import (
     SpectacularAPIView,
     SpectacularRedocView,
     SpectacularSwaggerView,
 )
-
-from activity_log.views import ScanReportActivityLogView
-from api import views
 from files.views import FileDownloadView
 from jobs.views import JobView
 from notifications.views import (
@@ -15,6 +13,8 @@ from notifications.views import (
     NotificationMarkReadView,
     NotificationUnreadCountView,
 )
+
+from api import views
 
 urlpatterns = [
     path("v2/datasets/", include("datasets.urls")),

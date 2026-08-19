@@ -1,7 +1,6 @@
 from django.conf import settings
 from django.core.validators import RegexValidator
 from django.db import models
-
 from mapping.models import BaseModel, DataPartner
 
 orcid_validator = RegexValidator(
