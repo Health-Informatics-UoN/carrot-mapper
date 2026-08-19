@@ -27,7 +27,7 @@ class Command(BaseCommand):
             datasets = Dataset.objects.filter(admins=None, name__in=dataset_names)
 
         else:
-            print("No datasets given. Finding admins for all datasets...")
+            print(f"No datasets given. Finding admins for all datasets...")
             datasets = Dataset.objects.filter(admins=None)
 
         for ds in datasets:

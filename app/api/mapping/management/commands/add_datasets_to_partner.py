@@ -56,6 +56,7 @@ class Command(BaseCommand):
             # Else, use the one specified in the command line
             else:
                 print(f"{dataset.name} is unpartnered.")
+                print(f"Attaching {dataset.name} to Data Partner: {data_partner.name}.")
                 data_partner, _ = DataPartner.objects.get_or_create(
                     name=data_partner_name
                 )
