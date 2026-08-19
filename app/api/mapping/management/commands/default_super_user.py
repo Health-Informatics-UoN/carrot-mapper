@@ -1,8 +1,5 @@
 """Command to create a default superuser if no users exist"""
 
-import os
-
-import django
 import django.conf as dc
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
@@ -38,10 +35,10 @@ class Command(BaseCommand):
         su_email_address = self.settings.SUPERUSER_DEFAULT_EMAIL
 
         # check to see if the username and password are available
-        if None == su_username or None == su_password:
-            if None != su_password:
+        if None is su_username or None is su_password:
+            if None is not su_password:
                 message = "no SUPERUSER_DEFAULT_USERNAME value was defined in the environment variables"
-            elif None != su_username:
+            elif None is not su_username:
                 message = "no SUPERUSER_DEFAULT_PASSWORD value was defined in the environment variables"
             else:
                 message = "neither SUPERUSER_DEFAULT_USERNAME or SUPERUSER_DEFAULT_PASSWORD values were defined in the environment variables"
