@@ -68,7 +68,6 @@ from mapping.models import (
     DataPartner,
     MappingRule,
     OmopField,
-    Profile,
     Project,
     ScanReport,
     ScanReportConcept,
@@ -90,6 +89,7 @@ from services.rules_export import (
 )
 from services.storage_service import StorageService
 from services.worker_service import get_worker_service
+from users.models import Profile
 from users.serializers import ProfileEditSerializer, UserProfileSerializer
 
 storage_service = StorageService()
@@ -282,7 +282,7 @@ class UserDetailView(APIView):
         return Response(serializer.data)
 
 
-class UserProfileDetailView(GenericAPIView, RetrieveModelMixin):
+class UserProfileDetailView(GenericAPIView):
     """
     Retrieves a user's profile (username, Data Partner, ORCID iD) by ID.
 
@@ -307,7 +307,10 @@ class UserProfileDetailView(GenericAPIView, RetrieveModelMixin):
         return UserProfileSerializer
 
     def get(self, request, *args, **kwargs):
-        return self.retrieve(request, *args, **kwargs)
+        user = self.get_object()
+        Profile.objects.get_or_create(user=user)
+        serializer = self.get_serializer(user)
+        return Response(serializer.data)
 
     def patch(self, request, *args, **kwargs):
         user = self.get_object()

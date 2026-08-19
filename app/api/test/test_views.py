@@ -1,10 +1,12 @@
 import os
 from datetime import date
+from importlib import import_module
 from unittest import mock
 
 import pytest
 from data.models import Vocabulary
 from datasets.views import DatasetIndex
+from django.apps import apps as django_apps
 from django.contrib.auth import get_user_model
 from django.contrib.contenttypes.models import ContentType
 from django.test import TestCase, TransactionTestCase
@@ -23,6 +25,7 @@ from mapping.models import (
 )
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIClient, APIRequestFactory, force_authenticate
+from users.models import Profile
 
 
 class TestDatasetListView(TestCase):
@@ -1232,6 +1235,15 @@ class TestUserProfileDetailView(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data.get("username"), "samwise")
 
+    def test_view_self_heals_for_a_user_with_no_profile_row(self):
+        # Simulates a user that existed before the `Profile` model/backfill
+        # migration, so has no `Profile` row yet.
+        self.user1.profile.delete()
+        self.client.force_authenticate(self.user1)
+        response = self.client.get(f"/api/v2/users/{self.user1.id}/")
+        self.assertEqual(response.status_code, 200)
+        self.assertIsNone(response.data.get("profile").get("orcid"))
+
     def test_can_update_own_profile(self):
         self.client.force_authenticate(self.user1)
         response = self.client.patch(
@@ -1266,6 +1278,24 @@ class TestUserProfileDetailView(TestCase):
             format="json",
         )
         self.assertEqual(response.status_code, 400)
+
+
+class TestBackfillProfilesMigration(TestCase):
+    def test_backfill_creates_missing_profiles_only(self):
+        backfill_profiles_migration = import_module(
+            "users.migrations.0002_backfill_profiles"
+        )
+
+        User = get_user_model()
+        user_without_profile = User.objects.create(username="frodo")
+        user_without_profile.profile.delete()
+        user_with_profile = User.objects.create(username="samwise")
+
+        backfill_profiles_migration.backfill_profiles(django_apps, None)
+
+        user_without_profile.refresh_from_db()
+        self.assertTrue(Profile.objects.filter(user=user_without_profile).exists())
+        self.assertEqual(Profile.objects.filter(user=user_with_profile).count(), 1)
 
 
 class TestUserSharedProjectsView(TestCase):
