@@ -16,7 +16,7 @@ class ProjectSerializer(DynamicFieldsMixin, serializers.ModelSerializer):
 
     class Meta:
         model = Project
-        fields = ["id", "name", "members", "admins", "created_at"]
+        fields = ["id", "name", "description", "members", "admins", "created_at"]
 
 
 class ProjectNameSerializer(DynamicFieldsMixin, serializers.ModelSerializer):
@@ -48,7 +48,7 @@ class ProjectCreateSerializer(DynamicFieldsMixin, serializers.ModelSerializer):
 
     class Meta:
         model = Project
-        fields = ["id", "name", "members", "admins", "created_at"]
+        fields = ["id", "name", "description", "members", "admins", "created_at"]
         extra_kwargs = {
             "members": {"required": False, "allow_empty": True},
             "admins": {"required": False, "allow_empty": True},
@@ -79,4 +79,4 @@ class ProjectEditSerializer(DynamicFieldsMixin, serializers.ModelSerializer):
 
     class Meta:
         model = Project
-        fields = ["id", "name", "members", "admins", "created_at"]
+        fields = ["id", "name", "description", "members", "admins", "created_at"]

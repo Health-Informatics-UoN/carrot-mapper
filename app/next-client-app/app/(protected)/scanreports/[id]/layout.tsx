@@ -24,6 +24,7 @@ import { StatusIcon } from "@/components/core/StatusIcon";
 import { UploadStatusOptions } from "@/constants/scanReportStatus";
 import ExportScanReport from "@/components/scanreports/ExportScanReport";
 import { ActionsDownloadMenu } from "./actions-download-menu";
+import { DescriptionPopover } from "@/components/core/DescriptionPopover";
 
 export async function generateMetadata({
   params,
@@ -109,6 +110,10 @@ export default async function ScanReportLayout(
             {scanreport.dataset}
           </h2>
         </Link>
+        <DescriptionPopover
+          description={scanreport.description}
+          title="Scan Report description"
+        />
       </div>
 
       <div className="flex flex-col md:flex-row md:items-center text-sm space-y-2 md:space-y-0 divide-y md:divide-y-0 md:divide-x divide-muted">

@@ -223,6 +223,16 @@ class TestScanReportEditSerializer(TestCase):
         request.user = self.admin_user
         self.assertEqual(serializer.validate_author(new_author), new_author)
 
+    def test_description_is_saved(self):
+        serializer = ScanReportEditSerializer(
+            self.public_scanreport,
+            data={"description": "A cosy hobbit hole"},
+            partial=True,
+        )
+        self.assertTrue(serializer.is_valid())
+        scan_report = serializer.save()
+        self.assertEqual(scan_report.description, "A cosy hobbit hole")
+
 
 class TestDatasetEditSerializer(TestCase):
     def setUp(self):

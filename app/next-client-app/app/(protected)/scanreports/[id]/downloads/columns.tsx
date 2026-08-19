@@ -23,7 +23,7 @@ export const columns: ColumnDef<FileDownload>[] = [
     ),
     cell: ({ row }) => {
       const { created_at } = row.original;
-      return format(created_at, "d MMM HH:mm");
+      return format(created_at, "d MMM yyyy HH:mm");
     },
     enableHiding: true,
     enableSorting: true,

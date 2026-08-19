@@ -14,11 +14,13 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { FormikSelect } from "../form-components/FormikSelect";
 import { FormDataFilter } from "../form-components/FormikUtils";
 
 interface FormData {
   name: string;
+  description: string;
   members: number[];
   admins: number[];
 }
@@ -41,6 +43,7 @@ export function ProjectForm({
   const handleSubmit = async (data: FormData) => {
     const submittingData = {
       name: data.name,
+      description: data.description,
       members: data.members || [],
       admins: data.admins || [],
     };
@@ -56,6 +59,7 @@ export function ProjectForm({
     <Formik
       initialValues={{
         name: project.name,
+        description: project.description ?? "",
         members: initialMembersFilter.map((member) => member.value),
         admins: initialAdminsFilter.map((admin) => admin.value),
       }}
@@ -85,6 +89,26 @@ export function ProjectForm({
               )}
             </FormField>
 
+            <FormField name="description">
+              {({ field }) => (
+                <FormItem>
+                  <FormLabel>Description</FormLabel>
+                  <FormDescription>
+                    Optional description of the Project.
+                  </FormDescription>
+                  <FormControl>
+                    <Textarea
+                      {...field}
+                      onChange={handleChange}
+                      name="description"
+                      disabled={!canUpdate}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            </FormField>
+
             <FormItem>
               <FormLabel>Members</FormLabel>
               <FormDescription>
@@ -104,8 +128,8 @@ export function ProjectForm({
             <FormItem>
               <FormLabel>Admins</FormLabel>
               <FormDescription>
-                Project admins can edit the Project and manage its members
-                and admins.
+                Project admins can edit the Project and manage its members and
+                admins.
               </FormDescription>
               <FormControl>
                 <FormikSelect

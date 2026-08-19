@@ -9,6 +9,7 @@ import { getDataSet, getDatasetPermissions } from "@/api/datasets";
 import { Badge } from "@/components/ui/badge";
 import { InfoItem } from "@/components/core/InfoItem";
 import { AvatarList } from "@/components/core/avatar-list";
+import { DescriptionPopover } from "@/components/core/DescriptionPopover";
 import Link from "next/link";
 import {
   DropdownMenu,
@@ -69,7 +70,11 @@ export default async function DatasetLayout({
   }
   return (
     <div className="space-y-2">
-      <DatasetBreadcrumb projects={projects} datasetName={dataset.name} />
+      <DatasetBreadcrumb
+        projects={projects}
+        datasetName={dataset.name}
+        description={dataset.description}
+      />
 
       <div className="flex flex-col md:flex-row md:items-center text-sm space-y-2 md:space-y-0 divide-y md:divide-y-0 md:divide-x divide-muted">
         <InfoItem label="Data Partner" value={dataPartner.name} />
@@ -121,9 +126,14 @@ export default async function DatasetLayout({
 interface DatasetBreadcrumbProps {
   projects: Array<{ id: number; name: string }>;
   datasetName: string;
+  description: string | null;
 }
 
-function DatasetBreadcrumb({ projects, datasetName }: DatasetBreadcrumbProps) {
+function DatasetBreadcrumb({
+  projects,
+  datasetName,
+  description,
+}: DatasetBreadcrumbProps) {
   return (
     <div className="flex font-semibold text-xl items-center space-x-2">
       <Folders className="text-muted-foreground" />
@@ -148,6 +158,10 @@ function DatasetBreadcrumb({ projects, datasetName }: DatasetBreadcrumbProps) {
       <h2 className="text-muted-foreground">{"/"}</h2>
       <Database className="mr-2 text-blue-700" />
       <h2>{datasetName}</h2>
+      <DescriptionPopover
+        description={description}
+        title="Dataset description"
+      />
     </div>
   );
 }
