@@ -1,5 +1,4 @@
 from django.contrib import admin
-
 from services.notifications import broadcast
 
 from .models import BroadcastAnnouncement, Notification, NotificationType

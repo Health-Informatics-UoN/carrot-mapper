@@ -1,11 +1,10 @@
+from api.paginations import CustomPagination
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework.generics import GenericAPIView
 from rest_framework.mixins import ListModelMixin
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
-from api.paginations import CustomPagination
 
 from .models import Notification
 from .serializers import NotificationSerializer

@@ -1,10 +1,9 @@
 from django.contrib.admin.sites import AdminSite
 from django.contrib.auth import get_user_model
 from django.test import RequestFactory, TestCase
-from rest_framework.test import APIClient
-
 from notifications.admin import BroadcastAnnouncementAdmin
 from notifications.models import BroadcastAnnouncement, Notification, NotificationType
+from rest_framework.test import APIClient
 from services.notifications import broadcast, notify
 
 

@@ -1,5 +1,4 @@
 from django.contrib.auth.models import User
-
 from notifications.models import Notification, NotificationType
 
 
