@@ -20,3 +20,4 @@ vocabs
 build
 *.egg-info
 CLAUDE.md
+AGENTS.md

@@ -10,7 +10,7 @@ import { Separator } from "../ui/separator";
 import { Drawer, DrawerContent, DrawerTrigger } from "../ui/drawer";
 import { useEffect, useState } from "react";
 import { ModeToggle } from "./mode-toggle";
-import { NotificationBell } from "./NotificationBell";
+import { NotificationsLink } from "./NotificationsLink";
 import { sidebarItems } from "./menuItems";
 import { cn } from "@/lib/utils";
 
@@ -143,8 +143,8 @@ export function Sidebar({
         </Link>
       </div>
       <div className="flex items-center justify-end gap-1">
-        {userName && <NotificationBell initialUnreadCount={unreadCount} />}
         <ModeToggle />
+        {userName && <NotificationsLink initialUnreadCount={unreadCount} />}
       </div>
     </div>
   );

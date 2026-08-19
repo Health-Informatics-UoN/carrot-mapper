@@ -4,7 +4,7 @@ import { sidebarItems } from "./menuItems";
 import { Sidebar } from "./sidebar";
 import { ModeToggle } from "./mode-toggle";
 import { UserMenu } from "@/components/core/UserMenu";
-import { NotificationBell } from "@/components/core/NotificationBell";
+import { NotificationsLink } from "@/components/core/NotificationsLink";
 import { getUnreadAppNotificationCount } from "@/api/notifications";
 
 export const MenuBar = async ({ user }: { user?: User | null }) => {
@@ -40,11 +40,11 @@ export const MenuBar = async ({ user }: { user?: User | null }) => {
                 </Link>
               ),
             )}
-            {user && <NotificationBell initialUnreadCount={unreadCount} />}
-            <UserMenu username={user?.username} />
           </div>
-          <div>
+          <div className="flex items-center gap-2">
             <ModeToggle />
+            {user && <NotificationsLink initialUnreadCount={unreadCount} />}
+            <UserMenu username={user?.username} />
           </div>
         </div>
       </div>
