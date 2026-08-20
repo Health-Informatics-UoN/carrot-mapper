@@ -104,7 +104,6 @@ interface ScanReportValueV3 {
   mapping_recommendations: MappingRecommendation[];
 }
 
-<<<<<<< Updated upstream
 interface ScanReportFieldV3 {
   id: number;
   name: string;
@@ -113,8 +112,7 @@ interface ScanReportFieldV3 {
   concepts: ScanReportConceptV3[];
   mapping_recommendations: MappingRecommendation[];
 }
-=======
+
 type ConceptTableAction =
   | { type: "add"; rowId: number; concept: ScanReportConceptV3 }
   | { type: "delete"; rowId: number; conceptId: number };
->>>>>>> Stashed changes

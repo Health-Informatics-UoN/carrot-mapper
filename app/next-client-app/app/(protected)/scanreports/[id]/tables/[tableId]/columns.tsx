@@ -3,7 +3,7 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { DataTableColumnHeader } from "@/components/data-table/DataTableColumnHeader";
 import { EditButton } from "@/components/scanreports/EditButton";
-import { Suspense } from "react";
+import { Dispatch, Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
@@ -19,6 +19,7 @@ export const columns = (
   tableId: string,
   canEdit: boolean,
   scanReportId: string,
+  dispatch: Dispatch<ConceptTableAction>,
 ): ColumnDef<ScanReportFieldV3>[] => {
   const baseColumns: ColumnDef<ScanReportFieldV3>[] = [
     {
@@ -100,6 +101,7 @@ export const columns = (
               tableId={tableId}
               fieldId={row.original.id}
               valueId={0}
+              dispatch={dispatch}
             />
           </Suspense>
         );
@@ -117,6 +119,7 @@ export const columns = (
             disabled={!canEdit}
             scanReportId={scanReportId}
             fieldId={row.original.id}
+            dispatch={dispatch}
           />
         );
       },

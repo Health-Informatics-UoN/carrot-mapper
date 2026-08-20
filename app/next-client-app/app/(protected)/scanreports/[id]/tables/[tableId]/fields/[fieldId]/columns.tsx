@@ -2,7 +2,7 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { DataTableColumnHeader } from "@/components/data-table/DataTableColumnHeader";
 import { ConceptTagsV3 } from "@/components/concepts/ConceptTagsV3";
-import { Suspense } from "react";
+import { Dispatch, Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import CopyButton from "@/components/core/CopyButton";
 import AddConceptV3 from "@/components/concepts/AddConceptV3";
@@ -17,6 +17,7 @@ export const columns = (
   tableId: string,
   canEdit: boolean,
   scanReportId: string,
+  dispatch: Dispatch<ConceptTableAction>,
 ): ColumnDef<ScanReportValueV3>[] => {
   const baseColumns: ColumnDef<ScanReportValueV3>[] = [
     {
@@ -99,6 +100,7 @@ export const columns = (
               tableId={tableId}
               fieldId={row.original.scan_report_field}
               valueId={row.original.id}
+              dispatch={dispatch}
             />
           </Suspense>
         );
@@ -118,6 +120,7 @@ export const columns = (
             disabled={!canEdit}
             scanReportId={scanReportId}
             fieldId={row.original.scan_report_field}
+            dispatch={dispatch}
           />
         );
       },
