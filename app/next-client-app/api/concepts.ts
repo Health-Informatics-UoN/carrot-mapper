@@ -51,9 +51,12 @@ export async function addConcept(data: {}) {
   }
 }
 
-export async function addConceptV3(data: {}, path: string) {
+export async function addConceptV3(
+  data: {},
+  path: string,
+): Promise<ScanReportConceptV3 | { errorMessage: string }> {
   try {
-    await request(fetchKeys.addConcept, {
+    const response = await request<ScanReportConceptV3>(fetchKeys.addConcept, {
       method: "POST",
       headers: {
         "Content-type": "application/json",
@@ -61,8 +64,8 @@ export async function addConceptV3(data: {}, path: string) {
       body: JSON.stringify(data),
     });
     revalidatePath(path);
+    return response;
   } catch (error: any) {
-    // Only return a response when there is an error
     return { errorMessage: error.message };
   }
 }

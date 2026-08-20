@@ -16,15 +16,15 @@ interface DataSetListProps {
 export default async function DatasetDetails(props: DataSetListProps) {
   const params = await props.params;
 
-  const {
-    id
-  } = params;
+  const { id } = params;
 
-  const dataset = await getDataSet(id);
-  const partners = await getDataPartners();
-  const users = await getDataUsers();
-  const projects = await getAllProjects();
-  const permissions = await getDatasetPermissions(id);
+  const [dataset, partners, users, projects, permissions] = await Promise.all([
+    getDataSet(id),
+    getDataPartners(),
+    getDataUsers(),
+    getAllProjects(),
+    getDatasetPermissions(id),
+  ]);
 
   return (
     <DatasetForm

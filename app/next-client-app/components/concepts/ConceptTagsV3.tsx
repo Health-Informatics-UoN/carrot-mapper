@@ -1,4 +1,4 @@
-import React, { useOptimistic } from "react";
+import { Dispatch } from "react";
 import { deleteConceptV3 } from "@/api/concepts";
 import { Button } from "@/components/ui/button";
 import { ApiError } from "@/lib/api/error";
@@ -12,22 +12,18 @@ export function ConceptTagsV3({
   tableId,
   fieldId,
   valueId,
+  dispatch,
 }: {
   concepts: ScanReportConceptV3[];
   scanReportId: string;
   tableId: string;
   fieldId: number;
   valueId: number;
+  dispatch: Dispatch<ConceptTableAction>;
 }) {
-  const [optimisticConcepts, setOptimisticConcepts] = useOptimistic(
-    concepts,
-    (state, conceptIdToDelete: number) =>
-      state.filter((concept) => concept.id !== conceptIdToDelete)
-  );
-
   const handleDelete = async (conceptId: number) => {
     try {
-      setOptimisticConcepts(conceptId);
+      dispatch({ type: "delete", rowId: valueId, conceptId });
       await deleteConceptV3(
         conceptId,
         `/scanreports/${scanReportId}/tables/${tableId}/fields/${fieldId}`
@@ -42,9 +38,9 @@ export function ConceptTagsV3({
     }
   };
 
-  return optimisticConcepts && optimisticConcepts.length > 0 ? (
+  return concepts && concepts.length > 0 ? (
     <div className="flex flex-col items-start">
-      {optimisticConcepts.map((concept) => (
+      {concepts.map((concept) => (
         <ConceptDetailsSheet
           key={concept.id}
           concept={concept}

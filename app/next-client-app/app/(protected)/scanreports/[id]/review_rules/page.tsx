@@ -16,9 +16,7 @@ export default async function SummaryViewDialog(props: SummaryProps) {
   const searchParams = await props.searchParams;
   const params = await props.params;
 
-  const {
-    id
-  } = params;
+  const { id } = params;
 
   const defaultPageSize = 20;
   const defaultParams = {
@@ -28,8 +26,10 @@ export default async function SummaryViewDialog(props: SummaryProps) {
   const combinedParams = { ...defaultParams, ...searchParams };
   const query = objToQuery(combinedParams);
 
-  const summaryRules = await getSummaryRules(id, query);
-  const scanReport = await getScanReport(id);
+  const [summaryRules, scanReport] = await Promise.all([
+    getSummaryRules(id, query),
+    getScanReport(id),
+  ]);
   const fileName = `${
     scanReport?.dataset
   } Rules - ${new Date().toLocaleString()}`;

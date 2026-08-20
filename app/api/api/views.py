@@ -11,6 +11,7 @@ from datasets.serializers import DataPartnerSerializer
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist
+from django.db import transaction
 from django.db.models import Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
@@ -77,6 +78,7 @@ from api.serializers import (
     GetRulesAnalysis,
     ScanReportConceptDetailSerializerV3,
     ScanReportConceptSerializer,
+    ScanReportConceptSerializerV2,
     ScanReportCreateSerializer,
     ScanReportEditSerializer,
     ScanReportFieldEditSerializer,
@@ -1296,13 +1298,21 @@ class ScanReportConceptListV2(
 
         # Extract the content_type
         content_type_str = body.pop("content_type", None)
-        content_type = ContentType.objects.get(model=content_type_str)
+        # get_by_natural_key hits Django's ContentType cache
+        content_type = ContentType.objects.get_by_natural_key(
+            "mapping", content_type_str
+        )
         body["content_type"] = content_type.id
 
         # validate person_id and date event are set on table
         table_id = body.pop("table_id", None)
         try:
-            table = ScanReportTable.objects.get(pk=table_id)
+            # select_related so the person_id/date_event checks below, and the
+            # mapping-rule generation after, don't each re-fetch these via a
+            # separate query.
+            table = ScanReportTable.objects.select_related(
+                "scan_report", "person_id", "date_event"
+            ).get(pk=table_id)
         except ObjectDoesNotExist:
             return Response(
                 {"detail": "Table with the provided ID does not exist."},
@@ -1380,7 +1390,7 @@ class ScanReportConceptListV2(
             object_id=body["object_id"],
             content_type=content_type,
         )
-        if sr_concept.count() > 0:
+        if sr_concept.exists():
             return Response(
                 {
                     "detail": "Can't add multiple concepts of the same id to the same object"
@@ -1390,15 +1400,29 @@ class ScanReportConceptListV2(
         # Create serializer and validate
         serializer = self.get_serializer(data=body, many=isinstance(body, list))
         serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
 
-        model = serializer.instance
-        rules = save_mapping_rules(model)
-        if not rules:
-            return Response(
-                {"detail": "Rule could not be saved."},
-                status=status.HTTP_400_BAD_REQUEST,
+        # Wrap the create + rule-generation writes in one transaction: if rule
+        # generation fails, roll back the ScanReportConcept too instead of leaving
+        # it orphaned without any mapping rules.
+        with transaction.atomic():
+            self.perform_create(serializer)
+
+            model = serializer.instance
+            # We already fetched this Concept above; assign it so serializing the
+            # response below doesn't re-fetch it via the FK.
+            model.concept = concept
+            rules = save_mapping_rules(
+                model,
+                destination_table=destination_table,
+                source_field=source_field,
+                source_table=table,
             )
+            if not rules:
+                transaction.set_rollback(True)
+                return Response(
+                    {"detail": "Rule could not be saved."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
         record_activity(
             scope_type=ScopeType.SCAN_REPORT,
@@ -1416,9 +1440,11 @@ class ScanReportConceptListV2(
         )
 
         headers = self.get_success_headers(serializer.data)
-        return Response(
-            serializer.data, status=status.HTTP_201_CREATED, headers=headers
-        )
+        # Serialize with the concept nested (rather than just its id) so the
+        # frontend can render the new concept tag immediately, without a
+        # follow-up request.
+        response_data = ScanReportConceptSerializerV2(model).data
+        return Response(response_data, status=status.HTTP_201_CREATED, headers=headers)
 
     def perform_create(self, serializer):
         """

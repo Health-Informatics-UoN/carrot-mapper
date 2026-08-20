@@ -13,8 +13,10 @@ export const metadata: Metadata = {
 };
 
 export default async function ScanReports() {
-  const partners = await getDataPartners();
-  const projects = await getAllProjects();
+  const [partners, projects] = await Promise.all([
+    getDataPartners(),
+    getAllProjects(),
+  ]);
 
   return (
     <>
@@ -32,14 +34,14 @@ export default async function ScanReports() {
           <Info />
           <AlertTitle>Need help uploading a scan report?</AlertTitle>
           <AlertDescription>
-            Please ensure your scan report follows the correct format. 
+            Please ensure your scan report follows the correct format.
             <Button variant="link" asChild className="p-0">
               <Link
                 href="https://carrot.ac.uk/mapper/user_guide/upload_scan_report"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="underline text-primary hover:text-primary/80"
-                >
+              >
                 Read the guide
               </Link>
             </Button>

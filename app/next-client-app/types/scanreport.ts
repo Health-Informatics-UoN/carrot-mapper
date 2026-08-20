@@ -112,3 +112,7 @@ interface ScanReportFieldV3 {
   concepts: ScanReportConceptV3[];
   mapping_recommendations: MappingRecommendation[];
 }
+
+type ConceptTableAction =
+  | { type: "add"; rowId: number; concept: ScanReportConceptV3 }
+  | { type: "delete"; rowId: number; conceptId: number };
