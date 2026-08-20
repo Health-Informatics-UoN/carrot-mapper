@@ -2,8 +2,6 @@
 
 import { ColumnDef } from "@tanstack/react-table";
 import { DataTableColumnHeader } from "@/components/data-table/DataTableColumnHeader";
-import { ConceptTags } from "@/components/concepts/concept-tags";
-import AddConcept from "@/components/concepts/add-concept";
 import { EditButton } from "@/components/scanreports/EditButton";
 import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -14,12 +12,15 @@ import CopyButton from "@/components/core/CopyButton";
 import { enableAIRecommendation } from "@/constants";
 import { Tooltips } from "@/components/core/Tooltips";
 import { AISuggestionsButton } from "@/components/recommendations/ai-suggesions-button";
+import { ConceptTagsV3 } from "@/components/concepts/ConceptTagsV3";
+import AddConceptV3 from "@/components/concepts/AddConceptV3";
 
 export const columns = (
-  addSR: (concept: ScanReportConcept, c: Concept) => void,
-  deleteSR: (id: number) => void
-): ColumnDef<ScanReportField>[] => {
-  const baseColumns: ColumnDef<ScanReportField>[] = [
+  tableId: string,
+  canEdit: boolean,
+  scanReportId: string,
+): ColumnDef<ScanReportFieldV3>[] => {
+  const baseColumns: ColumnDef<ScanReportFieldV3>[] = [
     {
       id: "Name",
       header: ({ column }) => (
@@ -93,7 +94,13 @@ export const columns = (
           // Just in case the concepts tags need more time to load some data
           // --> showing skeleton having same width with the concept tag area
           <Suspense fallback={<Skeleton className="h-5 w-[250px]" />}>
-            <ConceptTags concepts={concepts ?? []} deleteSR={deleteSR} />
+            <ConceptTagsV3
+              concepts={concepts ?? []}
+              scanReportId={scanReportId}
+              tableId={tableId}
+              fieldId={row.original.id}
+              valueId={0}
+            />
           </Suspense>
         );
       },
@@ -102,16 +109,14 @@ export const columns = (
       id: "Add Concept",
       header: "",
       cell: ({ row }) => {
-        const { scan_report_table, id, permissions } = row.original;
-        const canEdit =
-          permissions.includes("CanEdit") || permissions.includes("CanAdmin");
         return (
-          <AddConcept
-            rowId={id}
-            tableId={scan_report_table.toString()}
+          <AddConceptV3
+            rowId={row.original.id}
+            tableId={tableId}
             contentType="scanreportfield"
-            disabled={canEdit ? false : true}
-            addSR={addSR}
+            disabled={!canEdit}
+            scanReportId={scanReportId}
+            fieldId={row.original.id}
           />
         );
       },
@@ -131,11 +136,11 @@ export const columns = (
       enableHiding: true,
       enableSorting: false,
       cell: ({ row }) => {
-        const { name, id, scan_report_table } = row.original;
+        const { name, id } = row.original;
         return (
           <AISuggestionsButton
             value={name}
-            tableId={scan_report_table.toString()}
+            tableId={tableId}
             rowId={id}
             contentType="scanreportfield"
           />
@@ -147,7 +152,7 @@ export const columns = (
       id: "edit",
       header: "",
       cell: ({ row }) => {
-        const { id, permissions } = row.original;
+        const { id } = row.original;
         const path = usePathname();
 
         return (
@@ -155,7 +160,7 @@ export const columns = (
             prePath={path}
             fieldID={id}
             type="field"
-            permissions={permissions}
+            permissions={canEdit ? ["CanEdit"] : []}
           />
         );
       },

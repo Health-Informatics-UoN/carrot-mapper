@@ -9,13 +9,14 @@ import { getDataSet, getDatasetPermissions } from "@/api/datasets";
 import { Badge } from "@/components/ui/badge";
 import { InfoItem } from "@/components/core/InfoItem";
 import { AvatarList } from "@/components/core/avatar-list";
+import { DescriptionPopover } from "@/components/core/DescriptionPopover";
 import Link from "next/link";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
 import { ChevronDownIcon, Folders } from "lucide-react";
 
 interface LayoutProps {
@@ -23,7 +24,11 @@ interface LayoutProps {
   children: React.ReactNode;
 }
 
-export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const resolvedParams = await params;
   const dataset = await getDataSet(resolvedParams.id);
   return {
@@ -34,7 +39,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
 export default async function DatasetLayout({
   params,
-  children
+  children,
 }: Readonly<LayoutProps>) {
   const { id } = await params;
 
@@ -44,9 +49,10 @@ export default async function DatasetLayout({
   const items = [
     {
       name: "Scan Reports",
-      iconName: "FileScan"
+      iconName: "FileScan",
     },
-    { name: "Edit Details", slug: "details", iconName: "Edit" }
+    { name: "Logs", slug: "logs", iconName: "History" },
+    { name: "Edit Details", slug: "details", iconName: "Edit" },
   ];
 
   const dataset = await getDataSet(id);
@@ -57,39 +63,43 @@ export default async function DatasetLayout({
   const createdDate = new Date(dataset.created_at);
   if (
     !requiredPermissions.some((permission) =>
-      permissions.permissions.includes(permission)
+      permissions.permissions.includes(permission),
     )
   ) {
     return <Forbidden />;
   }
   return (
     <div className="space-y-2">
-      <DatasetBreadcrumb projects={projects} datasetName={dataset.name} />
+      <DatasetBreadcrumb
+        projects={projects}
+        datasetName={dataset.name}
+        description={dataset.description}
+      />
 
       <div className="flex flex-col md:flex-row md:items-center text-sm space-y-2 md:space-y-0 divide-y md:divide-y-0 md:divide-x divide-muted">
-        <InfoItem
-          label="Data Partner"
-          value={dataPartner.name}
-        />
+        <InfoItem label="Data Partner" value={dataPartner.name} />
         <InfoItem
           label="Created"
           value={format(createdDate, "MMM dd, yyyy h:mm a")}
           className="py-1 md:py-0 md:px-3"
         />
-        
       </div>
       <div className="hidden md:flex flex-col md:flex-row md:items-center h-7 text-sm space-y-2 md:space-y-0 divide-y md:divide-y-0 md:divide-x">
         <div className="flex items-center gap-2 text-muted-foreground">
-            Members:{" "}
-            <AvatarList
-              members={[...dataset.admins, ...dataset.viewers, ...dataset.editors].filter(
-                (member, index, self) =>
-                  index === self.findIndex((m) => m.id === member.id)
-              )}
-            />
+          Members:{" "}
+          <AvatarList
+            members={[
+              ...dataset.admins,
+              ...dataset.viewers,
+              ...dataset.editors,
+            ].filter(
+              (member, index, self) =>
+                index === self.findIndex((m) => m.id === member.id),
+            )}
+          />
         </div>
       </div>
-      
+
       {/* "Navs" group */}
       <div className="flex justify-between">
         <NavGroup
@@ -98,8 +108,8 @@ export default async function DatasetLayout({
             ...items.map((x) => ({
               text: x.name,
               slug: x.slug,
-              iconName: x.iconName
-            }))
+              iconName: x.iconName,
+            })),
           ]}
         />
       </div>
@@ -116,16 +126,21 @@ export default async function DatasetLayout({
 interface DatasetBreadcrumbProps {
   projects: Array<{ id: number; name: string }>;
   datasetName: string;
+  description: string | null;
 }
 
-function DatasetBreadcrumb({ projects, datasetName }: DatasetBreadcrumbProps) {
+function DatasetBreadcrumb({
+  projects,
+  datasetName,
+  description,
+}: DatasetBreadcrumbProps) {
   return (
     <div className="flex font-semibold text-xl items-center space-x-2">
       <Folders className="text-muted-foreground" />
       <Link href={`/projects/${projects[0].id}`}>
         <h2 className="text-muted-foreground">{projects[0].name}</h2>
       </Link>
-      
+
       {projects.length > 1 && (
         <DropdownMenu>
           <DropdownMenuTrigger>
@@ -143,6 +158,10 @@ function DatasetBreadcrumb({ projects, datasetName }: DatasetBreadcrumbProps) {
       <h2 className="text-muted-foreground">{"/"}</h2>
       <Database className="mr-2 text-blue-700" />
       <h2>{datasetName}</h2>
+      <DescriptionPopover
+        description={description}
+        title="Dataset description"
+      />
     </div>
   );
 }

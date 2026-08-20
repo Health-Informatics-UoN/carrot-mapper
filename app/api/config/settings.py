@@ -70,6 +70,9 @@ INSTALLED_APPS = [
     "mapping",
     "files",
     "jobs",
+    "activity_log",
+    "notifications",
+    "users",
     "rest_framework",
     "django_filters",
     "rest_framework.authtoken",
@@ -147,7 +150,7 @@ DATABASES = {
             "NAME": "throwawaydb",
         },
         "OPTIONS": {
-            "options": "-c statement_timeout=20s",
+            "options": f"-c statement_timeout={os.getenv('DB_STATEMENT_TIMEOUT', '20s')}",
         },
         "CONN_MAX_AGE": None,
     }

@@ -1,6 +1,6 @@
 from django.db.models.query_utils import Q
 from django_filters import rest_framework as django_filters
-from mapping.models import ScanReportValue, VisibilityChoices
+from mapping.models import ScanReportField, ScanReportValue, VisibilityChoices
 from rest_framework import filters
 
 
@@ -149,4 +149,19 @@ class ScanReportValueFilter(django_filters.FilterSet):
         model = ScanReportValue
         fields = {
             "value": ["in", "icontains"],
+        }
+
+
+class ScanReportFieldFilter(django_filters.FilterSet):
+    """
+    Custom filterset for ScanReportField model.
+    """
+
+    has_concepts = HasConceptsFilter()
+    creation_type = CreationTypeFilter()
+
+    class Meta:
+        model = ScanReportField
+        fields = {
+            "name": ["icontains"],
         }

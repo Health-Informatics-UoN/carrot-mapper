@@ -1,22 +1,24 @@
 "use client";
 import { ColumnDef } from "@tanstack/react-table";
 import { DataTableColumnHeader } from "@/components/data-table/DataTableColumnHeader";
-import { ConceptTags } from "@/components/concepts/concept-tags";
-import AddConcept from "@/components/concepts/add-concept";
+import { ConceptTagsV3 } from "@/components/concepts/ConceptTagsV3";
 import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import CopyButton from "@/components/core/CopyButton";
+import AddConceptV3 from "@/components/concepts/AddConceptV3";
 import { AISuggestionsButton } from "@/components/recommendations/ai-suggesions-button";
-import { Tooltips } from "@/components/core/Tooltips";
-import { enableAIRecommendation } from "@/constants";
+import { StoredRecommendationsButton } from "@/components/recommendations/stored-recommendations-button";
+import {
+  enableAIRecommendation,
+  enableStoredRecommendation,
+} from "@/constants";
 
-// All Standard Columns
 export const columns = (
-  addSR: (concept: ScanReportConcept, c: Concept) => void,
-  deleteSR: (id: number) => void,
-  tableId: string
-): ColumnDef<ScanReportValue>[] => {
-  const baseColumns: ColumnDef<ScanReportValue>[] = [
+  tableId: string,
+  canEdit: boolean,
+  scanReportId: string,
+): ColumnDef<ScanReportValueV3>[] => {
+  const baseColumns: ColumnDef<ScanReportValueV3>[] = [
     {
       id: "Value",
       accessorKey: "value",
@@ -24,9 +26,9 @@ export const columns = (
         <DataTableColumnHeader column={column} title="Value" sortName="value" />
       ),
       enableHiding: true,
-      enableSorting: false,
+      enableSorting: true,
       cell: ({ row }) => {
-        const { value } = row.original;
+        const { value, id } = row.original;
 
         return (
           <div className="flex items-center gap-2">
@@ -53,11 +55,11 @@ export const columns = (
         />
       ),
       enableHiding: true,
-      enableSorting: false,
+      enableSorting: true,
       cell: ({ row }) => {
         const { value_description } = row.original;
         return (
-          <span className="text-gray-500 max-w-[200px] whitespace-pre-wrap text-pretty">
+          <span className="max-w-[200px] whitespace-pre-wrap text-pretty">
             {value_description}
           </span>
         );
@@ -71,11 +73,10 @@ export const columns = (
           column={column}
           title="Frequency"
           sortName="frequency"
-          className="tabular-nums"
         />
       ),
       enableHiding: true,
-      enableSorting: false,
+      enableSorting: true,
       cell: ({ row }) => {
         const { frequency } = row.original;
         return <span className="tabular-nums">{frequency}</span>;
@@ -92,7 +93,13 @@ export const columns = (
         const { concepts } = row.original;
         return (
           <Suspense fallback={<Skeleton className="h-5 w-[250px]" />}>
-            <ConceptTags concepts={concepts ?? []} deleteSR={deleteSR} />
+            <ConceptTagsV3
+              concepts={concepts}
+              scanReportId={scanReportId}
+              tableId={tableId}
+              fieldId={row.original.scan_report_field}
+              valueId={row.original.id}
+            />
           </Suspense>
         );
       },
@@ -101,43 +108,72 @@ export const columns = (
       id: "Add Concept",
       header: "",
       cell: ({ row }) => {
-        const { id, permissions } = row.original;
-        const canEdit =
-          permissions.includes("CanEdit") || permissions.includes("CanAdmin");
+        const { id } = row.original;
+
         return (
-          <AddConcept
+          <AddConceptV3
             rowId={id}
             tableId={tableId}
             contentType="scanreportvalue"
             disabled={!canEdit}
-            addSR={addSR}
+            scanReportId={scanReportId}
+            fieldId={row.original.scan_report_field}
           />
         );
       },
     },
   ];
 
-  // AI Suggestions Column & setting as 4th Column
+  // Stored Recommendations Column - insert at position 1 (2nd column)
+  if (enableStoredRecommendation === "true") {
+    baseColumns.splice(1, 0, {
+      id: "Stored Recommendations",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Stored Recommendations" />
+      ),
+      enableHiding: true,
+      enableSorting: false,
+      cell: ({ row }) => {
+        const { value, id, mapping_recommendations } = row.original;
+
+        return (
+          <div className="flex justify-start w-full">
+            <StoredRecommendationsButton
+              value={value}
+              tableId={tableId}
+              rowId={id}
+              contentType="scanreportvalue"
+              scanReportId={scanReportId}
+              fieldId={row.original.scan_report_field}
+              mappingRecommendations={mapping_recommendations}
+            />
+          </div>
+        );
+      },
+    });
+  }
+
+  // AI Suggestions Column - insert at position 2 (3rd column)
   if (enableAIRecommendation === "true") {
-    baseColumns.splice(3, 0, {
+    baseColumns.splice(2, 0, {
       id: "AI Suggestions",
       header: ({ column }) => (
-        <div className="flex items-center">
-          <DataTableColumnHeader column={column} title="AI Suggestions" />
-          <Tooltips content="Get AI-powered Standard Concept Suggestions for the value. To get the better results, please select the most relevant domain." />
-        </div>
+        <DataTableColumnHeader column={column} title="AI Suggestions" />
       ),
       enableHiding: true,
       enableSorting: false,
       cell: ({ row }) => {
         const { value, id } = row.original;
+
         return (
-          <AISuggestionsButton
-            value={value}
-            tableId={tableId}
-            rowId={id}
-            contentType="scanreportvalue"
-          />
+          <div className="flex justify-start w-full">
+            <AISuggestionsButton
+              value={value}
+              tableId={tableId}
+              rowId={id}
+              contentType="scanreportvalue"
+            />
+          </div>
         );
       },
     });

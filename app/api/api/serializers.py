@@ -4,7 +4,7 @@ from io import BytesIO, StringIO
 
 import openpyxl  # type: ignore
 from config.settings import DATA_UPLOAD_MAX_MEMORY_SIZE
-from data.models import Concept
+from data.models import Concept, Vocabulary
 from datasets.serializers import DatasetSerializer
 from django.contrib.auth.models import User
 from drf_dynamic_fields import DynamicFieldsMixin  # type: ignore
@@ -66,6 +66,12 @@ class ConceptSerializerV3(DynamicFieldsMixin, serializers.ModelSerializer):
         ]
 
 
+class VocabularySerializer(DynamicFieldsMixin, serializers.ModelSerializer):
+    class Meta:
+        model = Vocabulary
+        fields = "__all__"
+
+
 class UploadStatusSerializer(serializers.ModelSerializer):
     """
     Serializer for the UploadStatus model.
@@ -124,6 +130,7 @@ class ScanReportViewSerializerV2(DynamicFieldsMixin, serializers.ModelSerializer
             "id",
             "name",
             "dataset",
+            "description",
             "parent_dataset",
             "data_partner",
             "mapping_status",
@@ -624,6 +631,7 @@ class ScanReportCreateSerializer(DynamicFieldsMixin, serializers.ModelSerializer
             "viewers",
             "editors",
             "dataset",
+            "description",
             "parent_dataset",
             "visibility",
         )
@@ -820,6 +828,24 @@ class ScanReportValueViewSerializerV3(serializers.ModelSerializer):
             "frequency",
             "value_description",
             "scan_report_field",
+            "concepts",
+            "mapping_recommendations",
+        ]
+
+
+class ScanReportFieldListSerializerV3(serializers.ModelSerializer):
+    concepts = ScanReportConceptSerializerV2(many=True, read_only=True)
+    mapping_recommendations = MappingRecommendationSerializerV3(
+        many=True, read_only=True
+    )
+
+    class Meta:
+        model = ScanReportField
+        fields = [
+            "id",
+            "name",
+            "description_column",
+            "type_column",
             "concepts",
             "mapping_recommendations",
         ]

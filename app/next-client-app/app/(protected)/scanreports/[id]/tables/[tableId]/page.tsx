@@ -1,16 +1,13 @@
 import { columns } from "./columns";
 import {
-  getScanReportFields,
+  getScanReportFieldsV3,
   getScanReportPermissions,
   getScanReportTable,
 } from "@/api/scanreports";
 import { objToQuery } from "@/lib/client-utils";
-import {
-  getAllConceptsFiltered,
-  getAllScanReportConcepts,
-} from "@/api/concepts";
-import { ConceptDataTable } from "@/components/concepts/ConceptDataTable";
 import { TableBreadcrumbs } from "@/components/scanreports/TableBreadcrumbs";
+import { ConceptDataTableV3 } from "@/components/concepts/ConceptDataTableV3";
+import { ConceptDataFilter } from "@/components/concepts/ConceptDataFilter";
 
 interface ScanReportsFieldProps {
   params: Promise<{
@@ -24,10 +21,7 @@ export default async function ScanReportsField(props: ScanReportsFieldProps) {
   const searchParams = await props.searchParams;
   const params = await props.params;
 
-  const {
-    id,
-    tableId
-  } = params;
+  const { id, tableId } = params;
 
   const defaultPageSize = 20;
   const defaultParams = {
@@ -35,46 +29,37 @@ export default async function ScanReportsField(props: ScanReportsFieldProps) {
   };
   const combinedParams = { ...defaultParams, ...searchParams };
   const query = objToQuery(combinedParams);
-  const tableName = await getScanReportTable(id, tableId);
-  const scanReportsFields = await getScanReportFields(id, tableId, query);
-  const permissions = await getScanReportPermissions(id);
+  const [tableName, scanReportsFields, permissions] = await Promise.all([
+    getScanReportTable(id, tableId),
+    getScanReportFieldsV3(id, tableId, query),
+    getScanReportPermissions(id),
+  ]);
 
-  const scanReportsConcepts =
-    scanReportsFields.results.length > 0
-      ? await getAllScanReportConcepts(
-          `object_id__in=${scanReportsFields.results
-            .map((item) => item.id)
-            .join(",")}`,
-        )
-      : [];
+  const canEdit = permissions.permissions.includes("CanEdit") ||
+  permissions.permissions.includes("CanAdmin");
 
-  const conceptsFilter =
-    scanReportsConcepts.length > 0
-      ? await getAllConceptsFiltered(
-          scanReportsConcepts?.map((item) => item.concept).join(","),
-        )
-      : [];
+  const filter = <ConceptDataFilter />;
+
+  const breadcrumbs = await TableBreadcrumbs({
+    id,
+    tableId,
+    tableName: tableName.name,
+    variant: "table",
+  });
 
   return (
     <div>
-      <TableBreadcrumbs
-        id={id}
-        tableId={tableId}
-        tableName={tableName.name}
-        variant="table"
-      />
+      {breadcrumbs}
       <div>
-        <ConceptDataTable
+        <ConceptDataTableV3
           count={scanReportsFields.count}
-          permissions={permissions}
-          scanReportsConcepts={scanReportsConcepts}
-          conceptsFilter={conceptsFilter}
+          canEdit={canEdit}
           scanReportsData={scanReportsFields.results}
           defaultPageSize={defaultPageSize}
           columns={columns}
-          filterCol="name"
-          filterText="field "
           tableId={tableId}
+          scanReportId={id}
+          Filter={filter}
         />
       </div>
     </div>

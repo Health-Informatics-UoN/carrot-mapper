@@ -195,6 +195,7 @@ class ScanReport(BaseModel):
     )
     name = models.CharField(max_length=256)  # TODO: rename to `file_name`
     dataset = models.CharField(max_length=128)  # TODO: rename to `name`
+    description = models.TextField(blank=True, null=True)
     hidden = models.BooleanField(default=False)
     upload_status = models.ForeignKey(
         "UploadStatus",
@@ -437,6 +438,7 @@ class Dataset(BaseModel):
     """
 
     name = models.CharField(max_length=100, unique=True)
+    description = models.TextField(blank=True, null=True)
     data_partner = models.ForeignKey(
         DataPartner,
         on_delete=models.CASCADE,
@@ -485,11 +487,18 @@ class Project(BaseModel):
     """
 
     name = models.CharField(max_length=100, unique=True)
+    description = models.TextField(blank=True, null=True)
     datasets = models.ManyToManyField(
         Dataset, related_name="projects", related_query_name="project", blank=True
     )
     members = models.ManyToManyField(
         settings.AUTH_USER_MODEL, related_name="projects", related_query_name="project"
+    )
+    admins = models.ManyToManyField(
+        settings.AUTH_USER_MODEL,
+        related_name="project_admins",
+        related_query_name="project_admin",
+        blank=True,
     )
 
     class Meta:

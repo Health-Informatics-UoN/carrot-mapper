@@ -1,0 +1,37 @@
+name: check.container-build
+on: [pull_request]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, '[ci skip]')"
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: api
+            file: app/api/Dockerfile
+            context: .
+            build_args: ""
+          - name: frontend
+            file: app/next-client-app/Dockerfile
+            context: ./app/next-client-app
+            build_args: ""
+          - name: airflow-webserver
+            file: app/airflow/Dockerfile
+            context: ./app/airflow
+            build_args: "--build-arg AIRFLOW_COMPONENT=webserver"
+          - name: airflow-scheduler
+            file: app/airflow/Dockerfile
+            context: ./app/airflow
+            build_args: "--build-arg AIRFLOW_COMPONENT=scheduler"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: "recursive"
+
+      - name: Build ${{ matrix.name }} image
+        run: docker build -f ${{ matrix.file }} ${{ matrix.build_args }} -t check-container-build-${{ matrix.name }}:latest ${{ matrix.context }}

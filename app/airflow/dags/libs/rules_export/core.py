@@ -4,6 +4,7 @@ from typing import Dict
 
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from libs.enums import JobStageType, StageStatusType
+from libs.notifications import NotificationType, create_notification
 from libs.queries import create_file_entry_query, create_update_temp_rules_table_query
 from libs.rules_export.file_services import (
     build_rules_csv,
@@ -79,12 +80,9 @@ def build_and_upload_rules_file(**kwargs) -> None:
     user_id = validated_params["user_id"]
     scan_report_name = validated_params["scan_report_name"]
     file_type = validated_params["file_type"]
-    json_version = validated_params.get(
-        "json_version", "v1"
-    )  # default to v1 if not specified
 
     try:
-        # Setup file config. (Credit: @AndyRae)
+        # Setup file config.
         file_handlers: Dict[str, FileHandlerConfig] = {
             "csv": FileHandlerConfig(
                 lambda: build_rules_csv(scan_report_id),
@@ -167,6 +165,12 @@ def build_and_upload_rules_file(**kwargs) -> None:
                 stage=JobStageType.DOWNLOAD_RULES,
                 status=StageStatusType.COMPLETE,
                 details="Rules file successfully created and uploaded to blob storage",
+            )
+            create_notification(
+                scan_report_id=scan_report_id,
+                notif_type=NotificationType.RULES_EXPORT_COMPLETE,
+                text=f"Your rules export for '{scan_report_name}' is ready to download",
+                url=f"/scanreports/{scan_report_id}/downloads",
             )
 
             if AIRFLOW_DEBUG_MODE == "true":

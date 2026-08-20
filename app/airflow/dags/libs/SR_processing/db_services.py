@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Tuple
 
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from libs.enums import JobStageType, StageStatusType
+from libs.notifications import NotificationType, create_notification
 from libs.queries import create_fields_query
 from libs.settings import (
     AIRFLOW_DAGRUN_TIMEOUT,
@@ -310,6 +311,13 @@ def handle_failure_and_cleanup_temp_tables(context):
                 )
             except Exception as e:
                 logging.error("Failed to update job status on failure: %s", str(e))
+
+            create_notification(
+                scan_report_id=scan_report_id,
+                notif_type=NotificationType.SCAN_REPORT_PROCESSING_FAILED,
+                text="Your scan report failed to process",
+                url=f"/scanreports/{scan_report_id}",
+            )
 
         # Wait so a timed-out task can finish creating tables, then delete the temporary tables
         delay = TEMP_TABLE_CLEANUP_DELAY

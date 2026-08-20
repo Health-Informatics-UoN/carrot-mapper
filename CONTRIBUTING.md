@@ -25,7 +25,8 @@ uv run pre-commit install
 
 ## Code style & type checking
 
-- **Ruff** lints and formats the codebase (config in `pyproject.toml`); this is enforced by pre-commit and CI ([`ci.yml`](.github/workflows/ci.yml)).
+- **Ruff** lints and formats the codebase (config in `pyproject.toml`); this is enforced by pre-commit and CI ([`check.quality.yml`](.github/workflows/check.quality.yml)).
+- All container images (API, frontend, Airflow webserver/scheduler) must build successfully — enforced by CI ([`check.container-build.yml`](.github/workflows/check.container-build.yml)).
 - **mypy** runs in strict mode — all new code must be fully typed, with no implicit `Any`. This isn't currently wired into pre-commit or CI, so please run it yourself before opening a PR:
   ```bash
   uv run mypy src/
@@ -35,7 +36,7 @@ uv run pre-commit install
 ## Pull requests
 
 - Open your PR against `main`. Keep PRs focused — small, single-purpose PRs are easier to review and land faster than large ones.
-- PR titles must follow [Conventional Commits](https://www.conventionalcommits.org/) (e.g. `feat: ...`, `fix: ...`, `docs: ...`) — this is enforced by CI (see [`check.pr-title.yaml`](.github/workflows/check.pr-title.yaml)) and drives the release process below. We squash-merge, so the PR title becomes the commit on `main` — individual commits within your branch don't need to follow the convention.
+- PR titles must follow [Conventional Commits](https://www.conventionalcommits.org/) (e.g. `feat: ...`, `fix: ...`, `docs: ...`) — this is enforced by CI (see [`check-pr-title.yml`](.github/workflows/check-pr-title.yml)) and drives the release process below. We squash-merge, so the PR title becomes the commit on `main` — individual commits within your branch don't need to follow the convention.
 - Link the issue your PR addresses, where there is one.
 - Before requesting review, check that `ruff check`, `ruff format --check` all pass locally — CI will run equivalent checks, but catching issues locally is faster for everyone.
 - Draft PRs are welcome if you'd like early feedback on direction before the change is finished.

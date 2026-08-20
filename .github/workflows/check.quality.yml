@@ -1,4 +1,4 @@
-name: ci
+name: check.quality
 on: [pull_request]
 
 permissions:
@@ -29,17 +29,13 @@ jobs:
           version: "0.13.0"
           args: "format --check --diff"
 
-  build:
+  build_frontend:
     runs-on: ubuntu-latest
     if: "!contains(github.event.head_commit.message, '[ci skip]')"
-    env:
-      RUNNER_ALLOW_RUNASROOT: true
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: "recursive"
-      - name: Build the docker image
-        run: docker build -f app/api/Dockerfile -t ccom-build:latest .
       - name: Install Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:

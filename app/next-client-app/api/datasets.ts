@@ -21,7 +21,7 @@ const fetchKeys = {
 };
 
 export async function getDataSets(
-  filter: string | undefined
+  filter: string | undefined,
 ): Promise<PaginatedResponse<DataSet>> {
   try {
     return await request<DataSet>(fetchKeys.list(filter));
@@ -41,6 +41,7 @@ export async function getDataSet(id: string): Promise<DataSetSRList> {
       created_at: new Date(),
       updated_at: new Date(),
       name: "",
+      description: null,
       visibility: "",
       hidden: null,
       data_partner: {
@@ -58,7 +59,7 @@ export async function getDataSet(id: string): Promise<DataSetSRList> {
 }
 
 export async function getDatasetList(
-  filter?: string
+  filter?: string,
 ): Promise<DataSetSRList[]> {
   try {
     return await request<DataSetSRList>(fetchKeys.datasetList(filter));
@@ -118,7 +119,7 @@ export async function updateDatasetDetails(id: number, data: {}) {
 }
 
 export async function getDatasetPermissions(
-  id: string
+  id: string,
 ): Promise<PermissionsResponse> {
   try {
     return await request<PermissionsResponse>(fetchKeys.permissions(id));

@@ -1,3 +1,4 @@
+from activity_log.views import ScanReportActivityLogView
 from django.urls import include, path
 from drf_spectacular.views import (
     SpectacularAPIView,
@@ -6,6 +7,12 @@ from drf_spectacular.views import (
 )
 from files.views import FileDownloadView
 from jobs.views import JobView
+from notifications.views import (
+    NotificationListView,
+    NotificationMarkAllReadView,
+    NotificationMarkReadView,
+    NotificationUnreadCountView,
+)
 
 from api import views
 
@@ -34,6 +41,11 @@ urlpatterns = [
         "v2/scanreports/<int:pk>/jobs/",
         JobView.as_view(),
         name="scan-report-jobs",
+    ),
+    path(
+        "v2/scanreports/<int:pk>/logs/",
+        ScanReportActivityLogView.as_view(),
+        name="scan-report-logs",
     ),
     path(
         "v2/scanreports/<int:pk>/tables/",
@@ -109,14 +121,54 @@ urlpatterns = [
         views.ScanReportConceptDetailV3.as_view(),
         name="scan-report-concepts-detail",
     ),
+    path(
+        "v3/scanreports/<int:pk>/tables/<int:table_pk>/fields/",
+        views.ScanReportFieldIndexV3.as_view(),
+        name="scan-report-fields-v3",
+    ),
+    path(
+        "v2/notifications/",
+        NotificationListView.as_view(),
+        name="notification-list",
+    ),
+    path(
+        "v2/notifications/unread-count/",
+        NotificationUnreadCountView.as_view(),
+        name="notification-unread-count",
+    ),
+    path(
+        "v2/notifications/read-all/",
+        NotificationMarkAllReadView.as_view(),
+        name="notification-mark-all-read",
+    ),
+    path(
+        "v2/notifications/<int:pk>/read/",
+        NotificationMarkReadView.as_view(),
+        name="notification-mark-read",
+    ),
     path(r"user/me/", views.UserDetailView.as_view(), name="currentuser"),
     path(r"v2/users/", views.UserViewSet.as_view(), name="users-list"),
     path(r"v2/usersfilter/", views.UserFilterViewSet.as_view(), name="usersfilter"),
+    path(
+        r"v2/users/<int:pk>/",
+        views.UserProfileDetailView.as_view(),
+        name="user-profile-detail",
+    ),
+    path(
+        r"v2/users/<int:pk>/shared-projects/",
+        views.UserSharedProjectsView.as_view(),
+        name="user-shared-projects",
+    ),
     path(r"v2/datapartners/", views.DataPartnerViewSet.as_view(), name="datapartners"),
     path(
         r"v2/omop/conceptsfilter/",
         views.ConceptFilterViewSetV2.as_view(),
         name="v2conceptsfilter",
+    ),
+    path(
+        r"v2/omop/vocabularies/",
+        views.VocabularyListView.as_view(),
+        name="vocabularies-list",
     ),
     path("v2/schema/", SpectacularAPIView.as_view(), name="schema"),
     path(

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
 import { format } from "date-fns/format";
 import { saveAs } from "file-saver";
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { downloadFile } from "@/api/files";
 import { toast } from "sonner";
@@ -23,7 +24,7 @@ export const columns: ColumnDef<FileDownload>[] = [
     ),
     cell: ({ row }) => {
       const { created_at } = row.original;
-      return format(created_at, "d MMM HH:mm");
+      return format(created_at, "d MMM yyyy HH:mm");
     },
     enableHiding: true,
     enableSorting: true,
@@ -40,7 +41,11 @@ export const columns: ColumnDef<FileDownload>[] = [
     ),
     cell: ({ row }) => {
       const { user } = row.original;
-      return <>{user.username}</>;
+      return (
+        <Link href={`/users/${user.id}/`} className="hover:underline">
+          {user.username}
+        </Link>
+      );
     },
     enableHiding: true,
     enableSorting: false,

@@ -1,6 +1,7 @@
 interface ScanReport {
   id: number;
   dataset: string;
+  description: string | null;
   parent_dataset: DatasetStrict;
   data_partner: string;
   mapping_status: {
@@ -93,13 +94,21 @@ interface ScanReportValue {
   permissions: Permission[];
 }
 
-
 interface ScanReportValueV3 {
   id: number;
   value: string;
   frequency: number;
   value_description: string;
   scan_report_field: number;
+  concepts: ScanReportConceptV3[];
+  mapping_recommendations: MappingRecommendation[];
+}
+
+interface ScanReportFieldV3 {
+  id: number;
+  name: string;
+  description_column: string;
+  type_column: string;
   concepts: ScanReportConceptV3[];
   mapping_recommendations: MappingRecommendation[];
 }

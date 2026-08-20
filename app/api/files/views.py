@@ -1,5 +1,6 @@
 import json
 
+from activity_log.models import ScopeType, Verb
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
@@ -10,6 +11,7 @@ from rest_framework.filters import OrderingFilter
 from rest_framework.generics import GenericAPIView
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
 from rest_framework.permissions import IsAuthenticated
+from services.activity_log import record as record_activity
 from services.storage_service import StorageService
 from services.worker_service import get_worker_service
 
@@ -62,6 +64,19 @@ class FileDownloadView(GenericAPIView, ListModelMixin, RetrieveModelMixin):
         if "pk" in kwargs:
             entity = get_object_or_404(FileDownload, pk=kwargs["pk"])
             file = storage_service.get_file(entity.file_url, "rules-exports")
+
+            record_activity(
+                scope_type=ScopeType.SCAN_REPORT,
+                scope_id=entity.scan_report_id,
+                verb=Verb.RULES_DOWNLOADED,
+                actor=request.user,
+                object_type="filedownload",
+                object_id=entity.id,
+                detail={
+                    "file_type": entity.file_type.display_name,
+                    "file_name": entity.name,
+                },
+            )
 
             response = HttpResponse(file, content_type="application/octet-stream")
             response["Content-Disposition"] = f'attachment; filename="{entity.name}"'
@@ -129,9 +144,6 @@ class FileDownloadView(GenericAPIView, ListModelMixin, RetrieveModelMixin):
                 "json_version": json_version,
             }
 
-            worker_service.trigger_rules_export(msg)
-
-            # Create job record for downloading file
             file_type_description = (
                 "JSON V1"
                 if file_type == "application/json_v1"
@@ -139,6 +151,20 @@ class FileDownloadView(GenericAPIView, ListModelMixin, RetrieveModelMixin):
                 if file_type == "application/json_v2"
                 else "CSV"
             )
+
+            worker_service.trigger_rules_export(msg)
+
+            record_activity(
+                scope_type=ScopeType.SCAN_REPORT,
+                scope_id=scan_report.id,
+                verb=Verb.RULES_EXPORT_REQUESTED,
+                actor=request.user,
+                object_type="scanreport",
+                object_id=scan_report.id,
+                detail={"file_type": file_type_description},
+            )
+
+            # Create job record for downloading file
             Job.objects.create(
                 scan_report=ScanReport.objects.get(id=scan_report_id),
                 stage=JobStage.objects.get(value="DOWNLOAD_RULES"),

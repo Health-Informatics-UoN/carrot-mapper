@@ -32,7 +32,7 @@ export default function AddConceptV3({
           creation_type: "M",
           table_id: tableId,
         },
-        `/scanreports/${scanReportId}/tables/${tableId}/fields/${fieldId}/beta`
+        `/scanreports/${scanReportId}/tables/${tableId}/fields/${fieldId}`
       );
 
       if (response) {

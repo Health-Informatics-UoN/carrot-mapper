@@ -15,6 +15,7 @@ import {
   Download,
   Database,
   BookText,
+  History,
 } from "lucide-react";
 
 export const NavButton = ({
@@ -30,14 +31,12 @@ export const NavButton = ({
   const href = item.slug ? path + "/" + item.slug : path;
   const isActive = item.slug
     ? pathname === href || pathname.startsWith(href + "/")
-    : (
-        pathname === path ||
-        pathname === path + "/" ||
-        (item.matchPrefixes &&
-          item.matchPrefixes.some(prefix =>
-            pathname.startsWith(path + "/" + prefix)
-          ))
-      );
+    : pathname === path ||
+      pathname === path + "/" ||
+      (item.matchPrefixes &&
+        item.matchPrefixes.some((prefix) =>
+          pathname.startsWith(path + "/" + prefix),
+        ));
   const iconMap: { [key: string]: LucideIcon } = {
     SearchCheck,
     Waypoints,
@@ -47,18 +46,14 @@ export const NavButton = ({
     Download,
     Database,
     BookText,
+    History,
   };
 
   const Icon = item.iconName ? iconMap[item.iconName] : null;
 
   return (
     <Link href={href}>
-      <Button
-        variant="ghost"
-        className={cn(
-          isActive && "bg-muted"
-        )}
-      >
+      <Button variant="ghost" className={cn(isActive && "bg-muted")}>
         {Icon && <Icon />}
         {item.text}
       </Button>

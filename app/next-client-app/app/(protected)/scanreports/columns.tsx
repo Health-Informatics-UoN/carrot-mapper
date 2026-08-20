@@ -4,14 +4,14 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
   Pencil2Icon,
   DotsHorizontalIcon,
   EyeNoneIcon,
   EyeOpenIcon,
-  TrashIcon
+  TrashIcon,
 } from "@radix-ui/react-icons";
 import Link from "next/link";
 import { ColumnDef } from "@tanstack/react-table";
@@ -32,7 +32,7 @@ export const columns: ColumnDef<ScanReport>[] = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="id" sortName="id" />
     ),
-    enableHiding: true
+    enableHiding: true,
   },
   {
     id: "Name",
@@ -44,15 +44,12 @@ export const columns: ColumnDef<ScanReport>[] = [
       const { id, dataset } = row.original;
       return (
         <Link href={`/scanreports/${id}`}>
-          <Button
-            variant="link"
-            className="font-bold"
-          >
+          <Button variant="link" className="font-bold">
             {dataset}
           </Button>
         </Link>
       );
-    }
+    },
   },
   {
     id: "Dataset",
@@ -64,7 +61,7 @@ export const columns: ColumnDef<ScanReport>[] = [
         sortName="parent_dataset"
       />
     ),
-    enableHiding: true
+    enableHiding: true,
   },
   {
     id: "Data Partner",
@@ -73,7 +70,7 @@ export const columns: ColumnDef<ScanReport>[] = [
       <DataTableColumnHeader column={column} title="Data Partner" />
     ),
     enableHiding: true,
-    enableSorting: false
+    enableSorting: false,
   },
   {
     id: "Author",
@@ -82,7 +79,16 @@ export const columns: ColumnDef<ScanReport>[] = [
       <DataTableColumnHeader column={column} title="Author" />
     ),
     enableHiding: true,
-    enableSorting: true
+    enableSorting: true,
+    cell: ({ row }) => {
+      const { author } = row.original;
+      if (!author) return null;
+      return (
+        <Link href={`/users/${author.id}/`} className="hover:underline">
+          {author.username}
+        </Link>
+      );
+    },
   },
   {
     id: "Uploaded",
@@ -101,15 +107,19 @@ export const columns: ColumnDef<ScanReport>[] = [
       const { upload_status, upload_status_details } = row.original;
       const date = new Date(row.original.created_at);
 
-      return <div className="flex items-center gap-2">
-        <span className="tabular-nums">{format(date, "d MMM HH:mm")}</span>
-        <StatusIcon
-          statusOptions={UploadStatusOptions}
-          status={upload_status || { value: "IN_PROGRESS" }}
-          statusDetails={upload_status_details}
-        />
-      </div>
-    }
+      return (
+        <div className="flex items-center gap-2">
+          <span className="tabular-nums">
+            {format(date, "d MMM yyyy HH:mm")}
+          </span>
+          <StatusIcon
+            statusOptions={UploadStatusOptions}
+            status={upload_status || { value: "IN_PROGRESS" }}
+            statusDetails={upload_status_details}
+          />
+        </div>
+      );
+    },
   },
   {
     id: "Mapping Status",
@@ -130,7 +140,7 @@ export const columns: ColumnDef<ScanReport>[] = [
           />
         </div>
       );
-    }
+    },
   },
   {
     id: "Actions",
@@ -160,7 +170,7 @@ export const columns: ColumnDef<ScanReport>[] = [
                     id: id,
                     hidden: hidden,
                     ObjName: dataset,
-                    type: "scanreports"
+                    type: "scanreports",
                   })
                 }
               >
@@ -182,6 +192,6 @@ export const columns: ColumnDef<ScanReport>[] = [
           <DeleteDialog id={id} isOpen={isOpen} setOpen={setOpen} />
         </>
       );
-    }
-  }
+    },
+  },
 ];

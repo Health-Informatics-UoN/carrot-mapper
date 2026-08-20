@@ -5,7 +5,8 @@ import string
 from importlib.metadata import version
 from typing import Any, Optional
 
-from data.models import Concept
+from activity_log.models import ScopeType, Verb
+from data.models import Concept, Vocabulary
 from datasets.serializers import DataPartnerSerializer
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
@@ -26,14 +27,17 @@ from mapping.models import (
     DataPartner,
     MappingRule,
     OmopField,
+    Project,
     ScanReport,
     ScanReportConcept,
     ScanReportField,
     ScanReportTable,
     ScanReportValue,
 )
-from mapping.permissions import get_user_permissions_on_scan_report
+from mapping.permissions import SCAN_REPORT_QUERIES, get_user_permissions_on_scan_report
+from projects.serializers import ProjectNameSerializer
 from rest_framework import status, viewsets
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.filters import OrderingFilter
 from rest_framework.generics import GenericAPIView
 from rest_framework.mixins import (
@@ -47,6 +51,7 @@ from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from services.activity_log import record as record_activity
 from services.rules import (
     _find_destination_table,
     save_mapping_rules,
@@ -58,8 +63,14 @@ from services.rules_export import (
 )
 from services.storage_service import StorageService
 from services.worker_service import get_worker_service
+from users.models import Profile
+from users.serializers import ProfileEditSerializer, UserProfileSerializer
 
-from api.filters import ScanReportAccessFilter, ScanReportValueFilter
+from api.filters import (
+    ScanReportAccessFilter,
+    ScanReportFieldFilter,
+    ScanReportValueFilter,
+)
 from api.mixins import ScanReportPermissionMixin
 from api.paginations import CustomPagination
 from api.serializers import (
@@ -71,6 +82,7 @@ from api.serializers import (
     ScanReportEditSerializer,
     ScanReportFieldEditSerializer,
     ScanReportFieldListSerializerV2,
+    ScanReportFieldListSerializerV3,
     ScanReportFilesSerializer,
     ScanReportTableEditSerializer,
     ScanReportTableListSerializerV2,
@@ -78,6 +90,7 @@ from api.serializers import (
     ScanReportValueViewSerializerV3,
     ScanReportViewSerializerV2,
     UserSerializer,
+    VocabularySerializer,
 )
 
 storage_service = StorageService()
@@ -145,6 +158,48 @@ class ConceptFilterViewSetV2(GenericAPIView, ListModelMixin):
         "concept_code": ["in", "exact"],
         "vocabulary_id": ["in", "exact"],
     }
+
+    def get(self, request, *args, **kwargs):
+        return self.list(request, *args, **kwargs)
+
+
+class VocabularyListView(GenericAPIView, ListModelMixin):
+    """
+    A view for listing the OMOP Vocabulary reference table.
+
+    Exposes the vocabularies loaded into the OMOP CDM, so users can see
+    which vocabularies and versions are available before mapping or
+    building a data dictionary.
+
+    Attributes:
+        queryset (QuerySet): The base queryset for retrieving Vocabulary
+            objects, ordered by `vocabulary_id`.
+        serializer_class (Serializer): The serializer class used for
+            serializing Vocabulary objects.
+        filter_backends (list): A list of filter backends to apply to
+            the queryset.
+        ordering_fields (list): Fields that can be used for ordering.
+        filterset_fields (dict): A dictionary defining the fields that
+            can be filtered and the types of filtering allowed for each
+            field.
+        pagination_class (Pagination): The pagination class used for
+            paginating the results.
+
+    Methods:
+        get(request, *args, **kwargs):
+            Handles GET requests to retrieve a filtered, ordered and
+            paginated list of Vocabulary objects.
+    """
+
+    queryset = Vocabulary.objects.all().order_by("vocabulary_id")
+    serializer_class = VocabularySerializer
+    filter_backends = [DjangoFilterBackend, OrderingFilter]
+    ordering_fields = ["vocabulary_id", "vocabulary_name", "vocabulary_version"]
+    filterset_fields = {
+        "vocabulary_id": ["in", "exact", "icontains"],
+        "vocabulary_name": ["icontains"],
+    }
+    pagination_class = CustomPagination
 
     def get(self, request, *args, **kwargs):
         return self.list(request, *args, **kwargs)
@@ -226,6 +281,66 @@ class UserDetailView(APIView):
     def get(self, request, *args, **kwargs):
         serializer = UserSerializer(request.user)
         return Response(serializer.data)
+
+
+class UserProfileDetailView(GenericAPIView):
+    """
+    Retrieves a user's profile (username, Data Partner, ORCID iD) by ID.
+
+    Also handles `PATCH` requests to edit a profile, restricted to the
+    profile's own user.
+
+    Methods:
+        get(request, *args, **kwargs):
+            Returns the target user's profile.
+        patch(request, *args, **kwargs):
+            Updates the requesting user's own `data_partner`/`orcid`.
+            Raises `PermissionDenied` if the target user is not the
+            requesting user.
+    """
+
+    queryset = User.objects.select_related("profile", "profile__data_partner")
+    permission_classes = [IsAuthenticated]
+
+    def get_serializer_class(self):
+        if self.request.method == "PATCH":
+            return ProfileEditSerializer
+        return UserProfileSerializer
+
+    def get(self, request, *args, **kwargs):
+        user = self.get_object()
+        Profile.objects.get_or_create(user=user)
+        serializer = self.get_serializer(user)
+        return Response(serializer.data)
+
+    def patch(self, request, *args, **kwargs):
+        user = self.get_object()
+        if user.id != request.user.id:
+            raise PermissionDenied("You may only edit your own profile.")
+        profile, _ = Profile.objects.get_or_create(user=user)
+        serializer = self.get_serializer(profile, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(UserProfileSerializer(user).data)
+
+
+class UserSharedProjectsView(GenericAPIView, ListModelMixin):
+    """
+    Lists the Projects that both the requesting user and the user
+    identified by `pk` are members of.
+    """
+
+    serializer_class = ProjectNameSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        target_user = get_object_or_404(User, pk=self.kwargs["pk"])
+        return Project.objects.filter(members=self.request.user).filter(
+            members=target_user
+        )
+
+    def get(self, request, *args, **kwargs):
+        return self.list(request, *args, **kwargs)
 
 
 class ScanReportIndexV2(GenericAPIView, ListModelMixin, CreateModelMixin):
@@ -327,7 +442,7 @@ class ScanReportIndexV2(GenericAPIView, ListModelMixin, CreateModelMixin):
         valid_parent_dataset = validatedData.get("parent_dataset")
 
         rand = "".join(random.choices(string.ascii_lowercase + string.digits, k=8))
-        dt = "{:%Y%m%d-%H%M%S}".format(datetime.datetime.now())
+        dt = f"{datetime.datetime.now():%Y%m%d-%H%M%S}"
 
         # Create an entry in ScanReport for the uploaded Scan Report
         scan_report = ScanReport.objects.create(
@@ -403,6 +518,19 @@ class ScanReportIndexV2(GenericAPIView, ListModelMixin, CreateModelMixin):
         # send to the workers service
         worker_service.trigger_scan_report_processing(message_body)
 
+        record_activity(
+            scope_type=ScopeType.SCAN_REPORT,
+            scope_id=scan_report.id,
+            verb=Verb.SCAN_REPORT_UPLOADED,
+            actor=self.request.user,
+            object_type="scanreport",
+            object_id=scan_report.id,
+            detail={
+                "scan_report_name": scan_report.dataset,
+                "file_name": scan_report.name,
+            },
+        )
+
 
 class ScanReportDetailV2(
     ScanReportPermissionMixin,
@@ -468,6 +596,64 @@ class ScanReportDetailV2(
 
     def patch(self, request, *args, **kwargs):
         return self.partial_update(request, *args, **kwargs)
+
+    def perform_update(self, serializer):
+        """
+        Diffs the human-editable fields before/after the update and, if
+        anything actually changed, records one `scanreport.updated` entry
+        describing the change. Fields that aren't edited through this form
+        (upload_status, ...) are deliberately not tracked here.
+        """
+        instance: ScanReport = serializer.instance
+        before_name = instance.dataset
+        before_visibility = instance.visibility
+        before_author = instance.author.username if instance.author else None
+        before_mapping_status = (
+            instance.mapping_status.value if instance.mapping_status else None
+        )
+        before_viewers = set(instance.viewers.values_list("username", flat=True))
+        before_editors = set(instance.editors.values_list("username", flat=True))
+
+        super().perform_update(serializer)
+
+        detail = {}
+        if instance.dataset != before_name:
+            detail["name_from"] = before_name
+            detail["name_to"] = instance.dataset
+        if instance.visibility != before_visibility:
+            detail["visibility_from"] = before_visibility
+            detail["visibility_to"] = instance.visibility
+        after_author = instance.author.username if instance.author else None
+        if after_author != before_author:
+            detail["author_from"] = before_author
+            detail["author_to"] = after_author
+        after_mapping_status = (
+            instance.mapping_status.value if instance.mapping_status else None
+        )
+        if after_mapping_status != before_mapping_status:
+            detail["mapping_status_from"] = before_mapping_status
+            detail["mapping_status_to"] = after_mapping_status
+        after_viewers = set(instance.viewers.values_list("username", flat=True))
+        if added := sorted(after_viewers - before_viewers):
+            detail["viewers_added"] = added
+        if removed := sorted(before_viewers - after_viewers):
+            detail["viewers_removed"] = removed
+        after_editors = set(instance.editors.values_list("username", flat=True))
+        if added := sorted(after_editors - before_editors):
+            detail["editors_added"] = added
+        if removed := sorted(before_editors - after_editors):
+            detail["editors_removed"] = removed
+
+        if detail:
+            record_activity(
+                scope_type=ScopeType.SCAN_REPORT,
+                scope_id=instance.id,
+                verb=Verb.SCAN_REPORT_UPDATED,
+                actor=self.request.user,
+                object_type="scanreport",
+                object_id=instance.id,
+                detail=detail,
+            )
 
     def delete(self, request, *args, **kwargs):
         return self.destroy(request, *args, **kwargs)
@@ -673,6 +859,20 @@ class ScanReportTableDetailV2(
             trigger_reuse_concepts=instance.trigger_reuse,
         )
 
+        record_activity(
+            scope_type=ScopeType.SCAN_REPORT,
+            scope_id=scan_report_instance.id,
+            verb=Verb.AUTOMAP_RAN,
+            actor=request.user,
+            object_type="scanreporttable",
+            object_id=instance.id,
+            detail={
+                "table_id": instance.id,
+                "table_name": instance.name,
+                "trigger_reuse_concepts": instance.trigger_reuse,
+            },
+        )
+
         # Create Job records if no errors
         # For the first stage, default status is IN_PROGRESS
         Job.objects.create(
@@ -820,6 +1020,70 @@ class ScanReportFieldDetailV2(
         if self.request.method in ["PUT", "PATCH"]:
             return ScanReportFieldEditSerializer
         return super().get_serializer_class()
+
+
+class ScanReportFieldIndexV3(ScanReportPermissionMixin, GenericAPIView, ListModelMixin):
+    """
+    A view that provides a list of ScanReportField objects associated
+    with a specific ScanReportTable. Each field is returned with its
+    nested ``concepts`` and ``mapping_recommendations`` so the client
+    can render concept tags without follow-up requests. This view
+    supports filtering (including ``has_concepts`` and
+    ``creation_type``), ordering, and pagination.
+
+    Attributes:
+        serializer_class (Serializer): The serializer class used for
+            serializing the ScanReportField objects (V3 — includes
+            nested concepts and mapping recommendations).
+        filterset_class (FilterSet): The filterset used for filtering,
+            including the ``has_concepts`` and ``creation_type``
+            filters.
+        filter_backends (list): List of filter backends used for
+            filtering and ordering.
+        ordering_fields (list): Fields that can be used for ordering
+            the results.
+        pagination_class (Pagination): The pagination class used for
+            paginating the results.
+
+    Methods:
+        get(request, *args, **kwargs):
+            Handles GET requests and retrieves the ScanReportTable
+            object based on the provided table_pk. Returns a list of
+            ScanReportField objects associated with the table.
+        get_queryset():
+            Returns the queryset of ScanReportField objects filtered by
+            the associated ScanReportTable, with ``select_related`` and
+            ``prefetch_related`` applied to avoid N+1 queries when
+            serializing nested concepts and mapping recommendations.
+        list(request, *args, **kwargs):
+            Returns the paginated and serialized list of
+            ScanReportField objects. Caching is intentionally omitted
+            (unlike V2) so concept edits are reflected immediately.
+    """
+
+    filterset_class = ScanReportFieldFilter
+    filter_backends = [DjangoFilterBackend, OrderingFilter]
+    ordering_fields = ["name", "description_column", "type_column"]
+    pagination_class = CustomPagination
+    serializer_class = ScanReportFieldListSerializerV3
+
+    @extend_schema(responses=ScanReportFieldListSerializerV3)
+    def get(self, request, *args, **kwargs):
+        self.table = get_object_or_404(ScanReportTable, pk=kwargs["table_pk"])
+        return self.list(request, *args, **kwargs)
+
+    def get_queryset(self):
+        return (
+            ScanReportField.objects.filter(scan_report_table=self.table)
+            .order_by("id")
+            .select_related("scan_report_table")
+            .prefetch_related(
+                "concepts",
+                "concepts__concept",
+                "mapping_recommendations",
+                "mapping_recommendations__concept",
+            )
+        )
 
 
 class ScanReportValueListV2(ScanReportPermissionMixin, GenericAPIView, ListModelMixin):
@@ -1076,16 +1340,16 @@ class ScanReportConceptListV2(
 
         # Get the domain and data type of the field for the check below
         domain = concept.domain_id.lower()
-        # If users add the concept at "SR_Field" level
-        try:
-            field_datatype = ScanReportField.objects.get(
+        # Resolve the field the concept is being added to: directly, if
+        # added at "SR_Field" level, or via its parent field, if added at
+        # "SR_Value" level.
+        if content_type_str == "scanreportfield":
+            source_field = ScanReportField.objects.get(pk=body["object_id"])
+        else:
+            source_field = ScanReportValue.objects.get(
                 pk=body["object_id"]
-            ).type_column
-        # If users add the concept at "SR_Value" level
-        except:
-            field_datatype = ScanReportValue.objects.get(
-                pk=body["object_id"]
-            ).scan_report_field.type_column
+            ).scan_report_field
+        field_datatype = source_field.type_column
 
         # Checking field's datatype for concept with domain Observation
         if domain == "observation" and field_datatype.lower() not in [
@@ -1146,6 +1410,21 @@ class ScanReportConceptListV2(
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
+        record_activity(
+            scope_type=ScopeType.SCAN_REPORT,
+            scope_id=table.scan_report_id,
+            verb=Verb.MAPPING_ADDED,
+            actor=request.user,
+            object_type=content_type_str,
+            object_id=body["object_id"],
+            detail={
+                "concept_id": concept.concept_id,
+                "concept_name": concept.concept_name,
+                "table_name": source_field.scan_report_table.name,
+                "field_name": source_field.name,
+            },
+        )
+
         headers = self.get_success_headers(serializer.data)
         return Response(
             serializer.data, status=status.HTTP_201_CREATED, headers=headers
@@ -1189,7 +1468,42 @@ class ScanReportConceptDetailV2(GenericAPIView, DestroyModelMixin):
     serializer_class = ScanReportConceptSerializer
 
     def delete(self, request, *args, **kwargs):
-        return self.destroy(request, *args, **kwargs)
+        instance: ScanReportConcept = self.get_object()
+
+        content_object = instance.content_object
+        source_field = (
+            content_object.scan_report_field
+            if isinstance(content_object, ScanReportValue)
+            else content_object
+        )
+        scan_report_query = SCAN_REPORT_QUERIES.get(type(content_object))
+        scan_report = scan_report_query(content_object) if scan_report_query else None
+        object_type = instance.content_type.model
+        object_id = instance.object_id
+        concept_id = instance.concept.concept_id
+        concept_name = instance.concept.concept_name
+        table_name = source_field.scan_report_table.name
+        field_name = source_field.name
+
+        response = self.destroy(request, *args, **kwargs)
+
+        if scan_report is not None:
+            record_activity(
+                scope_type=ScopeType.SCAN_REPORT,
+                scope_id=scan_report.id,
+                verb=Verb.MAPPING_DELETED,
+                actor=request.user,
+                object_type=object_type,
+                object_id=object_id,
+                detail={
+                    "concept_id": concept_id,
+                    "concept_name": concept_name,
+                    "table_name": table_name,
+                    "field_name": field_name,
+                },
+            )
+
+        return response
 
 
 class MappingRulesList(ScanReportPermissionMixin, APIView):
