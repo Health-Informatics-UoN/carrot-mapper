@@ -40,9 +40,7 @@ export default async function ScanReportsEditField(
         id={id}
         tableId={tableId}
         fieldId={fieldId}
-        tableName={
-          table.death_table ? `${table.name} (Death table)` : table.name
-        }
+        tableName={table.name}
         fieldName={field.name}
         variant="fieldUpdate"
       />

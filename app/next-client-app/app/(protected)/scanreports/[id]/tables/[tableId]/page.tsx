@@ -35,9 +35,8 @@ export default async function ScanReportsField(props: ScanReportsFieldProps) {
     getScanReportPermissions(id),
   ]);
 
-  const canEdit =
-    permissions.permissions.includes("CanEdit") ||
-    permissions.permissions.includes("CanAdmin");
+  const canEdit = permissions.permissions.includes("CanEdit") ||
+  permissions.permissions.includes("CanAdmin");
 
   const filter = <ConceptDataFilter />;
 
