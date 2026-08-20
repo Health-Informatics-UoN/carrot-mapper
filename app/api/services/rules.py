@@ -1,3 +1,4 @@
+from functools import lru_cache
 from typing import List, Optional
 
 from data.models import Concept
@@ -165,9 +166,15 @@ def _validate_person_id_and_date(source_table: ScanReportTable):
     return date_event_source_field is not None
 
 
+@lru_cache(maxsize=None)
 def _get_omop_field(destination_field: str, destination_table: Optional[str] = None):
     """
     Get the destination_field object, given a field name, and/or the table.
+
+    OmopField/OmopTable are static OMOP CDM schema metadata that doesn't change at
+    runtime, so results are cached in-process for the life of the worker to avoid
+    repeated DB round trips (this function is called several times per mapping-rule
+    save).
 
     Args:
       - destination_field (str) : the name of the destination field
@@ -219,9 +226,7 @@ def _get_person_id_rule(
     person_id_source_field = source_table.person_id
 
     # get the associated OmopField Object (aka destination_table::person_id)
-    person_id_omop_field = OmopField.objects.get(
-        table=destination_table, field="person_id"
-    )
+    person_id_omop_field = _get_omop_field("person_id", destination_table.table)
 
     # create a new 1-1 rule
     rule_domain_person_id, created = MappingRule.objects.update_or_create(
@@ -263,8 +268,8 @@ def _get_date_rules(
     date_rules = []
     for date_omop_field in date_omop_fields:
         # get the actual omop field object
-        date_event_omop_field = OmopField.objects.get(
-            table=destination_table, field=date_omop_field
+        date_event_omop_field = _get_omop_field(
+            date_omop_field, destination_table.table
         )
 
         # create a new 1-1 rule
@@ -319,12 +324,16 @@ def _find_destination_table(
 
 def save_mapping_rules(
     scan_report_concept: ScanReportConcept,
+    destination_table: Optional[OmopTable] = None,
 ) -> List[MappingRule]:
     """
     Save mapping rules from a given ScanReportConcept.
 
     Args:
         - concept (ScanReportConcept) : object containing the Concept and Link to source_value
+        - [optional] destination_table (OmopTable) : the destination table, if already
+          computed by the caller (e.g. because it validated the concept against the
+          table beforehand) - avoids recomputing it here.
 
     Returns:
         - Tuple[bool, List[MappingRule]]: A tuple containing a boolean indicating if the rule has been saved and the list of rules to be created.
@@ -347,8 +356,9 @@ def save_mapping_rules(
 
     source_table = source_field.scan_report_table
 
-    # start looking up what table we're looking at
-    destination_table = _find_destination_table(concept, source_table)
+    # start looking up what table we're looking at, unless the caller already did
+    if destination_table is None:
+        destination_table = _find_destination_table(concept, source_table)
     if destination_table is None:
         return []
 

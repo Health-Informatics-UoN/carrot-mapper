@@ -10,6 +10,7 @@ from datasets.serializers import DataPartnerSerializer
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist
+from django.db import transaction
 from django.db.models import Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
@@ -1032,7 +1033,10 @@ class ScanReportConceptListV2(
 
         # Extract the content_type
         content_type_str = body.pop("content_type", None)
-        content_type = ContentType.objects.get(model=content_type_str)
+        # get_by_natural_key hits Django's ContentType cache
+        content_type = ContentType.objects.get_by_natural_key(
+            "mapping", content_type_str
+        )
         body["content_type"] = content_type.id
 
         # validate person_id and date event are set on table
@@ -1126,15 +1130,21 @@ class ScanReportConceptListV2(
         # Create serializer and validate
         serializer = self.get_serializer(data=body, many=isinstance(body, list))
         serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
 
-        model = serializer.instance
-        rules = save_mapping_rules(model)
-        if not rules:
-            return Response(
-                {"detail": "Rule could not be saved."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        # Wrap the create + rule-generation writes in one transaction: if rule
+        # generation fails, roll back the ScanReportConcept too instead of leaving
+        # it orphaned without any mapping rules. 
+        with transaction.atomic():
+            self.perform_create(serializer)
+
+            model = serializer.instance
+            rules = save_mapping_rules(model, destination_table=destination_table)
+            if not rules:
+                transaction.set_rollback(True)
+                return Response(
+                    {"detail": "Rule could not be saved."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
         headers = self.get_success_headers(serializer.data)
         return Response(
