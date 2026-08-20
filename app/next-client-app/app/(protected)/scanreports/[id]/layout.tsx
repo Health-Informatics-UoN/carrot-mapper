@@ -122,11 +122,15 @@ export default async function ScanReportLayout(
           value={scanreport.data_partner}
           className="py-1 md:py-0 md:pr-3"
         />
-        <InfoItem
-          label="Author"
-          value={scanreport.author.username}
-          className="py-1 md:py-0 md:px-3"
-        />
+        <h3 className="text-muted-foreground py-1 md:py-0 md:px-3">
+          Author:{" "}
+          <Link
+            href={`/users/${scanreport.author.id}/`}
+            className="text-foreground hover:underline"
+          >
+            {scanreport.author.username}
+          </Link>
+        </h3>
         <InfoItem
           label="Created"
           value={format(createdDate, "MMM dd, yyyy h:mm a")}

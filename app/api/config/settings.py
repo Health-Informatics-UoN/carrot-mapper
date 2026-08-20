@@ -72,6 +72,7 @@ INSTALLED_APPS = [
     "jobs",
     "activity_log",
     "notifications",
+    "users",
     "rest_framework",
     "django_filters",
     "rest_framework.authtoken",

@@ -26,6 +26,7 @@ from mapping.models import (
     DataPartner,
     MappingRule,
     OmopField,
+    Project,
     ScanReport,
     ScanReportConcept,
     ScanReportField,
@@ -33,7 +34,9 @@ from mapping.models import (
     ScanReportValue,
 )
 from mapping.permissions import SCAN_REPORT_QUERIES, get_user_permissions_on_scan_report
+from projects.serializers import ProjectNameSerializer
 from rest_framework import status, viewsets
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.filters import OrderingFilter
 from rest_framework.generics import GenericAPIView
 from rest_framework.mixins import (
@@ -59,6 +62,8 @@ from services.rules_export import (
 )
 from services.storage_service import StorageService
 from services.worker_service import get_worker_service
+from users.models import Profile
+from users.serializers import ProfileEditSerializer, UserProfileSerializer
 
 from api.filters import (
     ScanReportAccessFilter,
@@ -275,6 +280,66 @@ class UserDetailView(APIView):
     def get(self, request, *args, **kwargs):
         serializer = UserSerializer(request.user)
         return Response(serializer.data)
+
+
+class UserProfileDetailView(GenericAPIView):
+    """
+    Retrieves a user's profile (username, Data Partner, ORCID iD) by ID.
+
+    Also handles `PATCH` requests to edit a profile, restricted to the
+    profile's own user.
+
+    Methods:
+        get(request, *args, **kwargs):
+            Returns the target user's profile.
+        patch(request, *args, **kwargs):
+            Updates the requesting user's own `data_partner`/`orcid`.
+            Raises `PermissionDenied` if the target user is not the
+            requesting user.
+    """
+
+    queryset = User.objects.select_related("profile", "profile__data_partner")
+    permission_classes = [IsAuthenticated]
+
+    def get_serializer_class(self):
+        if self.request.method == "PATCH":
+            return ProfileEditSerializer
+        return UserProfileSerializer
+
+    def get(self, request, *args, **kwargs):
+        user = self.get_object()
+        Profile.objects.get_or_create(user=user)
+        serializer = self.get_serializer(user)
+        return Response(serializer.data)
+
+    def patch(self, request, *args, **kwargs):
+        user = self.get_object()
+        if user.id != request.user.id:
+            raise PermissionDenied("You may only edit your own profile.")
+        profile, _ = Profile.objects.get_or_create(user=user)
+        serializer = self.get_serializer(profile, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(UserProfileSerializer(user).data)
+
+
+class UserSharedProjectsView(GenericAPIView, ListModelMixin):
+    """
+    Lists the Projects that both the requesting user and the user
+    identified by `pk` are members of.
+    """
+
+    serializer_class = ProjectNameSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        target_user = get_object_or_404(User, pk=self.kwargs["pk"])
+        return Project.objects.filter(members=self.request.user).filter(
+            members=target_user
+        )
+
+    def get(self, request, *args, **kwargs):
+        return self.list(request, *args, **kwargs)
 
 
 class ScanReportIndexV2(GenericAPIView, ListModelMixin, CreateModelMixin):
