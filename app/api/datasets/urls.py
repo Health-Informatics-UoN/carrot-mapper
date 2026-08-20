@@ -1,3 +1,4 @@
+from activity_log.views import DatasetActivityLogView
 from django.urls import path
 
 from datasets import views
@@ -7,6 +8,11 @@ urlpatterns = [
         r"",
         views.DatasetIndex.as_view(),
         name="dataset_list",
+    ),
+    path(
+        "<int:pk>/logs/",
+        DatasetActivityLogView.as_view(),
+        name="dataset-logs",
     ),
     path(
         r"datasets_data_partners/",

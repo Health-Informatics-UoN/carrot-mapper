@@ -5,6 +5,8 @@ import { navigateWithSearchParam } from "@/lib/client-utils";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { DataTableFilter } from "../data-table/DataTableFilter";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 
 const ConceptDataOptions = [
     {
@@ -24,7 +26,7 @@ const ConceptDataOptions = [
     },
 ]
 
-export function ConceptDataFilter() {
+export function ConceptDataFilter({ showUnmappedFilter = false }: { showUnmappedFilter?: boolean }) {
   const router = useRouter();
   const searchParam = useSearchParams();
 
@@ -80,8 +82,19 @@ export function ConceptDataFilter() {
     );
   };
 
+  const unmappedOnly = searchParam.get("has_concepts") === "false";
+
+  const handleUnmappedToggle = (checked: boolean) => {
+    navigateWithSearchParam(
+      "has_concepts",
+      checked ? "false" : "",
+      router,
+      searchParam
+    );
+  };
+
   return (
-    <div className="flex gap-4 max-sm:hidden">
+    <div className="flex gap-4 max-sm:hidden items-center">
         <DataTableFilter filter="value" filterText="Value" />
         <FacetsFilter
         title="Concepts"
@@ -90,6 +103,18 @@ export function ConceptDataFilter() {
         handleSelect={handleSelectOption}
         handleClear={() => (setOptions([]), handleFacetsFilter())}
         />
+        {showUnmappedFilter && (
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="unmapped-only"
+              checked={unmappedOnly}
+              onCheckedChange={(checked) => handleUnmappedToggle(checked === true)}
+            />
+            <Label htmlFor="unmapped-only" className="cursor-pointer">
+              Unmapped only
+            </Label>
+          </div>
+        )}
     </div>
   );
 }

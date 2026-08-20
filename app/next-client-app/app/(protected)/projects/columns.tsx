@@ -18,15 +18,12 @@ export const columns: ColumnDef<Project>[] = [
       const { id, name } = row.original;
       return (
         <Link href={`/projects/${id}/`}>
-          <Button
-            variant="link"
-            className="font-bold"
-          >
+          <Button variant="link" className="font-bold">
             {name}
           </Button>
         </Link>
       );
-    }
+    },
   },
   {
     id: "Creation Date",
@@ -42,7 +39,7 @@ export const columns: ColumnDef<Project>[] = [
     enableSorting: true,
     cell: ({ row }) => {
       const date = new Date(row.original.created_at);
-      return format(date, "d MMM HH:mm");
-    }
-  }
+      return format(date, "d MMM yyyy HH:mm");
+    },
+  },
 ];

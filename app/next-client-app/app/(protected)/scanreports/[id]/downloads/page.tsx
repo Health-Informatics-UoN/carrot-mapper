@@ -16,9 +16,7 @@ export default async function Downloads(props: DownloadsProps) {
   const searchParams = await props.searchParams;
   const params = await props.params;
 
-  const {
-    id
-  } = params;
+  const { id } = params;
 
   const defaultPageSize = 20;
   const defaultParams = {
@@ -27,8 +25,10 @@ export default async function Downloads(props: DownloadsProps) {
   };
   const combinedParams = { ...defaultParams, ...searchParams };
   const query = objToQuery(combinedParams);
-  const downloadingJob = await getJobs(id, "download");
-  const filesList = await list(Number(id), query);
+  const [downloadingJob, filesList] = await Promise.all([
+    getJobs(id, "download"),
+    list(Number(id), query),
+  ]);
 
   let lastestJob: Job | null = null;
 

@@ -1,4 +1,4 @@
-import { LogOut, Settings } from "lucide-react";
+import { LogOut, Settings, User as UserIcon } from "lucide-react";
 import Link from "next/link";
 
 import { LoginButton, LogoutButton } from "@/auth/login";
@@ -11,11 +11,17 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuShortcut,
-  DropdownMenuTrigger
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
-export async function UserMenu({ username }: { username?: string }) {
+export async function UserMenu({
+  id,
+  username,
+}: {
+  id?: number;
+  username?: string;
+}) {
   if (!username) {
     return <LoginButton />;
   }
@@ -29,10 +35,7 @@ export async function UserMenu({ username }: { username?: string }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          className="group p-1 rounded-full"
-        >
+        <Button variant="ghost" className="group p-1 rounded-full">
           <Avatar>
             <AvatarFallback className="dark:text-white bg-gray-200 dark:bg-gray-800 transition-colors">
               {initials}
@@ -41,11 +44,19 @@ export async function UserMenu({ username }: { username?: string }) {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56">
-        <DropdownMenuLabel>
-          My Account
-        </DropdownMenuLabel>
+        <DropdownMenuLabel>My Account</DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
+          {id && (
+            <Link href={`/users/${id}/`} passHref>
+              <DropdownMenuItem asChild>
+                <button className="flex items-center w-full">
+                  <UserIcon />
+                  <span>My Profile</span>
+                </button>
+              </DropdownMenuItem>
+            </Link>
+          )}
           <Link href="/password-reset" passHref>
             <DropdownMenuItem asChild>
               <button className="flex items-center w-full">

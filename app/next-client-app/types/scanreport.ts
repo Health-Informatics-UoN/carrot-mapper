@@ -1,6 +1,7 @@
 interface ScanReport {
   id: number;
   dataset: string;
+  description: string | null;
   parent_dataset: DatasetStrict;
   data_partner: string;
   mapping_status: {
@@ -94,7 +95,6 @@ interface ScanReportValue {
   permissions: Permission[];
 }
 
-
 interface ScanReportValueV3 {
   id: number;
   value: string;
@@ -104,3 +104,16 @@ interface ScanReportValueV3 {
   concepts: ScanReportConceptV3[];
   mapping_recommendations: MappingRecommendation[];
 }
+
+interface ScanReportFieldV3 {
+  id: number;
+  name: string;
+  description_column: string;
+  type_column: string;
+  concepts: ScanReportConceptV3[];
+  mapping_recommendations: MappingRecommendation[];
+}
+
+type ConceptTableAction =
+  | { type: "add"; rowId: number; concept: ScanReportConceptV3 }
+  | { type: "delete"; rowId: number; conceptId: number };

@@ -2,7 +2,7 @@ import {
   getAllScanReportFields,
   getScanReportField,
   getScanReportPermissions,
-  getScanReportTable
+  getScanReportTable,
 } from "@/api/scanreports";
 import { objToQuery } from "@/lib/client-utils";
 import { AlertCircleIcon } from "lucide-react";
@@ -26,14 +26,16 @@ export default async function UpdateTable(props: UpdateTableProps) {
   const defaultPageSize = 50;
   const defaultParams = {
     fields: "name,id",
-    page_size: defaultPageSize
+    page_size: defaultPageSize,
   };
   const combinedParams = { ...defaultParams };
   const query = objToQuery(combinedParams);
 
-  const scanReportsFields = await getAllScanReportFields(id, tableId, query);
-
-  const table = await getScanReportTable(id, tableId);
+  const [scanReportsFields, table, permissions] = await Promise.all([
+    getAllScanReportFields(id, tableId, query),
+    getScanReportTable(id, tableId),
+    getScanReportPermissions(id),
+  ]);
 
   // Check if fields are available first before making the calls
   // Note: We create a fallback field object because the component expects ScanReportField,
@@ -59,16 +61,17 @@ export default async function UpdateTable(props: UpdateTableProps) {
     concept_id: 0,
     permissions: [],
     field_description: null,
-    scan_report_table: 0
+    scan_report_table: 0,
   };
 
-  const personId = table.person_id?.id
-    ? await getScanReportField(id, tableId, table.person_id.id)
-    : fallbackField;
-  const dateEvent = table.date_event?.id
-    ? await getScanReportField(id, tableId, table.date_event.id)
-    : fallbackField;
-  const permissions = await getScanReportPermissions(id);
+  const [personId, dateEvent] = await Promise.all([
+    table.person_id?.id
+      ? getScanReportField(id, tableId, table.person_id.id)
+      : Promise.resolve(fallbackField),
+    table.date_event?.id
+      ? getScanReportField(id, tableId, table.date_event.id)
+      : Promise.resolve(fallbackField),
+  ]);
 
   return (
     <div>
@@ -80,11 +83,14 @@ export default async function UpdateTable(props: UpdateTableProps) {
       {(table.date_event === null || table.person_id === null) && (
         <Alert className="max-w-2xl mb-5">
           <AlertCircleIcon />
-          <AlertTitle>Mapping Rules cannot be generated without Person ID and Date Event event being set</AlertTitle>
+          <AlertTitle>
+            Mapping Rules cannot be generated without Person ID and Date Event
+            event being set
+          </AlertTitle>
           <AlertDescription>
             <p>
-            Once you set these, Mapping Rules will be generated for all Concepts
-            currently associated to the table.
+              Once you set these, Mapping Rules will be generated for all
+              Concepts currently associated to the table.
             </p>
           </AlertDescription>
         </Alert>

@@ -1,5 +1,6 @@
 import os
 
+from activity_log.models import ScopeType, Verb
 from api.paginations import CustomPagination
 from django.db.models.query_utils import Q
 from django_filters.rest_framework import DjangoFilterBackend
@@ -24,6 +25,7 @@ from rest_framework.mixins import (
 )
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from services.activity_log import record as record_activity
 
 from datasets.serializers import (
     DatasetAndDataPartnerViewSerializer,
@@ -267,6 +269,55 @@ class DatasetDetail(
 
     def patch(self, request, *args, **kwargs):
         return self.partial_update(request, *args, **kwargs)
+
+    def perform_update(self, serializer):
+        """
+        Diffs the human-editable fields before/after the update and, if
+        anything actually changed, records one `dataset.updated` entry
+        describing the change.
+        """
+        instance: Dataset = serializer.instance
+        before_name = instance.name
+        before_visibility = instance.visibility
+        before_admins = set(instance.admins.values_list("username", flat=True))
+        before_viewers = set(instance.viewers.values_list("username", flat=True))
+        before_editors = set(instance.editors.values_list("username", flat=True))
+
+        super().perform_update(serializer)
+
+        detail = {}
+        if instance.name != before_name:
+            detail["name_from"] = before_name
+            detail["name_to"] = instance.name
+        if instance.visibility != before_visibility:
+            detail["visibility_from"] = before_visibility
+            detail["visibility_to"] = instance.visibility
+        after_admins = set(instance.admins.values_list("username", flat=True))
+        if added := sorted(after_admins - before_admins):
+            detail["admins_added"] = added
+        if removed := sorted(before_admins - after_admins):
+            detail["admins_removed"] = removed
+        after_viewers = set(instance.viewers.values_list("username", flat=True))
+        if added := sorted(after_viewers - before_viewers):
+            detail["viewers_added"] = added
+        if removed := sorted(before_viewers - after_viewers):
+            detail["viewers_removed"] = removed
+        after_editors = set(instance.editors.values_list("username", flat=True))
+        if added := sorted(after_editors - before_editors):
+            detail["editors_added"] = added
+        if removed := sorted(before_editors - after_editors):
+            detail["editors_removed"] = removed
+
+        if detail:
+            record_activity(
+                scope_type=ScopeType.DATASET,
+                scope_id=instance.id,
+                verb=Verb.DATASET_UPDATED,
+                actor=self.request.user,
+                object_type="dataset",
+                object_id=instance.id,
+                detail=detail,
+            )
 
 
 class DatasetPermissionView(APIView):

@@ -1,9 +1,12 @@
 import os
 from datetime import date
+from importlib import import_module
 from unittest import mock
 
 import pytest
+from data.models import Vocabulary
 from datasets.views import DatasetIndex
+from django.apps import apps as django_apps
 from django.contrib.auth import get_user_model
 from django.contrib.contenttypes.models import ContentType
 from django.test import TestCase, TransactionTestCase
@@ -22,6 +25,7 @@ from mapping.models import (
 )
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIClient, APIRequestFactory, force_authenticate
+from users.models import Profile
 
 
 class TestDatasetListView(TestCase):
@@ -235,6 +239,18 @@ class TestDatasetUpdateView(TestCase):
         # Ensure admin user can update Dataset
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response_data.get("name"), "The Two Towers")
+
+    def test_update_description(self):
+        # Authenticate admin user
+        self.client.force_authenticate(self.admin_user)
+        #  Make the request
+        response = self.client.patch(
+            f"/api/v2/datasets/{self.dataset.id}/",
+            data={"description": "Home of the Shire-folk"},
+        )
+        # Ensure admin user can update the Dataset's description
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data.get("description"), "Home of the Shire-folk")
 
     def test_non_admin_member_forbidden(self):
         # Authenticate non admin user
@@ -871,3 +887,448 @@ class TestScanReportActiveConceptFilterViewSet(TestCase):
         self.assertEqual(
             recommendation_data["concept"]["concept_name"], concept.concept_name
         )
+
+
+class TestScanReportFieldListViewset(TestCase):
+    def setUp(self):
+        # Set up Data Partner
+        self.data_partner = DataPartner.objects.create(name="Silvan Elves")
+
+        # Set up datasets
+        self.public_dataset = Dataset.objects.create(
+            name="The Shire",
+            visibility=VisibilityChoices.PUBLIC,
+            data_partner=self.data_partner,
+        )
+
+        self.scan_report = ScanReport.objects.create(
+            dataset="Test Dataset",
+            visibility=VisibilityChoices.PUBLIC,
+            parent_dataset=self.public_dataset,
+        )
+
+        self.table = ScanReportTable.objects.create(
+            scan_report=self.scan_report,
+            name="Test Table",
+        )
+
+        self.field = ScanReportField.objects.create(
+            scan_report_table=self.table,
+            name="Test Field",
+            description_column="Test Description",
+            type_column="string",
+        )
+
+        self.concept = Concept.objects.create(
+            concept_id=12345,
+            concept_name="Test Concept",
+            concept_code="TEST123",
+            domain_id="Test",
+            vocabulary_id="Test",
+            concept_class_id="Test",
+            standard_concept="S",
+            valid_start_date="2020-01-01",
+            valid_end_date="2099-12-31",
+        )
+
+        field_content_type = ContentType.objects.get_for_model(ScanReportField)
+        self.recommendation = MappingRecommendation.objects.create(
+            content_type=field_content_type,
+            object_id=self.field.id,
+            concept=self.concept,
+            score=0.85,
+            tool_name="test-tool",
+            tool_version="1.0.0",
+        )
+        self.scan_report_concept = ScanReportConcept.objects.create(
+            content_type=field_content_type,
+            object_id=self.field.id,
+            concept=self.concept,
+        )
+
+        self.client = APIClient()
+        self.url = (
+            f"/api/v3/scanreports/{self.scan_report.id}/tables/{self.table.id}/fields/"
+        )
+
+    @mock.patch.dict(os.environ, {"AZ_FUNCTION_USER": "az_functions"})
+    def test_scan_report_field_list_v3_includes_recommendations(self):
+        """Test that ScanReportFieldListV3 includes mapping recommendations."""
+
+        response = self.client.get(self.url)
+        # Verify response
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+
+        # Check that the field is returned
+        self.assertEqual(len(data["results"]), 1)
+        field_data = data["results"][0]
+
+        # Check that mapping recommendations are included
+        self.assertIn("mapping_recommendations", field_data)
+        self.assertEqual(len(field_data["mapping_recommendations"]), 1)
+
+        recommendation_data = field_data["mapping_recommendations"][0]
+        self.assertEqual(recommendation_data["id"], self.recommendation.id)
+        self.assertEqual(recommendation_data["score"], 0.85)
+        self.assertEqual(recommendation_data["tool_name"], "test-tool")
+        self.assertEqual(recommendation_data["tool_version"], "1.0.0")
+        self.assertEqual(
+            recommendation_data["concept"]["concept_id"], self.concept.concept_id
+        )
+        self.assertEqual(
+            recommendation_data["concept"]["concept_name"], self.concept.concept_name
+        )
+
+    @mock.patch.dict(os.environ, {"AZ_FUNCTION_USER": "az_functions"})
+    def test_scan_report_field_list_v3_includes_concepts(self):
+        """Test that ScanReportFieldListV3 includes concepts."""
+
+        response = self.client.get(self.url)
+        # Verify response
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+
+        # Check that the field is returned
+        self.assertEqual(len(data["results"]), 1)
+        field_data = data["results"][0]
+        # Check that concepts are included
+        self.assertIn("concepts", field_data)
+        self.assertEqual(len(field_data["concepts"]), 1)
+
+        concept_data = field_data["concepts"][0]
+        self.assertEqual(concept_data["id"], self.scan_report_concept.id)
+        self.assertEqual(concept_data["concept"]["concept_id"], 12345)
+        self.assertEqual(concept_data["concept"]["concept_name"], "Test Concept")
+        self.assertEqual(concept_data["concept"]["concept_code"], "TEST123")
+
+    @mock.patch.dict(os.environ, {"AZ_FUNCTION_USER": "az_functions"})
+    def test_scan_report_field_list_v3_filter_has_concepts_false(self):
+        """Test that ?has_concepts=false returns only fields with no concepts."""
+        # Add a second field with no concepts attached
+        unmapped_field = ScanReportField.objects.create(
+            scan_report_table=self.table,
+            name="Unmapped Field",
+            description_column="No concepts here",
+            type_column="string",
+        )
+
+        response = self.client.get(f"{self.url}?has_concepts=false")
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+
+        # Only the unmapped field should be returned; the mapped one from setUp
+        # has a ScanReportConcept attached and should be filtered out.
+        self.assertEqual(len(data["results"]), 1)
+        self.assertEqual(data["results"][0]["id"], unmapped_field.id)
+
+
+class TestVocabularyListView(TestCase):
+    def setUp(self):
+        User = get_user_model()
+        self.user = User.objects.create(username="samwise", password="taterstew")
+
+        self.snomed = Vocabulary.objects.create(
+            vocabulary_id="SNOMED",
+            vocabulary_name="Systematic Nomenclature of Medicine - Clinical Terms",
+            vocabulary_reference="OMOP generated",
+            vocabulary_version="SNOMED CT Release 20230601",
+            vocabulary_concept_id=44819097,
+        )
+        self.icd10 = Vocabulary.objects.create(
+            vocabulary_id="ICD10",
+            vocabulary_name="International Classification of Diseases, Tenth Revision",
+            vocabulary_reference="WHO",
+            vocabulary_version="ICD10 2011",
+            vocabulary_concept_id=44819126,
+        )
+
+        self.client = APIClient()
+        self.url = "/api/v2/omop/vocabularies/"
+
+    def test_requires_authentication(self):
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 401)
+
+    def test_lists_vocabularies(self):
+        self.client.force_authenticate(self.user)
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["count"], 2)
+        vocabulary_ids = {v["vocabulary_id"] for v in data["results"]}
+        self.assertEqual(vocabulary_ids, {"SNOMED", "ICD10"})
+        # Default ordering is by vocabulary_id
+        self.assertEqual(data["results"][0]["vocabulary_id"], "ICD10")
+
+    def test_filter_by_vocabulary_id(self):
+        self.client.force_authenticate(self.user)
+        response = self.client.get(self.url, {"vocabulary_id": "SNOMED"})
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["count"], 1)
+        self.assertEqual(data["results"][0]["vocabulary_id"], "SNOMED")
+
+
+class TestProjectCreateView(TestCase):
+    def setUp(self):
+        User = get_user_model()
+        self.user = User.objects.create(username="frodo", password="thering")
+        Token.objects.create(user=self.user)
+
+        self.client = APIClient()
+
+    def test_any_authenticated_user_can_create_project(self):
+        self.client.force_authenticate(self.user)
+        response = self.client.post(
+            "/api/projects/", data={"name": "The Shire"}, format="json"
+        )
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.data.get("name"), "The Shire")
+
+    def test_can_create_project_with_description(self):
+        self.client.force_authenticate(self.user)
+        response = self.client.post(
+            "/api/projects/",
+            data={"name": "The Shire", "description": "A peaceful land of hobbits"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.data.get("description"), "A peaceful land of hobbits")
+
+    def test_creator_becomes_member_and_admin(self):
+        self.client.force_authenticate(self.user)
+        response = self.client.post(
+            "/api/projects/", data={"name": "The Shire"}, format="json"
+        )
+        project = Project.objects.get(id=response.data.get("id"))
+        self.assertIn(self.user, project.members.all())
+        self.assertIn(self.user, project.admins.all())
+
+    def test_unauthenticated_user_cannot_create_project(self):
+        response = self.client.post(
+            "/api/projects/", data={"name": "The Shire"}, format="json"
+        )
+        self.assertEqual(response.status_code, 401)
+
+
+class TestProjectUpdateView(TestCase):
+    def setUp(self):
+        User = get_user_model()
+        self.admin_user = User.objects.create(username="gandalf", password="thegrey")
+        Token.objects.create(user=self.admin_user)
+        self.non_admin_member = User.objects.create(
+            username="aragorn", password="strider"
+        )
+        Token.objects.create(user=self.non_admin_member)
+        self.non_member = User.objects.create(username="balrog", password="flame")
+        Token.objects.create(user=self.non_member)
+
+        self.project = Project.objects.create(name="The Fellowship of the Ring")
+        self.project.members.add(self.admin_user, self.non_admin_member)
+        self.project.admins.add(self.admin_user)
+
+        self.client = APIClient()
+
+    def test_admin_can_update(self):
+        self.client.force_authenticate(self.admin_user)
+        response = self.client.patch(
+            f"/api/projects/{self.project.id}/", data={"name": "The Two Towers"}
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data.get("name"), "The Two Towers")
+
+    def test_admin_can_update_description(self):
+        self.client.force_authenticate(self.admin_user)
+        response = self.client.patch(
+            f"/api/projects/{self.project.id}/",
+            data={"description": "The war of the ring"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.project.refresh_from_db()
+        self.assertEqual(self.project.description, "The war of the ring")
+
+    def test_non_admin_member_forbidden(self):
+        self.client.force_authenticate(self.non_admin_member)
+        response = self.client.patch(
+            f"/api/projects/{self.project.id}/", data={"name": "The Two Towers"}
+        )
+        self.assertEqual(response.status_code, 403)
+
+    def test_non_member_forbidden(self):
+        self.client.force_authenticate(self.non_member)
+        response = self.client.patch(
+            f"/api/projects/{self.project.id}/", data={"name": "The Two Towers"}
+        )
+        self.assertEqual(response.status_code, 403)
+
+    def test_admin_can_add_another_admin(self):
+        self.client.force_authenticate(self.admin_user)
+        response = self.client.patch(
+            f"/api/projects/{self.project.id}/",
+            data={"admins": [self.admin_user.id, self.non_admin_member.id]},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.project.refresh_from_db()
+        self.assertIn(self.non_admin_member, self.project.admins.all())
+
+
+class TestProjectPermissionView(TestCase):
+    def setUp(self):
+        User = get_user_model()
+        self.admin_user = User.objects.create(username="gandalf", password="thegrey")
+        Token.objects.create(user=self.admin_user)
+        self.non_admin_member = User.objects.create(
+            username="aragorn", password="strider"
+        )
+        Token.objects.create(user=self.non_admin_member)
+
+        self.project = Project.objects.create(name="The Fellowship of the Ring")
+        self.project.members.add(self.admin_user, self.non_admin_member)
+        self.project.admins.add(self.admin_user)
+
+        self.client = APIClient()
+
+    def test_admin_permissions(self):
+        self.client.force_authenticate(self.admin_user)
+        response = self.client.get(f"/api/projects/{self.project.id}/permissions/")
+        self.assertEqual(response.status_code, 200)
+        self.assertCountEqual(response.data.get("permissions"), ["CanView", "CanAdmin"])
+
+    def test_non_admin_member_permissions(self):
+        self.client.force_authenticate(self.non_admin_member)
+        response = self.client.get(f"/api/projects/{self.project.id}/permissions/")
+        self.assertEqual(response.status_code, 200)
+        self.assertCountEqual(response.data.get("permissions"), ["CanView"])
+
+
+class TestUserProfileDetailView(TestCase):
+    def setUp(self):
+        User = get_user_model()
+        self.user1 = User.objects.create(username="frodo", password="thering")
+        Token.objects.create(user=self.user1)
+        self.user2 = User.objects.create(username="samwise", password="taterstew")
+        Token.objects.create(user=self.user2)
+
+        self.data_partner = DataPartner.objects.create(name="Silvan Elves")
+
+        self.client = APIClient()
+
+    def test_unauthenticated_user_cannot_view_profile(self):
+        response = self.client.get(f"/api/v2/users/{self.user1.id}/")
+        self.assertEqual(response.status_code, 401)
+
+    def test_can_view_own_profile(self):
+        self.client.force_authenticate(self.user1)
+        response = self.client.get(f"/api/v2/users/{self.user1.id}/")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data.get("username"), "frodo")
+        self.assertIsNone(response.data.get("profile").get("data_partner"))
+        self.assertIsNone(response.data.get("profile").get("orcid"))
+
+    def test_can_view_another_users_profile(self):
+        self.client.force_authenticate(self.user1)
+        response = self.client.get(f"/api/v2/users/{self.user2.id}/")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data.get("username"), "samwise")
+
+    def test_view_self_heals_for_a_user_with_no_profile_row(self):
+        # Simulates a user that existed before the `Profile` model/backfill
+        # migration, so has no `Profile` row yet.
+        self.user1.profile.delete()
+        self.client.force_authenticate(self.user1)
+        response = self.client.get(f"/api/v2/users/{self.user1.id}/")
+        self.assertEqual(response.status_code, 200)
+        self.assertIsNone(response.data.get("profile").get("orcid"))
+
+    def test_can_update_own_profile(self):
+        self.client.force_authenticate(self.user1)
+        response = self.client.patch(
+            f"/api/v2/users/{self.user1.id}/",
+            data={
+                "data_partner": self.data_partner.id,
+                "orcid": "0000-0001-2345-6789",
+            },
+            format="json",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.user1.profile.refresh_from_db()
+        self.assertEqual(self.user1.profile.data_partner, self.data_partner)
+        self.assertEqual(self.user1.profile.orcid, "0000-0001-2345-6789")
+
+    def test_cannot_update_another_users_profile(self):
+        self.client.force_authenticate(self.user1)
+        response = self.client.patch(
+            f"/api/v2/users/{self.user2.id}/",
+            data={"orcid": "0000-0001-2345-6789"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 403)
+        self.user2.profile.refresh_from_db()
+        self.assertIsNone(self.user2.profile.orcid)
+
+    def test_invalid_orcid_is_rejected(self):
+        self.client.force_authenticate(self.user1)
+        response = self.client.patch(
+            f"/api/v2/users/{self.user1.id}/",
+            data={"orcid": "not-an-orcid"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 400)
+
+
+class TestBackfillProfilesMigration(TestCase):
+    def test_backfill_creates_missing_profiles_only(self):
+        backfill_profiles_migration = import_module(
+            "users.migrations.0002_backfill_profiles"
+        )
+
+        User = get_user_model()
+        user_without_profile = User.objects.create(username="frodo")
+        user_without_profile.profile.delete()
+        user_with_profile = User.objects.create(username="samwise")
+
+        backfill_profiles_migration.backfill_profiles(django_apps, None)
+
+        user_without_profile.refresh_from_db()
+        self.assertTrue(Profile.objects.filter(user=user_without_profile).exists())
+        self.assertEqual(Profile.objects.filter(user=user_with_profile).count(), 1)
+
+
+class TestUserSharedProjectsView(TestCase):
+    def setUp(self):
+        User = get_user_model()
+        self.user1 = User.objects.create(username="frodo", password="thering")
+        Token.objects.create(user=self.user1)
+        self.user2 = User.objects.create(username="samwise", password="taterstew")
+        Token.objects.create(user=self.user2)
+        self.user3 = User.objects.create(username="pippin", password="secondbreakfast")
+        Token.objects.create(user=self.user3)
+
+        self.shared_project = Project.objects.create(name="The Fellowship of the Ring")
+        self.shared_project.members.add(self.user1, self.user2)
+
+        self.solo_project = Project.objects.create(name="The Shire")
+        self.solo_project.members.add(self.user1)
+
+        self.client = APIClient()
+
+    def test_unauthenticated_user_cannot_view_shared_projects(self):
+        response = self.client.get(f"/api/v2/users/{self.user2.id}/shared-projects/")
+        self.assertEqual(response.status_code, 401)
+
+    def test_returns_only_shared_projects(self):
+        self.client.force_authenticate(self.user1)
+        response = self.client.get(f"/api/v2/users/{self.user2.id}/shared-projects/")
+        self.assertEqual(response.status_code, 200)
+        project_names = [project.get("name") for project in response.data]
+        self.assertCountEqual(project_names, ["The Fellowship of the Ring"])
+
+    def test_returns_empty_list_when_no_shared_projects(self):
+        self.client.force_authenticate(self.user1)
+        response = self.client.get(f"/api/v2/users/{self.user3.id}/shared-projects/")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data, [])

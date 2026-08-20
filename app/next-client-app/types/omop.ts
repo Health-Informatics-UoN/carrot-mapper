@@ -16,3 +16,11 @@ interface ConceptDetail extends Concept {
   valid_end_date: string;
   invalid_reason: string;
 }
+
+interface Vocabulary {
+  vocabulary_id: string;
+  vocabulary_name: string;
+  vocabulary_reference: string;
+  vocabulary_version: string | null;
+  vocabulary_concept_id: number;
+}

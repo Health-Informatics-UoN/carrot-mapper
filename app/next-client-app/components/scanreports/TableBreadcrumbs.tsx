@@ -72,11 +72,16 @@ export async function TableBreadcrumbs({
   fieldName,
   variant,
 }: TableBreadcrumbsProps) {
-  const tables = await getScanReportTables(id, undefined);
-  let fields: any = { count: 0, next: null, previous: null, results: [] };
-  if (tableId) {
-    fields = await getScanReportFields(id, tableId, undefined);
-  }
+  const emptyFields: PaginatedResponse<ScanReportField> = {
+    count: 0,
+    next: null,
+    previous: null,
+    results: [],
+  };
+  const [tables, fields] = await Promise.all([
+    getScanReportTables(id, undefined),
+    tableId ? getScanReportFields(id, tableId, undefined) : emptyFields,
+  ]);
 
   return (
     <Breadcrumb className="mb-3 hidden md:block">

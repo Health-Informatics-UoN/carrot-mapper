@@ -12,13 +12,13 @@ interface ScanReportsMappingRulesProps {
   searchParams?: Promise<FilterParameters>;
 }
 
-export default async function ScanReportsMappingRules(props: ScanReportsMappingRulesProps) {
+export default async function ScanReportsMappingRules(
+  props: ScanReportsMappingRulesProps,
+) {
   const searchParams = await props.searchParams;
   const params = await props.params;
 
-  const {
-    id
-  } = params;
+  const { id } = params;
 
   const defaultPageSize = 30;
   const defaultParams = {
@@ -27,8 +27,10 @@ export default async function ScanReportsMappingRules(props: ScanReportsMappingR
   };
   const combinedParams = { ...defaultParams, ...searchParams };
   const query = objToQuery(combinedParams);
-  const mappingRulesList = await getMappingRulesList(id, query);
-  const scanReport = await getScanReport(id);
+  const [mappingRulesList, scanReport] = await Promise.all([
+    getMappingRulesList(id, query),
+    getScanReport(id),
+  ]);
   const fileName = `${
     scanReport?.dataset
   } Rules - ${new Date().toLocaleString()}`;

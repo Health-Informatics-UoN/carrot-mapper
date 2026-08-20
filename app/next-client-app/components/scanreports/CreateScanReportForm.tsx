@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { AlertCircle, Upload } from "lucide-react";
 import {
   FormField,
@@ -27,6 +28,7 @@ import { MAX_FILE_SIZE_BYTES } from "@/constants";
 
 interface FormData {
   name: string;
+  description: string;
   visibility: string;
   viewers: number[];
   editors: number[];
@@ -47,7 +49,7 @@ const validationSchema = Yup.object({
         if (!value) return false; // Don't allow null/undefined
         const file = value as File;
         return file.size <= MAX_FILE_SIZE_BYTES;
-      }
+      },
     ),
   Data_dict: Yup.mixed()
     .nullable()
@@ -58,7 +60,7 @@ const validationSchema = Yup.object({
         if (!value) return true;
         const file = value as File;
         return file.size <= MAX_FILE_SIZE_BYTES;
-      }
+      },
     ),
 });
 
@@ -79,6 +81,7 @@ export function CreateScanReportForm({
   const handleSubmit = async (data: FormData) => {
     const formData = new FormData();
     formData.append("dataset", data.name);
+    formData.append("description", data.description);
     formData.append("visibility", data.visibility);
     formData.append("parent_dataset", data.dataset.toString());
     data.viewers.forEach((viewer) => {
@@ -131,6 +134,7 @@ export function CreateScanReportForm({
           editors: [],
           visibility: "PUBLIC",
           name: "",
+          description: "",
           scan_report_file: null,
           Data_dict: null,
         }}
@@ -138,13 +142,19 @@ export function CreateScanReportForm({
         validateOnChange={false}
         validateOnBlur={false}
         onSubmit={async (data) => {
-        // Return a Promise so Formik sets isSubmitting and prevents submitting multiple times
+          // Return a Promise so Formik sets isSubmitting and prevents submitting multiple times
           toast.info("Validating and uploading...");
           await handleSubmit(data);
         }}
       >
-        {({ values, handleChange, handleSubmit, setFieldValue, isSubmitting }) => (
-        // added isSubmitting to the form to disable the submit button while upload is in progress
+        {({
+          values,
+          handleChange,
+          handleSubmit,
+          setFieldValue,
+          isSubmitting,
+        }) => (
+          // added isSubmitting to the form to disable the submit button while upload is in progress
           <form
             className="w-full max-w-2xl"
             onSubmit={handleSubmit}
@@ -160,6 +170,25 @@ export function CreateScanReportForm({
                     </FormDescription>
                     <FormControl>
                       <Input {...field} onChange={handleChange} name="name" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              </FormField>
+
+              <FormField name="description">
+                {({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description</FormLabel>
+                    <FormDescription>
+                      Optional description of the new Scan Report.
+                    </FormDescription>
+                    <FormControl>
+                      <Textarea
+                        {...field}
+                        onChange={handleChange}
+                        name="description"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -317,7 +346,7 @@ export function CreateScanReportForm({
                           if (e.currentTarget.files) {
                             setFieldValue(
                               "scan_report_file",
-                              e.currentTarget.files[0]
+                              e.currentTarget.files[0],
                             );
                           }
                         }}
@@ -352,7 +381,7 @@ export function CreateScanReportForm({
                           if (e.currentTarget.files) {
                             setFieldValue(
                               "Data_dict",
-                              e.currentTarget.files[0]
+                              e.currentTarget.files[0],
                             );
                           }
                         }}

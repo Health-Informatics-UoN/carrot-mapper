@@ -1,4 +1,5 @@
 import { Field, FieldInputProps, FieldProps, FormikProps } from "formik";
+import { useId } from "react";
 import Select from "react-select";
 import makeAnimated from "react-select/animated";
 
@@ -24,6 +25,7 @@ const CustomSelect = ({
   isDisabled: boolean;
   required?: boolean;
 }) => {
+  const instanceId = useId();
   const animatedComponents = makeAnimated();
 
   // Optional: detect dark mode for better contrast
@@ -44,13 +46,14 @@ const CustomSelect = ({
       ? options.filter((option: Option) =>
           Array.isArray(field.value)
             ? field.value.includes(option.value)
-            : field.value === option.value
+            : field.value === option.value,
         )
       : [];
   };
 
   return (
     <Select
+      instanceId={instanceId}
       name={field.name}
       value={selected()}
       onChange={onChange}

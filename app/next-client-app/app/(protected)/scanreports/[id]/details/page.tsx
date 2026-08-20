@@ -17,20 +17,20 @@ interface ScanReportDetailsProps {
 export default async function ScanreportDetails(props: ScanReportDetailsProps) {
   const params = await props.params;
 
-  const {
-    id
-  } = params;
+  const { id } = params;
 
-  const scanreport = await getScanReport(id);
-  const datasetList = await getDatasetList();
-  const users = await getDataUsers();
+  const [scanreport, datasetList, users, permissionsSR] = await Promise.all([
+    getScanReport(id),
+    getDatasetList(),
+    getDataUsers(),
+    getScanReportPermissions(id),
+  ]);
   const parent_dataset = datasetList.find(
     (dataset) => dataset.name === scanreport?.parent_dataset.name,
   );
   const permissionsDS = await getDatasetPermissions(
     parent_dataset?.id.toString() || "",
   );
-  const permissionsSR = await getScanReportPermissions(id);
   const isAuthor = permissionsSR.permissions.includes("IsAuthor");
 
   if (!scanreport) {

@@ -14,7 +14,7 @@ import {
   DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import { Suspense } from "react";
-import { Skeleton } from "@/components/ui/skeleton";
+import { ScanReportTableSkeleton } from "@/components/scanreports/ScanReportTableSkeleton";
 import { format } from "date-fns/format";
 import { InfoItem } from "@/components/core/InfoItem";
 import { notFound } from "next/navigation";
@@ -24,6 +24,7 @@ import { StatusIcon } from "@/components/core/StatusIcon";
 import { UploadStatusOptions } from "@/constants/scanReportStatus";
 import ExportScanReport from "@/components/scanreports/ExportScanReport";
 import { ActionsDownloadMenu } from "./actions-download-menu";
+import { DescriptionPopover } from "@/components/core/DescriptionPopover";
 
 export async function generateMetadata({
   params,
@@ -42,13 +43,16 @@ export default async function ScanReportLayout(
   props: Readonly<{
     params: Promise<{ id: string }>;
     children: React.ReactNode;
-  }>
+  }>,
 ) {
   const params = await props.params;
 
   const { children } = props;
 
-  const permissions = await getScanReportPermissions(params.id);
+  const [permissions, scanreport] = await Promise.all([
+    getScanReportPermissions(params.id),
+    getScanReport(params.id),
+  ]);
   const requiredPermissions: Permission[] = ["CanAdmin", "CanEdit", "CanView"];
   const canEdit =
     permissions.permissions.includes("CanEdit") ||
@@ -63,6 +67,7 @@ export default async function ScanReportLayout(
     { name: "Rules", slug: "mapping_rules", iconName: "Waypoints" },
     { name: "Review Rules", slug: "review_rules", iconName: "SearchCheck" },
     { name: "Downloads", slug: "downloads", iconName: "Download" },
+    { name: "Logs", slug: "logs", iconName: "History" },
   ];
 
   {
@@ -76,15 +81,13 @@ export default async function ScanReportLayout(
     });
   }
 
-  const scanreport = await getScanReport(params.id);
-
   if (!scanreport) {
     return notFound();
   }
 
   if (
     !requiredPermissions.some((permission) =>
-      permissions.permissions.includes(permission)
+      permissions.permissions.includes(permission),
     )
   ) {
     return <Forbidden />;
@@ -108,6 +111,10 @@ export default async function ScanReportLayout(
             {scanreport.dataset}
           </h2>
         </Link>
+        <DescriptionPopover
+          description={scanreport.description}
+          title="Scan Report description"
+        />
       </div>
 
       <div className="flex flex-col md:flex-row md:items-center text-sm space-y-2 md:space-y-0 divide-y md:divide-y-0 md:divide-x divide-muted">
@@ -116,11 +123,15 @@ export default async function ScanReportLayout(
           value={scanreport.data_partner}
           className="py-1 md:py-0 md:pr-3"
         />
-        <InfoItem
-          label="Author"
-          value={scanreport.author.username}
-          className="py-1 md:py-0 md:px-3"
-        />
+        <h3 className="text-muted-foreground py-1 md:py-0 md:px-3">
+          Author:{" "}
+          <Link
+            href={`/users/${scanreport.author.id}/`}
+            className="text-foreground hover:underline"
+          >
+            {scanreport.author.username}
+          </Link>
+        </h3>
         <InfoItem
           label="Created"
           value={format(createdDate, "MMM dd, yyyy h:mm a")}
@@ -156,7 +167,7 @@ export default async function ScanReportLayout(
               ...scanreport.editors,
             ].filter(
               (member, index, self) =>
-                index === self.findIndex((m) => m.id === member.id)
+                index === self.findIndex((m) => m.id === member.id),
             )}
           />
         </div>
@@ -193,9 +204,7 @@ export default async function ScanReportLayout(
         </div>
       </div>
       <Boundary>
-        <Suspense fallback={<Skeleton className="h-full w-full" />}>
-          {children}
-        </Suspense>
+        <Suspense fallback={<ScanReportTableSkeleton />}>{children}</Suspense>
       </Boundary>
     </div>
   );

@@ -1,3 +1,4 @@
+import { Dispatch } from "react";
 import { addConceptV3 } from "@/api/concepts";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +13,7 @@ interface AddConceptProps {
   disabled: boolean;
   scanReportId: string;
   fieldId: number;
+  dispatch: Dispatch<ConceptTableAction>;
 }
 
 export default function AddConceptV3({
@@ -21,6 +23,7 @@ export default function AddConceptV3({
   disabled,
   scanReportId,
   fieldId,
+  dispatch,
 }: AddConceptProps) {
   const handleSubmit = async (conceptCode: number) => {
     try {
@@ -32,12 +35,15 @@ export default function AddConceptV3({
           creation_type: "M",
           table_id: tableId,
         },
-        `/scanreports/${scanReportId}/tables/${tableId}/fields/${fieldId}/beta`
+        `/scanreports/${scanReportId}/tables/${tableId}/fields/${fieldId}`
       );
 
-      if (response) {
+      if (response && "errorMessage" in response) {
         toast.error(`Adding concept failed. ${response.errorMessage}`);
-      } else {
+      } else if (response) {
+        // Apply the new concept locally straight away, instead of waiting
+        // for the page-wide revalidation to round-trip and re-render.
+        dispatch({ type: "add", rowId, concept: response });
         toast.success(`OMOP Concept successfully added.`);
       }
     } catch (error) {

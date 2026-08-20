@@ -4,6 +4,14 @@ FROM apache/airflow:2.10.5
 # Build argument to determine which entrypoint to use
 ARG AIRFLOW_COMPONENT=webserver
 
+# Version is resolved from git tags by CI (semantic-release) and passed in here.
+# Unlike the API image, the local carrot-airflow project isn't pip-installed into
+# this image (see below), so there's no package metadata for setuptools_scm to bake
+# in - the version is just carried as a label/env var instead.
+ARG AIRFLOW_APP_VERSION=0.0.0.dev0
+ENV AIRFLOW_APP_VERSION=${AIRFLOW_APP_VERSION}
+LABEL org.opencontainers.image.version=${AIRFLOW_APP_VERSION}
+
 # Install provider packages 
 # (tried using requirements.txt but it took too long to build and install using pyproject.toml didn't work)
 RUN pip install --no-cache-dir \

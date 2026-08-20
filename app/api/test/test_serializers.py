@@ -1,6 +1,7 @@
 from api.serializers import (
     MappingRecommendationSerializerV3,
     ScanReportEditSerializer,
+    ScanReportFieldListSerializerV3,
     ScanReportValueViewSerializerV3,
 )
 from data.models import Concept
@@ -14,6 +15,7 @@ from mapping.models import (
     MappingRecommendation,
     Project,
     ScanReport,
+    ScanReportConcept,
     ScanReportField,
     ScanReportTable,
     ScanReportValue,
@@ -220,6 +222,16 @@ class TestScanReportEditSerializer(TestCase):
         # check admin can alter author
         request.user = self.admin_user
         self.assertEqual(serializer.validate_author(new_author), new_author)
+
+    def test_description_is_saved(self):
+        serializer = ScanReportEditSerializer(
+            self.public_scanreport,
+            data={"description": "A cosy hobbit hole"},
+            partial=True,
+        )
+        self.assertTrue(serializer.is_valid())
+        scan_report = serializer.save()
+        self.assertEqual(scan_report.description, "A cosy hobbit hole")
 
 
 class TestDatasetEditSerializer(TestCase):
@@ -464,3 +476,81 @@ class TestMappingRecommendationSerializerV3(TestCase):
         self.assertEqual(
             recommendation_data["concept"]["concept_name"], self.concept.concept_name
         )
+
+
+class TestScanReportFieldSerializerV3(TestCase):
+    def setUp(self):
+        self.scan_report = ScanReport.objects.create(
+            dataset="Test Dataset",
+            visibility="PUBLIC",
+        )
+
+        self.table = ScanReportTable.objects.create(
+            scan_report=self.scan_report,
+            name="Test Table",
+        )
+
+        self.field = ScanReportField.objects.create(
+            scan_report_table=self.table,
+            name="Test Field",
+            description_column="Test Description",
+            type_column="string",
+        )
+
+        self.concept = Concept.objects.create(
+            concept_id=12345,
+            concept_name="Test Concept",
+            concept_code="TEST123",
+            domain_id="Test",
+            vocabulary_id="Test",
+            concept_class_id="Test",
+            standard_concept="S",
+            valid_start_date="2020-01-01",
+            valid_end_date="2099-12-31",
+        )
+
+        field_content_type = ContentType.objects.get_for_model(ScanReportField)
+        self.recommendation = MappingRecommendation.objects.create(
+            content_type=field_content_type,
+            object_id=self.field.id,
+            concept=self.concept,
+            score=0.85,
+            tool_name="test-tool",
+            tool_version="1.0.0",
+        )
+        self.scan_report_concept = ScanReportConcept.objects.create(
+            content_type=field_content_type,
+            object_id=self.field.id,
+            concept=self.concept,
+        )
+
+    def test_scan_report_Fields_v3_serializer_includes_recommendations(self):
+        """Test that ScanReportFieldListSerializerV3 includes recommendations ."""
+        serializer = ScanReportFieldListSerializerV3(self.field)
+        data = serializer.data
+
+        # Check that mapping recommendations are included
+        self.assertIn("mapping_recommendations", data)
+        self.assertEqual(len(data["mapping_recommendations"]), 1)
+
+        recommendation_data = data["mapping_recommendations"][0]
+        self.assertEqual(recommendation_data["id"], self.recommendation.id)
+        self.assertEqual(recommendation_data["score"], 0.85)
+        self.assertEqual(recommendation_data["tool_name"], "test-tool")
+        self.assertEqual(recommendation_data["tool_version"], "1.0.0")
+        self.assertEqual(recommendation_data["concept"]["concept_id"], 12345)
+        self.assertEqual(recommendation_data["concept"]["concept_name"], "Test Concept")
+
+    def test_scan_report_Fields_v3_serializer_includes_concepts(self):
+        """Test that ScanReportFieldListSerializerV3 includes concepts."""
+        serializer = ScanReportFieldListSerializerV3(self.field)
+        data = serializer.data
+
+        # check that concepts are included
+        self.assertIn("concepts", data)
+        self.assertEqual(len(data["concepts"]), 1)
+
+        concept_data = data["concepts"][0]
+        self.assertEqual(concept_data["id"], self.scan_report_concept.id)
+        self.assertEqual(concept_data["concept"]["concept_id"], 12345)
+        self.assertEqual(concept_data["concept"]["concept_name"], "Test Concept")
