@@ -1307,7 +1307,12 @@ class ScanReportConceptListV2(
         # validate person_id and date event are set on table
         table_id = body.pop("table_id", None)
         try:
-            table = ScanReportTable.objects.get(pk=table_id)
+            # select_related so the person_id/date_event checks below, and the
+            # mapping-rule generation after, don't each re-fetch these via a
+            # separate query.
+            table = ScanReportTable.objects.select_related(
+                "scan_report", "person_id", "date_event"
+            ).get(pk=table_id)
         except ObjectDoesNotExist:
             return Response(
                 {"detail": "Table with the provided ID does not exist."},
@@ -1385,7 +1390,7 @@ class ScanReportConceptListV2(
             object_id=body["object_id"],
             content_type=content_type,
         )
-        if sr_concept.count() > 0:
+        if sr_concept.exists():
             return Response(
                 {
                     "detail": "Can't add multiple concepts of the same id to the same object"
@@ -1406,7 +1411,12 @@ class ScanReportConceptListV2(
             # We already fetched this Concept above; assign it so serializing the
             # response below doesn't re-fetch it via the FK.
             model.concept = concept
-            rules = save_mapping_rules(model, destination_table=destination_table)
+            rules = save_mapping_rules(
+                model,
+                destination_table=destination_table,
+                source_field=source_field,
+                source_table=table,
+            )
             if not rules:
                 transaction.set_rollback(True)
                 return Response(

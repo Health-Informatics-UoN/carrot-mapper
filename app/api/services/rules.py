@@ -325,6 +325,8 @@ def _find_destination_table(
 def save_mapping_rules(
     scan_report_concept: ScanReportConcept,
     destination_table: Optional[OmopTable] = None,
+    source_field: Optional[ScanReportField] = None,
+    source_table: Optional[ScanReportTable] = None,
 ) -> List[MappingRule]:
     """
     Save mapping rules from a given ScanReportConcept.
@@ -334,18 +336,26 @@ def save_mapping_rules(
         - [optional] destination_table (OmopTable) : the destination table, if already
           computed by the caller (e.g. because it validated the concept against the
           table beforehand) - avoids recomputing it here.
+        - [optional] source_field / source_table (ScanReportField / ScanReportTable) : the
+          source field/table, if already fetched by the caller - avoids re-fetching them
+          here via the concept's GenericForeignKey (and, since a freshly-fetched
+          ScanReportTable doesn't share the caller's instance cache, re-running the
+          person_id/date_event lookups that the caller likely already did).
 
     Returns:
         - Tuple[bool, List[MappingRule]]: A tuple containing a boolean indicating if the rule has been saved and the list of rules to be created.
     """
-    content_object = scan_report_concept.content_object
-    if isinstance(content_object, ScanReportValue):
-        scan_report_value = content_object
-        source_field = scan_report_value.scan_report_field
-    else:
-        source_field = content_object
+    if source_field is None:
+        content_object = scan_report_concept.content_object
+        if isinstance(content_object, ScanReportValue):
+            source_field = content_object.scan_report_field
+        else:
+            source_field = content_object
 
-    scan_report = source_field.scan_report_table.scan_report
+    if source_table is None:
+        source_table = source_field.scan_report_table
+
+    scan_report = source_table.scan_report
     concept = scan_report_concept.concept
     type_column = source_field.type_column.lower()
     domain = concept.domain_id.lower()
@@ -353,8 +363,6 @@ def save_mapping_rules(
     # Convert "spec anatomic site" to "anatomic_site" to match the name in OMOP CDM
     if domain == "spec anatomic site":
         domain = "anatomic_site"
-
-    source_table = source_field.scan_report_table
 
     # start looking up what table we're looking at, unless the caller already did
     if destination_table is None:
