@@ -15,6 +15,7 @@ from mapping.models import (
     DataPartner,
     Dataset,
     MappingRecommendation,
+    MappingRule,
     Project,
     ScanReport,
     ScanReportConcept,
@@ -1332,3 +1333,125 @@ class TestUserSharedProjectsView(TestCase):
         response = self.client.get(f"/api/v2/users/{self.user3.id}/shared-projects/")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data, [])
+
+
+class TestScanReportConceptCreateView(TestCase):
+    """
+    Covers https://github.com/Health-Informatics-UoN/carrot-mapper/issues/1323 -
+    tagging a field/value with OMOP's "No matching concept" (concept_id 0) should
+    succeed and record the review, without requiring/creating a MappingRule.
+    """
+
+    def setUp(self):
+        User = get_user_model()
+        self.user = User.objects.create(username="bilbo", password="undermountain")
+        Token.objects.create(user=self.user)
+
+        self.data_partner = DataPartner.objects.create(name="Silvan Elves")
+        self.dataset = Dataset.objects.create(
+            name="The Shire",
+            visibility=VisibilityChoices.PUBLIC,
+            data_partner=self.data_partner,
+        )
+        self.project = Project.objects.create(name="The Fellowship of The Ring")
+        self.project.members.add(self.user)
+        self.project.datasets.add(self.dataset)
+
+        self.scan_report = ScanReport.objects.create(
+            author=self.user,
+            name="Scan Report",
+            dataset="Dataset Name",
+            parent_dataset=self.dataset,
+        )
+        self.scan_report.viewers.add(self.user)
+
+        self.table = ScanReportTable.objects.create(
+            scan_report=self.scan_report, name="Table 1"
+        )
+        self.person_id_field = ScanReportField.objects.create(
+            scan_report_table=self.table,
+            name="ID",
+            description_column="",
+            type_column="INT",
+        )
+        self.date_event_field = ScanReportField.objects.create(
+            scan_report_table=self.table,
+            name="Date",
+            description_column="",
+            type_column="VARCHAR",
+        )
+        self.table.person_id = self.person_id_field
+        self.table.date_event = self.date_event_field
+        self.table.save()
+
+        self.field = ScanReportField.objects.create(
+            scan_report_table=self.table,
+            name="Unmappable Field",
+            description_column="",
+            type_column="VARCHAR",
+        )
+
+        self.no_matching_concept = Concept.objects.create(
+            concept_id=0,
+            concept_name="No matching concept",
+            domain_id="Metadata",
+            vocabulary_id="None",
+            concept_class_id="Undefined",
+            concept_code="No matching concept",
+            valid_start_date=date.today(),
+            valid_end_date=date.today(),
+        )
+
+        self.client = APIClient()
+        self.client.force_authenticate(self.user)
+        self.url = "/api/v2/scanreports/concepts/"
+
+    def test_no_matching_concept_can_be_added_without_a_mapping_rule(self):
+        response = self.client.post(
+            self.url,
+            {
+                "concept": self.no_matching_concept.concept_id,
+                "object_id": self.field.id,
+                "content_type": "scanreportfield",
+                "creation_type": "M",
+                "table_id": self.table.id,
+            },
+        )
+
+        self.assertEqual(response.status_code, 201)
+        self.assertTrue(
+            ScanReportConcept.objects.filter(
+                concept=self.no_matching_concept, object_id=self.field.id
+            ).exists()
+        )
+        self.assertFalse(MappingRule.objects.exists())
+
+    def test_unimplemented_domain_still_returns_400(self):
+        unmapped_concept = Concept.objects.create(
+            concept_id=999999,
+            concept_name="Some concept with no destination table",
+            domain_id="Not A Real Domain",
+            vocabulary_id="None",
+            concept_class_id="Undefined",
+            concept_code="999999",
+            valid_start_date=date.today(),
+            valid_end_date=date.today(),
+        )
+
+        response = self.client.post(
+            self.url,
+            {
+                "concept": unmapped_concept.concept_id,
+                "object_id": self.field.id,
+                "content_type": "scanreportfield",
+                "creation_type": "M",
+                "table_id": self.table.id,
+            },
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(
+            ScanReportConcept.objects.filter(
+                concept=unmapped_concept, object_id=self.field.id
+            ).exists()
+        )
