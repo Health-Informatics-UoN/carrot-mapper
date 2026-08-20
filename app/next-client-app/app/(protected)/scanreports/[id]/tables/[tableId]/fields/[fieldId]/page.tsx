@@ -55,7 +55,9 @@ export default async function ScanReportsValue(props: ScanReportsValueProps) {
 
   return (
     <div>
-      <div className="flex justify-between items-center">{breadcrumbs}</div>
+      <div className="flex justify-between items-center">
+        {breadcrumbs}
+      </div>
       <div>
         <ConceptDataTableV3
           count={scanReportsValues.count}

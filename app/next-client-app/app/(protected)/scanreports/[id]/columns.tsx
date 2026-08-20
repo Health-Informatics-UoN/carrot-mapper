@@ -22,17 +22,14 @@ export const columns: ColumnDef<ScanReportTable>[] = [
       return (
         <div>
           <Link href={`/scanreports/${scan_report}/tables/${id}`}>
-            <Button
-              variant="link"
-              className="font-bold text-black dark:text-white"
-            >
+            <Button variant="link" className="font-bold text-black dark:text-white">
               {name}
             </Button>
           </Link>
           <CopyButton textToCopy={name} />
         </div>
       );
-    },
+    }
   },
   {
     id: "Person ID",
@@ -49,7 +46,7 @@ export const columns: ColumnDef<ScanReportTable>[] = [
       return <>{person_id?.name}</>;
     },
     enableHiding: true,
-    enableSorting: false,
+    enableSorting: false
   },
   {
     id: "Event Date",
@@ -66,7 +63,7 @@ export const columns: ColumnDef<ScanReportTable>[] = [
       return <>{date_event?.name}</>;
     },
     enableHiding: true,
-    enableSorting: false,
+    enableSorting: false
   },
   {
     id: "jobs",
@@ -90,7 +87,7 @@ export const columns: ColumnDef<ScanReportTable>[] = [
           />
         </div>
       );
-    },
+    }
   },
   {
     id: "edit",
@@ -113,6 +110,6 @@ export const columns: ColumnDef<ScanReportTable>[] = [
           generalStatus={generalStatus}
         />
       );
-    },
-  },
+    }
+  }
 ];
