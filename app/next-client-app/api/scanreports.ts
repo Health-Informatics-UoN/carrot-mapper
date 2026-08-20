@@ -152,6 +152,7 @@ export async function getScanReportTable(
       permissions: [],
       jobs: [],
       trigger_reuse: true,
+      death_table: false,
     };
   }
 }
@@ -333,4 +334,3 @@ export async function getScanReportFieldsV3(
     return { count: 0, next: null, previous: null, results: [] };
   }
 }
-

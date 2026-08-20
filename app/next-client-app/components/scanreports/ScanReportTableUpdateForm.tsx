@@ -6,7 +6,14 @@ import { Save } from "lucide-react";
 import { toast } from "sonner";
 import { FormDataFilter } from "../form-components/FormikUtils";
 import { Formik } from "formik";
-import { FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription } from "@/components/ui/form";
+import {
+  FormField,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormMessage,
+  FormDescription,
+} from "@/components/ui/form";
 import { FormikSelect } from "../form-components/FormikSelect";
 import { useRouter } from "next/navigation";
 import { Checkbox } from "../ui/checkbox";
@@ -16,6 +23,7 @@ interface FormData {
   personId: number | null;
   dateEvent: number | null;
   triggerReuse: boolean;
+  death_table: boolean;
 }
 
 export function ScanReportTableUpdateForm({
@@ -45,16 +53,17 @@ export function ScanReportTableUpdateForm({
       person_id: data.personId !== 0 ? data.personId : null,
       date_event: data.dateEvent !== 0 ? data.dateEvent : null,
       trigger_reuse: data.triggerReuse,
+      death_table: data.death_table,
     };
 
     const response = await updateScanReportTable(
       scanreportTable.scan_report,
       scanreportTable.id,
-      submittingData
+      submittingData,
     );
     if (response) {
       toast.error(
-        `Update Scan Report Table failed. Error: ${response.errorMessage}`
+        `Update Scan Report Table failed. Error: ${response.errorMessage}`,
       );
     } else {
       toast.success("Update Scan Report Table successful!");
@@ -68,6 +77,7 @@ export function ScanReportTableUpdateForm({
         dateEvent: initialDateEvent[0].value,
         personId: initialPersonId[0].value,
         triggerReuse: scanreportTable.trigger_reuse,
+        death_table: Boolean(scanreportTable.death_table),
       }}
       onSubmit={(data) => {
         handleSubmit(data);
@@ -76,7 +86,6 @@ export function ScanReportTableUpdateForm({
       {({ handleSubmit, values, setFieldValue }) => (
         <form className="w-full max-w-2xl" onSubmit={handleSubmit}>
           <div className="flex flex-col gap-5">
-
             <FormItem>
               <FormLabel>Person ID</FormLabel>
               <FormDescription>
@@ -109,12 +118,41 @@ export function ScanReportTableUpdateForm({
               </FormControl>
             </FormItem>
 
+            <FormItem>
+              <div className="flex gap-2 items-center">
+                <FormLabel className="mb-0">
+                  Does this table contain death data for the OMOP CDM Death
+                  table?
+                </FormLabel>
+                <FormControl>
+                  <Checkbox
+                    checked={values.death_table}
+                    onCheckedChange={(checked) => {
+                      setFieldValue("death_table", checked);
+                    }}
+                    disabled={!canUpdate}
+                    className="size-5"
+                  />
+                </FormControl>
+                <span className="text-sm">
+                  {values.death_table === true ? "Yes" : "No"}
+                </span>
+              </div>
+              <FormDescription>
+                Mapping rules for this table will have Destination table as
+                Death, concepts will be recognised as Cause of Death, and the
+                Date Event will map to the Death date field in OMOP CDM.
+              </FormDescription>
+            </FormItem>
+
             {enableReuseTriggerOption === "true" && (
               <FormField name="triggerReuse">
                 {({ field }) => (
                   <FormItem>
                     <div className="flex gap-2 items-center">
-                      <FormLabel>Do you want to trigger the reuse of existing concepts?</FormLabel>
+                      <FormLabel>
+                        Do you want to trigger the reuse of existing concepts?
+                      </FormLabel>
                       <FormControl>
                         <Checkbox
                           checked={values.triggerReuse}
@@ -130,7 +168,10 @@ export function ScanReportTableUpdateForm({
                       </span>
                     </div>
                     <FormDescription>
-                      If Yes, concepts added to other scan reports which are in same parent dataset will be reused, based on the matching value and field. This feature may make the auto mapping process longer to run.
+                      If Yes, concepts added to other scan reports which are in
+                      same parent dataset will be reused, based on the matching
+                      value and field. This feature may make the auto mapping
+                      process longer to run.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -139,10 +180,7 @@ export function ScanReportTableUpdateForm({
             )}
 
             <div className="flex mt-3">
-              <Button
-                type="submit"
-                disabled={!canUpdate}
-              >
+              <Button type="submit" disabled={!canUpdate}>
                 <Save className="h-4 w-4" />
                 Save
               </Button>

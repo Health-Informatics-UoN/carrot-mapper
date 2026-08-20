@@ -30,6 +30,7 @@ interface ScanReportTable {
   permissions: Permission[];
   jobs: Job[];
   trigger_reuse: boolean;
+  death_table?: boolean;
 }
 
 interface ScanReportField {
