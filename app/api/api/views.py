@@ -78,6 +78,7 @@ from api.serializers import (
     GetRulesAnalysis,
     ScanReportConceptDetailSerializerV3,
     ScanReportConceptSerializer,
+    ScanReportConceptSerializerV2,
     ScanReportCreateSerializer,
     ScanReportEditSerializer,
     ScanReportFieldEditSerializer,
@@ -1397,11 +1398,14 @@ class ScanReportConceptListV2(
 
         # Wrap the create + rule-generation writes in one transaction: if rule
         # generation fails, roll back the ScanReportConcept too instead of leaving
-        # it orphaned without any mapping rules. 
+        # it orphaned without any mapping rules.
         with transaction.atomic():
             self.perform_create(serializer)
 
             model = serializer.instance
+            # We already fetched this Concept above; assign it so serializing the
+            # response below doesn't re-fetch it via the FK.
+            model.concept = concept
             rules = save_mapping_rules(model, destination_table=destination_table)
             if not rules:
                 transaction.set_rollback(True)
@@ -1426,9 +1430,11 @@ class ScanReportConceptListV2(
         )
 
         headers = self.get_success_headers(serializer.data)
-        return Response(
-            serializer.data, status=status.HTTP_201_CREATED, headers=headers
-        )
+        # Serialize with the concept nested (rather than just its id) so the
+        # frontend can render the new concept tag immediately, without a
+        # follow-up request.
+        response_data = ScanReportConceptSerializerV2(model).data
+        return Response(response_data, status=status.HTTP_201_CREATED, headers=headers)
 
     def perform_create(self, serializer):
         """
