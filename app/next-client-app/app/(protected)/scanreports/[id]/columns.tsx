@@ -3,7 +3,6 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { DataTableColumnHeader } from "@/components/data-table/DataTableColumnHeader";
 import { EditButton } from "@/components/scanreports/EditButton";
-import { Tooltips } from "@/components/core/Tooltips";
 import JobDialog from "@/components/jobs/JobDialog";
 import { FindGeneralStatus, DivideJobs } from "@/components/jobs/JobUtils";
 import Link from "next/link";
@@ -23,14 +22,17 @@ export const columns: ColumnDef<ScanReportTable>[] = [
       return (
         <div>
           <Link href={`/scanreports/${scan_report}/tables/${id}`}>
-            <Button variant="link" className="font-bold text-black dark:text-white">
+            <Button
+              variant="link"
+              className="font-bold text-black dark:text-white"
+            >
               {name}
             </Button>
           </Link>
           <CopyButton textToCopy={name} />
         </div>
       );
-    }
+    },
   },
   {
     id: "Person ID",
@@ -47,7 +49,7 @@ export const columns: ColumnDef<ScanReportTable>[] = [
       return <>{person_id?.name}</>;
     },
     enableHiding: true,
-    enableSorting: false
+    enableSorting: false,
   },
   {
     id: "Event Date",
@@ -64,7 +66,7 @@ export const columns: ColumnDef<ScanReportTable>[] = [
       return <>{date_event?.name}</>;
     },
     enableHiding: true,
-    enableSorting: false
+    enableSorting: false,
   },
   {
     id: "jobs",
@@ -88,29 +90,7 @@ export const columns: ColumnDef<ScanReportTable>[] = [
           />
         </div>
       );
-    }
-  },
-  {
-    id: "note",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Note" />
-    ),
-    cell: ({ row }) => {
-      const { death_table } = row.original;
-      return (
-        <div>
-          {death_table && (
-            <h3 className="flex">
-              {" "}
-              Death table
-              <Tooltips
-                content="This table is marked as a Death table. In the Carrot data standard, death data is typically provided in a separate file (e.g. death.csv) for mapping to the OMOP Death table."
-              />
-            </h3>
-          )}
-        </div>
-      );
-    }
+    },
   },
   {
     id: "edit",
@@ -133,6 +113,6 @@ export const columns: ColumnDef<ScanReportTable>[] = [
           generalStatus={generalStatus}
         />
       );
-    }
-  }
+    },
+  },
 ];
