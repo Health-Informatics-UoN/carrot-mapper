@@ -49,7 +49,10 @@ export default async function ScanReportLayout(
 
   const { children } = props;
 
-  const permissions = await getScanReportPermissions(params.id);
+  const [permissions, scanreport] = await Promise.all([
+    getScanReportPermissions(params.id),
+    getScanReport(params.id),
+  ]);
   const requiredPermissions: Permission[] = ["CanAdmin", "CanEdit", "CanView"];
   const canEdit =
     permissions.permissions.includes("CanEdit") ||
@@ -77,8 +80,6 @@ export default async function ScanReportLayout(
       iconName: "Edit",
     });
   }
-
-  const scanreport = await getScanReport(params.id);
 
   if (!scanreport) {
     return notFound();

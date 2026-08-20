@@ -16,19 +16,19 @@ interface ScanReportsEditFieldProps {
   }>;
 }
 
-export default async function ScanReportsEditField(props: ScanReportsEditFieldProps) {
+export default async function ScanReportsEditField(
+  props: ScanReportsEditFieldProps,
+) {
   const params = await props.params;
 
-  const {
-    id,
-    tableId,
-    fieldId
-  } = params;
+  const { id, tableId, fieldId } = params;
 
-  const scanReport = await getScanReport(id);
-  const table = await getScanReportTable(id, tableId);
-  const field = await getScanReportField(id, tableId, fieldId);
-  const permissions = await getScanReportPermissions(id);
+  const [scanReport, table, field, permissions] = await Promise.all([
+    getScanReport(id),
+    getScanReportTable(id, tableId),
+    getScanReportField(id, tableId, fieldId),
+    getScanReportPermissions(id),
+  ]);
 
   if (!scanReport) {
     return notFound();

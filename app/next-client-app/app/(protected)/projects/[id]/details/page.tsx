@@ -12,9 +12,11 @@ interface ProjectDetailsProps {
 export default async function ProjectDetails(props: ProjectDetailsProps) {
   const { id } = await props.params;
 
-  const project = await getProject(id);
-  const users = await getDataUsers();
-  const permissions = await getProjectPermissions(id);
+  const [project, users, permissions] = await Promise.all([
+    getProject(id),
+    getDataUsers(),
+    getProjectPermissions(id),
+  ]);
 
   if (!project) {
     return <Forbidden />;

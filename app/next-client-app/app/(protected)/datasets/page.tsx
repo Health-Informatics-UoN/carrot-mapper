@@ -12,7 +12,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 
 export const metadata: Metadata = {
   title: "Datasets | Carrot Mapper",
-  description: "Datasets for the current user"
+  description: "Datasets for the current user",
 };
 
 interface DataSetListProps {
@@ -23,14 +23,16 @@ export default async function DataSets(props: DataSetListProps) {
   const searchParams = await props.searchParams;
   const defaultParams = {
     hidden: false,
-    page_size: 10
+    page_size: 10,
   };
   const combinedParams = { ...defaultParams, ...searchParams };
 
-  const projects = await getAllProjects();
-  const dataPartnerList = await getDataPartners();
   const query = objToQuery(combinedParams);
-  const dataset = await getDataSets(query);
+  const [projects, dataPartnerList, dataset] = await Promise.all([
+    getAllProjects(),
+    getDataPartners(),
+    getDataSets(query),
+  ]);
   const filter = <DataTableFilter filter="name" />;
 
   return (

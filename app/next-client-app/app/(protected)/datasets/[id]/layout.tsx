@@ -43,7 +43,10 @@ export default async function DatasetLayout({
 }: Readonly<LayoutProps>) {
   const { id } = await params;
 
-  const permissions = await getDatasetPermissions(id);
+  const [permissions, dataset] = await Promise.all([
+    getDatasetPermissions(id),
+    getDataSet(id),
+  ]);
   const requiredPermissions: Permission[] = ["CanAdmin", "CanEdit", "CanView"];
 
   const items = [
@@ -54,8 +57,6 @@ export default async function DatasetLayout({
     { name: "Logs", slug: "logs", iconName: "History" },
     { name: "Edit Details", slug: "details", iconName: "Edit" },
   ];
-
-  const dataset = await getDataSet(id);
 
   const dataPartner = dataset.data_partner;
   const projects = dataset.projects;
