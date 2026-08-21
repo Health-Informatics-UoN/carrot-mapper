@@ -13,7 +13,41 @@ This page covers everything specific to contributing code to Carrot Mapper.
 
 ## Development setup
 
-See the [developer setup guide](https://carrot.ac.uk/mapper/dev_guide/quickstart).
+See the [developer setup guide](https://carrot.ac.uk/mapper/dev_guide/quickstart) for full details. In short:
+
+`docker compose up` only runs the supporting services (Postgres, minio/azurite, omop-lite, Airflow) — the API and frontend are run from source so you get fast reload and a normal debugger.
+
+Airflow's own migration needs a Postgres `airflow` schema to already exist, which is created by the API (`airflow_schema_creation` management command), not by Airflow itself. So **the first time** you bring the stack up (or any time after wiping the `db` volume), start the API's one-time setup *between* two docker compose stages rather than bringing everything up at once:
+
+1. Start Postgres and let the OMOP vocab loader finish (it's a one-shot container — wait for it to exit before continuing):
+   ```bash
+   cp .env.example .env
+   docker compose up -d db omop-lite
+   docker wait $(docker compose ps -q omop-lite)
+   ```
+2. Bootstrap and run the API from source (in a second terminal, from `app/api`):
+   ```bash
+   uv sync
+   uv run manage.py airflow_schema_creation
+   uv run manage.py migrate
+   uv run manage.py automatic_seeding_data
+   uv run manage.py default_super_user
+   uv run manage.py automatic_queue_and_containers_creation
+   uv run manage.py runserver
+   ```
+   `python-dotenv` walks up from `app/api` looking for a `.env`, so the root `.env` created above covers the API too — no separate `app/api/.env` is needed.
+3. Now that the `airflow` schema exists, bring up the rest of the stack (in a third terminal):
+   ```bash
+   docker compose up -d
+   ```
+4. Run the frontend from source (in a fourth terminal, from `app/next-client-app`):
+   ```bash
+   cp .env.example .env
+   npm install
+   npm run dev
+   ```
+
+On later days, once the schema and migrations already exist in the `db` volume, this ordering doesn't matter any more — a plain `docker compose up -d` for the whole stack, then `uv run manage.py runserver` and `npm run dev`, is fine.
 
 ## Pre-commit hooks
 
@@ -44,4 +78,3 @@ uv run pre-commit install
 ## Releases
 
 Releases are automated with `semantic-release` based on Conventional Commit PR titles merged to `main`: a `fix:` triggers a patch release, `feat:` a minor release, and a breaking change (`!` or a `BREAKING CHANGE:` footer) a major release. This also determines the container image tags published to `ghcr.io/carrot/`.
-
