@@ -14,6 +14,12 @@ from mapping.models import (
     ScanReportValue,
 )
 
+# OMOP's standard concept_id for "No matching concept". Its domain (Metadata)
+# has no destination table, so it should never generate a MappingRule - it's
+# a review marker ("this field was looked at and deliberately left unmapped"),
+# not an instruction for Carrot Transform.
+NO_MATCHING_CONCEPT_ID = 0
+
 # allowed tables
 m_allowed_tables = [
     "person",
@@ -357,6 +363,10 @@ def save_mapping_rules(
 
     scan_report = source_table.scan_report
     concept = scan_report_concept.concept
+
+    if concept.concept_id == NO_MATCHING_CONCEPT_ID:
+        return []
+
     type_column = source_field.type_column.lower()
     domain = concept.domain_id.lower()
 

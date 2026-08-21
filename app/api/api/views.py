@@ -53,6 +53,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from services.activity_log import record as record_activity
 from services.rules import (
+    NO_MATCHING_CONCEPT_ID,
     _find_destination_table,
     save_mapping_rules,
 )
@@ -1269,7 +1270,9 @@ class ScanReportConceptListV2(
                 - Validating the data type of the field for concepts
                   with the "Observation" domain.
                 - Ensuring the destination table for the concept is
-                  valid.
+                  valid (skipped for the "No matching concept"
+                  concept_id 0, which is a review marker and never
+                  generates mapping rules).
                 - Preventing multiple concepts with the same ID from
                   being added to the same object.
             Returns appropriate error responses for validation
@@ -1374,15 +1377,22 @@ class ScanReportConceptListV2(
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        # "No matching concept" (concept_id 0) is a review marker, not something
+        # Transform can act on - it has no destination table, so skip that lookup
+        # and don't generate any mapping rules for it below.
+        is_no_matching_concept = concept.concept_id == NO_MATCHING_CONCEPT_ID
+
         # validate the destination_table
-        destination_table = _find_destination_table(concept, table)
-        if destination_table is None:
-            return Response(
-                {
-                    "detail": "The destination table could not be found or has not been implemented."
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        destination_table = None
+        if not is_no_matching_concept:
+            destination_table = _find_destination_table(concept, table)
+            if destination_table is None:
+                return Response(
+                    {
+                        "detail": "The destination table could not be found or has not been implemented."
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
         # Validate that multiple concepts are not being added.
         sr_concept = ScanReportConcept.objects.filter(
@@ -1417,7 +1427,7 @@ class ScanReportConceptListV2(
                 source_field=source_field,
                 source_table=table,
             )
-            if not rules:
+            if not rules and not is_no_matching_concept:
                 transaction.set_rollback(True)
                 return Response(
                     {"detail": "Rule could not be saved."},
