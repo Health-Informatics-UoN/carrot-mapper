@@ -11,7 +11,11 @@ class ScopeType(models.TextChoices):
 
 class Verb(models.TextChoices):
     SCAN_REPORT_UPLOADED = "scanreport.uploaded", "Scan report uploaded"
+    SCAN_REPORT_CREATED = "scanreport.created", "Scan report created"
     SCAN_REPORT_UPDATED = "scanreport.updated", "Scan report updated"
+    SCAN_REPORT_TABLES_ADDED = "scanreport.tables_added", "Scan report tables added"
+    SCAN_REPORT_FIELDS_ADDED = "scanreport.fields_added", "Scan report fields added"
+    SCAN_REPORT_VALUES_ADDED = "scanreport.values_added", "Scan report values added"
     DATASET_UPDATED = "dataset.updated", "Dataset updated"
     MAPPING_ADDED = "mapping.added", "Mapping added"
     MAPPING_DELETED = "mapping.deleted", "Mapping deleted"

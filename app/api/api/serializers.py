@@ -175,7 +175,7 @@ class ScanReportFilesSerializer(DynamicFieldsMixin, serializers.ModelSerializer)
         data_dictionary_file (FileField): The validated data dictionary file.
     """
 
-    scan_report_file = serializers.FileField(write_only=True)
+    scan_report_file = serializers.FileField(write_only=True, required=False)
     data_dictionary_file = serializers.FileField(
         write_only=True, required=False, allow_empty_file=True
     )
@@ -656,6 +656,9 @@ class ScanReportCreateSerializer(DynamicFieldsMixin, serializers.ModelSerializer
 
 class ScanReportEditSerializer(DynamicFieldsMixin, serializers.ModelSerializer):
     mapping_status = MappingStatusSerializer()
+    upload_status = serializers.SlugRelatedField(
+        slug_field="value", queryset=UploadStatus.objects.all(), required=False
+    )
     viewers = serializers.PrimaryKeyRelatedField(
         many=True, queryset=User.objects.all(), required=False
     )
@@ -852,6 +855,17 @@ class ScanReportFieldListSerializerV3(serializers.ModelSerializer):
 
 
 class ScanReportValueViewSerializerV2(serializers.ModelSerializer):
+    class Meta:
+        model = ScanReportValue
+        fields = ["id", "value", "frequency", "value_description", "scan_report_field"]
+
+
+class ScanReportValueEditSerializer(DynamicFieldsMixin, serializers.ModelSerializer):
+    value = serializers.CharField(
+        max_length=2048, allow_blank=True, trim_whitespace=False
+    )
+    frequency = serializers.IntegerField(required=False)
+
     class Meta:
         model = ScanReportValue
         fields = ["id", "value", "frequency", "value_description", "scan_report_field"]

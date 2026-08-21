@@ -19,6 +19,7 @@ from mapping.models import (
     ScanReportConcept,
     ScanReportField,
     ScanReportTable,
+    ScanReportValue,
     VisibilityChoices,
 )
 from openpyxl import Workbook
@@ -621,3 +622,169 @@ class TestDatasetActivityLogView(ActivityLogEmitSiteTestBase):
         response = self.client.get(f"/api/v2/datasets/{self.dataset.id}/logs/")
 
         self.assertEqual(response.status_code, 403)
+
+
+class TestScanReportCreatedWithoutFile(ActivityLogEmitSiteTestBase):
+    def setUp(self):
+        super().setUp()
+        self.dataset.editors.add(self.user)
+
+    @mock.patch("api.views.worker_service.trigger_scan_report_processing")
+    def test_creating_without_a_file_skips_processing_and_records_created(
+        self, mock_trigger_processing
+    ):
+        response = self.client.post(
+            "/api/v2/scanreports/",
+            {
+                "dataset": "API-built Scan Report",
+                "parent_dataset": self.dataset.id,
+                "visibility": "PUBLIC",
+            },
+            format="multipart",
+        )
+
+        self.assertEqual(response.status_code, 201, response.content)
+        mock_trigger_processing.assert_not_called()
+
+        new_scan_report = ScanReport.objects.get(dataset="API-built Scan Report")
+        self.assertEqual(new_scan_report.upload_status.value, "IN_PROGRESS")
+
+        log = ActivityLog.objects.get(verb=Verb.SCAN_REPORT_CREATED)
+        self.assertEqual(log.scope_type, ScopeType.SCAN_REPORT)
+        self.assertEqual(log.scope_id, new_scan_report.id)
+        self.assertEqual(log.actor, self.user)
+        self.assertEqual(log.detail, {"scan_report_name": "API-built Scan Report"})
+
+    def test_non_editor_cannot_create_without_a_file(self):
+        User = get_user_model()
+        outsider = User.objects.create(username="gollum", password="precious")
+        self.project.members.add(outsider)
+        self.dataset.viewers.add(outsider)
+        self.client.force_authenticate(outsider)
+
+        response = self.client.post(
+            "/api/v2/scanreports/",
+            {
+                "dataset": "Should Not Be Created",
+                "parent_dataset": self.dataset.id,
+                "visibility": "PUBLIC",
+            },
+            format="multipart",
+        )
+
+        self.assertEqual(response.status_code, 403, response.content)
+
+
+class TestScanReportBuildViaApi(ActivityLogEmitSiteTestBase):
+    """Covers the bulk-create endpoints that let a Scan Report be built
+    directly via the API instead of by uploading an Excel file (issue
+    #1313): POST tables/fields/values, and finalizing via PATCH
+    upload_status.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.dataset.editors.add(self.user)
+
+    def test_bulk_create_tables_records_activity_and_permission(self):
+        response = self.client.post(
+            f"/api/v2/scanreports/{self.scan_report.id}/tables/",
+            [{"name": "Observation"}, {"name": "Measurement"}],
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 201, response.content)
+        self.assertEqual(len(response.data), 2)
+        self.assertEqual(
+            ScanReportTable.objects.filter(
+                scan_report=self.scan_report, name__in=["Observation", "Measurement"]
+            ).count(),
+            2,
+        )
+
+        log = ActivityLog.objects.get(verb=Verb.SCAN_REPORT_TABLES_ADDED)
+        self.assertEqual(log.scope_id, self.scan_report.id)
+        self.assertEqual(log.detail, {"count": 2})
+
+    def test_bulk_create_fields(self):
+        response = self.client.post(
+            f"/api/v2/scanreports/{self.scan_report.id}/tables/{self.table.id}/fields/",
+            [
+                {
+                    "name": "new_field",
+                    "description_column": "A new field",
+                    "type_column": "VARCHAR",
+                }
+            ],
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 201, response.content)
+        self.assertTrue(
+            ScanReportField.objects.filter(
+                scan_report_table=self.table, name="new_field"
+            ).exists()
+        )
+
+        log = ActivityLog.objects.get(verb=Verb.SCAN_REPORT_FIELDS_ADDED)
+        self.assertEqual(
+            log.detail,
+            {"table_id": self.table.id, "table_name": self.table.name, "count": 1},
+        )
+
+    def test_bulk_create_values_defaults_frequency_to_one(self):
+        response = self.client.post(
+            f"/api/v2/scanreports/{self.scan_report.id}/tables/{self.table.id}"
+            f"/fields/{self.condition_field.id}/values/",
+            [{"value": "high"}, {"value": "low", "frequency": 42}],
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 201, response.content)
+        high = ScanReportValue.objects.get(
+            scan_report_field=self.condition_field, value="high"
+        )
+        low = ScanReportValue.objects.get(
+            scan_report_field=self.condition_field, value="low"
+        )
+        self.assertEqual(high.frequency, 1)
+        self.assertEqual(low.frequency, 42)
+
+        log = ActivityLog.objects.get(verb=Verb.SCAN_REPORT_VALUES_ADDED)
+        self.assertEqual(
+            log.detail,
+            {
+                "field_id": self.condition_field.id,
+                "field_name": self.condition_field.name,
+                "count": 2,
+            },
+        )
+
+    def test_viewer_cannot_bulk_create_tables(self):
+        User = get_user_model()
+        viewer = User.objects.create(username="merry", password="shire")
+        self.project.members.add(viewer)
+        self.dataset.viewers.add(viewer)
+        self.client.force_authenticate(viewer)
+
+        response = self.client.post(
+            f"/api/v2/scanreports/{self.scan_report.id}/tables/",
+            [{"name": "Should Not Be Created"}],
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 403, response.content)
+        self.assertFalse(
+            ScanReportTable.objects.filter(name="Should Not Be Created").exists()
+        )
+
+    def test_finalizing_via_patch_upload_status(self):
+        response = self.client.patch(
+            f"/api/v2/scanreports/{self.scan_report.id}/",
+            {"upload_status": "COMPLETE"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 200, response.content)
+        self.scan_report.refresh_from_db()
+        self.assertEqual(self.scan_report.upload_status.value, "COMPLETE")
