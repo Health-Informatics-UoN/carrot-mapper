@@ -13,7 +13,7 @@ class ScanReportPermissionMixin:
 
     permission_classes_by_method = {
         "GET": [CanView],
-        "POST": [CanView],
+        "POST": [CanEditOrAdmin],
         "PUT": [CanEditOrAdmin],
         "PATCH": [CanEditOrAdmin],
         "DELETE": [CanAdmin],

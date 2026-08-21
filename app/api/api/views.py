@@ -33,11 +33,12 @@ from mapping.models import (
     ScanReportField,
     ScanReportTable,
     ScanReportValue,
+    UploadStatus,
 )
 from mapping.permissions import SCAN_REPORT_QUERIES, get_user_permissions_on_scan_report
 from projects.serializers import ProjectNameSerializer
 from rest_framework import status, viewsets
-from rest_framework.exceptions import PermissionDenied
+from rest_framework.exceptions import ParseError, PermissionDenied
 from rest_framework.filters import OrderingFilter
 from rest_framework.generics import GenericAPIView
 from rest_framework.mixins import (
@@ -61,6 +62,11 @@ from services.rules_export import (
     get_mapping_rules_json,
     get_mapping_rules_list,
     make_dag,
+)
+from services.scan_report_build import (
+    bulk_create_fields,
+    bulk_create_tables,
+    bulk_create_values,
 )
 from services.storage_service import StorageService
 from services.worker_service import get_worker_service
@@ -88,6 +94,7 @@ from api.serializers import (
     ScanReportFilesSerializer,
     ScanReportTableEditSerializer,
     ScanReportTableListSerializerV2,
+    ScanReportValueEditSerializer,
     ScanReportValueViewSerializerV2,
     ScanReportValueViewSerializerV3,
     ScanReportViewSerializerV2,
@@ -446,6 +453,37 @@ class ScanReportIndexV2(GenericAPIView, ListModelMixin, CreateModelMixin):
         rand = "".join(random.choices(string.ascii_lowercase + string.digits, k=8))
         dt = f"{datetime.datetime.now():%Y%m%d-%H%M%S}"
 
+        # No file means the caller intends to build the Scan Report's tables,
+        # fields, and values directly via the API, so there's nothing to
+        # upload or hand off to the Airflow processing DAG - the report just
+        # starts out empty and IN_PROGRESS.
+        if valid_scan_report_file is None:
+            scan_report = ScanReport.objects.create(
+                dataset=valid_dataset,
+                parent_dataset=valid_parent_dataset,
+                name=f"{valid_dataset}_{dt}_{rand}",
+                visibility=valid_visibility,
+                upload_status=UploadStatus.objects.get(value="IN_PROGRESS"),
+            )
+            scan_report.author = self.request.user
+            scan_report.save()
+
+            if sr_viewers := valid_viewers:
+                scan_report.viewers.add(*sr_viewers)
+            if sr_editors := valid_editors:
+                scan_report.editors.add(*sr_editors)
+
+            record_activity(
+                scope_type=ScopeType.SCAN_REPORT,
+                scope_id=scan_report.id,
+                verb=Verb.SCAN_REPORT_CREATED,
+                actor=self.request.user,
+                object_type="scanreport",
+                object_id=scan_report.id,
+                detail={"scan_report_name": scan_report.dataset},
+            )
+            return
+
         # Create an entry in ScanReport for the uploaded Scan Report
         scan_report = ScanReport.objects.create(
             dataset=valid_dataset,
@@ -722,6 +760,34 @@ class ScanReportTableIndexV2(ScanReportPermissionMixin, GenericAPIView, ListMode
     def get_queryset(self):
         return ScanReportTable.objects.filter(scan_report=self.scan_report)
 
+    @extend_schema(
+        request=ScanReportTableEditSerializer(many=True),
+        responses=ScanReportTableListSerializerV2(many=True),
+    )
+    def post(self, request, *args, **kwargs):
+        if not isinstance(request.data, list):
+            raise ParseError("Expected a JSON array of tables.")
+        data = [{**item, "scan_report": self.scan_report.pk} for item in request.data]
+        serializer = ScanReportTableEditSerializer(data=data, many=True)
+        serializer.is_valid(raise_exception=True)
+        tables_data = [
+            {k: v for k, v in item.items() if k != "scan_report"}
+            for item in serializer.validated_data
+        ]
+        tables = bulk_create_tables(self.scan_report, tables_data)
+
+        record_activity(
+            scope_type=ScopeType.SCAN_REPORT,
+            scope_id=self.scan_report.id,
+            verb=Verb.SCAN_REPORT_TABLES_ADDED,
+            actor=request.user,
+            object_type="scanreport",
+            object_id=self.scan_report.id,
+            detail={"count": len(tables)},
+        )
+        output_serializer = ScanReportTableListSerializerV2(tables, many=True)
+        return Response(output_serializer.data, status=status.HTTP_201_CREATED)
+
 
 class ScanReportTableDetailV2(
     ScanReportPermissionMixin, GenericAPIView, RetrieveModelMixin, UpdateModelMixin
@@ -957,6 +1023,39 @@ class ScanReportFieldIndexV2(ScanReportPermissionMixin, GenericAPIView, ListMode
     def list(self, request, *args, **kwargs):
         return super().list(request, *args, **kwargs)
 
+    @extend_schema(
+        request=ScanReportFieldEditSerializer(many=True),
+        responses=ScanReportFieldListSerializerV2(many=True),
+    )
+    def post(self, request, *args, **kwargs):
+        self.table = get_object_or_404(ScanReportTable, pk=kwargs["table_pk"])
+        if not isinstance(request.data, list):
+            raise ParseError("Expected a JSON array of fields.")
+        data = [{**item, "scan_report_table": self.table.pk} for item in request.data]
+        serializer = ScanReportFieldEditSerializer(data=data, many=True)
+        serializer.is_valid(raise_exception=True)
+        fields_data = [
+            {k: v for k, v in item.items() if k != "scan_report_table"}
+            for item in serializer.validated_data
+        ]
+        fields = bulk_create_fields(self.table, fields_data)
+
+        record_activity(
+            scope_type=ScopeType.SCAN_REPORT,
+            scope_id=self.table.scan_report_id,
+            verb=Verb.SCAN_REPORT_FIELDS_ADDED,
+            actor=request.user,
+            object_type="scanreporttable",
+            object_id=self.table.id,
+            detail={
+                "table_id": self.table.id,
+                "table_name": self.table.name,
+                "count": len(fields),
+            },
+        )
+        output_serializer = ScanReportFieldListSerializerV2(fields, many=True)
+        return Response(output_serializer.data, status=status.HTTP_201_CREATED)
+
 
 class ScanReportFieldDetailV2(
     ScanReportPermissionMixin, GenericAPIView, RetrieveModelMixin, UpdateModelMixin
@@ -1146,6 +1245,39 @@ class ScanReportValueListV2(ScanReportPermissionMixin, GenericAPIView, ListModel
     @method_decorator(vary_on_cookie)
     def list(self, request, *args, **kwargs):
         return super().list(request, *args, **kwargs)
+
+    @extend_schema(
+        request=ScanReportValueEditSerializer(many=True),
+        responses=ScanReportValueViewSerializerV2(many=True),
+    )
+    def post(self, request, *args, **kwargs):
+        self.field = get_object_or_404(ScanReportField, pk=kwargs["field_pk"])
+        if not isinstance(request.data, list):
+            raise ParseError("Expected a JSON array of values.")
+        data = [{**item, "scan_report_field": self.field.pk} for item in request.data]
+        serializer = ScanReportValueEditSerializer(data=data, many=True)
+        serializer.is_valid(raise_exception=True)
+        values_data = [
+            {k: v for k, v in item.items() if k != "scan_report_field"}
+            for item in serializer.validated_data
+        ]
+        values = bulk_create_values(self.field, values_data)
+
+        record_activity(
+            scope_type=ScopeType.SCAN_REPORT,
+            scope_id=self.field.scan_report_table.scan_report_id,
+            verb=Verb.SCAN_REPORT_VALUES_ADDED,
+            actor=request.user,
+            object_type="scanreportfield",
+            object_id=self.field.id,
+            detail={
+                "field_id": self.field.id,
+                "field_name": self.field.name,
+                "count": len(values),
+            },
+        )
+        output_serializer = ScanReportValueViewSerializerV2(values, many=True)
+        return Response(output_serializer.data, status=status.HTTP_201_CREATED)
 
 
 class ScanReportValueListV3(ScanReportPermissionMixin, GenericAPIView, ListModelMixin):

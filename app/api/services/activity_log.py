@@ -12,6 +12,30 @@ class ScanReportUploadedDetail:
 
 
 @dataclass(frozen=True)
+class ScanReportCreatedDetail:
+    scan_report_name: str
+
+
+@dataclass(frozen=True)
+class ScanReportTablesAddedDetail:
+    count: int
+
+
+@dataclass(frozen=True)
+class ScanReportFieldsAddedDetail:
+    table_id: int
+    table_name: str
+    count: int
+
+
+@dataclass(frozen=True)
+class ScanReportValuesAddedDetail:
+    field_id: int
+    field_name: str
+    count: int
+
+
+@dataclass(frozen=True)
 class MappingAddedDetail:
     concept_id: int
     concept_name: str
@@ -88,7 +112,11 @@ class DatasetUpdatedDetail:
 # itself is schemaless JSON.
 _DETAIL_SCHEMAS: dict[str, Type] = {
     Verb.SCAN_REPORT_UPLOADED: ScanReportUploadedDetail,
+    Verb.SCAN_REPORT_CREATED: ScanReportCreatedDetail,
     Verb.SCAN_REPORT_UPDATED: ScanReportUpdatedDetail,
+    Verb.SCAN_REPORT_TABLES_ADDED: ScanReportTablesAddedDetail,
+    Verb.SCAN_REPORT_FIELDS_ADDED: ScanReportFieldsAddedDetail,
+    Verb.SCAN_REPORT_VALUES_ADDED: ScanReportValuesAddedDetail,
     Verb.DATASET_UPDATED: DatasetUpdatedDetail,
     Verb.MAPPING_ADDED: MappingAddedDetail,
     Verb.MAPPING_DELETED: MappingDeletedDetail,
