@@ -5,8 +5,6 @@ x-airflow-common: &airflow-common
     - ./app/airflow/dags:/opt/airflow/dags
   depends_on:
     db:
-      condition: service_started
-    api:
       condition: service_healthy
   environment: &airflow-common-env
     AIRFLOW__CORE__EXECUTOR: LocalExecutor
@@ -31,7 +29,7 @@ x-airflow-common: &airflow-common
 
 services:
   db:
-    image: postgres:14
+    image: postgres:18
     restart: always
     ports:
       - 5432:5432
@@ -40,101 +38,25 @@ services:
       - POSTGRES_DB=postgres
       - POSTGRES_USER=postgres
     volumes:
-      - db_data:/var/lib/postgresql/data
+      - db_data_pg18:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   omop-lite:
-    image: ghcr.io/health-informatics-uon/omop-lite
+    image: ghcr.io/health-informatics-uon/omop-lite:0.7.0
     volumes:
       - ./vocabs:/vocabs
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     environment:
       - DB_PASSWORD=postgres
       - DB_NAME=postgres
       - SCHEMA_NAME=omop
       - DATA_DIR=vocabs
-
-  frontend:
-    image: carrot-frontend
-    build:
-      context: app/next-client-app
-      dockerfile: Dockerfile
-      target: dev
-    command: npm run dev
-    ports:
-      - 3000:3000
-    environment:
-      - BACKEND_URL=http://api:8000
-      - BACKEND_ORIGIN=localhost:8000
-      - NEXTAUTH_URL=http://localhost:3000/
-      - NEXTAUTH_SECRET=verycomplexsecretkey
-      - NEXTAUTH_BACKEND_URL=http://api:8000/api/
-      - NODE_ENV=development
-      - WATCHPACK_POLLING=true
-      - NEXT_PUBLIC_ENABLE_REUSE_TRIGGER_OPTION=true
-      - NEXT_PUBLIC_ENABLE_AI_RECOMMENDATION=true
-      - NEXT_PUBLIC_RECOMMENDATION_SERVICE=unison
-      - RECOMMENDATION_SERVICE_BASE_URL=https://api.hyperunison.com/api/public/suggester/generate
-      - RECOMMENDATION_SERVICE_API_KEY=unison-api-key
-      - NEXT_PUBLIC_BODY_SIZE_LIMIT=31457280
-    volumes:
-      - ./app/next-client-app:/app
-      - /app/node_modules
-      - /app/.next
-    depends_on:
-      api:
-        condition: service_healthy
-
-  api:
-    image: carrot-backend
-    build:
-      context: .
-      dockerfile: app/api/Dockerfile
-    ports:
-      - 8000:8000
-    environment:
-      - FRONTEND_URL=http://frontend:3000
-      - ALLOWED_HOSTS=['localhost', '127.0.0.1','api']
-      - DB_ENGINE=django.db.backends.postgresql
-      - DB_HOST=db
-      - DB_PORT=5432
-      - DB_NAME=postgres
-      - DB_USER=postgres
-      - DB_PASSWORD=postgres
-      - DEBUG=True
-      - RULES_QUEUE_NAME=rules-queue
-      - SECRET_KEY=secret
-      - STORAGE_CONN_STRING=DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;TableEndpoint=http://azurite:10002/devstoreaccount1;
-      - SIGNING_KEY=secret
-      - STORAGE_TYPE=${STORAGE_TYPE:-minio}
-      - MINIO_ENDPOINT=minio:9000
-      - MINIO_ACCESS_KEY=minioadmin
-      - MINIO_SECRET_KEY=minioadmin
-      - WORKER_SERVICE_TYPE=airflow
-      # TODO: update to API v2 when updating Airflow to 3.0.0
-      - AIRFLOW_BASE_URL=http://airflow-webserver:8080/api/v1/
-      - AIRFLOW_AUTO_MAPPING_DAG_ID=auto_mapping
-      - AIRFLOW_SCAN_REPORT_PROCESSING_DAG_ID=scan_report_processing
-      - AIRFLOW_RULES_EXPORT_DAG_ID=rules_export
-      - AIRFLOW_ADMIN_USERNAME=admin
-      - AIRFLOW_ADMIN_PASSWORD=admin
-      # To match with the capacity of the production environment
-      - DATA_UPLOAD_MAX_MEMORY_SIZE=31457280
-      # Default superuser credentials for dev environment
-      - SUPERUSER_DEFAULT_PASSWORD=admin
-      - SUPERUSER_DEFAULT_EMAIL=admin@carrot.com
-      - SUPERUSER_DEFAULT_USERNAME=admin
-    volumes:
-      - ./app/api:/api
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
-    depends_on:
-      omop-lite:
-        condition: service_completed_successfully
 
   azurite:
     profiles: ["azure"]
@@ -205,5 +127,5 @@ services:
       EXECUTE_VALUES_PAGE_SIZE: 1000000 # page size for bulk database inserts (execute_values)
 
 volumes:
-  db_data:
+  db_data_pg18:
   minio_data:
