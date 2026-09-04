@@ -401,15 +401,15 @@ wheels = [
 
 [[package]]
 name = "apache-airflow-providers-ftp"
-version = "3.14.1"
+version = "3.15.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "apache-airflow" },
     { name = "apache-airflow-providers-common-compat" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/b2/16/644f9711cf4ac4c0c99f73ac79150ee86a54d978e78849f1ed91893773bf/apache_airflow_providers_ftp-3.14.1.tar.gz", hash = "sha256:4fe8a77116dad5b69f0bb613c6374831202fdfa93cbe6db5a51c9819bc3aa1af", size = 68311, upload-time = "2026-01-17T10:48:43.955Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/8a/49/6ee55e89e9fea5fd881112d6b4e687c8b7a1a4611dc494a302e96ec3df9a/apache_airflow_providers_ftp-3.15.1.tar.gz", hash = "sha256:cfc5cd63b6a755ed7f7584d25372057031dffb91332ac8d0d8ef5dc82b87e3be", size = 70093, upload-time = "2026-06-22T19:59:43.452Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/9b/7e/012561dddd784fc46ff8bbfeaf7e9e2266f96b4575dad5c1373e37518106/apache_airflow_providers_ftp-3.14.1-py3-none-any.whl", hash = "sha256:ebc4ac5c734f20a9c28eb48f4786389ff1fd7ad69e158d2afd6df4983f50c157", size = 20221, upload-time = "2026-01-17T10:46:51.445Z" },
+    { url = "https://files.pythonhosted.org/packages/1c/fe/7bd0f6160958a3b1a856defb029eee4bf717e465d09c9eacc940dc968c09/apache_airflow_providers_ftp-3.15.1-py3-none-any.whl", hash = "sha256:bdfa3d0188d29908e15e0ec8b451058a14492b94551d965380d00ef1c7249e74", size = 22144, upload-time = "2026-06-22T19:59:00.469Z" },
 ]
 
 [[package]]
