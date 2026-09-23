@@ -34,6 +34,14 @@ class FieldVocabPair(TypedDict):
     vocabulary_id: str
 
 
+# Define a type for field-domain pairs, used to auto-match source terms to OMOP
+# concepts within a given domain (see issue #983)
+class FieldDomainPair(TypedDict):
+    sr_field_id: int
+    field_data_type: str
+    domain_id: str
+
+
 # Define a type for validated parameters
 class ValidatedParams(TypedDict):
     scan_report_id: int
@@ -42,6 +50,7 @@ class ValidatedParams(TypedDict):
     person_id_field: int
     date_event_field: int
     field_vocab_pairs: List[FieldVocabPair]
+    field_domain_pairs: List[FieldDomainPair]
     parent_dataset_id: int
     trigger_reuse_concepts: bool
     scan_report_blob: str
@@ -50,18 +59,18 @@ class ValidatedParams(TypedDict):
     file_type: str
 
 
-def _process_field_vocab_pairs(field_vocab_pairs: str):
-    """Extract and validate field_vocab_pairs from DAG run configuration"""
+def _process_json_list_param(param_value: str):
+    """Extract and validate a JSON/Python-literal list parameter from DAG run configuration"""
 
-    # Check if field_vocab_pairs is a string and try to parse it as JSON
-    if isinstance(field_vocab_pairs, str):
+    # Check if the value is a string and try to parse it as JSON
+    if isinstance(param_value, str):
         try:
-            field_vocab_pairs = ast.literal_eval(field_vocab_pairs)
+            param_value = ast.literal_eval(param_value)
         except json.JSONDecodeError:
-            logging.error("Failed to parse field_vocab_pairs as JSON")
-            raise ValueError("Failed to parse field_vocab_pairs as JSON")
+            logging.error(f"Failed to parse {param_value} as JSON")
+            raise ValueError(f"Failed to parse {param_value} as JSON")
 
-    return field_vocab_pairs
+    return param_value
 
 
 def update_job_status(
@@ -176,6 +185,8 @@ def update_job_status_on_failure(context):
                 "delete_mapping_rules",
                 "find_standard_concepts",
                 "create_standard_concepts",
+                "find_matched_concepts",
+                "create_matched_concepts",
             ]:
                 stage = JobStageType.BUILD_CONCEPTS_FROM_DICT
             elif task_id in [
@@ -246,6 +257,7 @@ def _validate_dag_params(
     string_params=None,
     bool_params=None,
     has_field_vocab_pairs=False,
+    has_field_domain_pairs=False,
     check_data_dictionary_blob=False,
     **context,
 ):
@@ -327,8 +339,18 @@ def _validate_dag_params(
         if not field_vocab_pairs:
             validated_params["field_vocab_pairs"] = []
         else:
-            validated_params["field_vocab_pairs"] = _process_field_vocab_pairs(
+            validated_params["field_vocab_pairs"] = _process_json_list_param(
                 field_vocab_pairs
+            )
+
+    # Validate field_domain_pairs
+    if has_field_domain_pairs:
+        field_domain_pairs = conf.get("field_domain_pairs")
+        if not field_domain_pairs:
+            validated_params["field_domain_pairs"] = []
+        else:
+            validated_params["field_domain_pairs"] = _process_json_list_param(
+                field_domain_pairs
             )
 
     # Validate data_dictionary_blob
@@ -363,6 +385,7 @@ def validate_params_auto_mapping(**context):
         int_params=int_params,
         bool_params=bool_params,
         has_field_vocab_pairs=True,
+        has_field_domain_pairs=True,
         **context,
     )
 

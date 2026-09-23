@@ -13,6 +13,10 @@ from libs.auto_mapping.core_prep_rules_creation import (
     find_dest_table_and_person_field_id,
 )
 from libs.auto_mapping.core_rules_creation import create_mapping_rules
+from libs.auto_mapping.find_matched_concepts import (
+    create_matched_concepts,
+    find_matched_concepts,
+)
 from libs.auto_mapping.find_R_concepts_to_reuse import (
     create_reusing_concepts,
     delete_R_concepts,
@@ -38,16 +42,17 @@ Workflow steps:
 1. Validate input parameters
 2. Delete existing mapping rules
 3. Find and create standard concepts (V-concepts)
-4. Delete existing reusable concepts (R-concepts)
-5. Find matching values, fields, and object IDs for reuse
-6. Create reusable concepts based on matches
-7. Collect all existing concepts
-8. Identify destination tables and person field IDs
-9. Find date fields for each concept (incl. death_datetime for death table)
-10. Find concept fields for mapping
-11. Find additional fields needed for mapping
-12. Create mapping rules based on all collected information
-13. (Optional) Generate search-based recommendations when SEARCH_ENABLED=true
+4. Find and create term/domain-matched concepts (X-concepts, see issue #983)
+5. Delete existing reusable concepts (R-concepts)
+6. Find matching values, fields, and object IDs for reuse
+7. Create reusable concepts based on matches
+8. Collect all existing concepts
+9. Identify destination tables and person field IDs
+10. Find date fields for each concept (incl. death_datetime for death table)
+11. Find concept fields for mapping
+12. Find additional fields needed for mapping
+13. Create mapping rules based on all collected information
+14. (Optional) Generate search-based recommendations when SEARCH_ENABLED=true
 
 This pipeline enables efficient concept reuse across scan reports and automates the creation of
 mapping rules connecting source data to OMOP-compliant destination tables.
@@ -74,7 +79,7 @@ default_args = {
 dag = DAG(
     "auto_mapping",
     default_args=default_args,
-    description="""Find and create V and R concepts. Then get all the existing concepts, 
+    description="""Find and create V and R concepts. Then get all the existing concepts,
     and find the dest. table and OMOP field ids for each concept.
     After that, create mapping rules for each concept.
     Optionally includes search-based recommendations when SEARCH_ENABLED=true.""",
@@ -99,6 +104,8 @@ tasks = [
     create_task("delete_mapping_rules", delete_mapping_rules, dag),
     create_task("find_standard_concepts", find_standard_concepts, dag),
     create_task("create_standard_concepts", create_standard_concepts, dag),
+    create_task("find_matched_concepts", find_matched_concepts, dag),
+    create_task("create_matched_concepts", create_matched_concepts, dag),
     create_task("delete_R_concepts", delete_R_concepts, dag),
     create_task("find_matching_value", find_matching_value, dag),
     create_task("find_matching_field", find_matching_field, dag),

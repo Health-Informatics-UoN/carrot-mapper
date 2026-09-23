@@ -100,6 +100,7 @@ def create_mapping_rules(**kwargs) -> None:
             """
             DROP TABLE IF EXISTS temp_existing_concepts_%(table_id)s;
             DROP TABLE IF EXISTS temp_standard_concepts_%(table_id)s;
+            DROP TABLE IF EXISTS temp_matched_concepts_%(table_id)s;
             DROP TABLE IF EXISTS temp_reuse_concepts_%(table_id)s;
             """,
             parameters={"table_id": table_id},

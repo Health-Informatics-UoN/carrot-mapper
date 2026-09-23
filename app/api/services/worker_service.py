@@ -9,6 +9,7 @@ from mapping.models import ScanReport, ScanReportTable
 from requests.auth import HTTPBasicAuth
 
 from services.enums import WorkerServiceType
+from services.field_domain_mappings import get_field_domain_mappings
 from services.field_vocab_mappings import get_field_vocab_mappings
 
 
@@ -90,6 +91,11 @@ class AirflowWorkerService(WorkerService):
             "date_event_field": table.date_event.pk,
             "field_vocab_pairs": (
                 get_field_vocab_mappings(data_dictionary_name, table)
+                if data_dictionary_name
+                else []
+            ),
+            "field_domain_pairs": (
+                get_field_domain_mappings(data_dictionary_name, table)
                 if data_dictionary_name
                 else []
             ),

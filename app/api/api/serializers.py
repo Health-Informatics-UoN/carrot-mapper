@@ -225,36 +225,63 @@ class ScanReportFilesSerializer(DynamicFieldsMixin, serializers.ModelSerializer)
         csv_file_names = set()
         logger.info("Collecting CSV file names from the data dictionary...")
 
-        # Check first line for correct headers to columns
+        # Check first line for correct headers to columns. The 5th "domain" column is
+        # optional: it lets a field-level (empty "value") row specify the OMOP domain
+        # to auto-match source terms against (see issue #983).
         header_line = next(csv_reader)
-        if header_line != ["csv_file_name", "field_name", "code", "value"]:
+        has_domain_column = header_line == [
+            "csv_file_name",
+            "field_name",
+            "code",
+            "value",
+            "domain",
+        ]
+        if (
+            header_line
+            != [
+                "csv_file_name",
+                "field_name",
+                "code",
+                "value",
+            ]
+            and not has_domain_column
+        ):
             raise ParseError(
                 f"Dictionary file has incorrect first line. "
                 f"It must be ['csv_file_name', "
-                f"'field_name', 'code', 'value'], but you "
+                f"'field_name', 'code', 'value'] or ['csv_file_name', "
+                f"'field_name', 'code', 'value', 'domain'], but you "
                 f"supplied {header_line}. If this error is "
                 f"showing extra elements, this indicates "
-                f"that another line has >4 elements, "
+                f"that another line has more elements than the header, "
                 f"which will need to be corrected."
             )
 
-        # Check all rows have either 3 or 4 non-empty elements, and only the 4th can be empty.
+        # Check all rows have either 3 or 4 non-empty elements (or up to 5 when the
+        # "domain" column is present), and only the 4th and 5th can be empty.
         # Start from 2 because we want to use 1-indexing _and_ skip the first row which was
         # processed above.
+        valid_row_lengths = [3, 4, 5] if has_domain_column else [3, 4]
         for line_no, line in enumerate(csv_reader, start=2):
             line_length_nonempty = len([element for element in line if element != ""])
-            if line_length_nonempty not in [3, 4]:
+            if line_length_nonempty not in valid_row_lengths:
                 errors.append(
                     ParseError(
                         f"Dictionary has "
                         f"{line_length_nonempty} "
                         f"values in line {line_no} ({line}). "
                         f"All lines must "
-                        f"have either 3 or 4 entries."
+                        f"have {' or '.join(str(n) for n in valid_row_lengths)} entries."
                     )
                 )
-            # Check for whether any of the first 3 elements are empty
-            for element_no, element in enumerate(line[:3], start=1):
+            # Check for whether any of the required leading elements are empty.
+            # csv_file_name and field_name are always required. "code" (3rd column) is
+            # also always required, unless the domain column is present - a domain-only
+            # field-level row (e.g. "table1,field1,,,Drug") doesn't need a vocab code.
+            required_nonempty_prefix = 2 if has_domain_column else 3
+            for element_no, element in enumerate(
+                line[:required_nonempty_prefix], start=1
+            ):
                 if element == "":
                     errors.append(
                         ParseError(

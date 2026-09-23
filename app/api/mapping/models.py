@@ -17,6 +17,7 @@ class CreationType(models.TextChoices):
     Manual = "M", "Manual"
     Vocab = "V", "Vocab"
     Reuse = "R", "Reuse"
+    Matched = "X", "Matched"
 
 
 class VisibilityChoices(models.TextChoices):
