@@ -227,7 +227,7 @@ class ScanReportFilesSerializer(DynamicFieldsMixin, serializers.ModelSerializer)
 
         # Check first line for correct headers to columns. The 5th "domain" column is
         # optional: it lets a field-level (empty "value") row specify the OMOP domain
-        # to auto-match source terms against (see issue #983).
+        # to auto-match source terms against.
         header_line = next(csv_reader)
         has_domain_column = header_line == [
             "csv_file_name",

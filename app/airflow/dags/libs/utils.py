@@ -35,7 +35,7 @@ class FieldVocabPair(TypedDict):
 
 
 # Define a type for field-domain pairs, used to auto-match source terms to OMOP
-# concepts within a given domain (see issue #983)
+# concepts within a given domain
 class FieldDomainPair(TypedDict):
     sr_field_id: int
     field_data_type: str

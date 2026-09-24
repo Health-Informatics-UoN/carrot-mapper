@@ -42,7 +42,7 @@ Workflow steps:
 1. Validate input parameters
 2. Delete existing mapping rules
 3. Find and create standard concepts (V-concepts)
-4. Find and create term/domain-matched concepts (X-concepts, see issue #983)
+4. Find and create term/domain-matched concepts (X-concepts)
 5. Delete existing reusable concepts (R-concepts)
 6. Find matching values, fields, and object IDs for reuse
 7. Create reusable concepts based on matches

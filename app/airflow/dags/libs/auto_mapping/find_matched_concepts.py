@@ -20,7 +20,7 @@ pg_hook = PostgresHook(
 def find_matched_concepts(**kwargs) -> None:
     """
     Maps source field values to OMOP concepts by case-insensitive name match, scoped
-    to a domain configured per-field in the data dictionary (see issue #983).
+    to a domain configured per-field in the data dictionary.
 
     Unlike the vocabulary-based lookup (find_standard_V_concepts.py), this doesn't
     require a vocabulary/code match - it looks up each distinct source value's term

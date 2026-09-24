@@ -19,8 +19,7 @@ def get_field_domain_mappings(
 
     A field-domain mapping tells the auto-mapping pipeline to look up each of that
     field's source values by name (case-insensitively) within a specific OMOP domain,
-    e.g. a field whose values are drug names can be mapped to the "Drug" domain (see
-    issue #983).
+    e.g. a field whose values are drug names can be mapped to the "Drug" domain.
 
     Args:
         data_dictionary_blob: Name of the data dictionary blob.

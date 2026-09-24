@@ -1,6 +1,6 @@
 """
-Tests for the data dictionary "domain" column added for issue #983
-(auto-matching source terms to OMOP concepts within a configured domain).
+Tests for the data dictionary "domain" column (auto-matching source terms to
+OMOP concepts within a configured domain).
 
 These exercise pure CSV-parsing logic with no database access, so they don't need
 the django_db fixture.

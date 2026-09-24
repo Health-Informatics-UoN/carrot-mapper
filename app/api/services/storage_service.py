@@ -176,7 +176,7 @@ class StorageService:
             {fields: vocab}})
             - Domain dictionary (nested dict structure: {tables:
             {fields: domain}}), only populated for fields whose row has a
-            non-empty "domain" column (see issue #983)
+            non-empty "domain" column
 
         Raises:
             ValueError: If there's an error processing the data dictionary
@@ -200,9 +200,9 @@ class StorageService:
             data_dictionary = process_four_item_dict(dictionary_data)
 
             # Process vocab dictionary (rows without values, with a non-empty code).
-            # A domain-only row (empty "code", see issue #983) must NOT end up here
-            # with an empty vocabulary_id - that would later blow up the "V-concept"
-            # lookup, which requires a real vocabulary_id for every pair it's given.
+            # A domain-only row (empty "code") must NOT end up here with an empty
+            # vocabulary_id - that would later blow up the "V-concept" lookup, which
+            # requires a real vocabulary_id for every pair it's given.
             vocab_dict_reader = csv.DictReader(lines)
             vocab_dictionary_intermediate = [
                 row
