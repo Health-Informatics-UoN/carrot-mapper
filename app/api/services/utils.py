@@ -48,6 +48,31 @@ def process_three_item_dict(three_item_data):
     return new_vocab_dictionary
 
 
+def process_domain_dict(domain_data):
+    """
+    Converts a list of dictionaries (each with keys 'csv_file_name', 'field_name' and
+    'domain') to a nested dictionary with indices 'csv_file_name', 'field_name' and
+    internal value 'domain'.
+
+    [{'csv_file_name': 'table1', 'field_name': 'field1', 'domain': 'Drug'},
+    {'csv_file_name': 'table2', 'field_name': 'field2', 'domain': 'Condition'}]
+    ->
+    {'table1': {'field1': 'Drug'},
+    'table2': {'field2': 'Condition'}
+    }
+    """
+    csv_file_names = set(row["csv_file_name"] for row in domain_data)
+
+    # Initialise the dictionary with the keys, and each value set to a blank dict()
+    new_domain_dictionary = {filename: {} for filename in csv_file_names}
+
+    # Fill each subdict with the data from the input list
+    for row in domain_data:
+        new_domain_dictionary[row["csv_file_name"]][row["field_name"]] = row["domain"]
+
+    return new_domain_dictionary
+
+
 def process_four_item_dict(four_item_data):
     """
     Converts a list of dictionaries (each with keys 'csv_file_name', 'field_name' and

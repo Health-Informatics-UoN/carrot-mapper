@@ -13,6 +13,7 @@ from azure.storage.blob import (
 from minio import Minio
 
 from services.utils import (
+    process_domain_dict,
     process_four_item_dict,
     process_three_item_dict,
     remove_BOM,
@@ -153,14 +154,16 @@ class StorageService:
         self,
         file: str,
     ) -> Tuple[
-        Optional[Dict[str, Dict[str, Any]]], Optional[Dict[str, Dict[str, Any]]]
+        Optional[Dict[str, Dict[str, Any]]],
+        Optional[Dict[str, Dict[str, Any]]],
+        Optional[Dict[str, Dict[str, Any]]],
     ]:
         """
         Retrieves and processes a data dictionary file from storage.
 
         The file is expected to be a CSV with the following structure:
         - Rows with values represent field value descriptions
-        - Rows without values represent field vocabulary definitions
+        - Rows without values represent field vocabulary/domain definitions
 
         Args:
             file: Name of the data dictionary file to retrieve
@@ -171,12 +174,15 @@ class StorageService:
             {fields: {values: description}}})
             - Vocabulary dictionary (nested dict structure: {tables:
             {fields: vocab}})
+            - Domain dictionary (nested dict structure: {tables:
+            {fields: domain}}), only populated for fields whose row has a
+            non-empty "domain" column
 
         Raises:
             ValueError: If there's an error processing the data dictionary
         """
         if file is None or file == "None":
-            return None, None
+            return None, None, None
 
         try:
             # Get the file content in a storage-agnostic way
@@ -193,15 +199,30 @@ class StorageService:
             dictionary_data = remove_BOM(data_dictionary_intermediate)
             data_dictionary = process_four_item_dict(dictionary_data)
 
-            # Process vocab dictionary (rows without values)
+            # Process vocab dictionary (rows without values, with a non-empty code).
+            # A domain-only row (empty "code") must NOT end up here with an empty
+            # vocabulary_id - that would later blow up the "V-concept" lookup, which
+            # requires a real vocabulary_id for every pair it's given.
             vocab_dict_reader = csv.DictReader(lines)
             vocab_dictionary_intermediate = [
-                row for row in vocab_dict_reader if row.get("value", "") == ""
+                row
+                for row in vocab_dict_reader
+                if row.get("value", "") == "" and row.get("code", "") != ""
             ]
             vocab_data = remove_BOM(vocab_dictionary_intermediate)
             vocab_dictionary = process_three_item_dict(vocab_data)
 
-            return data_dictionary, vocab_dictionary
+            # Process domain dictionary (rows without values, with a non-empty domain)
+            domain_dict_reader = csv.DictReader(lines)
+            domain_dictionary_intermediate = [
+                row
+                for row in domain_dict_reader
+                if row.get("value", "") == "" and row.get("domain", "") != ""
+            ]
+            domain_data = remove_BOM(domain_dictionary_intermediate)
+            domain_dictionary = process_domain_dict(domain_data)
+
+            return data_dictionary, vocab_dictionary, domain_dictionary
 
         except Exception as e:
             error_msg = (

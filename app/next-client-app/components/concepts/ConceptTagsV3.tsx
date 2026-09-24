@@ -26,13 +26,13 @@ export function ConceptTagsV3({
       dispatch({ type: "delete", rowId: valueId, conceptId });
       await deleteConceptV3(
         conceptId,
-        `/scanreports/${scanReportId}/tables/${tableId}/fields/${fieldId}`
+        `/scanreports/${scanReportId}/tables/${tableId}/fields/${fieldId}`,
       );
       toast.success("Concept Id Deleted");
     } catch (error) {
       const errorObj = JSON.parse((error as ApiError).message);
       toast.error(
-        `Unable to delete Concept id from value Error: ${errorObj.detail}`
+        `Unable to delete Concept id from value Error: ${errorObj.detail}`,
       );
       console.error(error);
     }
@@ -55,10 +55,12 @@ export function ConceptTagsV3({
                 concept.creation_type === "V"
                   ? "bg-rose-200 hover:bg-rose-200 text-black"
                   : concept.creation_type === "M"
-                  ? "bg-blue-200 hover:bg-blue-200 text-black"
-                  : concept.creation_type === "R"
-                  ? "bg-emerald-200 hover:bg-emerald-200 text-black"
-                  : ""
+                    ? "bg-blue-200 hover:bg-blue-200 text-black"
+                    : concept.creation_type === "R"
+                      ? "bg-emerald-200 hover:bg-emerald-200 text-black"
+                      : concept.creation_type === "X"
+                        ? "bg-amber-200 hover:bg-amber-200 text-black"
+                        : ""
               } ${concepts.length > 1 && "my-[1px]"}`}
               key={concept.concept.concept_code}
             >

@@ -135,6 +135,8 @@ export const columns: ColumnDef<MappingRule>[] = [
           return "Manual";
         case "R":
           return "Reused";
+        case "X":
+          return "Matched";
         default:
           return "";
       }
