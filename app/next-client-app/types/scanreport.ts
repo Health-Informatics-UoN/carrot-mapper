@@ -61,7 +61,7 @@ interface ScanReportField {
 interface ScanReportConcept {
   id: number;
   object_id: number;
-  creation_type: "V" | "M" | "R";
+  creation_type: "V" | "M" | "R" | "X";
   concept: Concept | number;
   content_type: number;
 }
@@ -69,7 +69,7 @@ interface ScanReportConcept {
 interface ScanReportConceptV3 {
   id: number;
   object_id: number;
-  creation_type: "V" | "M" | "R";
+  creation_type: "V" | "M" | "R" | "X";
   concept: Concept;
   content_type: number;
 }

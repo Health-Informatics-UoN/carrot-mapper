@@ -44,6 +44,8 @@ const getCreationTypeDescription = (creationType: string) => {
       return "Added manually";
     case "R":
       return "Added through mapping reuse";
+    case "X":
+      return "Matched by source term and domain";
     default:
       return "";
   }

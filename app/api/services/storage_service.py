@@ -199,10 +199,15 @@ class StorageService:
             dictionary_data = remove_BOM(data_dictionary_intermediate)
             data_dictionary = process_four_item_dict(dictionary_data)
 
-            # Process vocab dictionary (rows without values)
+            # Process vocab dictionary (rows without values, with a non-empty code).
+            # A domain-only row (empty "code", see issue #983) must NOT end up here
+            # with an empty vocabulary_id - that would later blow up the "V-concept"
+            # lookup, which requires a real vocabulary_id for every pair it's given.
             vocab_dict_reader = csv.DictReader(lines)
             vocab_dictionary_intermediate = [
-                row for row in vocab_dict_reader if row.get("value", "") == ""
+                row
+                for row in vocab_dict_reader
+                if row.get("value", "") == "" and row.get("code", "") != ""
             ]
             vocab_data = remove_BOM(vocab_dictionary_intermediate)
             vocab_dictionary = process_three_item_dict(vocab_data)

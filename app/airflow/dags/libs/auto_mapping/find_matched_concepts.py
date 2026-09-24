@@ -109,8 +109,10 @@ def find_matched_concepts(**kwargs) -> None:
                 details=f"Finding matched concepts for field ID {sr_field_id} in domain {domain_id}",
             )
             # Match each distinct source value's term to a standard concept name in the
-            # given domain, case-insensitively. When more than one concept shares the
-            # same name in the domain, deterministically keep the lowest concept_id.
+            # given domain, case-insensitively (both the term and the domain name - the
+            # data dictionary is user-typed, so e.g. "drug" must match OMOP's "Drug").
+            # When more than one concept shares the same name in the domain,
+            # deterministically keep the lowest concept_id.
             find_matched_concepts_query = """
             INSERT INTO temp_matched_concepts_%(table_id)s (sr_value_id, standard_concept_id)
             SELECT DISTINCT ON (sr_value.id)
@@ -119,7 +121,7 @@ def find_matched_concepts(**kwargs) -> None:
             FROM mapping_scanreportvalue AS sr_value
             JOIN omop.concept AS std_concept ON
                 LOWER(TRIM(std_concept.concept_name)) = LOWER(TRIM(sr_value.value)) AND
-                std_concept.domain_id = %(domain_id)s AND
+                LOWER(TRIM(std_concept.domain_id)) = LOWER(TRIM(%(domain_id)s)) AND
                 std_concept.standard_concept = 'S' AND
                 std_concept.invalid_reason IS NULL
             WHERE sr_value.scan_report_field_id = %(sr_field_id)s

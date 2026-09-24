@@ -6,8 +6,11 @@ These exercise pure CSV-parsing logic with no database access, so they don't nee
 the django_db fixture.
 """
 
+from unittest.mock import patch
+
 from api.serializers import ScanReportFilesSerializer
 from django.core.files.uploadedfile import SimpleUploadedFile
+from services.storage_service import StorageService
 from services.utils import process_domain_dict
 
 
@@ -63,6 +66,29 @@ def test_five_column_domain_header_accepts_vocab_and_domain_together():
     validated = serializer.validate_data_dictionary_file(_upload(content))
 
     assert validated is not None
+
+
+def test_domain_only_row_is_excluded_from_vocab_dictionary():
+    """
+    Regression test: a domain-only row (empty "code") must not leak into the
+    vocab dictionary with an empty vocabulary_id - that previously crashed the
+    pre-existing V-concept lookup task, which requires a real vocabulary_id for
+    every field_vocab_pair it's given (find_standard_V_concepts.py).
+    """
+    content = (
+        "csv_file_name,field_name,code,value,domain\n"
+        "table1,domain_only_field,,,Drug\n"
+        "table1,vocab_only_field,LOINC,,\n"
+    )
+    with patch.object(StorageService, "_get_dictionary_content", return_value=content):
+        storage_service = StorageService()
+        _, vocab_dictionary, domain_dictionary = storage_service.get_data_dictionary(
+            "dictionary.csv"
+        )
+
+    assert "domain_only_field" not in vocab_dictionary["table1"]
+    assert vocab_dictionary["table1"]["vocab_only_field"] == "LOINC"
+    assert domain_dictionary["table1"]["domain_only_field"] == "Drug"
 
 
 def test_unrecognised_header_still_rejected():

@@ -67,6 +67,11 @@ def test_find_matched_concepts_queries_per_pair(mocker):
     assert "LOWER(TRIM(std_concept.concept_name)) = LOWER(TRIM(sr_value.value))" in (
         insert_query
     )
+    # Domain names are user-typed in the data dictionary, so the comparison must be
+    # case-insensitive too (e.g. "drug" must still match OMOP's "Drug" domain_id).
+    assert "LOWER(TRIM(std_concept.domain_id)) = LOWER(TRIM(%(domain_id)s))" in (
+        insert_query
+    )
     assert insert_kwargs["parameters"] == {
         "table_id": 2,
         "sr_field_id": 10,
