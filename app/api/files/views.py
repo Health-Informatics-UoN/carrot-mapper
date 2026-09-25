@@ -12,6 +12,7 @@ from rest_framework.generics import GenericAPIView
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
 from rest_framework.permissions import IsAuthenticated
 from services.activity_log import record as record_activity
+from services.rules import scan_report_has_person_mapping
 from services.storage_service import StorageService
 from services.worker_service import get_worker_service
 
@@ -104,7 +105,8 @@ class FileDownloadView(GenericAPIView, ListModelMixin, RetrieveModelMixin):
             - 202 Accepted: If the request is successfully processed and
             the file generation is initiated.
             - 400 Bad Request: If the required fields ('scan_report_id' or
-            'file_type') are missing or if the JSON payload is invalid.
+            'file_type') are missing, if the JSON payload is invalid, or if
+            the scan report has no mapping to the OMOP Person table.
             - 500 Internal Server Error: If an unexpected error occurs
             during processing.
 
@@ -128,6 +130,17 @@ class FileDownloadView(GenericAPIView, ListModelMixin, RetrieveModelMixin):
                 )
             # Get the scan report model to get the scan report name for both Azure and Airflow tasks later on
             scan_report = ScanReport.objects.get(id=scan_report_id)
+
+            # The Person table is mandatory in the OMOP CDM, so refuse to
+            # generate rules if the scan report has no mapping to it.
+            if not scan_report_has_person_mapping(scan_report):
+                return JsonResponse(
+                    {
+                        "error": "Cannot generate rules: no mapping to the "
+                        "Person table exists for this scan report."
+                    },
+                    status=400,
+                )
 
             # Determine the JSON version for the message
             json_version = "v1"  # default

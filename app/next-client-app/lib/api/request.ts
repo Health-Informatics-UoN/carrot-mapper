@@ -48,7 +48,8 @@ const request = async <T>(url: string, options: RequestOptions = {}) => {
         if (Array.isArray(errorResponse)) {
           errorMessage = errorResponse.join(" * ");
         } else {
-          errorMessage = errorResponse.detail || errorMessage;
+          errorMessage =
+            errorResponse.detail || errorResponse.error || errorMessage;
         }
       } catch (error) {
         errorMessage = "Failed to parse error response";
