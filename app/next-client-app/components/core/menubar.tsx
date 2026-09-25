@@ -14,7 +14,7 @@ export const MenuBar = async ({ user }: { user?: Session["user"] | null }) => {
   return (
     <>
       <Sidebar userName={user?.username} unreadCount={unreadCount} />
-      <div className="hidden lg:flex lg:items-center sticky top-0 z-50 backdrop-blur-sm border-b border-border justify-between p-4 mb-4">
+      <div className="hidden lg:flex lg:items-center sticky top-0 z-50 backdrop-blur-sm border-b border-border justify-between px-8 py-4 mb-4">
         <Link href={"/"}>
           <div className="text-2xl flex items-center font-semibold">
             <img

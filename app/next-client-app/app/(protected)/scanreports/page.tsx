@@ -4,10 +4,12 @@ import { DataTable } from "@/components/data-table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { objToQuery } from "@/lib/client-utils";
 import { ScanReportsTableFilter } from "@/components/scanreports/ScanReportsTableFilter";
-import { FileScan } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { FileScan, Upload } from "lucide-react";
 import { VisibilityState } from "@tanstack/react-table";
 import { Metadata } from "next";
 import { EmptyState } from "@/components/ui/empty-state";
+import Link from "next/link";
 
 interface ScanReportsProps {
   searchParams?: Promise<{ status__in: string } & FilterParameters>;
@@ -15,7 +17,7 @@ interface ScanReportsProps {
 
 export const metadata: Metadata = {
   title: "Scan Reports | Carrot Mapper",
-  description: "Scan reports for the current user"
+  description: "Scan reports for the current user",
 };
 
 export default async function ScanReports(props: ScanReportsProps) {
@@ -23,17 +25,23 @@ export default async function ScanReports(props: ScanReportsProps) {
   const defaultPageSize = 30;
   const defaultParams = {
     hidden: false,
-    page_size: defaultPageSize
+    page_size: defaultPageSize,
   };
   const combinedParams = { ...defaultParams, ...searchParams };
 
   const query = objToQuery(combinedParams);
   const scanReports = await getScanReports(query);
-  const filter = <ScanReportsTableFilter filter="dataset" filterText="name" />;
+  const filter = (
+    <ScanReportsTableFilter
+      filter="dataset"
+      filterText="name"
+      hideUploadButton
+    />
+  );
 
   // Define which columns should be hidden by default
   const initialColumnVisibility: VisibilityState = {
-    id: false
+    id: false,
   };
 
   return (
@@ -41,6 +49,11 @@ export default async function ScanReports(props: ScanReportsProps) {
       <div className="flex font-semibold text-xl items-center">
         <FileScan className="mr-2 text-green-700" />
         <h2>Scan Reports</h2>
+        <Link href="/scanreports/create" prefetch={false}>
+          <Button variant={"outline"} className="ml-4 flex">
+            Upload Scan Report <Upload />
+          </Button>
+        </Link>
       </div>
 
       <div className="my-3">

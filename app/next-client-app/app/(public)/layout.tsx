@@ -14,11 +14,11 @@ export default async function PublicLayout({
 
   return (
     <>
-      <section className="container">
-        <MenuBar user={user} />
+      <MenuBar user={user} />
+      <section className="w-full max-w-[1800px] mx-auto px-4 md:px-8">
         {children}
-        <Footer />
       </section>
+      <Footer />
     </>
   );
 }

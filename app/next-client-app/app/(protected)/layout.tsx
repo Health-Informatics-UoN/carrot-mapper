@@ -15,9 +15,11 @@ export default async function ProtectedLayout({
 
   return (
     <>
-      <section className="container flex flex-col min-h-svh">
-        <MenuBar user={user} />
-        {children}
+      <MenuBar user={user} />
+      <section className="flex flex-col min-h-svh">
+        <div className="w-full max-w-[1800px] mx-auto px-4 md:px-8">
+          {children}
+        </div>
       </section>
       <Footer />
     </>
