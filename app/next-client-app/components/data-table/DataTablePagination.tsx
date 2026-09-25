@@ -2,14 +2,14 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   DoubleArrowLeftIcon,
-  DoubleArrowRightIcon
+  DoubleArrowRightIcon,
 } from "@radix-ui/react-icons";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue
+  SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -19,18 +19,22 @@ interface DataTablePaginationProps<TData> {
   count: number;
   defaultPageSize?: 10 | 20 | 30 | 40 | 50;
   pageSizeOptions?: number[];
+  pageParam?: string;
+  pageSizeParam?: string;
 }
 
 export function DataTablePagination<TData>({
   count,
   defaultPageSize = 10,
-  pageSizeOptions = [10, 20, 30, 40, 50]
+  pageSizeOptions = [10, 20, 30, 40, 50],
+  pageParam = "p",
+  pageSizeParam = "page_size",
 }: DataTablePaginationProps<TData>) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const currentPage = Number(searchParams.get("p") ?? "1");
-  const pageSize = Number(searchParams.get("page_size") ?? defaultPageSize);
+  const currentPage = Number(searchParams.get(pageParam) ?? "1");
+  const pageSize = Number(searchParams.get(pageSizeParam) ?? defaultPageSize);
   const numberOfPages = Math.max(Math.ceil(count / pageSize), 1);
 
   /*
@@ -44,18 +48,18 @@ but it also means that we need to change many other API endpoints as well. So it
 */
   if (currentPage > numberOfPages) {
     navigateWithSearchParam(
-      "p",
+      pageParam,
       Math.ceil(count / pageSize),
       router,
-      searchParams
+      searchParams,
     );
   }
   const changePageSize = (size: number) => {
-    navigateWithSearchParam("page_size", size, router, searchParams);
+    navigateWithSearchParam(pageSizeParam, size, router, searchParams);
   };
 
   const navigateToPage = (param: number) => {
-    navigateWithSearchParam("p", param, router, searchParams);
+    navigateWithSearchParam(pageParam, param, router, searchParams);
   };
 
   const canNotGoToPreviousPage = (): boolean => {
@@ -96,10 +100,7 @@ but it also means that we need to change many other API endpoints as well. So it
             onClick={() => navigateToPage(1)}
             disabled={canNotGoToPreviousPage()}
           >
-            <DoubleArrowLeftIcon
-              className="size-4"
-              aria-hidden="true"
-            />
+            <DoubleArrowLeftIcon className="size-4" aria-hidden="true" />
           </Button>
           <Button
             variant="outline"
@@ -107,10 +108,7 @@ but it also means that we need to change many other API endpoints as well. So it
             onClick={() => navigateToPage(currentPage - 1)}
             disabled={canNotGoToPreviousPage()}
           >
-            <ChevronLeftIcon
-              className="size-4"
-              aria-hidden="true"
-            />
+            <ChevronLeftIcon className="size-4" aria-hidden="true" />
           </Button>
           <Button
             variant="outline"
@@ -118,10 +116,7 @@ but it also means that we need to change many other API endpoints as well. So it
             onClick={() => navigateToPage(currentPage + 1)}
             disabled={canNotGoToNextPage()}
           >
-            <ChevronRightIcon
-              className="size-4"
-              aria-hidden="true"
-            />
+            <ChevronRightIcon className="size-4" aria-hidden="true" />
           </Button>
           <Button
             variant="outline"
@@ -129,10 +124,7 @@ but it also means that we need to change many other API endpoints as well. So it
             onClick={() => navigateToPage(numberOfPages)}
             disabled={canNotGoToNextPage()}
           >
-            <DoubleArrowRightIcon
-              className="size-4"
-              aria-hidden="true"
-            />
+            <DoubleArrowRightIcon className="size-4" aria-hidden="true" />
           </Button>
         </div>
       </div>

@@ -53,6 +53,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from services.activity_log import record as record_activity
+from services.concept_search import search_concepts
 from services.rules import (
     NO_MATCHING_CONCEPT_ID,
     PERSON_DOMAINS,
@@ -82,6 +83,7 @@ from api.filters import (
 from api.mixins import ScanReportPermissionMixin
 from api.paginations import CustomPagination
 from api.serializers import (
+    ConceptSearchResultSerializer,
     ConceptSerializerV2,
     GetRulesAnalysis,
     ScanReportConceptDetailSerializerV3,
@@ -213,6 +215,75 @@ class VocabularyListView(GenericAPIView, ListModelMixin):
 
     def get(self, request, *args, **kwargs):
         return self.list(request, *args, **kwargs)
+
+
+class ConceptSearchView(APIView):
+    """
+    Free-text search over the OMOP vocabulary (Concept/ConceptSynonym).
+
+    Uses Postgres trigram similarity for typo-tolerant recall, then ranks
+    candidates into tiers (see services/concept_search.py). Not a
+    queryset-backed list view -- ranking and pagination happen in Python
+    over the recalled candidate set, so this doesn't use CustomPagination.
+
+    Query params:
+        query: free-text search string.
+        vocabulary_id, domain_id, concept_class_id, standard_concept:
+            comma-separated facet filters (matching this API's existing
+            `__in` filter convention, e.g. ConceptFilterViewSetV2).
+        p: 1-indexed page number (default 1).
+        page_size: results per page (default 20, max 50).
+    """
+
+    _MAX_PAGE_SIZE = 50
+    _DEFAULT_PAGE_SIZE = 20
+
+    @staticmethod
+    def _split_param(value: str | None) -> list[str]:
+        if not value:
+            return []
+        return [v for v in value.split(",") if v]
+
+    def get(self, request, *args, **kwargs):
+        query = request.query_params.get("query", "").strip()
+        filters = {
+            "vocabulary_id": self._split_param(
+                request.query_params.get("vocabulary_id")
+            ),
+            "domain_id": self._split_param(request.query_params.get("domain_id")),
+            "concept_class_id": self._split_param(
+                request.query_params.get("concept_class_id")
+            ),
+            "standard_concept": self._split_param(
+                request.query_params.get("standard_concept")
+            ),
+        }
+
+        try:
+            page = max(int(request.query_params.get("p", 1)), 1)
+        except ValueError:
+            page = 1
+        try:
+            page_size = min(
+                max(
+                    int(request.query_params.get("page_size", self._DEFAULT_PAGE_SIZE)),
+                    1,
+                ),
+                self._MAX_PAGE_SIZE,
+            )
+        except ValueError:
+            page_size = self._DEFAULT_PAGE_SIZE
+
+        result = search_concepts(query, filters, page=page - 1, size=page_size)
+        serializer = ConceptSearchResultSerializer(result["results"], many=True)
+
+        return Response(
+            {
+                "count": result["total"],
+                "results": serializer.data,
+                "facets": result["facets"],
+            }
+        )
 
 
 class UserViewSet(GenericAPIView, ListModelMixin):

@@ -55,6 +55,8 @@ def django_db_setup(
     run_sql("postgres", f"DROP DATABASE IF EXISTS {db_name}")
     run_sql("postgres", f"CREATE DATABASE {db_name} TEMPLATE template0")
     run_sql(db_name, "CREATE SCHEMA IF NOT EXISTS omop")
+    # Needed for trigram_similar/TrigramSimilarity lookups used by concept search.
+    run_sql(db_name, "CREATE EXTENSION IF NOT EXISTS pg_trgm")
 
     # Set the default to test for ease
     settings.DATABASES["default"]["NAME"] = db_name
@@ -66,6 +68,26 @@ def django_db_setup(
         with connection.schema_editor() as schema_editor:
             for model in omop_models:
                 schema_editor.create_model(model)
+
+        # ConceptSynonym's model declares `concept_id` as its Django pk (a
+        # single field is required), but the real OMOP table's primary key
+        # is the composite (concept_id, concept_synonym_name,
+        # language_concept_id) -- a concept has many synonyms. Creating it
+        # via schema_editor.create_model would wrongly make concept_id
+        # unique, so it's created with raw DDL matching the real schema
+        # instead; ORM reads/writes via `.filter()`/`.values()`/`.create()`
+        # don't depend on which column Django considers the pk.
+        run_sql(
+            db_name,
+            """
+            CREATE TABLE IF NOT EXISTS "omop"."concept_synonym" (
+                concept_id integer NOT NULL,
+                concept_synonym_name varchar(1000) NOT NULL,
+                language_concept_id integer NOT NULL,
+                PRIMARY KEY (concept_id, concept_synonym_name, language_concept_id)
+            )
+            """,
+        )
 
         # run the rest of the migrations
         call_command("migrate", "--noinput")

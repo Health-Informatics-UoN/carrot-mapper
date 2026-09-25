@@ -6,7 +6,7 @@ import {
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
-  useReactTable
+  useReactTable,
 } from "@tanstack/react-table";
 
 import {
@@ -15,7 +15,7 @@ import {
   TableCell,
   TableHead,
   TableHeader,
-  TableRow
+  TableRow,
 } from "@/components/ui/table";
 import React from "react";
 import { Button } from "@/components/ui/button";
@@ -25,7 +25,7 @@ import {
   DropdownMenuContent,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuTrigger
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { DataTablePagination } from "./DataTablePagination";
 import { Columns3 } from "lucide-react";
@@ -41,6 +41,8 @@ interface DataTableProps<TData, TValue> {
   RefreshButton?: React.JSX.Element;
   defaultPageSize?: 10 | 20 | 30 | 40 | 50;
   initialColumnVisibility?: VisibilityState;
+  pageParam?: string;
+  pageSizeParam?: string;
 }
 
 function UrlBuilder(id: string, prefix: string = "") {
@@ -56,7 +58,9 @@ export function DataTable<TData, TValue>({
   paginated = true,
   RefreshButton,
   defaultPageSize,
-  initialColumnVisibility
+  initialColumnVisibility,
+  pageParam,
+  pageSizeParam,
 }: DataTableProps<TData, TValue>) {
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>(initialColumnVisibility || {});
@@ -71,8 +75,8 @@ export function DataTable<TData, TValue>({
     manualSorting: true,
     onColumnVisibilityChange: setColumnVisibility,
     state: {
-      columnVisibility
-    }
+      columnVisibility,
+    },
   });
 
   return (
@@ -132,7 +136,7 @@ export function DataTable<TData, TValue>({
                   >
                     {flexRender(
                       header.column.columnDef.header,
-                      header.getContext()
+                      header.getContext(),
                     )}
                   </TableHead>
                 ))}
@@ -152,7 +156,7 @@ export function DataTable<TData, TValue>({
                       <div>
                         {flexRender(
                           cell.column.columnDef.cell,
-                          cell.getContext()
+                          cell.getContext(),
                         )}
                       </div>
                     </TableCell>
@@ -177,6 +181,8 @@ export function DataTable<TData, TValue>({
           <DataTablePagination
             count={count}
             defaultPageSize={defaultPageSize}
+            pageParam={pageParam}
+            pageSizeParam={pageSizeParam}
           />
         </div>
       )}

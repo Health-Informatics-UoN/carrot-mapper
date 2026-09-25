@@ -24,3 +24,27 @@ interface Vocabulary {
   vocabulary_version: string | null;
   vocabulary_concept_id: number;
 }
+
+interface ConceptSearchResult {
+  concept_id: number;
+  concept_code: string;
+  concept_name: string;
+  domain_id: string;
+  vocabulary_id: string;
+  concept_class_id: string;
+  standard_concept: string | null;
+}
+
+type ConceptSearchFacetParam =
+  "vocabulary_id" | "domain_id" | "concept_class_id" | "standard_concept";
+
+type ConceptSearchFacets = Record<
+  ConceptSearchFacetParam,
+  Record<string, number>
+>;
+
+interface ConceptSearchResponse {
+  count: number;
+  results: ConceptSearchResult[];
+  facets: ConceptSearchFacets;
+}

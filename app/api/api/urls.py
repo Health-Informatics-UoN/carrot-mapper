@@ -170,6 +170,11 @@ urlpatterns = [
         views.VocabularyListView.as_view(),
         name="vocabularies-list",
     ),
+    path(
+        r"v2/omop/conceptsearch/",
+        views.ConceptSearchView.as_view(),
+        name="v2conceptsearch",
+    ),
     path("v2/schema/", SpectacularAPIView.as_view(), name="schema"),
     path(
         "v2/schema/swagger-ui/",

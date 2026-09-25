@@ -72,6 +72,20 @@ class VocabularySerializer(DynamicFieldsMixin, serializers.ModelSerializer):
         fields = "__all__"
 
 
+class ConceptSearchResultSerializer(serializers.Serializer):
+    """Serializes the plain dicts returned by services.concept_search
+    (not a ModelSerializer -- results are ranked/paginated in Python, not a
+    Concept queryset)."""
+
+    concept_id = serializers.IntegerField()
+    concept_code = serializers.CharField()
+    concept_name = serializers.CharField()
+    domain_id = serializers.CharField()
+    vocabulary_id = serializers.CharField()
+    concept_class_id = serializers.CharField()
+    standard_concept = serializers.CharField(allow_null=True)
+
+
 class UploadStatusSerializer(serializers.ModelSerializer):
     """
     Serializer for the UploadStatus model.
