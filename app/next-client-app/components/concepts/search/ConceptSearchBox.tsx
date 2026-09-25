@@ -26,7 +26,7 @@ export function ConceptSearchBox() {
   );
 
   return (
-    <div className="relative max-w-sm w-full">
+    <div className="relative w-64 shrink-0">
       <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
       <Input
         placeholder="Search concepts by name, code, or synonym..."
