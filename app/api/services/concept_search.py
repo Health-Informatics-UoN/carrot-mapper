@@ -4,13 +4,12 @@ query parsing, ranking, and pagination.
 
 Recall (candidate matching, typo/fuzzy tolerant via Postgres pg_trgm) is
 services/postgres_concept_search.py's job; this module re-ranks whatever it
-recalls into explicit tiers. Ported from the pallas proof-of-concept
-(health-informatics-uon/pallas), which found that reproducing this ranking
-isn't something an off-the-shelf search engine does by construction (e.g.
-Postgres tokenizes away punctuation on indexing, so it has no native notion
-of "the literal substring '[hip]', brackets included" that the quoted-exact
-tier needs) -- so ranking is computed explicitly in Python here, over
-whatever the backend recalled:
+recalls into explicit tiers. Reproducing this ranking isn't something an
+off-the-shelf search engine does by construction (e.g. Postgres tokenizes
+away punctuation on indexing, so it has no native notion of "the literal
+substring '[hip]', brackets included" that the quoted-exact tier needs) --
+so ranking is computed explicitly in Python here, over whatever the backend
+recalled:
 
   1. Full phrase match (a field equals the query, case-insensitive)
   2. Quoted exact substring match (only for "..." queries)

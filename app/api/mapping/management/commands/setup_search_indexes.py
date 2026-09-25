@@ -5,7 +5,7 @@ from django.db import connection
 # schema tables aren't Django-migration-managed (they're bulk-loaded by the
 # separate omop-lite service), so this is a manual, idempotent command
 # rather than a migration -- run once after omop-lite has loaded the vocab
-# data. Ported from the pallas proof-of-concept (health-informatics-uon/pallas).
+# data.
 _STATEMENTS = [
     "CREATE EXTENSION IF NOT EXISTS pg_trgm;",
     "CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_concept_name_trgm "

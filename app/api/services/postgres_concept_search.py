@@ -3,11 +3,10 @@ Postgres pg_trgm-backed recall for concept search: trigram similarity plus
 substring matching against Concept.concept_name/concept_code and
 ConceptSynonym.concept_synonym_name.
 
-Ported from the pallas proof-of-concept (health-informatics-uon/pallas),
-adapted to query carrot's existing `data.models.Concept`/`ConceptSynonym`
-directly rather than a separate model set, and relies on the
-`setup_search_indexes` management command having created the GIN trigram
-indexes this needs for performance at scale.
+Queries carrot's existing `data.models.Concept`/`ConceptSynonym` directly
+(no separate model set), and relies on the `setup_search_indexes`
+management command having created the GIN trigram indexes this needs for
+performance at scale.
 
 Recall happens in two steps rather than one annotated/filtered query: first
 find the matching concept_ids, then hydrate full documents (synonyms
