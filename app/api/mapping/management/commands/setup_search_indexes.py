@@ -28,6 +28,14 @@ class Command(BaseCommand):
         # CONCURRENTLY requires autocommit -- can't be wrapped in a transaction.
         with connection.cursor() as cursor:
             connection.set_autocommit(True)
+            # Don't inherit the app-wide DB_STATEMENT_TIMEOUT (config.settings
+            # DATABASES["OPTIONS"]) -- building a GIN index over the full
+            # vocab can take longer than that, and if the statement gets
+            # killed mid-build, Postgres leaves a permanently INVALID index
+            # behind that `IF NOT EXISTS` will then skip forever. This is a
+            # one-off admin operation with no interactive caller waiting on
+            # it, so let it run to completion.
+            cursor.execute("SET statement_timeout = 0;")
             for statement in _STATEMENTS:
                 self.stdout.write(f"Running: {statement}")
                 cursor.execute(statement)
