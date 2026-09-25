@@ -9,6 +9,12 @@ cd /workspaces/carrot-mapper
 [ -f .env ] || cp .env.example .env
 [ -f app/next-client-app/.env ] || cp app/next-client-app/.env.example app/next-client-app/.env
 
+# Use the azurite profile, not minio: minio and azurite are alternatives
+# (STORAGE_TYPE picks one), and minio/minio isn't reliably pullable from
+# Docker Hub inside a Codespace, while azurite's mcr.microsoft.com image is.
+sed -i "s#^COMPOSE_PROFILES=.*#COMPOSE_PROFILES=azure#" .env
+sed -i "s#^STORAGE_TYPE=.*#STORAGE_TYPE=azure#" .env
+
 # Running in a GitHub Codespace: the browser reaches the frontend through
 # the forwarded https URL, not localhost, so NextAuth and the API's CORS
 # allow-list need to know that URL too.
@@ -20,9 +26,9 @@ if [ "${CODESPACES:-}" = "true" ]; then
 fi
 
 # db is already up (devcontainer.json's runServices); start the one-shot
-# OMOP vocab loader and minio, and wait for the vocab loader to finish
+# OMOP vocab loader and azurite, and wait for the vocab loader to finish
 # before the API creates the Airflow schema below.
-docker compose up -d db omop-lite minio
+docker compose up -d db omop-lite azurite
 docker wait "$(docker compose ps -q omop-lite)"
 
 # Bootstrap the API from source.
@@ -51,6 +57,6 @@ Setup complete. In two terminals:
   cd app/api && uv run manage.py runserver
   cd app/next-client-app && npm run dev
 
-Ports 3000 (frontend), 8000 (API), 8080 (Airflow) and 9001 (MinIO console)
-are forwarded automatically.
+Ports 3000 (frontend), 8000 (API) and 8080 (Airflow) are forwarded
+automatically.
 EOF

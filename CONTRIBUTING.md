@@ -58,7 +58,9 @@ cd app/api && uv run manage.py runserver
 cd app/next-client-app && npm run dev
 ```
 
-Ports 3000 (frontend), 8000 (API), 8080 (Airflow) and 9001 (MinIO console) are forwarded automatically. In a Codespace, `FRONTEND_URL`/`NEXTJS_URL`/`NEXTAUTH_URL` are rewritten to the forwarded `https://…app.github.dev` URL so login redirects and CORS work; everything else still talks to `localhost` since only the browser is remote — the frontend and API run in the same container.
+Ports 3000 (frontend), 8000 (API) and 8080 (Airflow) are forwarded automatically. In a Codespace, `FRONTEND_URL`/`NEXTJS_URL`/`NEXTAUTH_URL` are rewritten to the forwarded `https://…app.github.dev` URL so login redirects and CORS work; everything else still talks to `localhost` since only the browser is remote — the frontend and API run in the same container.
+
+The dev container uses the `azure` profile (azurite) rather than `minio` for blob storage, since `minio/minio` isn't reliably pullable from Docker Hub inside a Codespace's network, while azurite's `mcr.microsoft.com` image is. Local (non-container) development still defaults to `minio`, per `.env.example`.
 
 ## Pre-commit hooks
 

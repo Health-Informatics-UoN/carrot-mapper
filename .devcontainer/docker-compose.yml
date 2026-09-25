@@ -24,12 +24,15 @@ services:
       - carrot_mapper_frontend_node_modules:/workspaces/carrot-mapper/app/next-client-app/node_modules
     command: sleep infinity
     environment:
-      # Overrides for .env.example's localhost-based values: from inside
-      # this container, the supporting services in ../docker-compose.yml
-      # are reachable by service name, not localhost.
+      # Overrides for .env.example's localhost-based, minio-backed values:
+      # from inside this container, the supporting services in
+      # ../docker-compose.yml are reachable by service name, not localhost -
+      # and we use the azurite profile, not minio (see post-create.sh),
+      # since minio/minio isn't always pullable from Docker Hub in a
+      # Codespace's network (mcr.microsoft.com is more reliable there).
       DB_HOST: db
-      MINIO_ENDPOINT: minio:9000
       AIRFLOW_BASE_URL: http://airflow-webserver:8080/api/v1/
+      STORAGE_TYPE: azure
       STORAGE_CONN_STRING: "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;"
     depends_on:
       db:

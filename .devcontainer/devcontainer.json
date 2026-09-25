@@ -18,12 +18,11 @@
     // the stack (defined in ../docker-compose.yml) alongside this one.
     "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {}
   },
-  "forwardPorts": [3000, 8000, 8080, 9001],
+  "forwardPorts": [3000, 8000, 8080],
   "portsAttributes": {
     "3000": { "label": "Frontend (Next.js)", "onAutoForward": "openPreview" },
     "8000": { "label": "API (Django)" },
-    "8080": { "label": "Airflow" },
-    "9001": { "label": "MinIO console" }
+    "8080": { "label": "Airflow" }
   },
   "postCreateCommand": "bash .devcontainer/post-create.sh",
   "customizations": {
