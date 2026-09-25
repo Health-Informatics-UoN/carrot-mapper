@@ -78,6 +78,7 @@ export function ConceptTagsV3({
               <Button
                 size="icon"
                 variant="ghost"
+                aria-label="Remove concept"
                 onClick={async (e) => {
                   e.stopPropagation();
                   await handleDelete(concept.id);

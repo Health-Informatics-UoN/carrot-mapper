@@ -19,7 +19,7 @@ export default function SignIn() {
     const result = await signIn("credentials", {
       redirect: false,
       username,
-      password
+      password,
     });
     if (result?.ok) {
       router.push("/projects");
@@ -29,11 +29,9 @@ export default function SignIn() {
   };
 
   return (
-    <div className="flex min-h-96 items-center justify-center">
+    <div className="flex flex-1 items-center justify-center">
       <div className="w-full max-w-md p-8 space-y-6">
-        <h1 className="text-2xl font-semibold text-center">
-          Sign In
-        </h1>
+        <h1 className="text-2xl font-semibold text-center">Sign In</h1>
 
         {error && (
           <Alert variant={"destructive"}>

@@ -4,10 +4,10 @@ import {
   Folders,
   Database,
   FileScan,
-  Library
+  Library,
 } from "lucide-react";
 
-interface EmptyStateProps {
+export interface EmptyStateProps {
   icon?: "folders" | "database" | "filescan" | "circle-slash" | "library";
   title: string;
   description: string;
@@ -16,7 +16,7 @@ interface EmptyStateProps {
 export function EmptyState({
   icon = "circle-slash",
   title,
-  description
+  description,
 }: EmptyStateProps) {
   const getIcon = (iconName: string): LucideIcon => {
     switch (iconName) {

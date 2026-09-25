@@ -9,7 +9,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 
 export const metadata: Metadata = {
   title: "Vocabularies | Carrot Mapper",
-  description: "OMOP vocabularies loaded into Carrot Mapper"
+  description: "OMOP vocabularies loaded into Carrot Mapper",
 };
 
 interface VocabularyListProps {
@@ -19,13 +19,13 @@ interface VocabularyListProps {
 export default async function Vocabularies(props: VocabularyListProps) {
   const searchParams = await props.searchParams;
   const defaultParams = {
-    page_size: 50
+    page_size: 50,
   };
   const combinedParams = { ...defaultParams, ...searchParams };
   const query = objToQuery(combinedParams);
   const vocabularies = await getVocabulariesList(query);
 
-  const filter = <DataTableFilter filter="vocabulary_name" />;
+  const filter = <DataTableFilter filter="vocabulary_name" filterText="name" />;
 
   return (
     <div className="space-y-2">

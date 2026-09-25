@@ -15,7 +15,7 @@ export default async function PublicLayout({
   return (
     <>
       <MenuBar user={user} />
-      <section className="w-full max-w-[1800px] mx-auto px-4 md:px-8">
+      <section className="w-full max-w-[1800px] mx-auto px-4 md:px-8 flex flex-col min-h-svh">
         {children}
       </section>
       <Footer />
