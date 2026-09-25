@@ -1339,7 +1339,7 @@ class TestUserSharedProjectsView(TestCase):
 
 class TestPersonConceptValidation(TestCase):
     """
-    Covers #1188: a field/value must never carry more than one concept of the
+    A field/value must never carry more than one concept of the
     same Person domain (Gender, Race, or Ethnicity), since each domain maps
     to a single OMOP Person column. Different Person domains combine fine on
     one field/value (e.g. Gender + Ethnicity populate separate columns of the
