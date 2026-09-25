@@ -10,7 +10,6 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import CopyButton from "@/components/core/CopyButton";
 import { enableAIRecommendation } from "@/constants";
-import { Tooltips } from "@/components/core/Tooltips";
 import { AISuggestionsButton } from "@/components/recommendations/ai-suggesions-button";
 import { ConceptTagsV3 } from "@/components/concepts/ConceptTagsV3";
 import AddConceptV3 from "@/components/concepts/AddConceptV3";
@@ -33,7 +32,7 @@ export const columns = (
         const { id, name } = row.original;
         const prePath = usePathname();
         return (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <Link
               href={`${
                 prePath.endsWith("/") ? prePath : prePath + "/"
@@ -44,6 +43,15 @@ export const columns = (
               </Button>
             </Link>
             <CopyButton textToCopy={name} />
+            {enableAIRecommendation === "true" && (
+              <AISuggestionsButton
+                value={name}
+                tableId={tableId}
+                rowId={id}
+                contentType="scanreportfield"
+                iconOnly
+              />
+            )}
           </div>
         );
       },
@@ -126,48 +134,23 @@ export const columns = (
     },
   ];
 
-  // AI Suggestions Column & setting as 4th Column
-  if (enableAIRecommendation === "true") {
-    baseColumns.splice(3, 0, {
-      id: "AI Suggestions",
-      header: ({ column }) => (
-        <div className="flex items-center">
-          <DataTableColumnHeader column={column} title="AI Suggestions" />
-          <Tooltips content="Get AI-powered Standard Concept Suggestions for the field name. To get the better results, please select the most relevant domain." />
-        </div>
-      ),
-      enableHiding: true,
-      enableSorting: false,
-      cell: ({ row }) => {
-        const { name, id } = row.original;
-        return (
-          <AISuggestionsButton
-            value={name}
-            tableId={tableId}
-            rowId={id}
-            contentType="scanreportfield"
-          />
-        );
-      },
-    });
-  } else {
-    baseColumns.splice(5, 0, {
-      id: "edit",
-      header: "",
-      cell: ({ row }) => {
-        const { id } = row.original;
-        const path = usePathname();
+  baseColumns.push({
+    id: "edit",
+    header: "",
+    cell: ({ row }) => {
+      const { id } = row.original;
+      const path = usePathname();
 
-        return (
-          <EditButton
-            prePath={path}
-            fieldID={id}
-            type="field"
-            permissions={canEdit ? ["CanEdit"] : []}
-          />
-        );
-      },
-    });
-  }
+      return (
+        <EditButton
+          prePath={path}
+          fieldID={id}
+          type="field"
+          permissions={canEdit ? ["CanEdit"] : []}
+        />
+      );
+    },
+  });
+
   return baseColumns;
 };

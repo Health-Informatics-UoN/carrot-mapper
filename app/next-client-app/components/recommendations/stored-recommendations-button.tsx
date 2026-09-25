@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { Button } from "../ui/button";
-import { Sparkles } from "lucide-react";
+import { History } from "lucide-react";
 import RecommendationsDialog from "./stored-recommendations-dialog";
 import { addConcept } from "@/api/concepts";
 import { toast } from "sonner";
@@ -12,6 +12,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { domains } from "@/constants/domains";
 import { DropdownMenuItem } from "@radix-ui/react-dropdown-menu";
 
@@ -21,6 +27,7 @@ export function StoredRecommendationsButton({
   rowId,
   contentType,
   mappingRecommendations,
+  iconOnly,
 }: {
   value: string;
   tableId: string;
@@ -29,6 +36,8 @@ export function StoredRecommendationsButton({
   scanReportId: string;
   fieldId: number;
   mappingRecommendations: MappingRecommendation[];
+  /** Render as a compact icon-only trigger instead of a labelled button. */
+  iconOnly?: boolean;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [suggestions, setSuggestions] = useState<RecommendationItem[]>([]);
@@ -48,7 +57,7 @@ export function StoredRecommendationsButton({
 
     // Transform the recommendations we already have
     const transformedRecommendations = transformMappingRecommendations(
-      mappingRecommendations
+      mappingRecommendations,
     );
     setSuggestions(transformedRecommendations);
     setIsOpen(true);
@@ -56,7 +65,7 @@ export function StoredRecommendationsButton({
 
   // Transform mapping recommendations to expected format
   const transformMappingRecommendations = (
-    recommendations: MappingRecommendation[]
+    recommendations: MappingRecommendation[],
   ): RecommendationItem[] => {
     return recommendations.map((rec) => ({
       accuracy: rec.score ?? null,
@@ -92,31 +101,55 @@ export function StoredRecommendationsButton({
     }
   };
 
+  const hasRecommendations =
+    !!mappingRecommendations && mappingRecommendations.length > 0;
+
   return (
     <>
       <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <div className="flex focus:outline-hidden">
-            <Button
-              variant="ghost"
-              size="sm"
-              className={`border-purple-400 hover:bg-purple-100 hover:text-black dark:hover:bg-gray-700 dark:hover:text-white ${
-                !mappingRecommendations || mappingRecommendations.length === 0
-                  ? "opacity-50 cursor-not-allowed"
-                  : ""
-              }`}
-              disabled={
-                !mappingRecommendations || mappingRecommendations.length === 0
-              }
-            >
-              <Sparkles className="h-4 w-4 text-purple-500" />
-              {mappingRecommendations && mappingRecommendations.length > 0
-                ? "Recommendations"
-                : "No Recommendations"}
-            </Button>
-          </div>
-        </DropdownMenuTrigger>
-        {mappingRecommendations && mappingRecommendations.length > 0 && (
+        {iconOnly ? (
+          <TooltipProvider delayDuration={200}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="inline-flex">
+                  <DropdownMenuTrigger asChild disabled={!hasRecommendations}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="hover:bg-blue-100 dark:hover:bg-gray-700 disabled:opacity-40 disabled:pointer-events-none"
+                      disabled={!hasRecommendations}
+                      aria-label="View stored concept recommendations"
+                    >
+                      <History className="h-4 w-4 text-blue-500" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>
+                {hasRecommendations
+                  ? "Stored concept recommendations"
+                  : "No stored recommendations for this value"}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        ) : (
+          <DropdownMenuTrigger asChild>
+            <div className="flex focus:outline-hidden">
+              <Button
+                variant="ghost"
+                size="sm"
+                className={`border-purple-400 hover:bg-purple-100 hover:text-black dark:hover:bg-gray-700 dark:hover:text-white ${
+                  !hasRecommendations ? "opacity-50 cursor-not-allowed" : ""
+                }`}
+                disabled={!hasRecommendations}
+              >
+                <History className="h-4 w-4 text-blue-500" />
+                {hasRecommendations ? "Recommendations" : "No Recommendations"}
+              </Button>
+            </div>
+          </DropdownMenuTrigger>
+        )}
+        {hasRecommendations && (
           <DropdownMenuContent
             align="start"
             className="w-52 overflow-y-auto max-h-96"
