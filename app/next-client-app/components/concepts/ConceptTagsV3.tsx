@@ -5,6 +5,7 @@ import { ApiError } from "@/lib/api/error";
 import { Cross2Icon } from "@radix-ui/react-icons";
 import { toast } from "sonner";
 import { ConceptDetailsSheet } from "./ConceptDetailsSheet";
+import { CONCEPT_CREATION_TYPES } from "@/constants";
 
 export function ConceptTagsV3({
   concepts,
@@ -63,6 +64,7 @@ export function ConceptTagsV3({
                         : ""
               } ${concepts.length > 1 && "my-[1px]"}`}
               key={concept.concept.concept_code}
+              title={CONCEPT_CREATION_TYPES[concept.creation_type]?.description}
             >
               <div className="pr-2">
                 <span className="font-semibold">

@@ -8,6 +8,7 @@ import CopyButton from "@/components/core/CopyButton";
 import AddConceptV3 from "@/components/concepts/AddConceptV3";
 import { AISuggestionsButton } from "@/components/recommendations/ai-suggesions-button";
 import { StoredRecommendationsButton } from "@/components/recommendations/stored-recommendations-button";
+import { ConceptColorLegend } from "@/components/concepts/ConceptColorLegend";
 import {
   enableAIRecommendation,
   enableStoredRecommendation,
@@ -107,7 +108,10 @@ export const columns = (
     {
       id: "Concepts",
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Concepts" />
+        <div className="flex items-center">
+          <DataTableColumnHeader column={column} title="Concepts" />
+          <ConceptColorLegend />
+        </div>
       ),
       enableHiding: true,
       enableSorting: false,
