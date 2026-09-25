@@ -15,6 +15,8 @@ from mapping.models import (
     DataPartner,
     Dataset,
     MappingRecommendation,
+    OmopField,
+    OmopTable,
     Project,
     ScanReport,
     ScanReportConcept,
@@ -25,6 +27,7 @@ from mapping.models import (
 )
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIClient, APIRequestFactory, force_authenticate
+from services.rules import _get_omop_field
 from users.models import Profile
 
 
@@ -1332,3 +1335,191 @@ class TestUserSharedProjectsView(TestCase):
         response = self.client.get(f"/api/v2/users/{self.user3.id}/shared-projects/")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data, [])
+
+
+class TestPersonConceptValidation(TestCase):
+    """
+    A field/value must never carry more than one concept of the
+    same Person domain (Gender, Race, or Ethnicity), since each domain maps
+    to a single OMOP Person column. Different Person domains combine fine on
+    one field/value (e.g. Gender + Ethnicity populate separate columns of the
+    same Person record).
+
+    Uses setUpTestData (not setUp) for the OmopTable/OmopField rows: the
+    lookups in services.rules._get_omop_field are process-wide lru_cache'd
+    by (field name, table), so re-creating same-named rows per test method
+    would leave the cache pointing at rows a previous test's transaction
+    already rolled back. The cache is also cleared at class start/end so
+    this class neither inherits stale entries from an earlier test file
+    (e.g. another "condition_occurrence" fixture) nor leaves its own rows
+    cached once its transaction is rolled back for the next test class.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        _get_omop_field.cache_clear()
+
+    @classmethod
+    def tearDownClass(cls):
+        _get_omop_field.cache_clear()
+        super().tearDownClass()
+
+    @classmethod
+    def setUpTestData(cls):
+        User = get_user_model()
+        cls.user = User.objects.create(username="pippin_took", password="shire")
+        Token.objects.create(user=cls.user)
+
+        cls.data_partner = DataPartner.objects.create(name="Buckland")
+        cls.dataset = Dataset.objects.create(
+            name="Person Validation Dataset",
+            visibility=VisibilityChoices.PUBLIC,
+            data_partner=cls.data_partner,
+        )
+        cls.project = Project.objects.create(name="Person Validation Project")
+        cls.project.members.add(cls.user)
+        cls.project.datasets.add(cls.dataset)
+
+        cls.scan_report = ScanReport.objects.create(
+            author=cls.user,
+            name="Scan Report",
+            dataset="Dataset Name",
+            visibility=VisibilityChoices.PUBLIC,
+            parent_dataset=cls.dataset,
+        )
+        cls.scan_report.editors.add(cls.user)
+
+        cls.table = ScanReportTable.objects.create(
+            scan_report=cls.scan_report, name="Person"
+        )
+        cls.person_id_field = ScanReportField.objects.create(
+            scan_report_table=cls.table,
+            name="person_id",
+            description_column="",
+            type_column="INT",
+        )
+        cls.date_field = ScanReportField.objects.create(
+            scan_report_table=cls.table,
+            name="date",
+            description_column="",
+            type_column="VARCHAR",
+        )
+        cls.table.person_id = cls.person_id_field
+        cls.table.date_event = cls.date_field
+        cls.table.save()
+
+        cls.gender_field = ScanReportField.objects.create(
+            scan_report_table=cls.table,
+            name="gender",
+            description_column="",
+            type_column="VARCHAR",
+        )
+        cls.race_field = ScanReportField.objects.create(
+            scan_report_table=cls.table,
+            name="race",
+            description_column="",
+            type_column="VARCHAR",
+        )
+
+        person_table = OmopTable.objects.create(table="person")
+        for field_name in [
+            "person_id",
+            "birth_datetime",
+            "gender_concept_id",
+            "gender_source_concept_id",
+            "gender_source_value",
+            "race_concept_id",
+            "race_source_concept_id",
+            "race_source_value",
+            "ethnicity_concept_id",
+            "ethnicity_source_concept_id",
+            "ethnicity_source_value",
+        ]:
+            OmopField.objects.create(table=person_table, field=field_name)
+
+        condition_table = OmopTable.objects.create(table="condition_occurrence")
+        for field_name in [
+            "person_id",
+            "condition_start_datetime",
+            "condition_end_datetime",
+            "condition_source_concept_id",
+            "condition_concept_id",
+            "condition_source_value",
+        ]:
+            OmopField.objects.create(table=condition_table, field=field_name)
+
+        def _make_concept(concept_id, name, domain_id):
+            return Concept.objects.create(
+                concept_id=concept_id,
+                concept_name=name,
+                concept_code=name,
+                domain_id=domain_id,
+                vocabulary_id="Test",
+                concept_class_id="Test",
+                standard_concept="S",
+                valid_start_date="2020-01-01",
+                valid_end_date="2099-12-31",
+            )
+
+        cls.gender_concept = _make_concept(910001, "Male", "Gender")
+        cls.gender_concept_2 = _make_concept(910002, "Female", "Gender")
+        cls.race_concept = _make_concept(910003, "White", "Race")
+        cls.ethnicity_concept = _make_concept(910004, "Not Hispanic", "Ethnicity")
+        cls.condition_concept = _make_concept(910005, "Test Condition", "Condition")
+
+    def setUp(self):
+        self.client = APIClient()
+        self.client.force_authenticate(self.user)
+
+    def _add_concept(self, concept, field):
+        return self.client.post(
+            "/api/v2/scanreports/concepts/",
+            {
+                "object_id": field.id,
+                "concept": concept.concept_id,
+                "content_type": "scanreportfield",
+                "table_id": self.table.id,
+            },
+            format="json",
+        )
+
+    def test_second_concept_of_same_person_domain_on_same_field_is_rejected(self):
+        first = self._add_concept(self.gender_concept, self.gender_field)
+        self.assertEqual(first.status_code, 201, first.content)
+
+        # A different concept, but still Gender - should be rejected.
+        second = self._add_concept(self.gender_concept_2, self.gender_field)
+        self.assertEqual(second.status_code, 400, second.content)
+        self.assertIn("Only one Gender concept", second.data["detail"])
+
+        self.assertEqual(
+            ScanReportConcept.objects.filter(object_id=self.gender_field.id).count(),
+            1,
+        )
+
+    def test_different_person_domains_on_same_field_both_succeed(self):
+        # Gender + Race + Ethnicity populate different Person columns, so they
+        # should combine onto the same field/value rather than conflict.
+        first = self._add_concept(self.gender_concept, self.gender_field)
+        self.assertEqual(first.status_code, 201, first.content)
+
+        second = self._add_concept(self.race_concept, self.gender_field)
+        self.assertEqual(second.status_code, 201, second.content)
+
+        third = self._add_concept(self.ethnicity_concept, self.gender_field)
+        self.assertEqual(third.status_code, 201, third.content)
+
+    def test_same_person_domain_on_different_fields_both_succeed(self):
+        first = self._add_concept(self.gender_concept, self.gender_field)
+        self.assertEqual(first.status_code, 201, first.content)
+
+        second = self._add_concept(self.gender_concept_2, self.race_field)
+        self.assertEqual(second.status_code, 201, second.content)
+
+    def test_non_person_domain_concept_is_unaffected_by_person_check(self):
+        first = self._add_concept(self.gender_concept, self.gender_field)
+        self.assertEqual(first.status_code, 201, first.content)
+
+        second = self._add_concept(self.condition_concept, self.gender_field)
+        self.assertEqual(second.status_code, 201, second.content)
