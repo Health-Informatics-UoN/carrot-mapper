@@ -49,6 +49,17 @@ Airflow's own migration needs a Postgres `airflow` schema to already exist, whic
 
 On later days, once the schema and migrations already exist in the `db` volume, this ordering doesn't matter any more — a plain `docker compose up -d` for the whole stack, then `uv run manage.py runserver` and `npm run dev`, is fine.
 
+### Dev container / GitHub Codespaces
+
+Opening this repo in a dev container (VS Code's "Reopen in Container", or a GitHub Codespace) runs the same setup automatically: `.devcontainer/post-create.sh` brings up the supporting services in the order above and installs both the API's and frontend's dependencies. Once it finishes, in two terminals inside the container:
+
+```bash
+cd app/api && uv run manage.py runserver
+cd app/next-client-app && npm run dev
+```
+
+Ports 3000 (frontend), 8000 (API), 8080 (Airflow) and 9001 (MinIO console) are forwarded automatically. In a Codespace, `FRONTEND_URL`/`NEXTJS_URL`/`NEXTAUTH_URL` are rewritten to the forwarded `https://…app.github.dev` URL so login redirects and CORS work; everything else still talks to `localhost` since only the browser is remote — the frontend and API run in the same container.
+
 ## Pre-commit hooks
 
 This repo uses [pre-commit](https://pre-commit.com/) to run Ruff (lint + format) before each commit. Install the hooks once per clone:

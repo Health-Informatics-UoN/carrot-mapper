@@ -1,0 +1,41 @@
+{
+  "name": "Carrot Mapper",
+  "dockerComposeFile": ["../docker-compose.yml", "docker-compose.yml"],
+  "service": "app",
+  "workspaceFolder": "/workspaces/carrot-mapper",
+  // Only start this container and the database directly. postCreateCommand
+  // brings up omop-lite, minio and Airflow itself, in the order
+  // CONTRIBUTING.md requires (Airflow's schema must exist, created by the
+  // API, before Airflow starts).
+  "runServices": ["app", "db"],
+  "shutdownAction": "stopCompose",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "20"
+    },
+    // Gives this container a `docker`/`docker compose` CLI talking to the
+    // host's Docker daemon, so postCreateCommand can bring up the rest of
+    // the stack (defined in ../docker-compose.yml) alongside this one.
+    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {}
+  },
+  "forwardPorts": [3000, 8000, 8080, 9001],
+  "portsAttributes": {
+    "3000": { "label": "Frontend (Next.js)", "onAutoForward": "openPreview" },
+    "8000": { "label": "API (Django)" },
+    "8080": { "label": "Airflow" },
+    "9001": { "label": "MinIO console" }
+  },
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "charliermarsh.ruff",
+        "ms-python.mypy-type-checker",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "bradlc.vscode-tailwindcss"
+      ]
+    }
+  }
+}

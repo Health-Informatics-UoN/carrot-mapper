@@ -1,0 +1,40 @@
+# Adds the dev container's own "app" service to the main stack in
+# ../docker-compose.yml (devcontainer.json merges both files). "app" is
+# where you run the API and frontend from source, same as local dev - see
+# CONTRIBUTING.md.
+#
+# devcontainer.json lists ../docker-compose.yml first, so Compose resolves
+# every relative path below (build context, volumes) against the repo root,
+# not against this file's own directory - hence ".devcontainer/..." and "."
+# rather than "." and "..".
+services:
+  app:
+    build:
+      context: .devcontainer
+      dockerfile: Dockerfile
+    init: true
+    # Matches the path GitHub Codespaces mounts the repo at on the host VM,
+    # so `docker compose` commands run from inside this container (via the
+    # docker-outside-of-docker feature) resolve relative volume paths
+    # (e.g. ../docker-compose.yml's ./vocabs:/vocabs) the same way they
+    # would outside the container.
+    volumes:
+      - .:/workspaces/carrot-mapper:cached
+      - carrot_mapper_api_venv:/workspaces/carrot-mapper/app/api/.venv
+      - carrot_mapper_frontend_node_modules:/workspaces/carrot-mapper/app/next-client-app/node_modules
+    command: sleep infinity
+    environment:
+      # Overrides for .env.example's localhost-based values: from inside
+      # this container, the supporting services in ../docker-compose.yml
+      # are reachable by service name, not localhost.
+      DB_HOST: db
+      MINIO_ENDPOINT: minio:9000
+      AIRFLOW_BASE_URL: http://airflow-webserver:8080/api/v1/
+      STORAGE_CONN_STRING: "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  carrot_mapper_api_venv:
+  carrot_mapper_frontend_node_modules:
