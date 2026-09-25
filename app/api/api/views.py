@@ -55,6 +55,7 @@ from rest_framework.views import APIView
 from services.activity_log import record as record_activity
 from services.rules import (
     NO_MATCHING_CONCEPT_ID,
+    PERSON_DOMAINS,
     _find_destination_table,
     save_mapping_rules,
 )
@@ -1407,6 +1408,12 @@ class ScanReportConceptListV2(
                   generates mapping rules).
                 - Preventing multiple concepts with the same ID from
                   being added to the same object.
+                - Preventing more than one concept of the same
+                  Person domain (Gender, Race, or Ethnicity) from
+                  being added to the same object, since each domain
+                  maps to a single OMOP Person field. Different
+                  Person domains may still be combined on one
+                  object (e.g. Gender + Ethnicity).
             Returns appropriate error responses for validation
             failures.
 
@@ -1539,6 +1546,28 @@ class ScanReportConceptListV2(
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
+
+        # Gender, Race, and Ethnicity each populate their own single OMOP Person
+        # column (gender_concept_id, race_concept_id, ethnicity_concept_id), so
+        # combining different Person domains on one field/value is fine - they
+        # merge into one Person record. But two concepts of the *same* Person
+        # domain (e.g. two Gender concepts) would both target the same column,
+        # producing multiple/ambiguous Person records for one person.
+        if domain in PERSON_DOMAINS:
+            existing_concepts_on_object = ScanReportConcept.objects.filter(
+                object_id=body["object_id"],
+                content_type=content_type,
+            ).select_related("concept")
+            if any(
+                existing.concept.domain_id.lower() == domain
+                for existing in existing_concepts_on_object
+            ):
+                return Response(
+                    {
+                        "detail": f"Only one {concept.domain_id} concept can be added per field/value, as it maps to a single OMOP Person field."
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
         # Create serializer and validate
         serializer = self.get_serializer(data=body, many=isinstance(body, list))
         serializer.is_valid(raise_exception=True)

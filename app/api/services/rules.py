@@ -20,6 +20,12 @@ from mapping.models import (
 # not an instruction for Carrot Transform.
 NO_MATCHING_CONCEPT_ID = 0
 
+# Domains that map to the OMOP Person table (see _find_destination_table below).
+# A field/value must never carry more than one concept from this set, since each
+# one independently generates a person_id + date_event rule pair - more than one
+# would produce multiple Person records for what must be a single, unique person.
+PERSON_DOMAINS = {"gender", "race", "ethnicity"}
+
 # allowed tables
 m_allowed_tables = [
     "person",
@@ -308,7 +314,7 @@ def _find_destination_table(
     # get the omop field for the source_concept_id for this domain
 
     # For death tables (not gender, race, ethnicity) use cause_source_concept_id
-    if table.death_table and domain not in ["gender", "race", "ethnicity"]:
+    if table.death_table and domain not in PERSON_DOMAINS:
         omop_field = _get_omop_field("cause_source_concept_id", "death")
     elif domain == "meas value":
         omop_field = _get_omop_field("value_as_concept_id", "measurement")
@@ -397,7 +403,7 @@ def save_mapping_rules(
     rules += date_rules
 
     # Convert domain of concepts added to Death table to "CAUSE", in order to facilitate the get OMOP field process
-    if source_table.death_table and domain not in ["gender", "race", "ethnicity"]:
+    if source_table.death_table and domain not in PERSON_DOMAINS:
         domain = "cause"
 
     # In case of domain = "meas value", this rule will not be generated.
