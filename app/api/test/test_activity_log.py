@@ -11,6 +11,7 @@ from files.models import FileDownload, FileType
 from mapping.models import (
     DataPartner,
     Dataset,
+    MappingRule,
     MappingStatus,
     OmopField,
     OmopTable,
@@ -390,6 +391,45 @@ class TestRulesDownloadedEmitsActivityLog(ActivityLogEmitSiteTestBase):
 
 
 class TestRulesExportRequestedEmitsActivityLog(ActivityLogEmitSiteTestBase):
+    def setUp(self):
+        super().setUp()
+
+        gender_field = ScanReportField.objects.create(
+            scan_report_table=self.table,
+            name="gender",
+            description_column="",
+            type_column="VARCHAR",
+        )
+        gender_concept = Concept.objects.create(
+            concept_id=910099,
+            concept_name="Male",
+            concept_code="Male",
+            domain_id="Gender",
+            vocabulary_id="Test",
+            concept_class_id="Test",
+            standard_concept="S",
+            valid_start_date="2020-01-01",
+            valid_end_date="2099-12-31",
+        )
+        scan_report_concept = ScanReportConcept.objects.create(
+            concept=gender_concept,
+            content_type=ContentType.objects.get(
+                app_label="mapping", model="scanreportfield"
+            ),
+            object_id=gender_field.id,
+            creation_type="M",
+        )
+        person_table = OmopTable.objects.create(table="person")
+        person_field = OmopField.objects.create(
+            table=person_table, field="gender_concept_id"
+        )
+        MappingRule.objects.create(
+            scan_report=self.scan_report,
+            omop_field=person_field,
+            source_field=gender_field,
+            concept=scan_report_concept,
+        )
+
     @mock.patch("files.views.worker_service.trigger_rules_export")
     def test_requesting_an_export_records_rules_export_requested(
         self, mock_trigger_export

@@ -159,6 +159,23 @@ def find_existing_concepts_count(table_id: int) -> int:
     return concept_count
 
 
+def scan_report_has_person_mapping(scan_report: ScanReport) -> bool:
+    """
+    Check whether a ScanReport has at least one MappingRule targeting the
+    OMOP Person table.
+
+    Args:
+        - scan_report (ScanReport): The ScanReport to check.
+
+    Returns:
+        - True if a MappingRule exists whose destination field belongs to
+          the "person" OmopTable, False otherwise.
+    """
+    return MappingRule.objects.filter(
+        scan_report=scan_report, omop_field__table__table="person"
+    ).exists()
+
+
 def _validate_person_id_and_date(source_table: ScanReportTable):
     """
     Check that the person_id and date_event is set on the table

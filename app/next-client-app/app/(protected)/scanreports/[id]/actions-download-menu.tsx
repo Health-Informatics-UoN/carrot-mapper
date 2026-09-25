@@ -3,7 +3,7 @@
 import {
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuGroup
+  DropdownMenuGroup,
 } from "@/components/ui/dropdown-menu";
 import { FileJson, FileSpreadsheet } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -16,16 +16,14 @@ export function ActionsDownloadMenu({ scanreportId }: Props) {
   const router = useRouter();
 
   const handleDownload = async (
-    fileType: FileTypeFormat | "application/json_v1" | "application/json_v2"
+    fileType: FileTypeFormat | "application/json_v1" | "application/json_v2",
   ) => {
     const resp = await requestFile(Number(scanreportId), fileType);
     if (resp.success) {
       router.push(`/scanreports/${scanreportId}/downloads`);
       toast.success("File requested.");
     } else {
-      toast.error(
-        `Error downloading file: ${(resp.errorMessage as any).message}`
-      );
+      toast.error(`Error downloading file: ${resp.errorMessage}`);
     }
   };
 

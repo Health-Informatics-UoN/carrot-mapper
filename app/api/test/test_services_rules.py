@@ -16,6 +16,7 @@ from mapping.models import (
     ScanReportValue,
 )
 from rest_framework.authtoken.models import Token
+from services.rules import scan_report_has_person_mapping
 
 
 class TestMisalignedMappings(TestCase):
@@ -262,3 +263,114 @@ class TestMisalignedMappings(TestCase):
             source_field=self.scan_report_field_desc,
             concept=self.scan_report_concept_cough_desc,
         )
+
+
+class TestScanReportHasPersonMapping(TestCase):
+    def setUp(self):
+        User = get_user_model()
+        self.user = User.objects.create(username="samwise", password="gamgee")
+        Token.objects.create(user=self.user)
+
+        self.data_partner = DataPartner.objects.create(name="Data Partner")
+        self.dataset = Dataset.objects.create(
+            name="Dataset", visibility="PUBLIC", data_partner=self.data_partner
+        )
+        self.project = Project.objects.create(name="Project")
+        self.project.members.add(self.user)
+        self.project.datasets.add(self.dataset)
+
+        self.scan_report = ScanReport.objects.create(
+            author=self.user,
+            name="Scan Report",
+            dataset="Dataset Name",
+            parent_dataset=self.dataset,
+        )
+        self.scan_report.viewers.add(self.user)
+
+        self.scan_report_table = ScanReportTable.objects.create(
+            scan_report=self.scan_report, name="Table"
+        )
+        self.gender_field = ScanReportField.objects.create(
+            scan_report_table=self.scan_report_table,
+            name="gender",
+            description_column="",
+            type_column="VARCHAR",
+        )
+        self.condition_field = ScanReportField.objects.create(
+            scan_report_table=self.scan_report_table,
+            name="condition",
+            description_column="",
+            type_column="VARCHAR",
+        )
+
+        self.person_table = OmopTable.objects.create(table="person")
+        self.person_field = OmopField.objects.create(
+            table=self.person_table, field="gender_concept_id"
+        )
+        self.condition_table = OmopTable.objects.create(table="condition_occurrence")
+        self.condition_omop_field = OmopField.objects.create(
+            table=self.condition_table, field="condition_concept_id"
+        )
+
+        self.content_type = ContentType.objects.get(
+            app_label="mapping", model="scanreportfield"
+        )
+        self.gender_concept = Concept.objects.create(
+            concept_id=910001,
+            concept_name="Male",
+            concept_code="Male",
+            domain_id="Gender",
+            vocabulary_id="Test",
+            concept_class_id="Test",
+            standard_concept="S",
+            valid_start_date="2020-01-01",
+            valid_end_date="2099-12-31",
+        )
+        self.condition_concept = Concept.objects.create(
+            concept_id=910002,
+            concept_name="Test Condition",
+            concept_code="Test Condition",
+            domain_id="Condition",
+            vocabulary_id="Test",
+            concept_class_id="Test",
+            standard_concept="S",
+            valid_start_date="2020-01-01",
+            valid_end_date="2099-12-31",
+        )
+
+    def _make_scan_report_concept(self, concept, field):
+        return ScanReportConcept.objects.create(
+            concept=concept,
+            content_type=self.content_type,
+            object_id=field.id,
+            creation_type="M",
+        )
+
+    def test_returns_false_when_no_mapping_rules_exist(self):
+        self.assertFalse(scan_report_has_person_mapping(self.scan_report))
+
+    def test_returns_false_when_only_non_person_mapping_rules_exist(self):
+        scan_report_concept = self._make_scan_report_concept(
+            self.condition_concept, self.condition_field
+        )
+        MappingRule.objects.create(
+            scan_report=self.scan_report,
+            omop_field=self.condition_omop_field,
+            source_field=self.condition_field,
+            concept=scan_report_concept,
+        )
+
+        self.assertFalse(scan_report_has_person_mapping(self.scan_report))
+
+    def test_returns_true_when_person_mapping_rule_exists(self):
+        scan_report_concept = self._make_scan_report_concept(
+            self.gender_concept, self.gender_field
+        )
+        MappingRule.objects.create(
+            scan_report=self.scan_report,
+            omop_field=self.person_field,
+            source_field=self.gender_field,
+            concept=scan_report_concept,
+        )
+
+        self.assertTrue(scan_report_has_person_mapping(self.scan_report))
