@@ -57,6 +57,8 @@ services:
       - DB_NAME=postgres
       - SCHEMA_NAME=omop
       - DATA_DIR=vocabs
+      - SYNTHETIC=true
+      - SYNTHETIC_NUMBER=1000
 
   azurite:
     profiles: ["azure"]
