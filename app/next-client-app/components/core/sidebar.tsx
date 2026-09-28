@@ -28,7 +28,7 @@ export function Sidebar({
   }, [pathname]);
 
   return (
-    <div className="flex gap-3 p-4 items-center justify-between border-b-2 border-gray-300 mb-4 lg:hidden">
+    <div className="flex gap-3 px-4 md:px-8 py-4 items-center justify-between border-b-2 border-gray-300 mb-4 lg:hidden">
       <div className="flex items-center">
         <div className="flex items-center">
           {" "}

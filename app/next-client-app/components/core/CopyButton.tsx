@@ -14,9 +14,14 @@ interface CopyButtonProps {
   textToCopy: string;
 }
 
-export const CopyButton: React.FC<CopyButtonProps> = ({ textToCopy }) => {
+const CopyButton: React.FC<CopyButtonProps> = ({ textToCopy }) => {
   return (
-    <Button variant="ghost" size="icon" onClick={() => handleCopy(textToCopy)}>
+    <Button
+      variant="ghost"
+      size="icon"
+      aria-label="Copy"
+      onClick={() => handleCopy(textToCopy)}
+    >
       <Copy className="w-4 h-4" />
     </Button>
   );

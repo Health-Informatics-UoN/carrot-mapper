@@ -35,7 +35,7 @@ export default function AddConceptV3({
           creation_type: "M",
           table_id: tableId,
         },
-        `/scanreports/${scanReportId}/tables/${tableId}/fields/${fieldId}`
+        `/scanreports/${scanReportId}/tables/${tableId}/fields/${fieldId}`,
       );
 
       if (response && "errorMessage" in response) {
@@ -66,6 +66,7 @@ export default function AddConceptV3({
               <Input
                 type="text"
                 name="concept"
+                placeholder="Concept ID"
                 value={values.concept}
                 onChange={handleChange}
                 required
@@ -76,6 +77,7 @@ export default function AddConceptV3({
             <Button
               type="submit"
               disabled={disabled}
+              aria-label="Add concept"
               className="rounded-l-none"
             >
               <PlusIcon />

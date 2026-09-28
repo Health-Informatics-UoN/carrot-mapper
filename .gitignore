@@ -21,3 +21,4 @@ build
 *.egg-info
 CLAUDE.md
 AGENTS.md
+.claude

@@ -13,6 +13,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { domains } from "@/constants/domains";
 import { DropdownMenuItem } from "@radix-ui/react-dropdown-menu";
 
@@ -21,11 +27,14 @@ export function AISuggestionsButton({
   tableId,
   rowId,
   contentType,
+  iconOnly,
 }: {
   value: string;
   tableId: string;
   rowId: number;
   contentType: string;
+  /** Render as a compact icon-only trigger instead of a labelled button. */
+  iconOnly?: boolean;
 }) {
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
@@ -48,7 +57,7 @@ export function AISuggestionsButton({
       // Filter to get only unique concept IDs
       const uniqueRecommendations = recommendations.items.filter(
         (item, index, array) =>
-          array.findIndex((i) => i.conceptId === item.conceptId) === index
+          array.findIndex((i) => i.conceptId === item.conceptId) === index,
       );
       if (recommendations.metadata) {
         setMetadata(recommendations.metadata);
@@ -84,26 +93,49 @@ export function AISuggestionsButton({
     }
   };
 
+  const icon = isLoading ? (
+    <Loader2 className="h-4 w-4 animate-spin" />
+  ) : (
+    <Sparkles className="h-4 w-4 text-purple-500" />
+  );
+
   return (
     <>
       <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <div className="flex focus:outline-hidden">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="border-purple-400 hover:bg-purple-100 hover:text-black dark:hover:bg-gray-700 dark:hover:text-white"
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Sparkles className="h-4 w-4 text-purple-500" />
-              )}
-              Suggestions
-            </Button>
-          </div>
-        </DropdownMenuTrigger>
+        {iconOnly ? (
+          <TooltipProvider delayDuration={200}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="hover:bg-purple-100 dark:hover:bg-gray-700"
+                    disabled={isLoading}
+                    aria-label="Get AI concept suggestions"
+                  >
+                    {icon}
+                  </Button>
+                </DropdownMenuTrigger>
+              </TooltipTrigger>
+              <TooltipContent>AI concept suggestions</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        ) : (
+          <DropdownMenuTrigger asChild>
+            <div className="flex focus:outline-hidden">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="border-purple-400 hover:bg-purple-100 hover:text-black dark:hover:bg-gray-700 dark:hover:text-white"
+                disabled={isLoading}
+              >
+                {icon}
+                Suggestions
+              </Button>
+            </div>
+          </DropdownMenuTrigger>
+        )}
         <DropdownMenuContent
           align="start"
           className="w-52 overflow-y-auto max-h-96"

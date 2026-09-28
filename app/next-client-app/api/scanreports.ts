@@ -27,13 +27,6 @@ const fetchKeys = {
 
   fieldsV3: (scanReportId: string, tableId: string, filter?: string) =>
     `v3/scanreports/${scanReportId}/tables/${tableId}/fields/?${filter}`,
-  values: (
-    scanReportId: string,
-    tableId: string,
-    fieldId: string,
-    filter?: string,
-  ) =>
-    `v2/scanreports/${scanReportId}/tables/${tableId}/fields/${fieldId}/values/?${filter}`,
   valuesV3: (
     scanReportId: string,
     tableId: string,
@@ -285,22 +278,6 @@ export async function getAllScanReportFields(
   } catch (error) {
     console.warn("Failed to fetch data.");
     return [];
-  }
-}
-
-export async function getScanReportValues(
-  scanReportId: string,
-  tableId: string,
-  fieldId: string,
-  filter: string | undefined,
-): Promise<PaginatedResponse<ScanReportValue>> {
-  try {
-    return await request<PaginatedResponse<ScanReportValue>>(
-      fetchKeys.values(scanReportId, tableId, fieldId, filter),
-    );
-  } catch (error) {
-    console.warn("Failed to fetch data.");
-    return { count: 0, next: null, previous: null, results: [] };
   }
 }
 

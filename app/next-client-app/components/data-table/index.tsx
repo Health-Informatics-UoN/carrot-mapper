@@ -6,7 +6,7 @@ import {
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
-  useReactTable
+  useReactTable,
 } from "@tanstack/react-table";
 
 import {
@@ -15,7 +15,7 @@ import {
   TableCell,
   TableHead,
   TableHeader,
-  TableRow
+  TableRow,
 } from "@/components/ui/table";
 import React from "react";
 import { Button } from "@/components/ui/button";
@@ -25,10 +25,11 @@ import {
   DropdownMenuContent,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuTrigger
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { DataTablePagination } from "./DataTablePagination";
 import { Columns3 } from "lucide-react";
+import { EmptyState, EmptyStateProps } from "@/components/ui/empty-state";
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -41,6 +42,9 @@ interface DataTableProps<TData, TValue> {
   RefreshButton?: React.JSX.Element;
   defaultPageSize?: 10 | 20 | 30 | 40 | 50;
   initialColumnVisibility?: VisibilityState;
+  emptyIcon?: EmptyStateProps["icon"];
+  emptyTitle?: string;
+  emptyDescription?: string;
 }
 
 function UrlBuilder(id: string, prefix: string = "") {
@@ -56,7 +60,10 @@ export function DataTable<TData, TValue>({
   paginated = true,
   RefreshButton,
   defaultPageSize,
-  initialColumnVisibility
+  initialColumnVisibility,
+  emptyIcon,
+  emptyTitle = "No results",
+  emptyDescription = "There's nothing to show here yet.",
 }: DataTableProps<TData, TValue>) {
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>(initialColumnVisibility || {});
@@ -71,8 +78,8 @@ export function DataTable<TData, TValue>({
     manualSorting: true,
     onColumnVisibilityChange: setColumnVisibility,
     state: {
-      columnVisibility
-    }
+      columnVisibility,
+    },
   });
 
   return (
@@ -132,7 +139,7 @@ export function DataTable<TData, TValue>({
                   >
                     {flexRender(
                       header.column.columnDef.header,
-                      header.getContext()
+                      header.getContext(),
                     )}
                   </TableHead>
                 ))}
@@ -152,7 +159,7 @@ export function DataTable<TData, TValue>({
                       <div>
                         {flexRender(
                           cell.column.columnDef.cell,
-                          cell.getContext()
+                          cell.getContext(),
                         )}
                       </div>
                     </TableCell>
@@ -160,12 +167,13 @@ export function DataTable<TData, TValue>({
                 </TableRow>
               ))
             ) : (
-              <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="h-24 text-center"
-                >
-                  No results.
+              <TableRow className="hover:bg-transparent">
+                <TableCell colSpan={columns.length} className="p-2">
+                  <EmptyState
+                    icon={emptyIcon}
+                    title={emptyTitle}
+                    description={emptyDescription}
+                  />
                 </TableCell>
               </TableRow>
             )}

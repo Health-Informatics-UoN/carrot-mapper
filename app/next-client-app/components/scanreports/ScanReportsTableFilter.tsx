@@ -15,9 +15,11 @@ import { MappingStatusFilter } from "./MappingStatusFilter";
 export function ScanReportsTableFilter({
   filter,
   filterText,
+  hideUploadButton,
 }: {
   filter: string;
   filterText: string;
+  hideUploadButton?: boolean;
 }) {
   const router = useRouter();
   const searchParam = useSearchParams();
@@ -30,7 +32,7 @@ export function ScanReportsTableFilter({
     if (statusParam) {
       const statusValues = statusParam.split(",");
       const filteredOptions = UploadStatusOptions.filter((option) =>
-        statusValues.includes(option.value)
+        statusValues.includes(option.value),
       );
       setOptions(filteredOptions);
     }
@@ -44,7 +46,7 @@ export function ScanReportsTableFilter({
           `${filter}__icontains`,
           query,
           router,
-          searchParam
+          searchParam,
         );
       } else if (query.length === 0) {
         // Handle resetting the filter
@@ -52,23 +54,23 @@ export function ScanReportsTableFilter({
           `${filter}__icontains`,
           "",
           router,
-          searchParam
+          searchParam,
         );
       }
     },
-    300
+    300,
   );
 
   const handleSelectOption = (option: FilterOption) => {
     const updatedOptions = selectedOptions ? [...selectedOptions] : [];
     const isSelected = updatedOptions.some(
-      (item) => item.value === option.value
+      (item) => item.value === option.value,
     );
 
     if (isSelected) {
       // Remove if it's already selected
       const index = updatedOptions.findIndex(
-        (item) => item.value === option.value
+        (item) => item.value === option.value,
       );
       updatedOptions.splice(index, 1);
     } else {
@@ -84,7 +86,7 @@ export function ScanReportsTableFilter({
       "upload_status__value__in",
       options?.map((option) => option.value) || "",
       router,
-      searchParam
+      searchParam,
     );
   };
 
@@ -108,14 +110,16 @@ export function ScanReportsTableFilter({
         </div>
         <MappingStatusFilter />
       </div>
-      <div className="max-sm:hidden">
-        <Link href="/scanreports/create" prefetch={false}>
-          <Button variant={"outline"} className="ml-auto mr-4">
-            <Upload />
-            Upload Scan Report
-          </Button>
-        </Link>
-      </div>
+      {!hideUploadButton && (
+        <div className="max-sm:hidden">
+          <Link href="/scanreports/create" prefetch={false}>
+            <Button variant={"outline"} className="ml-auto mr-4">
+              <Upload />
+              Upload Scan Report
+            </Button>
+          </Link>
+        </div>
+      )}
     </div>
   );
 }

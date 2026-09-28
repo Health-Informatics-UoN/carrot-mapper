@@ -8,6 +8,7 @@ import CopyButton from "@/components/core/CopyButton";
 import AddConceptV3 from "@/components/concepts/AddConceptV3";
 import { AISuggestionsButton } from "@/components/recommendations/ai-suggesions-button";
 import { StoredRecommendationsButton } from "@/components/recommendations/stored-recommendations-button";
+import { ConceptColorLegend } from "@/components/concepts/ConceptColorLegend";
 import {
   enableAIRecommendation,
   enableStoredRecommendation,
@@ -29,10 +30,10 @@ export const columns = (
       enableHiding: true,
       enableSorting: true,
       cell: ({ row }) => {
-        const { value, id } = row.original;
+        const { value, id, mapping_recommendations } = row.original;
 
         return (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <a
               className="font-bold underline underline-offset-2"
               href={`https://athena.ohdsi.org/search-terms/terms?query=${value}`}
@@ -41,6 +42,27 @@ export const columns = (
               {value}
             </a>
             <CopyButton textToCopy={value} />
+            {enableAIRecommendation === "true" && (
+              <AISuggestionsButton
+                value={value}
+                tableId={tableId}
+                rowId={id}
+                contentType="scanreportvalue"
+                iconOnly
+              />
+            )}
+            {enableStoredRecommendation === "true" && (
+              <StoredRecommendationsButton
+                value={value}
+                tableId={tableId}
+                rowId={id}
+                contentType="scanreportvalue"
+                scanReportId={scanReportId}
+                fieldId={row.original.scan_report_field}
+                mappingRecommendations={mapping_recommendations}
+                iconOnly
+              />
+            )}
           </div>
         );
       },
@@ -86,7 +108,10 @@ export const columns = (
     {
       id: "Concepts",
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Concepts" />
+        <div className="flex items-center">
+          <DataTableColumnHeader column={column} title="Concepts" />
+          <ConceptColorLegend />
+        </div>
       ),
       enableHiding: true,
       enableSorting: false,
@@ -126,61 +151,6 @@ export const columns = (
       },
     },
   ];
-
-  // Stored Recommendations Column - insert at position 1 (2nd column)
-  if (enableStoredRecommendation === "true") {
-    baseColumns.splice(1, 0, {
-      id: "Stored Recommendations",
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Stored Recommendations" />
-      ),
-      enableHiding: true,
-      enableSorting: false,
-      cell: ({ row }) => {
-        const { value, id, mapping_recommendations } = row.original;
-
-        return (
-          <div className="flex justify-start w-full">
-            <StoredRecommendationsButton
-              value={value}
-              tableId={tableId}
-              rowId={id}
-              contentType="scanreportvalue"
-              scanReportId={scanReportId}
-              fieldId={row.original.scan_report_field}
-              mappingRecommendations={mapping_recommendations}
-            />
-          </div>
-        );
-      },
-    });
-  }
-
-  // AI Suggestions Column - insert at position 2 (3rd column)
-  if (enableAIRecommendation === "true") {
-    baseColumns.splice(2, 0, {
-      id: "AI Suggestions",
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="AI Suggestions" />
-      ),
-      enableHiding: true,
-      enableSorting: false,
-      cell: ({ row }) => {
-        const { value, id } = row.original;
-
-        return (
-          <div className="flex justify-start w-full">
-            <AISuggestionsButton
-              value={value}
-              tableId={tableId}
-              rowId={id}
-              contentType="scanreportvalue"
-            />
-          </div>
-        );
-      },
-    });
-  }
 
   return baseColumns;
 };

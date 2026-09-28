@@ -9,10 +9,11 @@ import { Alert } from "@/components/ui/alert";
 import { passwordReset } from "@/api/password-reset";
 import { useState } from "react";
 
-
 // ✅ Validation schema
 const validationSchema = Yup.object({
-  newPassword: Yup.string().min(6, "Minimum 6 characters!").required("New password is required!"),
+  newPassword: Yup.string()
+    .min(6, "Minimum 6 characters!")
+    .required("New password is required!"),
   confirmPassword: Yup.string()
     .oneOf([Yup.ref("newPassword"), ""], "Passwords must match!")
     .required("Confirm password is required!"),
@@ -22,7 +23,7 @@ const handleSubmit = async (
   values: { newPassword: string; confirmPassword: string },
   setError: (error: string) => void,
   setSubmitted: (submitted: boolean) => void,
-  setSubmitting: (isSubmitting: boolean) => void
+  setSubmitting: (isSubmitting: boolean) => void,
 ) => {
   setError("");
 
@@ -52,13 +53,14 @@ export default function PasswordResetPage() {
 
   if (submitted) {
     return (
-      <div className="flex min-h-96 items-center justify-center">
+      <div className="flex flex-1 items-center justify-center">
         <div className="w-full max-w-md p-8 space-y-4">
           <h1 className="text-2xl font-semibold text-center">
             Password Reset Successful
           </h1>
           <p className="text-center text-sm text-muted-foreground">
-            Your password has been reset successfully. You can now log in with your new password.
+            Your password has been reset successfully. You can now log in with
+            your new password.
           </p>
           <div className="text-sm text-center mt-2">
             <a href="/projects" className="underline">
@@ -71,7 +73,7 @@ export default function PasswordResetPage() {
   }
 
   return (
-    <div className="flex min-h-96 items-center justify-center">
+    <div className="flex flex-1 items-center justify-center">
       <div className="w-full max-w-md p-8 space-y-6">
         <h1 className="text-2xl font-semibold text-center">
           Reset your password
@@ -89,16 +91,41 @@ export default function PasswordResetPage() {
               {error && <Alert variant="destructive">{error}</Alert>}
               <div className="space-y-2">
                 <Label htmlFor="newPassword">New Password</Label>
-                <Field as={Input} id="newPassword" name="newPassword" type="password" placeholder="Enter new password" />
-                <ErrorMessage name="newPassword" component="div" className="text-destructive text-sm" />
+                <Field
+                  as={Input}
+                  id="newPassword"
+                  name="newPassword"
+                  type="password"
+                  placeholder="Enter new password"
+                />
+                <ErrorMessage
+                  name="newPassword"
+                  component="div"
+                  className="text-destructive text-sm"
+                />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="confirmPassword">Confirm Password</Label>
-                <Field as={Input} id="confirmPassword" name="confirmPassword" type="password" placeholder="Re-enter password" />
-                <ErrorMessage name="confirmPassword" component="div" className="text-destructive text-sm" />
+                <Field
+                  as={Input}
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type="password"
+                  placeholder="Re-enter password"
+                />
+                <ErrorMessage
+                  name="confirmPassword"
+                  component="div"
+                  className="text-destructive text-sm"
+                />
               </div>
-              <Button type="submit" variant="outline" className="w-full" disabled={isSubmitting}>
+              <Button
+                type="submit"
+                variant="outline"
+                className="w-full"
+                disabled={isSubmitting}
+              >
                 {isSubmitting ? "Submitting..." : "Reset Password"}
               </Button>
             </Form>
