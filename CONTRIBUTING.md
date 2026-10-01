@@ -17,18 +17,19 @@ See the [developer setup guide](https://carrot.ac.uk/mapper/dev_guide/quickstart
 
 `docker compose up` only runs the supporting services (Postgres, minio/azurite, omop-lite, Airflow) — the API and frontend are run from source so you get fast reload and a normal debugger.
 
-Airflow's own migration needs a Postgres `airflow` schema to already exist, which is created by the API (`airflow_schema_creation` management command), not by Airflow itself. So **the first time** you bring the stack up (or any time after wiping the `db` volume), start the API's one-time setup *between* two docker compose stages rather than bringing everything up at once:
+Airflow's own migration needs a Postgres `airflow` schema to already exist, which is created by the API (`airflow_schema_creation` management command), not by Airflow itself. So **the first time** you bring the stack up (or any time after wiping the `db` volume), start the API's one-time setup _between_ two docker compose stages rather than bringing everything up at once:
+
+<!--  HOW to load OMOP DB/tables? -->
 
 1. Start Postgres and let the OMOP vocab loader finish (it's a one-shot container — wait for it to exit before continuing):
    ```bash
    cp .env.example .env
-   docker compose up -d db omop-lite
+   docker compose up -d db omop-lite azurite
    docker wait $(docker compose ps -q omop-lite)
    ```
 2. Bootstrap and run the API from source (in a second terminal, from `app/api`):
    ```bash
    uv sync
-   uv run manage.py airflow_schema_creation
    uv run manage.py migrate
    uv run manage.py automatic_seeding_data
    uv run manage.py default_super_user
