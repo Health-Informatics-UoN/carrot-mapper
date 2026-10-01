@@ -1,5 +1,4 @@
-# TODO: Airflow has version 3.0.0 but this is a breaking change
-FROM apache/airflow:2.10.5
+FROM apache/airflow:3.3.2
 
 # Build argument to determine which entrypoint to use
 ARG AIRFLOW_COMPONENT=webserver
@@ -18,6 +17,7 @@ RUN pip install --no-cache-dir \
     apache-airflow-providers-microsoft-azure \
     apache-airflow-providers-postgres \
     apache-airflow-providers-amazon \
+    "apache-airflow-providers-keycloak>=0.8.0" \
     openpyxl \
     types-openpyxl \
     types-psycopg2 \
