@@ -41,7 +41,6 @@ dag = DAG(
     processing them and then exporting them to a file for downloading.
     """,
     tags=["rules_export"],
-    schedule_interval=None,
     catchup=False,
     is_paused_upon_creation=False,
     dagrun_timeout=timedelta(minutes=float(AIRFLOW_DAGRUN_TIMEOUT)),

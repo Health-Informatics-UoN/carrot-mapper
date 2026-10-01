@@ -45,7 +45,6 @@ dag = DAG(
     from a uploaded scan report and data dictionary.
     """,
     tags=["SR_processing"],
-    schedule_interval=None,
     catchup=False,
     is_paused_upon_creation=False,
     dagrun_timeout=timedelta(minutes=float(AIRFLOW_DAGRUN_TIMEOUT)),

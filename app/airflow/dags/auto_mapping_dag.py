@@ -89,7 +89,6 @@ dag = DAG(
         "mapping_rules_creation",
         "search_recommendations",
     ],
-    schedule_interval=None,
     catchup=False,
     is_paused_upon_creation=False,
     dagrun_timeout=timedelta(minutes=float(AIRFLOW_DAGRUN_TIMEOUT)),
