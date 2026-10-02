@@ -171,14 +171,13 @@ services:
     environment:
       <<: *airflow-common-env
       AIRFLOW__CORE__EXECUTE_TASKS_NEW_PYTHON_INTERPRETER: True
-      AIRFLOW_DEBUG_MODE: true
+      AIRFLOW_DEBUG_MODE: False
       AIRFLOW__CORE__EXECUTION_API_SERVER_URL: "http://airflow-api:8080/execution/"
       # Search recommendations feature flag - controls whether search recommendations task is included in auto_mapping DAG
       SEARCH_ENABLED: False
       AIRFLOW_DAGRUN_TIMEOUT: 60 # Timeout for each dagrun in minutes
       TEMP_TABLE_CLEANUP_DELAY: 60 # delay between cleanup attempts on failure
       AIRFLOW_VAR_JSON_VERSION: v2
-      EXECUTE_VALUES_PAGE_SIZE: 1000000 # page size for bulk database inserts (execute_values)
 
   dag-processor:
     <<: *airflow-common
