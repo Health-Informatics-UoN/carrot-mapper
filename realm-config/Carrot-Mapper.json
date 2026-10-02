@@ -651,12 +651,12 @@
       "username": "carrot-admin",
       "enabled": true,
       "email": "carrot-admin@example.com",
-      "firstName": "NUH",
+      "firstName": "Carrot",
       "lastName": "Admin",
       "credentials": [
         {
           "type": "password",
-          "value": "admin123",
+          "value": "password123",
           "temporary": false
         }
       ],
