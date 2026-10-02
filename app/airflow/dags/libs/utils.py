@@ -5,8 +5,8 @@ from typing import Any, Dict, List, Optional, TypedDict
 
 from airflow.models.connection import Connection
 from airflow.models.taskinstance import TaskInstance
-from airflow.operators.python import PythonOperator
 from airflow.providers.postgres.hooks.postgres import PostgresHook
+from airflow.providers.standard.operators.python import PythonOperator
 from airflow.utils.session import create_session
 
 from libs.enums import JobStageType, StageStatusType, StorageType

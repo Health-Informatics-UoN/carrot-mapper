@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 
 from airflow import DAG
-from airflow.operators.empty import EmptyOperator
+from airflow.providers.standard.operators.empty import EmptyOperator
 from libs.auto_mapping.core_get_existing_concepts import (
     delete_mapping_rules,
     find_existing_concepts,
