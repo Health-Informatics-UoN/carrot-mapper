@@ -7,16 +7,9 @@ from io import BytesIO
 from typing import Any, Dict, List
 
 import pandas as pd
-from airflow.providers.postgres.hooks.postgres import PostgresHook
+from libs.db import pg_hook
 from libs.enums import JobStageType, StageStatusType
-from libs.settings import AIRFLOW_DAGRUN_TIMEOUT
 from libs.utils import update_job_status
-
-# PostgreSQL connection hook
-pg_hook = PostgresHook(
-    postgres_conn_id="postgres_db_conn",
-    options=f"-c statement_timeout={float(AIRFLOW_DAGRUN_TIMEOUT) * 60 * 1000}ms",
-)
 
 
 def build_rules_csv(scan_report_id: int) -> BytesIO:

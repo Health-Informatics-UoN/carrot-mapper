@@ -4,21 +4,14 @@ import logging
 from typing import Any, Dict, List, Optional, TypedDict
 
 from airflow.models.taskinstance import TaskInstance
-from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.providers.standard.operators.python import PythonOperator
 from airflow.sdk import BaseHook
 
+from libs.db import pg_hook
 from libs.enums import JobStageType, StageStatusType, StorageType
 from libs.notifications import NotificationType, create_notification
 from libs.settings import (
-    AIRFLOW_DAGRUN_TIMEOUT,
     storage_type,
-)
-
-# PostgreSQL connection hook
-pg_hook = PostgresHook(
-    postgres_conn_id="postgres_db_conn",
-    options=f"-c statement_timeout={float(AIRFLOW_DAGRUN_TIMEOUT) * 60 * 1000}ms",
 )
 
 

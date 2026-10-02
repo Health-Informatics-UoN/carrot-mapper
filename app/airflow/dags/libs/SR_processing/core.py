@@ -4,11 +4,10 @@ import os
 from io import StringIO
 from typing import List, Tuple
 
-from airflow.providers.postgres.hooks.postgres import PostgresHook
+from libs.db import pg_hook
 from libs.enums import JobStageType, StageStatusType
 from libs.notifications import NotificationType, create_notification
 from libs.queries import create_temp_data_dictionary_table_query, create_values_query
-from libs.settings import AIRFLOW_DAGRUN_TIMEOUT
 from libs.SR_processing.db_services import (
     create_field_entries,
     create_temp_field_values_table,
@@ -24,12 +23,6 @@ from libs.SR_processing.helpers import (
 from libs.storage_services import download_blob_to_tmp
 from libs.utils import pull_validated_params, update_job_status
 from openpyxl import load_workbook
-
-# PostgreSQL connection hook
-pg_hook = PostgresHook(
-    postgres_conn_id="postgres_db_conn",
-    options=f"-c statement_timeout={float(AIRFLOW_DAGRUN_TIMEOUT) * 60 * 1000}ms",
-)
 
 
 def process_data_dictionary(**kwargs) -> None:
