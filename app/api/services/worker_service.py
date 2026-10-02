@@ -1,13 +1,12 @@
 import logging
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 from urllib.parse import urljoin
 
 import requests
 from django.conf import settings
-from mapping.models import ScanReport, ScanReportTable
-from requests.auth import HTTPBasicAuth
 
+from mapping.models import ScanReport, ScanReportTable
 from services.enums import WorkerServiceType
 from services.field_domain_mappings import get_field_domain_mappings
 from services.field_vocab_mappings import get_field_vocab_mappings
@@ -28,12 +27,12 @@ class WorkerService(ABC):
         pass
 
     @abstractmethod
-    def trigger_scan_report_processing(self, message_body: Dict[str, Any]):
+    def trigger_scan_report_processing(self, message_body: dict[str, Any]):
         """Trigger scan report processing."""
         pass
 
     @abstractmethod
-    def trigger_rules_export(self, message_body: Dict[str, Any]):
+    def trigger_rules_export(self, message_body: dict[str, Any]):
         """Trigger rules export."""
         pass
 
@@ -51,20 +50,30 @@ class AirflowWorkerService(WorkerService):
         )
         self._rules_export_dag_id = settings.AIRFLOW_RULES_EXPORT_DAG_ID
 
+    def _get_airflow_access_token(self) -> str:
+        """Get a JWT access token from the Airflow API server (Airflow 3 no longer accepts basic auth)."""
+        response = requests.post(
+            urljoin(self._airflow_base_url, "/auth/token"),
+            json={
+                "username": settings.AIRFLOW_ADMIN_USERNAME,
+                "password": settings.AIRFLOW_ADMIN_PASSWORD,
+            },
+        )
+        response.raise_for_status()
+        return response.json()["access_token"]
+
     def _trigger_airflow_dag(
-        self, dag_id: str, payload: Dict[str, Any]
+        self, dag_id: str, payload: dict[str, Any]
     ) -> requests.Response:
         """Common method to trigger Airflow DAGs through the Airflow REST API."""
-        endpoint = f"dags/{dag_id}/dagRuns"
-        body = {"conf": payload}
+        endpoint = f"/api/v2/dags/{dag_id}/dagRuns"
+        body = {"conf": payload, "logical_date": None}
 
         try:
             response = requests.post(
                 urljoin(self._airflow_base_url, endpoint),
                 json=body,
-                auth=HTTPBasicAuth(
-                    settings.AIRFLOW_ADMIN_USERNAME, settings.AIRFLOW_ADMIN_PASSWORD
-                ),
+                headers={"Authorization": f"Bearer {self._get_airflow_access_token()}"},
             )
             response.raise_for_status()
             return response
@@ -104,10 +113,10 @@ class AirflowWorkerService(WorkerService):
 
         self._trigger_airflow_dag(self._auto_mapping_dag_id, payload)
 
-    def trigger_scan_report_processing(self, message_body: Dict[str, Any]):
+    def trigger_scan_report_processing(self, message_body: dict[str, Any]):
         self._trigger_airflow_dag(self._scan_report_processing_dag_id, message_body)
 
-    def trigger_rules_export(self, message_body: Dict[str, Any]):
+    def trigger_rules_export(self, message_body: dict[str, Any]):
         self._trigger_airflow_dag(self._rules_export_dag_id, message_body)
 
 
