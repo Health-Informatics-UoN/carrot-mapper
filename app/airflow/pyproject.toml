@@ -5,21 +5,23 @@ description = "Add your description here"
 requires-python = ">=3.11"
 dependencies = [
     "apache-airflow>=3.3.2,<4",
-    "apache-airflow-providers-amazon>=9.33.0",
-    "apache-airflow-providers-microsoft-azure>=12.3.1",
-    "apache-airflow-providers-postgres>=6.1.1",
-    "apache-airflow-providers-keycloak>=0.8.0",
-    "openpyxl>=3.1.5",
-    "pandas>=2.2.3",
-    "pandas-stubs>=2.2.3.250308",
-    "types-openpyxl>=3.1.5.20260724",
-    "types-psycopg2>=2.9.21.20260724",
+    "apache-airflow-providers-amazon==9.36.0",
+    "apache-airflow-providers-microsoft-azure==15.1.0",
+    "apache-airflow-providers-postgres==7.0.2",
+    "apache-airflow-providers-keycloak==0.10.0",
+    "openpyxl==3.1.5",
+    "pandas==3.0.5",
 ]
 
 [dependency-groups]
 test = [
     "pytest>=8.3.0",
     "pytest-mock>=3.14.0",
+]
+
+dev = [
+    "pandas-stubs>=3.0.5",
+    "types-openpyxl>=3.1.5",
 ]
 
 [tool.uv]
