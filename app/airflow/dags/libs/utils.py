@@ -242,12 +242,11 @@ def update_job_status_on_failure(context):
         logging.error(f"Failed to update job status on skipped task: {str(e)}")
 
 
-def create_task(task_id, python_callable, dag, provide_context=True):
+def create_task(task_id, python_callable, dag):
     """Create a task in the DAG"""
     return PythonOperator(
         task_id=task_id,
         python_callable=python_callable,
-        provide_context=provide_context,
         dag=dag,
     )
 
