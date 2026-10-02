@@ -177,7 +177,7 @@ services:
     environment:
       <<: *airflow-common-env
       AIRFLOW__CORE__EXECUTE_TASKS_NEW_PYTHON_INTERPRETER: True
-      AIRFLOW_DEBUG_MODE: False
+      AIRFLOW_DEBUG_MODE: true
       AIRFLOW__CORE__EXECUTION_API_SERVER_URL: "http://airflow-api:8080/execution/"
       # Search recommendations feature flag - controls whether search recommendations task is included in auto_mapping DAG
       SEARCH_ENABLED: False
