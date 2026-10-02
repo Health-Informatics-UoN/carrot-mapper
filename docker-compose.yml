@@ -12,7 +12,6 @@ x-airflow-common: &airflow-common
     AIRFLOW__CORE__EXECUTOR: LocalExecutor
     # Database connection here needs to be in URI format. With real values, which have special characters, they need to be encoded using the ref. in https://www.w3schools.com/tags/ref_urlencode.ASP.
     AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://postgres:postgres@db:5432/airflow
-    AIRFLOW__DATABASE__SQL_ALCHEMY_SCHEMA: airflow
     AIRFLOW__CORE__LOAD_EXAMPLES: "false"
     AIRFLOW__API__SECRET_KEY: ${AIRFLOW_API_SECRET_KEY}
     AIRFLOW__API_AUTH__JWT_SECRET: ${AIRFLOW_API_AUTH_JWT_SECRET}
@@ -26,6 +25,8 @@ x-airflow-common: &airflow-common
     AIRFLOW__KEYCLOAK_AUTH_MANAGER__SERVER_URL: ${KEYCLOAK_HOSTNAME}
     # This connection can be in separate variables (then don't need to do URL encoding), but it can reuse the same connection string with SQL_ALCHEMY_CONN (without extras)
     AIRFLOW_CONN_POSTGRES_DB_CONN: postgresql+psycopg2://postgres:postgres@db:5432/postgres
+    AIRFLOW_CONN_MINIO_CONN: '{"conn_type": "aws", "extra": {"endpoint_url": "http://minio:9000", "aws_access_key_id": "minioadmin", "aws_secret_access_key": "minioadmin"}}'
+    AIRFLOW_CONN_WASB_CONN: '{"conn_type": "wasb", "extra": {"connection_string": "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;TableEndpoint=http://azurite:10002/devstoreaccount1"}}'
     # The blob storage where Airflow get/put necessary files
     STORAGE_TYPE: ${STORAGE_TYPE:-minio}
     # Minio connection variables (don't need to do URL encoding here)
@@ -143,13 +144,13 @@ services:
       timeout: 5s
       retries: 5
 
-  airflow-webserver:
+  airflow-api:
     <<: *airflow-common
     build:
       context: app/airflow
       dockerfile: Dockerfile
       args:
-        AIRFLOW_COMPONENT: webserver
+        AIRFLOW_COMPONENT: api
     ports:
       - "8080:8080"
     environment:
@@ -177,7 +178,7 @@ services:
       <<: *airflow-common-env
       AIRFLOW__CORE__EXECUTE_TASKS_NEW_PYTHON_INTERPRETER: True
       AIRFLOW_DEBUG_MODE: False
-      AIRFLOW__CORE__EXECUTION_API_SERVER_URL: "http://airflow-webserver:8080/execution/"
+      AIRFLOW__CORE__EXECUTION_API_SERVER_URL: "http://airflow-api:8080/execution/"
       # Search recommendations feature flag - controls whether search recommendations task is included in auto_mapping DAG
       SEARCH_ENABLED: False
       AIRFLOW_DAGRUN_TIMEOUT: 60 # Timeout for each dagrun in minutes
