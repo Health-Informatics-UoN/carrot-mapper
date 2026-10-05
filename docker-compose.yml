@@ -178,18 +178,10 @@ services:
       AIRFLOW_DAGRUN_TIMEOUT: 60 # Timeout for each dagrun in minutes
       TEMP_TABLE_CLEANUP_DELAY: 60 # delay between cleanup attempts on failure
       AIRFLOW_VAR_JSON_VERSION: v2
-
-  dag-processor:
-    <<: *airflow-common
-    build:
-      context: app/airflow
-      dockerfile: Dockerfile
-      args:
-        AIRFLOW_COMPONENT: dag-processor
-    environment:
-      <<: *airflow-common-env
       AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "false"
       AIRFLOW__DAG_PROCESSOR__PRINT_STATS_INTERVAL: "0"
+      AIRFLOW__DAG_PROCESSOR__PARSING_PROCESSES: "1"
+      AIRFLOW__DAG_PROCESSOR__MIN_FILE_PROCESS_INTERVAL: "30"
 
 volumes:
   db_data_pg18:
