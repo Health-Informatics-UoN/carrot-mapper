@@ -20,7 +20,7 @@ on:
   workflow_dispatch:
     inputs:
       image_tag:
-        description: 'Image tag to deploy (e.g., v4.0.1, v4.1.0, or specific commit SHA)'
+        description: "Image tag to deploy (e.g., v4.0.1, v4.1.0, or specific commit SHA)"
         required: true
 
 env:
@@ -64,7 +64,7 @@ jobs:
       - uses: tyriis/docker-image-tag-exists@e73c8fdfab85076cdcf2ce4b443181fae2153675 # v2026.6.0
         with:
           registry: ${{ env.registry }}
-          repository: ${{ env.repo-owner }}/${{ env.app-name }}/airflow-webserver
+          repository: ${{ env.repo-owner }}/${{ env.app-name }}/airflow-api
           tag: ${{ github.event.inputs.image_tag }}
 
       - uses: tyriis/docker-image-tag-exists@e73c8fdfab85076cdcf2ce4b443181fae2153675 # v2026.6.0
@@ -89,13 +89,13 @@ jobs:
           publish-profile: ${{ secrets.AZURE_WEBAPP_NEXT_PUBLISH_PROFILE }}
           images: ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/frontend:${{ github.event.inputs.image_tag }}
 
-      - name: Deploy Airflow Webserver to Production
+      - name: Deploy Airflow api to Production
         uses: azure/webapps-deploy@02a81bead70021f5284939794bcec79c271ab383 # v3.0.8
         with:
-          app-name: ${{ vars.AIRFLOW_WEBSERVER_NAME }}
+          app-name: ${{ vars.AIRFLOW_api_NAME }}
           slot-name: "production"
-          publish-profile: ${{ secrets.AIRFLOW_WEBSERVER_PUBLISH_PROFILE }}
-          images: ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/airflow-webserver:${{ github.event.inputs.image_tag }}
+          publish-profile: ${{ secrets.AIRFLOW_api_PUBLISH_PROFILE }}
+          images: ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/airflow-api:${{ github.event.inputs.image_tag }}
 
       - name: Deploy Airflow Scheduler to Production
         uses: azure/webapps-deploy@02a81bead70021f5284939794bcec79c271ab383 # v3.0.8

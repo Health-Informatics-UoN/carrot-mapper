@@ -23,9 +23,9 @@ on:
   workflow_dispatch:
     inputs:
       image_tag:
-        description: 'Image tag to build and deploy (defaults to branch name)'
+        description: "Image tag to build and deploy (defaults to branch name)"
         required: false
-        default: ''
+        default: ""
 
 env:
   app-name: carrot
@@ -116,26 +116,26 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # Build and push Airflow webserver
-      - name: Extract Airflow webserver Docker metadata
-        id: airflow_webserver_meta
+      # Build and push Airflow api
+      - name: Extract Airflow api Docker metadata
+        id: airflow_api_meta
         uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
         with:
-          images: ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/airflow-webserver
+          images: ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/airflow-api
           tags: |
             type=raw,value=${{ env.IMAGE_TAG }}
             type=raw,value=${{ github.sha }}
             type=raw,value=${{ env.RUN_TIMESTAMP }}
 
-      - name: Build and push Airflow webserver image
+      - name: Build and push Airflow api image
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: ./app/airflow
           file: ./app/airflow/Dockerfile
-          build-args: AIRFLOW_COMPONENT=webserver
+          build-args: AIRFLOW_COMPONENT=api
           push: true
           platforms: linux/amd64,linux/arm64
-          tags: ${{ steps.airflow_webserver_meta.outputs.tags }}
+          tags: ${{ steps.airflow_api_meta.outputs.tags }}
 
       # Build and push Airflow scheduler
       - name: Extract Airflow scheduler Docker metadata
@@ -176,12 +176,12 @@ jobs:
           publish-profile: ${{ secrets.AZURE_WEBAPP_NEXT_PUBLISH_PROFILE }}
           images: ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/frontend:${{ env.IMAGE_TAG }}
 
-      - name: Deploy Airflow Webserver to Dev
+      - name: Deploy Airflow api to Dev
         uses: azure/webapps-deploy@02a81bead70021f5284939794bcec79c271ab383 # v3.0.8
         with:
-          app-name: ${{ vars.AIRFLOW_WEBSERVER_NAME }}
-          publish-profile: ${{ secrets.AIRFLOW_WEBSERVER_PUBLISH_PROFILE }}
-          images: ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/airflow-webserver:${{ env.IMAGE_TAG }}
+          app-name: ${{ vars.AIRFLOW_api_NAME }}
+          publish-profile: ${{ secrets.AIRFLOW_api_PUBLISH_PROFILE }}
+          images: ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/airflow-api:${{ env.IMAGE_TAG }}
 
       - name: Deploy Airflow Scheduler to Dev
         uses: azure/webapps-deploy@02a81bead70021f5284939794bcec79c271ab383 # v3.0.8
