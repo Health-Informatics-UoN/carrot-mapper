@@ -92,9 +92,9 @@ jobs:
       - name: Deploy Airflow api to Production
         uses: azure/webapps-deploy@02a81bead70021f5284939794bcec79c271ab383 # v3.0.8
         with:
-          app-name: ${{ vars.AIRFLOW_api_NAME }}
+          app-name: ${{ vars.AIRFLOW_API_NAME }}
           slot-name: "production"
-          publish-profile: ${{ secrets.AIRFLOW_api_PUBLISH_PROFILE }}
+          publish-profile: ${{ secrets.AIRFLOW_API_PUBLISH_PROFILE }}
           images: ${{ env.registry }}/${{ env.repo-owner }}/${{ env.app-name }}/airflow-api:${{ github.event.inputs.image_tag }}
 
       - name: Deploy Airflow Scheduler to Production
