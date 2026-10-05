@@ -49,16 +49,5 @@ $AIRFLOW_EXEC db check || { echo "Database check failed"; exit 1; }
 $AIRFLOW_EXEC db migrate || { echo "Database migrate failed"; exit 1; }
 
 
-if [ "$ADMIN_USERS" -gt 0 ]; then
-  echo "Admin user(s) already exist, skipping user creation"
-else
-  echo "No admin users found, creating admin user..."
-
-  # Create admin user with correct command syntax
-  $AIRFLOW_EXEC keycloak-auth-manager create-all --username admin --password admin --user-realm master
-  
-  echo "Admin user created successfully"
-fi
-
 # Start the webserver
 $AIRFLOW_EXEC api-server
