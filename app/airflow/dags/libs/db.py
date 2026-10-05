@@ -21,6 +21,18 @@ class ClientSidePostgresHook(PostgresHook):
             conn.cursor_factory = ClientCursor
         return conn
 
+    def get_sqlalchemy_engine(self, engine_kwargs=None):
+        # get_pandas_df/get_df connect through SQLAlchemy rather than get_conn(),
+        # so the cursor factory has to be passed to the engine as well.
+        if USE_PSYCOPG3:
+            from psycopg import ClientCursor
+
+            engine_kwargs = dict(engine_kwargs or {})
+            connect_args = dict(engine_kwargs.get("connect_args", {}))
+            connect_args.setdefault("cursor_factory", ClientCursor)
+            engine_kwargs["connect_args"] = connect_args
+        return super().get_sqlalchemy_engine(engine_kwargs=engine_kwargs)
+
 
 # PostgreSQL connection hook
 pg_hook = ClientSidePostgresHook(
