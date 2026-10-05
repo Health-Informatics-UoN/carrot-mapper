@@ -3,27 +3,15 @@ import json
 import logging
 from typing import Any, Dict, List, Optional, TypedDict
 
-from airflow.models.connection import Connection
 from airflow.models.taskinstance import TaskInstance
-from airflow.operators.python import PythonOperator
-from airflow.providers.postgres.hooks.postgres import PostgresHook
-from airflow.utils.session import create_session
+from airflow.providers.standard.operators.python import PythonOperator
+from airflow.sdk import BaseHook
 
+from libs.db import pg_hook
 from libs.enums import JobStageType, StageStatusType, StorageType
 from libs.notifications import NotificationType, create_notification
 from libs.settings import (
-    AIRFLOW_DAGRUN_TIMEOUT,
-    AIRFLOW_VAR_MINIO_ACCESS_KEY,
-    AIRFLOW_VAR_MINIO_ENDPOINT,
-    AIRFLOW_VAR_MINIO_SECRET_KEY,
-    AIRFLOW_VAR_WASB_CONNECTION_STRING,
     storage_type,
-)
-
-# PostgreSQL connection hook
-pg_hook = PostgresHook(
-    postgres_conn_id="postgres_db_conn",
-    options=f"-c statement_timeout={float(AIRFLOW_DAGRUN_TIMEOUT) * 60 * 1000}ms",
 )
 
 
@@ -242,12 +230,11 @@ def update_job_status_on_failure(context):
         logging.error(f"Failed to update job status on skipped task: {str(e)}")
 
 
-def create_task(task_id, python_callable, dag, provide_context=True):
+def create_task(task_id, python_callable, dag):
     """Create a task in the DAG"""
     return PythonOperator(
         task_id=task_id,
         python_callable=python_callable,
-        provide_context=provide_context,
         dag=dag,
     )
 
@@ -421,45 +408,13 @@ def pull_validated_params(kwargs: dict, task_id: str) -> ValidatedParams:
 
 def connect_to_storage() -> None:
     """
-    Connects to the storage service based on the storage type.
+    Checks that the connection for the configured storage service is available.
+
+    Airflow 3 tasks cannot write to the metadata DB, so connections must be
+    provided up front, e.g. via AIRFLOW_CONN_WASB_CONN / AIRFLOW_CONN_MINIO_CONN
+    environment variables or a secrets backend.
     """
-    with create_session() as session:
-        if storage_type == StorageType.AZURE:
-            # Check if WASB connection exists
-            existing_conn = (
-                session.query(Connection)
-                .filter(Connection.conn_id == "wasb_conn")
-                .first()
-            )
-
-            if existing_conn is None:
-                conn = Connection(
-                    conn_id="wasb_conn",
-                    conn_type="wasb",
-                    extra={"connection_string": AIRFLOW_VAR_WASB_CONNECTION_STRING},
-                )
-                session.add(conn)
-                session.commit()
-                logging.info("Created new WASB connection")
-
-        elif storage_type == StorageType.MINIO:
-            # Check if MinIO connection exists
-            existing_conn = (
-                session.query(Connection)
-                .filter(Connection.conn_id == "minio_conn")
-                .first()
-            )
-
-            if existing_conn is None:
-                conn = Connection(
-                    conn_id="minio_conn",
-                    conn_type="aws",
-                    extra={
-                        "endpoint_url": AIRFLOW_VAR_MINIO_ENDPOINT,
-                        "aws_access_key_id": AIRFLOW_VAR_MINIO_ACCESS_KEY,
-                        "aws_secret_access_key": AIRFLOW_VAR_MINIO_SECRET_KEY,
-                    },
-                )
-                session.add(conn)
-                session.commit()
-                logging.info("Created new MinIO connection")
+    conn_id = "wasb_conn" if storage_type == StorageType.AZURE else "minio_conn"
+    # Raises AirflowNotFoundException if the connection is not defined
+    BaseHook.get_connection(conn_id)
+    logging.info(f"Storage connection '{conn_id}' is available")

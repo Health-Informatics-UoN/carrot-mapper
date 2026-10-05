@@ -20,10 +20,10 @@ jobs:
             file: app/next-client-app/Dockerfile
             context: ./app/next-client-app
             build_args: ""
-          - name: airflow-webserver
+          - name: airflow-api
             file: app/airflow/Dockerfile
             context: ./app/airflow
-            build_args: "--build-arg AIRFLOW_COMPONENT=webserver"
+            build_args: "--build-arg AIRFLOW_COMPONENT=api"
           - name: airflow-scheduler
             file: app/airflow/Dockerfile
             context: ./app/airflow

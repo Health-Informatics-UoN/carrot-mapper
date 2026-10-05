@@ -50,18 +50,18 @@ jobs:
         APP_VERSION=${{ needs.release.outputs.release-tag }}
     secrets: inherit
 
-  publish-airflow-webserver:
+  publish-airflow-api:
     needs: release
     uses: health-informatics-uon/workflows/.github/workflows/publish-container.yml@1.6.0
     with:
-      image-name: carrot/airflow-webserver
-      image-description: "Carrot Mapper Airflow webserver"
+      image-name: carrot/airflow-api
+      image-description: "Carrot Mapper Airflow api"
       registry: ghcr.io
       context: ./app/airflow
       dockerfile: app/airflow/Dockerfile
       platforms: linux/amd64,linux/arm64
       build-args: |
-        AIRFLOW_COMPONENT=webserver
+        AIRFLOW_COMPONENT=api
         AIRFLOW_APP_VERSION=${{ needs.release.outputs.release-tag }}
     secrets: inherit
 
@@ -103,12 +103,12 @@ jobs:
       tag: ${{ needs.release.outputs.release-tag }}
     secrets: inherit
 
-  semver-airflow-webserver:
-    needs: [release, publish-airflow-webserver]
+  semver-airflow-api:
+    needs: [release, publish-airflow-api]
     if: needs.release.outputs.release-created == 'true'
     uses: health-informatics-uon/workflows/.github/workflows/semver-container.yml@1.6.0
     with:
-      image-name: carrot/airflow-webserver
+      image-name: carrot/airflow-api
       registry: ghcr.io
       tag: ${{ needs.release.outputs.release-tag }}
     secrets: inherit

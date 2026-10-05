@@ -17,18 +17,21 @@ See the [developer setup guide](https://carrot.ac.uk/mapper/dev_guide/quickstart
 
 `docker compose up` only runs the supporting services (Postgres, minio/azurite, omop-lite, Airflow) — the API and frontend are run from source so you get fast reload and a normal debugger.
 
-Airflow's own migration needs a Postgres `airflow` schema to already exist, which is created by the API (`airflow_schema_creation` management command), not by Airflow itself. So **the first time** you bring the stack up (or any time after wiping the `db` volume), start the API's one-time setup *between* two docker compose stages rather than bringing everything up at once:
+For convenience, three separate terminals should be used to start the services.
 
-1. Start Postgres and let the OMOP vocab loader finish (it's a one-shot container — wait for it to exit before continuing):
+- Terminal 1 at the root directory
+- Terminal 2 at the `app/api` directory
+- Terminal 3 at the `app/next-client-app` directory
+
+1. At terminal 1, start Postgres and let the OMOP vocab loader finish (it's a one-shot container — wait for it to exit before continuing):
    ```bash
    cp .env.example .env
-   docker compose up -d db omop-lite
+   docker compose up -d db omop-lite azurite
    docker wait $(docker compose ps -q omop-lite)
    ```
-2. Bootstrap and run the API from source (in a second terminal, from `app/api`):
+2. At terminal 2, bootstrap and run the API from source:
    ```bash
    uv sync
-   uv run manage.py airflow_schema_creation
    uv run manage.py migrate
    uv run manage.py automatic_seeding_data
    uv run manage.py default_super_user
@@ -36,18 +39,18 @@ Airflow's own migration needs a Postgres `airflow` schema to already exist, whic
    uv run manage.py runserver
    ```
    `python-dotenv` walks up from `app/api` looking for a `.env`, so the root `.env` created above covers the API too — no separate `app/api/.env` is needed.
-3. Now that the `airflow` schema exists, bring up the rest of the stack (in a third terminal):
+3. At terminal 1, bring up the rest of the stack:
    ```bash
    docker compose up -d
    ```
-4. Run the frontend from source (in a fourth terminal, from `app/next-client-app`):
+4. At terminal 3, run the frontend from source:
    ```bash
    cp .env.example .env
    npm install
    npm run dev
    ```
 
-On later days, once the schema and migrations already exist in the `db` volume, this ordering doesn't matter any more — a plain `docker compose up -d` for the whole stack, then `uv run manage.py runserver` and `npm run dev`, is fine.
+On later days, once the schema and migrations already exist in the `db` volume, this ordering doesn't matter any more — a plain `docker compose up -d` for the whole stack (at terminal 1), then `uv run manage.py runserver` (at terminal 2) and `npm run dev` (at terminal 3), is fine.
 
 ## Pre-commit hooks
 

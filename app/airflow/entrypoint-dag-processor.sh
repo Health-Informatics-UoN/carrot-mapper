@@ -48,24 +48,5 @@ $AIRFLOW_EXEC db check || { echo "Database check failed"; exit 1; }
 # Initialize/upgrade the database
 $AIRFLOW_EXEC db migrate || { echo "Database migrate failed"; exit 1; }
 
-# Run the dag-processor and scheduler
-$AIRFLOW_EXEC dag-processor &
-DAG_PROCESSOR_PID=$!
-$AIRFLOW_EXEC scheduler &
-SCHEDULER_PID=$!
-
-stop_children() {
-  kill -TERM "$DAG_PROCESSOR_PID" "$SCHEDULER_PID" 2>/dev/null || true
-  wait 2>/dev/null || true
-}
-
-# Forward termination (e.g. Azure stopping the app) to both processes
-trap 'stop_children; exit 0' TERM INT
-
-# If either process dies, stop the other and exit non-zero so Azure restarts the container
-EXIT_CODE=0
-wait -n || EXIT_CODE=$?
-echo "A child process exited (code ${EXIT_CODE}), shutting down"
-stop_children
-[ "$EXIT_CODE" -eq 0 ] && EXIT_CODE=1
-exit "$EXIT_CODE"
+# Start the dag processor
+exec $AIRFLOW_EXEC dag-processor
