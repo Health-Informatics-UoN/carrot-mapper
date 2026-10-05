@@ -4,7 +4,7 @@ import json
 import logging
 from datetime import date, datetime, timezone
 from io import BytesIO
-from typing import Any, Dict, List
+from typing import Any
 
 import pandas as pd
 from libs.db import pg_hook
@@ -164,7 +164,7 @@ def build_rules_json(scan_report_name: str, scan_report_id: int) -> BytesIO:
             parameters={"scan_report_id": scan_report_id},
         )
 
-        result: Dict[str, Any] = {}
+        result: dict[str, Any] = {}
         for _, row in processed_rules.iterrows():
             dest_table = row["dest_table"]
             concept_key = f"{row['concept_name']} {row['sr_concept_id']}"
@@ -221,7 +221,7 @@ def build_rules_json_v2(scan_report_name: str, scan_report_id: int) -> BytesIO:
             parameters={"scan_report_id": scan_report_id},
         )
 
-        result: Dict[str, Any] = {}
+        result: dict[str, Any] = {}
 
         for dest_table, dest_table_group in processed_rules.groupby("dest_table"):
             dest_table_str = str(dest_table)
@@ -266,8 +266,8 @@ def build_rules_json_v2(scan_report_name: str, scan_report_id: int) -> BytesIO:
                         "measurement",
                         "observation",
                     ]
-                    field_level_mappings: Dict[str, List[int]] = {}
-                    value_level_mappings: Dict[str, Dict[str, List[int]]] = {}
+                    field_level_mappings: dict[str, list[int]] = {}
+                    value_level_mappings: dict[str, dict[str, list[int]]] = {}
 
                     only_field_mappings = True
                     only_value_mappings = True
@@ -302,7 +302,7 @@ def build_rules_json_v2(scan_report_name: str, scan_report_id: int) -> BytesIO:
                                     field_level_mappings[dest_field] = []
                                 field_level_mappings[dest_field].append(concept_id)
 
-                    concept_mapping: Dict[str, Any] = {}
+                    concept_mapping: dict[str, Any] = {}
 
                     # Forming the concept_mapping based on the mapping types
                     if only_field_mappings:
