@@ -1,8 +1,26 @@
 import os
+from urllib.parse import urlparse
 
+import boto3
 from azure.storage.blob import BlobServiceClient
+from botocore.client import BaseClient, Config
+from botocore.exceptions import ClientError
 from django.core.management.base import BaseCommand
-from minio import Minio
+
+
+def _build_s3_endpoint_url(endpoint: str) -> str:
+    """
+    Ensures the S3 endpoint URL has the correct scheme (http or https). If the scheme is missing, it defaults to https.
+
+    Args:
+        endpoint (str): The S3 endpoint URL.
+
+    Returns:
+        str: The S3 endpoint URL with the correct scheme, default https if missing.
+    """
+    if urlparse(endpoint).scheme in ("http", "https"):
+        return endpoint
+    return f"https://{endpoint}"
 
 
 class Command(BaseCommand):
@@ -14,10 +32,10 @@ class Command(BaseCommand):
     # Get the Azure Connection String from the env
     AZURE_CONN_STRING = os.getenv("STORAGE_CONN_STRING")
 
-    # Get the MinIO Storage Connection String from the env
-    MINIO_ENDPOINT = os.getenv("MINIO_ENDPOINT")
-    MINIO_ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY")
-    MINIO_SECRET_KEY = os.getenv("MINIO_SECRET_KEY")
+    # Get the S3 Storage Connection String from the env
+    S3_ENDPOINT = os.getenv("S3_ENDPOINT", "")
+    S3_ACCESS_KEY = os.getenv("S3_ACCESS_KEY", "")
+    S3_SECRET_KEY = os.getenv("S3_SECRET_KEY", "")
 
     # Define the required queues and blob containers or buckets
     QUEUES = [
@@ -60,12 +78,35 @@ class Command(BaseCommand):
         except Exception as e:
             raise ValueError(f"Error when creating Azure Blob Container: {e}")
 
-    def _create_minio_buckets(self, minio_client: Minio):
+    @staticmethod
+    def _bucket_exists(s3_client: BaseClient, bucket_name: str) -> bool:
         """
-        Creates the required MinIO Buckets.
+        Check if an S3 bucket exists.
 
         Args:
-            minio_client: MinIO Client instance.
+            s3_client: boto3 S3 client instance.
+            bucket_name: Name of the S3 bucket to check.
+
+        Returns:
+            bool: True if the bucket exists, False otherwise.
+
+        Raises:
+            ClientError: If there is an error checking the bucket existence.
+        """
+        try:
+            s3_client.head_bucket(Bucket=bucket_name)
+            return True
+        except ClientError as e:
+            if e.response.get("Error", {}).get("Code") in ("404", "NoSuchBucket"):
+                return False
+            raise
+
+    def _create_s3_buckets(self, s3_client: BaseClient):
+        """
+        Creates the required S3 Buckets.
+
+        Args:
+            s3_client: boto3 S3 client instance.
 
         Returns:
             - Creates bucket if it doesn't exist
@@ -73,21 +114,21 @@ class Command(BaseCommand):
         """
         try:
             for bucket_name in self.CONTAINERS:
-                if minio_client.bucket_exists(bucket_name):
+                if self._bucket_exists(s3_client, bucket_name):
                     self.stdout.write(
                         self.style.WARNING(
                             f"Bucket '{bucket_name}' already exists. Skipping creation."
                         )
                     )
                 else:
-                    minio_client.make_bucket(bucket_name)
+                    s3_client.create_bucket(Bucket=bucket_name)
                     self.stdout.write(
                         self.style.SUCCESS(
                             f"Bucket '{bucket_name}' created successfully."
                         )
                     )
-        except ResourceCreationError as e:
-            raise ValueError(f"Error when creating MinIO Bucket: {e}")
+        except ClientError as e:
+            raise ValueError(f"Error when creating S3 Bucket: {e}")
 
     def _create_azure_resources(self):
         """
@@ -123,12 +164,12 @@ class Command(BaseCommand):
                 f"Error when creating Queue and Container Automatically for Azure: {e}"
             )
 
-    def _create_minio_resources(self):
+    def _create_s3_resources(self):
         """
-        Creates the required MinIO resources such as MinIO
+        Creates the required S3 resources such as S3
         Buckets to run Carrot-Mapper.
 
-        Uses MinIO as a storage.
+        Uses S3 as a storage.
 
         Args:
             None
@@ -139,34 +180,39 @@ class Command(BaseCommand):
         """
         if not all(
             [
-                self.MINIO_ENDPOINT,
-                self.MINIO_ACCESS_KEY,
-                self.MINIO_SECRET_KEY,
+                self.S3_ENDPOINT,
+                self.S3_ACCESS_KEY,
+                self.S3_SECRET_KEY,
             ]
         ):
             self.stdout.write(
-                self.style.ERROR("Required connections for MINIO is not set.")
+                self.style.ERROR("Required connections for S3 is not set.")
             )
             return
 
         try:
-            # Creates MinIO Connection
-            minio_client = Minio(
-                self.MINIO_ENDPOINT,
-                access_key=self.MINIO_ACCESS_KEY,
-                secret_key=self.MINIO_SECRET_KEY,
-                secure=False,
-                # Fixed region skips the GetBucketLocation lookup on S3-compatible servers
-                region="us-east-1",
+            # Creates S3 Connection
+            s3_client = boto3.client(
+                "s3",
+                endpoint_url=_build_s3_endpoint_url(self.S3_ENDPOINT),
+                aws_access_key_id=self.S3_ACCESS_KEY,
+                aws_secret_access_key=self.S3_SECRET_KEY,
+                # Fixed region, as before; S3-compatible servers accept us-east-1
+                region_name="us-east-1",
+                config=Config(
+                    signature_version="s3v4",
+                    # RustFS requires path-style addressing
+                    s3={"addressing_style": "path"},
+                ),
             )
 
-            # Create MinIO Buckets
-            self._create_minio_buckets(minio_client)
+            # Create S3 Buckets
+            self._create_s3_buckets(s3_client)
 
-            self.stdout.write(self.style.SUCCESS("MinIO Storage setup complete."))
+            self.stdout.write(self.style.SUCCESS("S3 Storage setup complete."))
         except Exception as e:
             raise ResourceCreationError(
-                f"Error when creating Bucket Automatically for MinIO: {e}"
+                f"Error when creating Bucket Automatically for S3: {e}"
             )
 
     def handle(self, *args, **kwargs):
@@ -189,12 +235,12 @@ class Command(BaseCommand):
 
         if self.STORAGE_TYPE.lower() == "azure":
             self._create_azure_resources()
-        elif self.STORAGE_TYPE.lower() == "minio":
-            self._create_minio_resources()
+        elif self.STORAGE_TYPE.lower() == "s3":
+            self._create_s3_resources()
         else:
             self.stdout.write(
                 self.style.ERROR(
-                    f"Unsupported STORAGE_TYPE: {self.STORAGE_TYPE}. Use 'azure' or 'minio'."
+                    f"Unsupported STORAGE_TYPE: {self.STORAGE_TYPE}. Use 'azure' or 's3'."
                 )
             )
 

@@ -19,12 +19,11 @@ x-airflow-common: &airflow-common
     # This connection can be in separate variables (then don't need to do URL encoding), but it can reuse the same connection string with SQL_ALCHEMY_CONN (without extras)
     AIRFLOW_CONN_POSTGRES_DB_CONN: postgresql+psycopg2://postgres:postgres@db:5432/postgres
     # The blob storage where Airflow get/put necessary files
-    STORAGE_TYPE: ${STORAGE_TYPE:-minio}
-    # S3-compatible storage (RustFS) connection variables (don't need to do URL encoding here).
-    # Variable names keep the MINIO_ prefix for backwards compatibility.
-    AIRFLOW_VAR_MINIO_ENDPOINT: http://rustfs:9000
-    AIRFLOW_VAR_MINIO_ACCESS_KEY: minioadmin
-    AIRFLOW_VAR_MINIO_SECRET_KEY: minioadmin
+    STORAGE_TYPE: ${STORAGE_TYPE:-s3}
+    # s3-compatible storage (RustFS) connection variables (don't need to do URL encoding here).
+    AIRFLOW_VAR_S3_ENDPOINT: http://rustfs:9000
+    AIRFLOW_VAR_S3_ACCESS_KEY: s3admin
+    AIRFLOW_VAR_S3_SECRET_KEY: s3admin
     # WASB connection string (don't need to do URL encoding here)
     AIRFLOW_VAR_WASB_CONNECTION_STRING: DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;TableEndpoint=http://azurite:10002/devstoreaccount1
 
@@ -83,8 +82,8 @@ services:
       - "9000:9000" # S3 API
       - "9001:9001" # Web console
     environment:
-      RUSTFS_ACCESS_KEY: "minioadmin" # Local development only
-      RUSTFS_SECRET_KEY: "minioadmin" # Local development only
+      RUSTFS_ACCESS_KEY: "s3admin" # Local development only
+      RUSTFS_SECRET_KEY: "s3admin" # Local development only
       RUSTFS_ADDRESS: ":9000"
       RUSTFS_CONSOLE_ADDRESS: ":9001"
       RUSTFS_CONSOLE_ENABLE: "true"

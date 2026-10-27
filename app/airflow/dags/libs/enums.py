@@ -3,7 +3,7 @@ from enum import StrEnum
 
 class StorageType(StrEnum):
     AZURE = "azure"
-    MINIO = "minio"
+    S3 = "s3"
 
 
 class StageStatusType(StrEnum):

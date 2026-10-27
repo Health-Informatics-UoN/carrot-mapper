@@ -30,10 +30,10 @@ dependencies = [
     "azure-monitor-opentelemetry==1.8.10",
     "djangorestframework-simplejwt==5.5.1",
     "dj-rest-auth[with-social]==7.2.0",
-    "minio==7.2.20",
     "drf-spectacular==0.30.0",
     "django-allauth==65.19.4",
     "psycopg2-binary==2.9.13",
+    "boto3==1.43.119",
 ]
 
 [dependency-groups]
