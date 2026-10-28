@@ -15,7 +15,7 @@ This page covers everything specific to contributing code to Carrot Mapper.
 
 See the [developer setup guide](https://carrot.ac.uk/mapper/dev_guide/quickstart) for full details. In short:
 
-`docker compose up` only runs the supporting services (Postgres, minio/azurite, omop-lite, Airflow) — the API and frontend are run from source so you get fast reload and a normal debugger.
+`docker compose up` only runs the supporting services (Postgres, s3/azurite, omop-lite, Airflow) — the API and frontend are run from source so you get fast reload and a normal debugger.
 
 For convenience, three separate terminals should be used to start the services.
 

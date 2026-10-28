@@ -4,13 +4,15 @@ import os
 from enum import StrEnum
 from io import BytesIO
 from typing import IO, Any, AnyStr, Dict, Iterable, Optional, Tuple, Union
+from urllib.parse import urlparse
 
+import boto3
 import openpyxl  # type: ignore
 from azure.storage.blob import (
     BlobServiceClient,  # type: ignore
     ContentSettings,
 )
-from minio import Minio
+from botocore.client import BaseClient, Config
 
 from services.utils import (
     process_domain_dict,
@@ -22,20 +24,35 @@ from services.utils import (
 
 class STORAGE_TYPE(StrEnum):
     AZURE = "azure"
-    MINIO = "minio"
+    S3 = "s3"
 
 
 logger = logging.getLogger("test_logger")
+
+
+def _build_s3_endpoint_url(endpoint: str) -> str:
+    """
+    Ensures the S3 endpoint URL has the correct scheme (http or https). If the scheme is missing, it defaults to https.
+
+    Args:
+        endpoint (str): The S3 endpoint URL.
+
+    Returns:
+        str: The S3 endpoint URL with the correct scheme, default https if missing.
+    """
+    if urlparse(endpoint).scheme in ("http", "https"):
+        return endpoint
+    return f"https://{endpoint}"
 
 
 class StorageService:
     def __init__(self):
         """
         Service for interacting with cloud storage
-        providers (Azure Blob Storage and MinIO).
+        providers (Azure Blob Storage and S3).
         """
         self._azure_client: Optional[BlobServiceClient] = None
-        self._minio_client: Optional[Minio] = None
+        self._s3_client: Optional[BaseClient] = None  # boto3 S3 client
         self._storage_type = os.getenv("STORAGE_TYPE")
         self._get_service_client()
 
@@ -54,37 +71,41 @@ class StorageService:
             logger.error(f"Error connecting to Azure Blob Storage: {e}")
             raise ValueError("Failed to initialise Azure Blob Storage client.")
 
-    def _initialise_minio_client(self):
+    def _initialise_s3_client(self):
         """
-        Initialises the MinIO client.
+        Initialises the S3 client (boto3).
         """
         try:
-            minio_endpoint = os.getenv("MINIO_ENDPOINT")
-            minio_access_key = os.getenv("MINIO_ACCESS_KEY")
-            minio_secret_key = os.getenv("MINIO_SECRET_KEY")
-            if not minio_endpoint or not minio_access_key or not minio_secret_key:
+            s3_endpoint = os.getenv("S3_ENDPOINT")
+            s3_access_key = os.getenv("S3_ACCESS_KEY")
+            s3_secret_key = os.getenv("S3_SECRET_KEY")
+            if not s3_endpoint or not s3_access_key or not s3_secret_key:
                 raise ValueError(
-                    "MINIO_ENDPOINT, MINIO_ACCESS_KEY, or MINIO_SECRET_KEY environment variables are not set."
+                    "S3_ENDPOINT, S3_ACCESS_KEY, or S3_SECRET_KEY environment variables are not set."
                 )
-            self._minio_client = Minio(
-                endpoint=minio_endpoint,
-                access_key=minio_access_key,
-                secret_key=minio_secret_key,
-                secure=False,
+            self._s3_client = boto3.client(
+                "s3",
+                endpoint_url=_build_s3_endpoint_url(s3_endpoint),
+                aws_access_key_id=s3_access_key,
+                aws_secret_access_key=s3_secret_key,
+                # Fixed region, as before; S3-compatible servers accept us-east-1
+                region_name="us-east-1",
+                config=Config(
+                    signature_version="s3v4",
+                    # RustFS requires path-style addressing
+                    s3={"addressing_style": "path"},
+                ),
             )
         except Exception as e:
-            logger.error(f"Error connecting to MinIO: {e}")
-            raise ValueError(f"Failed to initialise MinIO client: {e}")
+            logger.error(f"Error connecting to S3: {e}")
+            raise ValueError(f"Failed to initialise S3 client: {e}")
 
     def _get_service_client(self):
         """
         Get the service client for the specified storage type.
 
-        Args:
-            service_type (STORAGE_TYPE): The storage type to get the client for.
-
         Returns:
-            Union[BlobServiceClient, Minio]: The service client.
+            Union[BlobServiceClient, BaseClient]: The service client.
         """
 
         if self._storage_type == STORAGE_TYPE.AZURE:
@@ -92,19 +113,36 @@ class StorageService:
                 self._initialise_azure_client()
             return self._azure_client
 
-        elif self._storage_type == STORAGE_TYPE.MINIO:
-            if self._minio_client is None:
-                self._initialise_minio_client()
-            return self._minio_client
+        elif self._storage_type == STORAGE_TYPE.S3:
+            if self._s3_client is None:
+                self._initialise_s3_client()
+            return self._s3_client
 
         else:
             raise ValueError(
-                "Storage type not supported. Only Azure Blob Storage & MinIO is supported."
+                "Storage type not supported. Only Azure Blob Storage & S3 is supported."
             )
+
+    def _s3_read_object(self, bucket: str, key: str) -> bytes:
+        """
+        Reads an object from S3 and always closes the underlying stream.
+
+        Args:
+            bucket (str): The S3 bucket name.
+            key (str): The S3 object key.
+
+        Returns:
+            bytes: The content of the S3 object.
+        """
+        body = self._s3_client.get_object(Bucket=bucket, Key=key)["Body"]
+        try:
+            return body.read()
+        finally:
+            body.close()
 
     def get_scan_report(self, file_name: str) -> openpyxl.Workbook:
         """
-        Retrieves a scan report from the storage (either Azure or MinIO) and
+        Retrieves a scan report from the storage (either Azure or S3) and
         returns it as a Workbook.
 
         Args:
@@ -129,25 +167,24 @@ class StorageService:
             except Exception as e:
                 raise ValueError(f"Error getting the scan report from Azure Blob: {e}")
 
-        elif self._minio_client:
+        elif self._s3_client:
             try:
-                # Grab scan report data from MinIO Storage
-                with self._minio_client.get_object(
-                    "scan-reports", file_name
-                ) as response:
-                    scanreport_bytes = BytesIO(response.read())
+                # Grab scan report data from S3 Storage
+                scanreport_bytes = BytesIO(
+                    self._s3_read_object("scan-reports", file_name)
+                )
 
                 # Load the workbook from the BytesIO object using openpyxl
                 return openpyxl.load_workbook(
                     scanreport_bytes, data_only=True, keep_links=False, read_only=True
                 )
             except Exception as e:
-                logger.error(f"Error getting the scan report from MinIO: {e}")
-                raise ValueError(f"Error getting the scan report from Minio: {e}")
+                logger.error(f"Error getting the scan report from S3: {e}")
+                raise ValueError(f"Error getting the scan report from S3: {e}")
 
         else:
             raise Exception(
-                "Storage type not supported. Only Azure Blob Storage & MinIO is supported."
+                "Storage type not supported. Only Azure Blob Storage & S3 is supported."
             )
 
     def get_data_dictionary(
@@ -234,7 +271,7 @@ class StorageService:
     def _get_dictionary_content(self, file: str) -> str:
         """
         Helper method to retrieve data dictionary
-        content from storage (Azure Blob Storage and MinIO).
+        content from storage (Azure Blob Storage and S3).
 
         Args:
             file: Name of the file to retrieve
@@ -252,15 +289,12 @@ class StorageService:
             blob_dict_client = dict_client.get_blob_client(file)
             return blob_dict_client.download_blob().readall().decode("utf-8")
 
-        elif self._minio_client:
-            response = self._minio_client.get_object("data-dictionaries", file)
-            content = response.read().decode("utf-8")
-            response.close()
-            return content
+        elif self._s3_client:
+            return self._s3_read_object("data-dictionaries", file).decode("utf-8")
 
         else:
             raise ValueError(
-                "Storage type not supported. Only Azure Blob Storage & MinIO is supported."
+                "Storage type not supported. Only Azure Blob Storage & S3 is supported."
             )
 
     def get_file(self, file_name: str, container: str) -> bytes:
@@ -287,26 +321,23 @@ class StorageService:
             except Exception as e:
                 raise ValueError(f"Error getting the file from Azure Blob : {e}")
 
-        elif self._minio_client:
+        elif self._s3_client:
             try:
-                response = self._minio_client.get_object(container, file_name)
-                file_content = response.read()
-                response.close()
-                return file_content
+                return self._s3_read_object(container, file_name)
 
             except Exception as e:
-                logger.error(f"Error getting the file from MinIO: {e}")
-                raise ValueError(f"Error getting the the file to MinIO: {e}")
+                logger.error(f"Error getting the file from S3: {e}")
+                raise ValueError(f"Error getting the the file to S3: {e}")
 
         else:
             raise Exception(
-                "Storage type not supported. Only Azure Blob Storage & MinIO is supported."
+                "Storage type not supported. Only Azure Blob Storage & S3 is supported."
             )
 
     def delete_file(self, file_name: str, container: str) -> bool:
         """
         Deletes a files from the specified container from
-        Azure Blob or MinIO Storage.
+        Azure Blob or S3 Storage.
 
         Args:
             file_name (str): The name of the file to delete.
@@ -329,17 +360,17 @@ class StorageService:
                     f"Error deleting the file from Azure Blob Storage : {e}"
                 )
 
-        elif self._minio_client:
+        elif self._s3_client:
             try:
-                self._minio_client.remove_object(container, file_name)
+                self._s3_client.delete_object(Bucket=container, Key=file_name)
                 return True
             except Exception as e:
-                logger.error(f"Error deleting the file from MinIO: {e}")
-                raise ValueError(f"Error delete the file to MinIO: {e}")
+                logger.error(f"Error deleting the file from S3: {e}")
+                raise ValueError(f"Error deleting the file from S3: {e}")
 
         else:
             raise Exception(
-                "Storage type not supported. Only Azure Blob Storage & MinIO is supported."
+                "Storage type not supported. Only Azure Blob Storage & S3 is supported."
             )
 
     def modify_filename(self, filename: str, dt: str, rand: str) -> str:
@@ -368,7 +399,7 @@ class StorageService:
         file: Union[bytes, str, Iterable[AnyStr], IO[AnyStr]],
         content_type: str,
         use_read_method: bool = False,
-        use_minio_bytesio_method: bool = False,
+        use_s3_bytesio_method: bool = False,
     ):
         """
         This function takes a file and uploads it to a specified
@@ -378,7 +409,7 @@ class StorageService:
         content type.
 
         Uploads a file to storage with special handling for
-        MinIO rules exports.
+        S3 rules exports.
 
         Args:
             - file_name (str): The name that will be assigned to the
@@ -389,7 +420,7 @@ class StorageService:
             - content_type (str): The MIME type of the file
             to be uploaded.
             - use_read_method: Whether to call .read() on the file object
-            - use_minio_bytesio_method: Whether to use specific bytesIO upload
+            - use_s3_bytesio_method: Whether to use specific bytesIO upload
             which does not use use_read_method.
 
         Rules:
@@ -397,19 +428,19 @@ class StorageService:
 
             - Azure: Must use `use_read_method=False` (for other files).
 
-            - MinIO Rules Export: Must use `use_minio_bytesio_method=True` for
+            - S3 Rules Export: Must use `use_s3_bytesio_method=True` for
             direct file handling and for BytesIO files.
 
-            - MinIO Rules Export: Must use `use_minio_bytesio_method=False` for
+            - S3 Rules Export: Must use `use_s3_bytesio_method=False` for
             other file type handling.
 
         """
 
-        if self._storage_type == STORAGE_TYPE.AZURE and use_minio_bytesio_method:
-            raise ValueError("minio_rules_export cannot be used with Azure storage")
+        if self._storage_type == STORAGE_TYPE.AZURE and use_s3_bytesio_method:
+            raise ValueError("s3_rules_export cannot be used with Azure storage")
 
-        # Handle MinIO rules export special case (BytesIO like Files)
-        if self._storage_type == STORAGE_TYPE.MINIO and use_minio_bytesio_method:
+        # Handle S3 rules export special case (BytesIO like Files)
+        if self._storage_type == STORAGE_TYPE.S3 and use_s3_bytesio_method:
             file.seek(0)
             file_size = file.getbuffer().nbytes
             file_content = file
@@ -418,19 +449,19 @@ class StorageService:
             file_content = self._read_file(file, use_read_method)
             file_size = len(file_content)
 
-        if self._minio_client:
+        if self._s3_client:
             try:
-                self._minio_client.put_object(
-                    container,
-                    file_name,
-                    data=file_content,
-                    length=file_size,
-                    content_type=content_type,
+                self._s3_client.put_object(
+                    Bucket=container,
+                    Key=file_name,
+                    Body=file_content,
+                    ContentLength=file_size,
+                    ContentType=content_type,
                 )
                 return
             except Exception as e:
-                logger.error(f"Error uploading the file to MinIO: {e}")
-                raise ValueError(f"Error uploading the file to MinIO: {e}")
+                logger.error(f"Error uploading the file to S3: {e}")
+                raise ValueError(f"Error uploading the file to S3: {e}")
 
         elif self._azure_client:
             try:
@@ -446,7 +477,7 @@ class StorageService:
 
         else:
             raise ValueError(
-                "Storage type not supported. Only Azure Blob Storage & MinIO is supported."
+                "Storage type not supported. Only Azure Blob Storage & S3 is supported."
             )
 
     def _read_file(self, file, use_read_method: bool):

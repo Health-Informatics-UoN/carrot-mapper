@@ -15,7 +15,7 @@ dependencies = [
     "openpyxl==3.1.5",
     "django-select2==8.4.8",
     "django-extra-views>=0.16.0,<1.0",
-    "djangorestframework==3.18.1",
+    "djangorestframework==3.18.2",
     "django-filter==26.1",
     "requests==2.34.2",
     "azure-common>=1.1.28,<2",
@@ -30,10 +30,10 @@ dependencies = [
     "azure-monitor-opentelemetry==1.8.10",
     "djangorestframework-simplejwt==5.5.1",
     "dj-rest-auth[with-social]==7.2.0",
-    "minio==7.2.20",
     "drf-spectacular==0.30.0",
     "django-allauth==65.19.4",
     "psycopg2-binary==2.9.13",
+    "boto3==1.43.119",
 ]
 
 [dependency-groups]

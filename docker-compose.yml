@@ -28,7 +28,7 @@ x-airflow-common: &airflow-common
     AIRFLOW_CONN_MINIO_CONN: '{"conn_type": "aws", "extra": {"endpoint_url": "http://minio:9000", "aws_access_key_id": "minioadmin", "aws_secret_access_key": "minioadmin"}}'
     AIRFLOW_CONN_WASB_CONN: '{"conn_type": "wasb", "extra": {"connection_string": "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;TableEndpoint=http://azurite:10002/devstoreaccount1"}}'
     # The blob storage where Airflow get/put necessary files
-    STORAGE_TYPE: ${STORAGE_TYPE:-minio}
+    STORAGE_TYPE: ${STORAGE_TYPE:-s3}
 
 services:
   db:
@@ -117,23 +117,24 @@ services:
     environment:
       - AZURITE_ACCOUNTS=devstoreaccount1:Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==
 
-  minio:
+  rustfs:
     profiles: ["main"]
-    image: minio/minio
+    image: rustfs/rustfs:1.0.3-glibc
     restart: always
-    command: server /data --console-address ":9001"
+    command: /data
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "9000:9000" # S3 API
+      - "9001:9001" # Web console
     environment:
-      MINIO_ROOT_USER: "minioadmin"
-      MINIO_ROOT_PASSWORD: "minioadmin"
-      MINIO_BROWSER: "on"
-      MINIO_DOMAIN: "minio"
+      RUSTFS_ACCESS_KEY: "s3admin" # Local development only
+      RUSTFS_SECRET_KEY: "s3admin" # Local development only
+      RUSTFS_ADDRESS: ":9000"
+      RUSTFS_CONSOLE_ADDRESS: ":9001"
+      RUSTFS_CONSOLE_ENABLE: "true"
     volumes:
-      - minio_data:/data
+      - s3_data:/data
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      test: ["CMD", "curl", "-f", "http://localhost:9000/health/ready"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -185,4 +186,4 @@ services:
 
 volumes:
   db_data_pg18:
-  minio_data:
+  s3_data:

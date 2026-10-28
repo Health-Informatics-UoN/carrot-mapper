@@ -2,7 +2,7 @@ import os
 
 from libs.enums import StorageType
 
-storage_type = os.getenv("STORAGE_TYPE", StorageType.MINIO)
+storage_type = os.getenv("STORAGE_TYPE", StorageType.S3)
 
 # DEBUG MODE: True or False
 AIRFLOW_DEBUG_MODE = os.getenv("AIRFLOW_DEBUG_MODE", "false").lower()
