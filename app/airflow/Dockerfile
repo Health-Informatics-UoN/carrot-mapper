@@ -1,7 +1,7 @@
 FROM apache/airflow:3.3.2
 
 # Build argument to determine which entrypoint to use
-ARG AIRFLOW_COMPONENT=webserver
+ARG AIRFLOW_COMPONENT=api
 
 # Version is resolved from git tags by CI (semantic-release) and passed in here.
 # Unlike the API image, the local carrot-airflow project isn't pip-installed into
