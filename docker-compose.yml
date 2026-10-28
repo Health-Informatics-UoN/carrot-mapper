@@ -88,7 +88,7 @@ services:
       RUSTFS_CONSOLE_ADDRESS: ":9001"
       RUSTFS_CONSOLE_ENABLE: "true"
     volumes:
-      - rustfs_data:/data
+      - s3_data:/data
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/health/ready"]
       interval: 10s
@@ -131,4 +131,4 @@ services:
 
 volumes:
   db_data_pg18:
-  rustfs_data:
+  s3_data:
