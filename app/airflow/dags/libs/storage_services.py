@@ -16,8 +16,8 @@ def get_storage_hook():
     """
     if storage_type == StorageType.AZURE:
         return WasbHook(wasb_conn_id="wasb_conn")
-    elif storage_type == StorageType.MINIO:
-        return S3Hook(aws_conn_id="minio_conn")
+    elif storage_type == StorageType.S3:
+        return S3Hook(aws_conn_id="s3_conn")
     else:
         raise ValueError(f"Unsupported storage type: {storage_type}")
 
@@ -46,7 +46,7 @@ def download_blob_to_tmp(container_name: str, blob_name: str) -> Path:
                 container_name=container_name,
                 blob_name=blob_name,
             )
-        elif storage_type == StorageType.MINIO:
+        elif storage_type == StorageType.S3:
             s3_object = storage_hook.get_key(key=blob_name, bucket_name=container_name)
             with open(local_path, "wb") as f:
                 s3_object.download_fileobj(f)
@@ -84,7 +84,7 @@ def upload_blob_to_storage(
                 blob_name=blob_name,
                 content_settings=ContentSettings(content_type=content_type),
             )
-        elif storage_type == StorageType.MINIO:
+        elif storage_type == StorageType.S3:
             storage_hook.load_file_obj(
                 file_obj=data,
                 key=blob_name,

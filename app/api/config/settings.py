@@ -273,7 +273,7 @@ SUPERUSER_DEFAULT_EMAIL = os.getenv("SUPERUSER_DEFAULT_EMAIL", "user@carrot")
 SUPERUSER_DEFAULT_USERNAME = os.getenv("SUPERUSER_DEFAULT_USERNAME", None)
 
 # Storage Type Variable
-STORAGE_TYPE = os.getenv("STORAGE_TYPE", "minio")
+STORAGE_TYPE = os.getenv("STORAGE_TYPE", "s3")
 
 # Worker Service Type Variable
 WORKER_SERVICE_TYPE = os.getenv("WORKER_SERVICE_TYPE", WorkerServiceType.AIRFLOW)
@@ -283,10 +283,10 @@ azure_storage_conn_string = "DefaultEndpointsProtocol=http;AccountName=devstorea
 
 STORAGE_CONN_STRING = os.getenv("STORAGE_CONN_STRING", azure_storage_conn_string)
 
-# MinIO Storage Configuration Credentials
-MINIO_ENDPOINT = os.environ.get("MINIO_ENDPOINT", "minio:9000")
-MINIO_ACCESS_KEY = os.environ.get("MINIO_ACCESS_KEY", "minioadmin")
-MINIO_SECRET_KEY = os.environ.get("MINIO_SECRET_KEY", "minioadmin")
+# S3 Storage Configuration Credentials
+S3_ENDPOINT = os.environ.get("S3_ENDPOINT", "rustfs:9000")
+S3_ACCESS_KEY = os.environ.get("S3_ACCESS_KEY", "s3admin")
+S3_SECRET_KEY = os.environ.get("S3_SECRET_KEY", "s3admin")
 
 # Airflow Configuration
 AIRFLOW_BASE_URL = os.getenv("AIRFLOW_BASE_URL", "http://airflow-webserver:8081")

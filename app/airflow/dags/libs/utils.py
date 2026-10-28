@@ -13,9 +13,9 @@ from libs.enums import JobStageType, StageStatusType, StorageType
 from libs.notifications import NotificationType, create_notification
 from libs.settings import (
     AIRFLOW_DAGRUN_TIMEOUT,
-    AIRFLOW_VAR_MINIO_ACCESS_KEY,
-    AIRFLOW_VAR_MINIO_ENDPOINT,
-    AIRFLOW_VAR_MINIO_SECRET_KEY,
+    AIRFLOW_VAR_S3_ACCESS_KEY,
+    AIRFLOW_VAR_S3_ENDPOINT,
+    AIRFLOW_VAR_S3_SECRET_KEY,
     AIRFLOW_VAR_WASB_CONNECTION_STRING,
     storage_type,
 )
@@ -442,24 +442,30 @@ def connect_to_storage() -> None:
                 session.commit()
                 logging.info("Created new WASB connection")
 
-        elif storage_type == StorageType.MINIO:
-            # Check if MinIO connection exists
+        elif storage_type == StorageType.S3:
+            # Check if S3 connection exists
             existing_conn = (
                 session.query(Connection)
-                .filter(Connection.conn_id == "minio_conn")
+                .filter(Connection.conn_id == "s3_conn")
                 .first()
             )
 
             if existing_conn is None:
                 conn = Connection(
-                    conn_id="minio_conn",
+                    conn_id="s3_conn",
                     conn_type="aws",
                     extra={
-                        "endpoint_url": AIRFLOW_VAR_MINIO_ENDPOINT,
-                        "aws_access_key_id": AIRFLOW_VAR_MINIO_ACCESS_KEY,
-                        "aws_secret_access_key": AIRFLOW_VAR_MINIO_SECRET_KEY,
+                        "endpoint_url": AIRFLOW_VAR_S3_ENDPOINT,
+                        "aws_access_key_id": AIRFLOW_VAR_S3_ACCESS_KEY,
+                        "aws_secret_access_key": AIRFLOW_VAR_S3_SECRET_KEY,
+                        # Self-hosted S3 (RustFS): use path-style URLs
+                        # (http://host:9000/bucket/key) rather than
+                        # virtual-hosted (bucket.host), and a fixed region so
+                        # boto3 doesn't try to discover one.
+                        "region_name": "us-east-1",
+                        "config_kwargs": {"s3": {"addressing_style": "path"}},
                     },
                 )
                 session.add(conn)
                 session.commit()
-                logging.info("Created new MinIO connection")
+                logging.info("Created new S3 connection")

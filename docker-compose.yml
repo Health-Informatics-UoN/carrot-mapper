@@ -19,11 +19,11 @@ x-airflow-common: &airflow-common
     # This connection can be in separate variables (then don't need to do URL encoding), but it can reuse the same connection string with SQL_ALCHEMY_CONN (without extras)
     AIRFLOW_CONN_POSTGRES_DB_CONN: postgresql+psycopg2://postgres:postgres@db:5432/postgres
     # The blob storage where Airflow get/put necessary files
-    STORAGE_TYPE: ${STORAGE_TYPE:-minio}
-    # Minio connection variables (don't need to do URL encoding here)
-    AIRFLOW_VAR_MINIO_ENDPOINT: http://minio:9000
-    AIRFLOW_VAR_MINIO_ACCESS_KEY: minioadmin
-    AIRFLOW_VAR_MINIO_SECRET_KEY: minioadmin
+    STORAGE_TYPE: ${STORAGE_TYPE:-s3}
+    # s3-compatible storage (RustFS) connection variables (don't need to do URL encoding here).
+    AIRFLOW_VAR_S3_ENDPOINT: http://rustfs:9000
+    AIRFLOW_VAR_S3_ACCESS_KEY: s3admin
+    AIRFLOW_VAR_S3_SECRET_KEY: s3admin
     # WASB connection string (don't need to do URL encoding here)
     AIRFLOW_VAR_WASB_CONNECTION_STRING: DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;TableEndpoint=http://azurite:10002/devstoreaccount1
 
@@ -73,23 +73,24 @@ services:
     environment:
       - AZURITE_ACCOUNTS=devstoreaccount1:Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==
 
-  minio:
+  rustfs:
     profiles: ["main"]
-    image: minio/minio
+    image: rustfs/rustfs:1.0.3-glibc
     restart: always
-    command: server /data --console-address ":9001"
+    command: /data
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "9000:9000" # S3 API
+      - "9001:9001" # Web console
     environment:
-      MINIO_ROOT_USER: "minioadmin"
-      MINIO_ROOT_PASSWORD: "minioadmin"
-      MINIO_BROWSER: "on"
-      MINIO_DOMAIN: "minio"
+      RUSTFS_ACCESS_KEY: "s3admin" # Local development only
+      RUSTFS_SECRET_KEY: "s3admin" # Local development only
+      RUSTFS_ADDRESS: ":9000"
+      RUSTFS_CONSOLE_ADDRESS: ":9001"
+      RUSTFS_CONSOLE_ENABLE: "true"
     volumes:
-      - minio_data:/data
+      - s3_data:/data
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      test: ["CMD", "curl", "-f", "http://localhost:9000/health/ready"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -130,4 +131,4 @@ services:
 
 volumes:
   db_data_pg18:
-  minio_data:
+  s3_data:
