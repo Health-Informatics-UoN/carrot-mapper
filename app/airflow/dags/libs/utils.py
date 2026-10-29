@@ -411,10 +411,10 @@ def connect_to_storage() -> None:
     Checks that the connection for the configured storage service is available.
 
     Airflow 3 tasks cannot write to the metadata DB, so connections must be
-    provided up front, e.g. via AIRFLOW_CONN_WASB_CONN / AIRFLOW_CONN_MINIO_CONN
+    provided up front, e.g. via AIRFLOW_CONN_WASB_CONN / AIRFLOW_CONN_S3_CONN
     environment variables or a secrets backend.
     """
-    conn_id = "wasb_conn" if storage_type == StorageType.AZURE else "minio_conn"
+    conn_id = "wasb_conn" if storage_type == StorageType.AZURE else "s3_conn"
     # Raises AirflowNotFoundException if the connection is not defined
     BaseHook.get_connection(conn_id)
     logging.info(f"Storage connection '{conn_id}' is available")
