@@ -1,7 +1,7 @@
 import ast
 import json
 import logging
-from typing import Any, Dict, List, Optional, TypedDict
+from typing import Any, TypedDict
 
 from airflow.models.taskinstance import TaskInstance
 from airflow.providers.standard.operators.python import PythonOperator
@@ -37,12 +37,12 @@ class ValidatedParams(TypedDict):
     table_id: int
     person_id_field: int
     date_event_field: int
-    field_vocab_pairs: List[FieldVocabPair]
-    field_domain_pairs: List[FieldDomainPair]
+    field_vocab_pairs: list[FieldVocabPair]
+    field_domain_pairs: list[FieldDomainPair]
     parent_dataset_id: int
     trigger_reuse_concepts: bool
     scan_report_blob: str
-    data_dictionary_blob: Optional[str]
+    data_dictionary_blob: str | None
     user_id: int
     file_type: str
 
@@ -65,7 +65,7 @@ def update_job_status(
     stage: JobStageType,
     status: StageStatusType,
     scan_report: int,
-    scan_report_table: Optional[int] = None,
+    scan_report_table: int | None = None,
     details: str = "",
 ) -> None:
     """
@@ -82,7 +82,7 @@ def update_job_status(
         ValueError: If there's an error updating the job status
     """
     # Base parameters used in all queries
-    params: Dict[str, Any] = {
+    params: dict[str, Any] = {
         "scan_report": scan_report,
         "status_value": status.name,
         "stage_value": stage.name,
@@ -227,7 +227,7 @@ def update_job_status_on_failure(context):
             )
 
     except Exception as e:
-        logging.error(f"Failed to update job status on skipped task: {str(e)}")
+        logging.error(f"Failed to update job status on skipped task: {e!s}")
 
 
 def create_task(task_id, python_callable, dag):

@@ -1,6 +1,6 @@
 import logging
 from abc import ABC, abstractmethod
-from typing import Any, Optional
+from typing import Any
 from urllib.parse import urljoin
 
 import requests
@@ -20,21 +20,18 @@ class WorkerService(ABC):
         self,
         scan_report: ScanReport,
         table: ScanReportTable,
-        data_dictionary_name: Optional[str] = None,
-        trigger_reuse_concepts: Optional[bool] = True,
+        data_dictionary_name: str | None = None,
+        trigger_reuse_concepts: bool | None = True,
     ):
         """Trigger automated mapping process."""
-        pass
 
     @abstractmethod
     def trigger_scan_report_processing(self, message_body: dict[str, Any]):
         """Trigger scan report processing."""
-        pass
 
     @abstractmethod
     def trigger_rules_export(self, message_body: dict[str, Any]):
         """Trigger rules export."""
-        pass
 
 
 class AirflowWorkerService(WorkerService):
@@ -80,14 +77,14 @@ class AirflowWorkerService(WorkerService):
         except requests.exceptions.HTTPError as e:
             logging.error(f"HTTP Trigger failed when triggering DAG {dag_id}: {e}")
             raise requests.exceptions.HTTPError(
-                f"Failed to trigger Airflow DAG {dag_id}: {str(e)}"
+                f"Failed to trigger Airflow DAG {dag_id}: {e!s}"
             ) from e
 
     def trigger_auto_mapping(
         self,
         scan_report: ScanReport,
         table: ScanReportTable,
-        data_dictionary_name: Optional[str] = None,
+        data_dictionary_name: str | None = None,
         # Placeholder for the issue #623 or enabling users to disable/enable reuse concepts function
         trigger_reuse_concepts: bool = True,
         # TODO: add death_table config here
