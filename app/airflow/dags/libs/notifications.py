@@ -1,15 +1,7 @@
 import logging
 from enum import StrEnum
 
-from airflow.providers.postgres.hooks.postgres import PostgresHook
-
-from libs.settings import AIRFLOW_DAGRUN_TIMEOUT
-
-# PostgreSQL connection hook
-pg_hook = PostgresHook(
-    postgres_conn_id="postgres_db_conn",
-    options=f"-c statement_timeout={float(AIRFLOW_DAGRUN_TIMEOUT) * 60 * 1000}ms",
-)
+from libs.db import pg_hook
 
 
 class NotificationType(StrEnum):

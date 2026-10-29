@@ -2,7 +2,7 @@ import logging
 from datetime import datetime
 from typing import Dict
 
-from airflow.providers.postgres.hooks.postgres import PostgresHook
+from libs.db import pg_hook
 from libs.enums import JobStageType, StageStatusType
 from libs.notifications import NotificationType, create_notification
 from libs.queries import create_file_entry_query, create_update_temp_rules_table_query
@@ -12,19 +12,12 @@ from libs.rules_export.file_services import (
     build_rules_json_v2,
 )
 from libs.settings import (
-    AIRFLOW_DAGRUN_TIMEOUT,
     AIRFLOW_DEBUG_MODE,
     AIRFLOW_VAR_JSON_VERSION,
 )
 from libs.storage_services import upload_blob_to_storage
 from libs.types import FileHandlerConfig
 from libs.utils import pull_validated_params, update_job_status
-
-# PostgreSQL connection hook
-pg_hook = PostgresHook(
-    postgres_conn_id="postgres_db_conn",
-    options=f"-c statement_timeout={float(AIRFLOW_DAGRUN_TIMEOUT) * 60 * 1000}ms",
-)
 
 
 def pre_process_rules(**kwargs) -> None:

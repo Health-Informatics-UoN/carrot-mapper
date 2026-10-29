@@ -2,13 +2,11 @@ import csv
 import logging
 import os
 from io import StringIO
-from typing import List, Tuple
 
-from airflow.providers.postgres.hooks.postgres import PostgresHook
+from libs.db import pg_hook
 from libs.enums import JobStageType, StageStatusType
 from libs.notifications import NotificationType, create_notification
 from libs.queries import create_temp_data_dictionary_table_query, create_values_query
-from libs.settings import AIRFLOW_DAGRUN_TIMEOUT
 from libs.SR_processing.db_services import (
     create_field_entries,
     create_temp_field_values_table,
@@ -24,12 +22,6 @@ from libs.SR_processing.helpers import (
 from libs.storage_services import download_blob_to_tmp
 from libs.utils import pull_validated_params, update_job_status
 from openpyxl import load_workbook
-
-# PostgreSQL connection hook
-pg_hook = PostgresHook(
-    postgres_conn_id="postgres_db_conn",
-    options=f"-c statement_timeout={float(AIRFLOW_DAGRUN_TIMEOUT) * 60 * 1000}ms",
-)
 
 
 def process_data_dictionary(**kwargs) -> None:
@@ -82,12 +74,12 @@ def process_data_dictionary(**kwargs) -> None:
             # TODO: double check with KubernetesExecutor if this is the best way to do this
             os.remove(local_DD_path)
         except Exception as e:
-            logging.error(f"Error processing data dictionary: {str(e)}")
+            logging.error(f"Error processing data dictionary: {e!s}")
             update_job_status(
                 stage=JobStageType.UPLOAD_SCAN_REPORT,
                 status=StageStatusType.FAILED,
                 scan_report=scan_report_id,
-                details=f"Upload failed: {str(e)}",
+                details=f"Upload failed: {e!s}",
             )
             raise e
 
@@ -125,7 +117,7 @@ def process_and_create_scan_report_entries(**kwargs) -> None:
     # Get the unique table names from the worksheet
     table_names = get_unique_table_names(worksheet)
     # Initialise a list to store the table name and id pairs
-    table_pairs: List[Tuple[str, int]] = []
+    table_pairs: list[tuple[str, int]] = []
 
     if table_names:
         try:
@@ -155,9 +147,7 @@ def process_and_create_scan_report_entries(**kwargs) -> None:
                 create_temp_field_values_table(field_values_dict, table_id)
 
         except Exception as e:
-            logging.error(
-                f"Error inserting tables into mapping_scanreporttable: {str(e)}"
-            )
+            logging.error(f"Error inserting tables into mapping_scanreporttable: {e!s}")
             # Clean up temp tables before updating job status to fail
             if table_pairs:
                 delete_temp_tables(scan_report_id, table_pairs)
@@ -165,7 +155,7 @@ def process_and_create_scan_report_entries(**kwargs) -> None:
                 stage=JobStageType.UPLOAD_SCAN_REPORT,
                 status=StageStatusType.FAILED,
                 scan_report=scan_report_id,
-                details=f"Upload failed: {str(e)}",
+                details=f"Upload failed: {e!s}",
             )
             raise e
 
@@ -175,13 +165,13 @@ def process_and_create_scan_report_entries(**kwargs) -> None:
             logging.info("Created scan report fields")
 
         except Exception as e:
-            logging.error(f"Error creating scan report fields: {str(e)}")
+            logging.error(f"Error creating scan report fields: {e!s}")
             delete_temp_tables(scan_report_id, table_pairs)
             update_job_status(
                 stage=JobStageType.UPLOAD_SCAN_REPORT,
                 status=StageStatusType.FAILED,
                 scan_report=scan_report_id,
-                details=f"Upload failed: {str(e)}",
+                details=f"Upload failed: {e!s}",
             )
             raise e
 
@@ -198,13 +188,13 @@ def process_and_create_scan_report_entries(**kwargs) -> None:
                     },
                 )
         except Exception as e:
-            logging.error(f"Error creating scan report values: {str(e)}")
+            logging.error(f"Error creating scan report values: {e!s}")
             delete_temp_tables(scan_report_id, table_pairs)
             update_job_status(
                 stage=JobStageType.UPLOAD_SCAN_REPORT,
                 status=StageStatusType.FAILED,
                 scan_report=scan_report_id,
-                details=f"Upload failed: {str(e)}",
+                details=f"Upload failed: {e!s}",
             )
             raise e
 

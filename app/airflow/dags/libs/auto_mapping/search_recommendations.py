@@ -1,15 +1,8 @@
 import logging
 
-from airflow.providers.postgres.hooks.postgres import PostgresHook
-from libs.settings import AIRFLOW_DAGRUN_TIMEOUT
+from libs.db import pg_hook
 from libs.utils import (
     pull_validated_params,
-)
-
-# PostgreSQL connection hook
-pg_hook = PostgresHook(
-    postgres_conn_id="postgres_db_conn",
-    options=f"-c statement_timeout={float(AIRFLOW_DAGRUN_TIMEOUT) * 60 * 1000}ms",
 )
 
 

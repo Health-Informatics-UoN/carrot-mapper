@@ -3,10 +3,6 @@ import os
 from libs.enums import StorageType
 
 storage_type = os.getenv("STORAGE_TYPE", StorageType.S3)
-AIRFLOW_VAR_WASB_CONNECTION_STRING = os.getenv("AIRFLOW_VAR_WASB_CONNECTION_STRING", "")
-AIRFLOW_VAR_S3_ENDPOINT = os.getenv("AIRFLOW_VAR_S3_ENDPOINT", "")
-AIRFLOW_VAR_S3_ACCESS_KEY = os.getenv("AIRFLOW_VAR_S3_ACCESS_KEY", "")
-AIRFLOW_VAR_S3_SECRET_KEY = os.getenv("AIRFLOW_VAR_S3_SECRET_KEY", "")
 
 # DEBUG MODE: True or False
 AIRFLOW_DEBUG_MODE = os.getenv("AIRFLOW_DEBUG_MODE", "false").lower()

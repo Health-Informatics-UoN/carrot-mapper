@@ -1,19 +1,12 @@
 import logging
 
 from airflow.exceptions import AirflowException
-from airflow.providers.postgres.hooks.postgres import PostgresHook
-from libs.settings import AIRFLOW_DAGRUN_TIMEOUT
+from libs.db import pg_hook
 from libs.utils import (
     JobStageType,
     StageStatusType,
     pull_validated_params,
     update_job_status,
-)
-
-# PostgreSQL connection hook
-pg_hook = PostgresHook(
-    postgres_conn_id="postgres_db_conn",
-    options=f"-c statement_timeout={float(AIRFLOW_DAGRUN_TIMEOUT) * 60 * 1000}ms",
 )
 
 
@@ -116,13 +109,20 @@ def find_standard_concepts(**kwargs) -> None:
                 details=f"Finding standard concepts for field ID {sr_field_id} with vocabulary ID {vocabulary_id}",
             )
             # Insert data for each field-vocabulary pair
+            # MATERIALIZED makes the planner start from the field's few values. Without it,
+            # stale OMOP stats can make it scan every 'Maps to' relationship first (minutes vs ms).
             find_standard_concepts_query = """
             INSERT INTO temp_standard_concepts_%(table_id)s (sr_value_id, source_concept_id, standard_concept_id)
+            WITH sr_value AS MATERIALIZED (
+                SELECT id, value
+                FROM mapping_scanreportvalue
+                WHERE scan_report_field_id = %(sr_field_id)s
+            )
             SELECT
                 sr_value.id AS sr_value_id,
                 src_concept.concept_id AS source_concept_id,
                 std_concept.concept_id AS standard_concept_id
-            FROM mapping_scanreportvalue AS sr_value
+            FROM sr_value
             JOIN omop.concept AS src_concept ON
                 src_concept.concept_code = sr_value.value AND
                 UPPER(src_concept.vocabulary_id) = %(vocabulary_id)s
@@ -135,8 +135,7 @@ def find_standard_concepts(**kwargs) -> None:
                 AND (
                     %(skip_domains_check)s = true 
                     OR std_concept.domain_id = ANY(%(allowed_domains)s)
-                )
-            WHERE sr_value.scan_report_field_id = %(sr_field_id)s;
+                );
             """
             try:
                 pg_hook.run(
