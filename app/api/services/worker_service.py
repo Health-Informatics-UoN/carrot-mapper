@@ -5,8 +5,8 @@ from urllib.parse import urljoin
 
 import requests
 from django.conf import settings
-
 from mapping.models import ScanReport, ScanReportTable
+
 from services.enums import WorkerServiceType
 from services.field_domain_mappings import get_field_domain_mappings
 from services.field_vocab_mappings import get_field_vocab_mappings
