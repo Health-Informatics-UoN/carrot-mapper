@@ -66,10 +66,14 @@ services:
       KC_HEALTH_ENABLED: true
       # Admin credentials
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
-      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KeycloakBootstrapAdminPassword}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_BOOTSTRAP_ADMIN_PASSWORD}
 
     command:
-      ["${KeycloakStartupCommand}", "--import-realm", "--metrics-enabled=true"]
+      [
+        "${KEYCLOAK_STARTUP_COMMAND}",
+        "--import-realm",
+        "--metrics-enabled=true",
+      ]
     depends_on:
       db:
         condition: service_healthy
