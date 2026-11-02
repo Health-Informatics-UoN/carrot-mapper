@@ -292,7 +292,10 @@ export async function getScanReportValuesV3(
       fetchKeys.valuesV3(scanReportId, tableId, fieldId, filter),
     );
   } catch (error) {
-    console.warn("Failed to fetch data.");
+    console.error(
+      `Failed to fetch values for scan report ${scanReportId}, table ${tableId}, field ${fieldId}:`,
+      error,
+    );
     return { count: 0, next: null, previous: null, results: [] };
   }
 }
