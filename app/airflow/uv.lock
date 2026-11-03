@@ -473,7 +473,7 @@ wheels = [
 
 [[package]]
 name = "apache-airflow-providers-http"
-version = "6.0.0"
+version = "6.3.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp" },
@@ -481,12 +481,13 @@ dependencies = [
     { name = "apache-airflow-providers-common-compat" },
     { name = "asgiref", version = "3.8.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.14'" },
     { name = "asgiref", version = "3.12.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.14'" },
+    { name = "pydantic" },
     { name = "requests" },
     { name = "requests-toolbelt" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/31/21/b03b7c40252a36ceef3b02873365a4885195dcc193cbb50610cf7bfc80ae/apache_airflow_providers_http-6.0.0.tar.gz", hash = "sha256:cae4369e2265432feaf7507eaa2bf4fca542817c33516215243fee0ab45dd3f0", size = 70577, upload-time = "2026-03-02T21:06:03.87Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/47/18/72061fa1bbce88b37b8d7e360c5bb4f9873d653dc806b3f786d6471c31aa/apache_airflow_providers_http-6.3.0.tar.gz", hash = "sha256:9139da91dadcf2d1f7714c9a848893a74806d99f87c6c02cd67e4abdb5fd007e", size = 84382, upload-time = "2026-10-13T11:03:35.376Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/52/c3/0dc0e975fb4d62e40e25f601da21ed9767080eee2709f2414d5bbe10c179/apache_airflow_providers_http-6.0.0-py3-none-any.whl", hash = "sha256:f620eb385641c0ce977a63f911ebc8a636237955040044f3ebc9af955e464bb2", size = 33833, upload-time = "2026-03-02T20:52:20.727Z" },
+    { url = "https://files.pythonhosted.org/packages/05/16/18db24808a3deddf95f1835c48458ccc4ab112a16f4e89f2246226f60c9b/apache_airflow_providers_http-6.3.0-py3-none-any.whl", hash = "sha256:b63f7c93904e64d34fa3183b7e44ddcbd449d31325bddd42e1bb9ffe5049e21e", size = 38043, upload-time = "2026-10-13T11:01:50.736Z" },
 ]
 
 [[package]]
