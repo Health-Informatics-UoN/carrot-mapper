@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net">
+  <diagram name="Page-1" id="gjy9-8GKQsp2XC9CQlM1">
+    <mxGraphModel dx="2133" dy="895" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <object placeholders="1" c4Name="Data Owner &#xa;(Contributor)" c4Type="Person" c4Description="Data Owner uses Carrot Mapper to create mapping rules." label="&lt;font style=&quot;font-size: 16px&quot;&gt;&lt;b&gt;%c4Name%&lt;/b&gt;&lt;/font&gt;&lt;div&gt;[%c4Type%]&lt;/div&gt;&lt;br&gt;&lt;div&gt;&lt;font style=&quot;font-size: 11px&quot;&gt;&lt;font color=&quot;#cccccc&quot;&gt;%c4Description%&lt;/font&gt;&lt;/div&gt;" id="boR_0MWCyKEMnFEmomQy-1">
+          <mxCell parent="1" style="html=1;fontSize=11;dashed=0;whiteSpace=wrap;fillColor=#083F75;strokeColor=#06315C;fontColor=#ffffff;shape=mxgraph.c4.person2;align=center;metaEdit=1;points=[[0.5,0,0],[1,0.5,0],[1,0.75,0],[0.75,1,0],[0.5,1,0],[0.25,1,0],[0,0.75,0],[0,0.5,0]];resizable=0;direction=east;" vertex="1">
+            <mxGeometry height="180" width="200" x="-430" y="280" as="geometry" />
+          </mxCell>
+        </object>
+        <object placeholders="1" c4Name="Carrot Mapper Registry ⛁" c4Type="Software System" c4Description="Centralised platform to publish, discover, search and re-use mapping sets." label="&lt;font style=&quot;font-size: 16px&quot;&gt;&lt;b&gt;%c4Name%&lt;/b&gt;&lt;/font&gt;&lt;div&gt;[%c4Type%]&lt;/div&gt;&lt;br&gt;&lt;div&gt;&lt;font style=&quot;font-size: 11px&quot;&gt;&lt;font color=&quot;#cccccc&quot;&gt;%c4Description%&lt;/font&gt;&lt;/div&gt;" id="boR_0MWCyKEMnFEmomQy-2">
+          <mxCell parent="1" style="rounded=1;whiteSpace=wrap;html=1;labelBackgroundColor=none;fillColor=#1061B0;fontColor=#ffffff;align=center;arcSize=10;strokeColor=#0D5091;metaEdit=1;resizable=0;points=[[0.25,0,0],[0.5,0,0],[0.75,0,0],[1,0.25,0],[1,0.5,0],[1,0.75,0],[0.75,1,0],[0.5,1,0],[0.25,1,0],[0,0.75,0],[0,0.5,0],[0,0.25,0]];" vertex="1">
+            <mxGeometry height="120" width="240" x="-120" y="525" as="geometry" />
+          </mxCell>
+        </object>
+        <object placeholders="1" c4Name="Data Owner &#xa;(Reuser)" c4Type="Person" c4Description="Search the registry, views mapping suggestions and decides to reuse data mapping rules." label="&lt;font style=&quot;font-size: 16px&quot;&gt;&lt;b&gt;%c4Name%&lt;/b&gt;&lt;/font&gt;&lt;div&gt;[%c4Type%]&lt;/div&gt;&lt;br&gt;&lt;div&gt;&lt;font style=&quot;font-size: 11px&quot;&gt;&lt;font color=&quot;#cccccc&quot;&gt;%c4Description%&lt;/font&gt;&lt;/div&gt;" id="boR_0MWCyKEMnFEmomQy-5">
+          <mxCell parent="1" style="html=1;fontSize=11;dashed=0;whiteSpace=wrap;fillColor=#083F75;strokeColor=#06315C;fontColor=#ffffff;shape=mxgraph.c4.person2;align=center;metaEdit=1;points=[[0.5,0,0],[1,0.5,0],[1,0.75,0],[0.75,1,0],[0.5,1,0],[0.25,1,0],[0,0.75,0],[0,0.5,0]];resizable=0;" vertex="1">
+            <mxGeometry height="180" width="200" x="240" y="280" as="geometry" />
+          </mxCell>
+        </object>
+        <object placeholders="1" c4Type="Relationship" c4Description="Creates and Manages &#xa;Mapping Rules" label="&lt;div style=&quot;text-align: left&quot;&gt;&lt;div style=&quot;text-align: center&quot;&gt;&lt;b&gt;%c4Description%&lt;/b&gt;&lt;/div&gt;&lt;/div&gt;" id="boR_0MWCyKEMnFEmomQy-8">
+          <mxCell edge="1" parent="1" source="boR_0MWCyKEMnFEmomQy-1" style="endArrow=blockThin;html=1;fontSize=12;fontColor=#404040;strokeWidth=1;endFill=1;strokeColor=#828282;elbow=vertical;metaEdit=1;endSize=14;startSize=14;jumpStyle=arc;jumpSize=16;rounded=0;edgeStyle=orthogonalEdgeStyle;defaultLabelBackgroundColor=page;exitX=0.453;exitY=1.027;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;entryPerimeter=0;">
+            <mxGeometry relative="1" width="240" x="-0.8145" as="geometry">
+              <mxPoint as="offset" />
+              <Array as="points">
+                <mxPoint x="-339.4" y="840" />
+              </Array>
+              <mxPoint x="-320" y="500" as="sourcePoint" />
+              <mxPoint x="-120" y="840.0000000000002" as="targetPoint" />
+            </mxGeometry>
+          </mxCell>
+        </object>
+        <mxCell id="boR_0MWCyKEMnFEmomQy-38" connectable="0" parent="boR_0MWCyKEMnFEmomQy-8" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];inheritText=1;fontSize=12;fontColor=#404040;defaultLabelBackgroundColor=page;" value="&lt;b&gt;Grants Publishing&lt;/b&gt;&lt;div&gt;&lt;b&gt;Consent&lt;/b&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry relative="1" x="-0.1469" y="-5" as="geometry">
+            <mxPoint x="4" y="-29" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <object placeholders="1" c4Type="Relationship" c4Description="Reviews &amp; Approves &#xa;Suggestions&#xa;" label="&lt;div style=&quot;text-align: left&quot;&gt;&lt;div style=&quot;text-align: center&quot;&gt;&lt;b&gt;%c4Description%&lt;/b&gt;&lt;/div&gt;&lt;/div&gt;" id="boR_0MWCyKEMnFEmomQy-16">
+          <mxCell edge="1" parent="1" source="boR_0MWCyKEMnFEmomQy-5" style="endArrow=blockThin;html=1;fontSize=12;fontColor=#404040;strokeWidth=1;endFill=1;strokeColor=#828282;elbow=vertical;metaEdit=1;endSize=14;startSize=14;jumpStyle=arc;jumpSize=16;rounded=0;edgeStyle=orthogonalEdgeStyle;defaultLabelBackgroundColor=page;exitX=0.5;exitY=1;exitDx=0;exitDy=0;exitPerimeter=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;entryPerimeter=0;">
+            <mxGeometry relative="1" width="240" x="-0.2321" as="geometry">
+              <mxPoint as="offset" />
+              <Array as="points">
+                <mxPoint x="340" y="839" />
+              </Array>
+              <mxPoint x="340" y="449" as="sourcePoint" />
+              <mxPoint x="120" y="839.0000000000002" as="targetPoint" />
+            </mxGeometry>
+          </mxCell>
+        </object>
+        <mxCell id="boR_0MWCyKEMnFEmomQy-37" connectable="0" parent="boR_0MWCyKEMnFEmomQy-16" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];inheritText=1;fontSize=12;fontColor=#404040;defaultLabelBackgroundColor=page;" value="&lt;b&gt;Creates and Manages&lt;/b&gt;&lt;div&gt;&lt;b&gt;Mapping Rules&lt;/b&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry relative="1" x="-0.7586" y="2" as="geometry">
+            <mxPoint x="-2" y="-22" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <object placeholders="1" c4Type="Relationship" c4Description="Uploads / Export&#xa;Mapping Files" label="&lt;div style=&quot;text-align: left&quot;&gt;&lt;div style=&quot;text-align: center&quot;&gt;&lt;span&gt;%c4Description%&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;" id="boR_0MWCyKEMnFEmomQy-19">
+          <mxCell edge="1" parent="1" source="boR_0MWCyKEMnFEmomQy-1" style="endArrow=blockThin;html=1;fontSize=12;fontColor=#404040;strokeWidth=1;endFill=1;strokeColor=#828282;elbow=vertical;metaEdit=1;endSize=14;startSize=14;jumpStyle=arc;jumpSize=16;rounded=0;edgeStyle=orthogonalEdgeStyle;defaultLabelBackgroundColor=page;exitX=1.008;exitY=0.611;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.324;entryY=0.008;entryDx=0;entryDy=0;entryPerimeter=0;fontStyle=1" target="boR_0MWCyKEMnFEmomQy-2">
+            <mxGeometry relative="1" width="240" x="-0.3916" as="geometry">
+              <mxPoint as="offset" />
+              <mxPoint x="-200" y="410" as="sourcePoint" />
+              <mxPoint x="-40" y="520" as="targetPoint" />
+            </mxGeometry>
+          </mxCell>
+        </object>
+        <object placeholders="1" c4Type="Relationship" c4Description="Search / Evaluate  &#xa;Mapping&#xa;(Discover / View details&#xa;and rating)&#xa;" label="&lt;div style=&quot;text-align: left&quot;&gt;&lt;div style=&quot;text-align: center&quot;&gt;&lt;b&gt;%c4Description%&lt;/b&gt;&lt;/div&gt;&lt;/div&gt;" id="boR_0MWCyKEMnFEmomQy-20">
+          <mxCell edge="1" parent="1" style="endArrow=blockThin;html=1;fontSize=12;fontColor=#404040;strokeWidth=1;endFill=1;strokeColor=#828282;elbow=vertical;metaEdit=1;endSize=14;startSize=14;jumpStyle=arc;jumpSize=16;rounded=0;edgeStyle=orthogonalEdgeStyle;defaultLabelBackgroundColor=page;exitX=-0.015;exitY=0.791;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.692;entryY=0.014;entryDx=0;entryDy=0;entryPerimeter=0;" target="boR_0MWCyKEMnFEmomQy-2">
+            <mxGeometry relative="1" width="240" x="-0.4313" as="geometry">
+              <mxPoint as="offset" />
+              <mxPoint x="240" y="389.9999999999999" as="sourcePoint" />
+              <mxPoint x="63" y="492.62" as="targetPoint" />
+            </mxGeometry>
+          </mxCell>
+        </object>
+        <object placeholders="1" c4Type="Relationship" c4Description="Publish &#xa;Consented &#xa;Mapping Rules" label="&lt;div style=&quot;text-align: left&quot;&gt;&lt;div style=&quot;text-align: center&quot;&gt;&lt;b&gt;%c4Description%&lt;/b&gt;&lt;/div&gt;&lt;/div&gt;" id="boR_0MWCyKEMnFEmomQy-22">
+          <mxCell edge="1" parent="1" style="endArrow=blockThin;html=1;fontSize=12;fontColor=#404040;strokeWidth=1;endFill=1;strokeColor=#828282;elbow=vertical;metaEdit=1;endSize=14;startSize=14;jumpStyle=arc;jumpSize=16;rounded=0;edgeStyle=orthogonalEdgeStyle;defaultLabelBackgroundColor=page;exitX=0.126;exitY=-0.03;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.337;entryY=0.962;entryDx=0;entryDy=0;entryPerimeter=0;">
+            <mxGeometry relative="1" width="240" x="-0.0284" as="geometry">
+              <mxPoint as="offset" />
+              <mxPoint x="-99.9600000000002" y="794.5600000000001" as="sourcePoint" />
+              <mxPoint x="-99.31999999999988" y="645" as="targetPoint" />
+            </mxGeometry>
+          </mxCell>
+        </object>
+        <object placeholders="1" c4Name="Carrot Mapper 🥕" c4Type="Software System" c4Description="Creates and manages source-to-OMOP mapping rules." label="&lt;font style=&quot;font-size: 16px&quot;&gt;&lt;b&gt;%c4Name%&lt;/b&gt;&lt;/font&gt;&lt;div&gt;[%c4Type%]&lt;/div&gt;&lt;br&gt;&lt;div&gt;&lt;font style=&quot;font-size: 11px&quot;&gt;&lt;font color=&quot;#cccccc&quot;&gt;%c4Description%&lt;/font&gt;&lt;/div&gt;" id="boR_0MWCyKEMnFEmomQy-30">
+          <mxCell parent="1" style="rounded=1;whiteSpace=wrap;html=1;labelBackgroundColor=none;fillColor=#8C8496;fontColor=#ffffff;align=center;arcSize=10;strokeColor=#736782;metaEdit=1;resizable=0;points=[[0.25,0,0],[0.5,0,0],[0.75,0,0],[1,0.25,0],[1,0.5,0],[1,0.75,0],[0.75,1,0],[0.5,1,0],[0.25,1,0],[0,0.75,0],[0,0.5,0],[0,0.25,0]];" vertex="1">
+            <mxGeometry height="120" width="240" x="-120" y="790" as="geometry" />
+          </mxCell>
+        </object>
+        <object placeholders="1" c4Type="Relationship" c4Description="Request Mapping &#xa;Suggestions" label="&lt;div style=&quot;text-align: left&quot;&gt;&lt;div style=&quot;text-align: center&quot;&gt;&lt;b&gt;%c4Description%&lt;/b&gt;&lt;/div&gt;&lt;/div&gt;" id="boR_0MWCyKEMnFEmomQy-32">
+          <mxCell edge="1" parent="1" style="endArrow=blockThin;html=1;fontSize=12;fontColor=#404040;strokeWidth=1;endFill=1;strokeColor=#828282;elbow=vertical;metaEdit=1;endSize=14;startSize=14;jumpStyle=arc;jumpSize=16;rounded=0;edgeStyle=orthogonalEdgeStyle;defaultLabelBackgroundColor=page;exitX=0.126;exitY=-0.03;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.337;entryY=0.962;entryDx=0;entryDy=0;entryPerimeter=0;">
+            <mxGeometry relative="1" width="240" x="-0.035" as="geometry">
+              <mxPoint as="offset" />
+              <mxPoint y="790.0000000000001" as="sourcePoint" />
+              <mxPoint x="0.7600000000002183" y="640" as="targetPoint" />
+            </mxGeometry>
+          </mxCell>
+        </object>
+        <mxCell id="boR_0MWCyKEMnFEmomQy-35" parent="1" style="text;strokeColor=none;fillColor=none;html=1;fontSize=6;fontStyle=1;verticalAlign=middle;align=center;autosizeText=1;" value="&lt;font style=&quot;font-size: 26px; line-height: 60%;&quot;&gt;System Context Diagram - Carrot Mapper Registry&lt;/font&gt;" vertex="1">
+          <mxGeometry height="180" width="530" x="-270" y="50" as="geometry" />
+        </mxCell>
+        <object placeholders="1" c4Type="Relationship" c4Description="Reports&#xa;Confirmed &#xa;Reuse" label="&lt;div style=&quot;text-align: left&quot;&gt;&lt;div style=&quot;text-align: center&quot;&gt;&lt;b&gt;%c4Description%&lt;/b&gt;&lt;/div&gt;&lt;/div&gt;" id="boR_0MWCyKEMnFEmomQy-39">
+          <mxCell edge="1" parent="1" style="endArrow=blockThin;html=1;fontSize=12;fontColor=#404040;strokeWidth=1;endFill=1;strokeColor=#828282;elbow=vertical;metaEdit=1;endSize=14;startSize=14;jumpStyle=arc;jumpSize=16;rounded=0;edgeStyle=orthogonalEdgeStyle;defaultLabelBackgroundColor=page;exitX=0.126;exitY=-0.03;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.337;entryY=0.962;entryDx=0;entryDy=0;entryPerimeter=0;">
+            <mxGeometry relative="1" width="240" x="-0.0716" y="-1" as="geometry">
+              <mxPoint as="offset" />
+              <mxPoint x="90" y="790.0000000000001" as="sourcePoint" />
+              <mxPoint x="90.76000000000022" y="640" as="targetPoint" />
+            </mxGeometry>
+          </mxCell>
+        </object>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
