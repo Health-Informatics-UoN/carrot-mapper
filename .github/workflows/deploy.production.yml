@@ -20,7 +20,7 @@ on:
   workflow_dispatch:
     inputs:
       image_tag:
-        description: "Image tag to deploy (e.g., v4.0.1, v4.1.0, or specific commit SHA)"
+        description: "Release version to deploy, no 'v' prefix (e.g. 5.0.0). See RELEASING.md"
         required: true
 
 env:

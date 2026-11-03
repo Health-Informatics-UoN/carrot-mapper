@@ -39,6 +39,8 @@ permissions:
 
 jobs:
   deploy-to-dev:
+    # Don't deploy images from a Release run that failed (they may not exist).
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     environment: dev
     env:
