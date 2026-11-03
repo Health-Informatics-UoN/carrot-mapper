@@ -23,11 +23,15 @@ For convenience, three separate terminals should be used to start the services.
 - Terminal 2 at the `app/api` directory
 - Terminal 3 at the `app/next-client-app` directory
 
+**Note:** If you need to load the real Athena vocabularies, to test the auto-mapping functionality, for example, you must do the following steps before starting the services:
+
+- Set `SYNTHETIC_VOCABS=false` in the `.env` file,
+- Put the vocabs downloaded from Athena to the `vocabs` directory in the ROOT directory.
+
 1. At terminal 1, start Postgres and let the OMOP vocab loader finish (it's a one-shot container — wait for it to exit before continuing):
    ```bash
    cp .env.example .env
    docker compose up -d db omop-lite azurite
-   docker wait $(docker compose ps -q omop-lite)
    ```
 2. At terminal 2, bootstrap and run the API from source:
    ```bash
@@ -51,6 +55,13 @@ For convenience, three separate terminals should be used to start the services.
    ```
 
 On later days, once the schema and migrations already exist in the `db` volume, this ordering doesn't matter any more — a plain `docker compose up -d` for the whole stack (at terminal 1), then `uv run manage.py runserver` (at terminal 2) and `npm run dev` (at terminal 3), is fine.
+
+**Default login details:**
+
+- For Django API, URL: `http://localhost:8000/admin`, username: `admin`, password: `admin` (default superuser credentials, from here you can then add more users)
+- For Next.js frontend, URL: `http://localhost:3000`, username: `admin`, password: `admin` (this is the creds of the default superuser)
+- For Airflow, URL: `http://localhost:8080`, username: `carrot-admin`, password: `password123` (Airflow uses KeyCloak as auth manager)
+- For KeyCloak, URL: `http://localhost:8085`, username: `admin`, password: `admin` (default admin credentials, from here you can then add more users to access Airflow)
 
 ## Pre-commit hooks
 
