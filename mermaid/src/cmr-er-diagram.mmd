@@ -1,0 +1,257 @@
+erDiagram
+    %% Carrot Mappings Registry - (v1.0)
+
+    agent {
+        UUID id PK
+        TEXT agent_type
+        TEXT identifier UK
+        TEXT display_name
+        TIMESTAMPTZ created_at
+    }
+
+    registry_user {
+        UUID id PK
+        TEXT handle UK
+        TEXT auth_issuer
+        TEXT auth_subject
+        UUID person_agent_id FK,UK
+        UUID organization_agent_id FK
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ disabled_at
+    }
+
+    prefix {
+        TEXT prefix PK
+        TEXT uri_prefix
+        TEXT label
+        TEXT bioregistry_id
+        BOOLEAN is_active
+    }
+
+    vocabulary {
+        TEXT id PK
+        TEXT name
+        TEXT source
+        BOOLEAN is_active
+    }
+
+    predicate {
+        TEXT predicate_id PK
+        TEXT label
+        TEXT description
+        BOOLEAN is_recommended
+    }
+
+    mapping_justification {
+        TEXT justification_id PK
+        TEXT label
+        TEXT description
+    }
+
+    license {
+        TEXT license_iri PK
+        TEXT spdx_id UK
+        TEXT label
+        BOOLEAN is_open
+    }
+
+    mapping_set {
+        UUID id PK
+        UUID owner_user_id FK
+        TEXT slug
+        TEXT visibility
+        TEXT lifecycle
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ updated_at
+    }
+
+    mapping_set_version {
+        UUID id PK
+        UUID set_id FK
+        INTEGER version_number
+        TEXT status
+        TEXT title
+        TEXT description
+        TEXT license_iri FK
+        TEXT source_system
+        TEXT target_model
+        JSONB metadata
+        TEXT file_bucket
+        TEXT file_key
+        TEXT original_filename
+        TEXT file_format
+        TEXT file_sha256
+        BIGINT file_size_bytes
+        TEXT index_status
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ published_at
+    }
+
+    mapping_set_version_prefix {
+        UUID version_id PK,FK
+        TEXT prefix PK
+        TEXT uri_prefix
+    }
+
+    mapping_set_version_agent {
+        UUID version_id PK,FK
+        UUID agent_id PK,FK
+        TEXT role PK
+        SMALLINT position
+    }
+
+    term {
+        BIGINT id PK
+        TEXT canonical_iri UK
+        TEXT preferred_label
+        TEXT prefix FK
+        TEXT vocabulary_id FK
+    }
+
+    mapping {
+        BIGINT id PK
+        UUID version_id FK
+        INTEGER row_number
+        BIGINT subject_term_id FK
+        BIGINT object_term_id FK
+        TEXT subject_id
+        TEXT subject_label
+        TEXT predicate_id FK
+        TEXT object_id
+        TEXT object_label
+        TEXT justification_id FK
+        TEXT subject_source
+        TEXT object_source
+        TEXT source_table_name
+        TEXT source_field_name
+        TEXT source_value
+        NUMERIC_4_3 confidence
+        JSONB attributes
+    }
+
+    source_instance {
+        UUID id PK
+        UUID registered_by_user_id FK
+        UUID organization_agent_id FK
+        TEXT instance_name
+        TEXT instance_key UK
+        BOOLEAN is_active
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ last_seen_at
+    }
+
+    sync_consent {
+        UUID id PK
+        UUID user_id FK
+        UUID source_instance_id FK
+        JSONB scope
+        TEXT consent_text_version
+        TIMESTAMPTZ consented_at
+        TIMESTAMPTZ revoked_at
+    }
+
+    source_field_policy {
+        UUID consent_id PK,FK
+        TEXT dataset_key PK
+        TEXT source_table_name PK
+        TEXT source_field_name PK
+        TEXT disclosure
+        TIMESTAMPTZ updated_at
+    }
+
+    import_job {
+        UUID id PK
+        UUID submitted_by_user_id FK
+        UUID source_instance_id FK
+        UUID consent_id FK
+        UUID version_id FK
+        TEXT source_kind
+        TEXT status
+        TEXT staging_bucket
+        TEXT staging_key
+        TEXT adapter_name
+        TEXT adapter_version
+        JSONB applied_policy_snapshot
+        JSONB validation_issues
+        TEXT error_message
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ finished_at
+    }
+
+    mapping_carrot_origin {
+        BIGINT mapping_id PK,FK
+        UUID import_job_id FK
+        TEXT local_scan_report_id
+        TEXT local_concept_id
+        CHAR_1 creation_type
+        JSONB origin_details
+    }
+
+    mapping_rating {
+        UUID set_id PK,FK
+        UUID user_id PK,FK
+        SMALLINT rating
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ updated_at
+    }
+
+    mapping_reuse {
+        UUID id PK
+        UUID version_id FK
+        UUID user_id FK
+        UUID source_instance_id FK
+        INTEGER mappings_applied
+        TIMESTAMPTZ reused_at
+        TIMESTAMPTZ reported_at
+    }
+
+    registry_event {
+        BIGINT id PK
+        UUID actor_user_id FK
+        UUID set_id FK
+        TEXT action
+        TEXT entity_type
+        TEXT entity_id
+        JSONB details
+        TIMESTAMPTZ occurred_at
+    }
+
+    agent o|--o{ registry_user : identifies
+    agent o|--o{ registry_user : affiliation
+    agent o|--o{ source_instance : organisation
+
+    registry_user ||--o{ mapping_set : owns
+    mapping_set ||--o{ mapping_set_version : versions
+    license ||--o{ mapping_set_version : licenses
+    mapping_set_version ||--o{ mapping_set_version_prefix : freezes_prefixes
+    mapping_set_version ||--o{ mapping_set_version_agent : credits
+    agent ||--o{ mapping_set_version_agent : credited_agent
+
+    mapping_set_version ||--o{ mapping : contains
+    term o|--o{ mapping : subject
+    term o|--o{ mapping : object
+    prefix o|--o{ term : canonical_prefix
+    vocabulary o|--o{ term : home_vocabulary
+    predicate ||--o{ mapping : predicate
+    mapping_justification o|--o{ mapping : justification
+
+    registry_user ||--o{ source_instance : registers
+    registry_user ||--o{ sync_consent : grants
+    source_instance ||--o{ sync_consent : covers
+    sync_consent ||--o{ source_field_policy : field_policies
+
+    registry_user o|--o{ import_job : submits
+    source_instance o|--o{ import_job : uploads
+    sync_consent o|--o{ import_job : authorises
+    mapping_set_version o|--o{ import_job : resulting_version
+    mapping ||--o| mapping_carrot_origin : has_carrot_origin
+    import_job ||--o{ mapping_carrot_origin : traces_to_import
+
+    mapping_set ||--o{ mapping_rating : receives
+    registry_user ||--o{ mapping_rating : rates
+    mapping_set_version ||--o{ mapping_reuse : reused
+    registry_user o|--o{ mapping_reuse : performed
+    source_instance o|--o{ mapping_reuse : reported_from
+
+    registry_user o|--o{ registry_event : acted
+    mapping_set o|--o{ registry_event : logged
