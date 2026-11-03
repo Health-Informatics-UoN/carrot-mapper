@@ -1,0 +1,42 @@
+erDiagram
+    %% Carrot Mappings Registry — Final Relationship Overview (v1.0)
+
+    agent o|--o{ registry_user : identifies
+    agent o|--o{ registry_user : affiliation
+    agent o|--o{ source_instance : organisation
+
+    registry_user ||--o{ mapping_set : owns
+    mapping_set ||--o{ mapping_set_version : versions
+    license ||--o{ mapping_set_version : licenses
+    mapping_set_version ||--o{ mapping_set_version_prefix : freezes_prefixes
+    mapping_set_version ||--o{ mapping_set_version_agent : credits
+    agent ||--o{ mapping_set_version_agent : credited_agent
+
+    mapping_set_version ||--o{ mapping : contains
+    term o|--o{ mapping : subject
+    term o|--o{ mapping : object
+    prefix o|--o{ term : canonical_prefix
+    vocabulary o|--o{ term : home_vocabulary
+    predicate ||--o{ mapping : predicate
+    mapping_justification o|--o{ mapping : justification
+
+    registry_user ||--o{ source_instance : registers
+    registry_user ||--o{ sync_consent : grants
+    source_instance ||--o{ sync_consent : covers
+    sync_consent ||--o{ source_field_policy : field_policies
+
+    registry_user o|--o{ import_job : submits
+    source_instance o|--o{ import_job : uploads
+    sync_consent o|--o{ import_job : authorises
+    mapping_set_version o|--o{ import_job : resulting_version
+    mapping ||--o| mapping_carrot_origin : has_carrot_origin
+    import_job ||--o{ mapping_carrot_origin : traces_to_import
+
+    mapping_set ||--o{ mapping_rating : receives
+    registry_user ||--o{ mapping_rating : rates
+    mapping_set_version ||--o{ mapping_reuse : reused
+    registry_user o|--o{ mapping_reuse : performed
+    source_instance o|--o{ mapping_reuse : reported_from
+
+    registry_user o|--o{ registry_event : acted
+    mapping_set o|--o{ registry_event : logged
