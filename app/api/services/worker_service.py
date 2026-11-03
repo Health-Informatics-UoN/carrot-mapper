@@ -1,12 +1,11 @@
 import logging
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional
+from typing import Any
 from urllib.parse import urljoin
 
 import requests
 from django.conf import settings
 from mapping.models import ScanReport, ScanReportTable
-from requests.auth import HTTPBasicAuth
 
 from services.enums import WorkerServiceType
 from services.field_domain_mappings import get_field_domain_mappings
@@ -21,21 +20,18 @@ class WorkerService(ABC):
         self,
         scan_report: ScanReport,
         table: ScanReportTable,
-        data_dictionary_name: Optional[str] = None,
-        trigger_reuse_concepts: Optional[bool] = True,
+        data_dictionary_name: str | None = None,
+        trigger_reuse_concepts: bool | None = True,
     ):
         """Trigger automated mapping process."""
-        pass
 
     @abstractmethod
-    def trigger_scan_report_processing(self, message_body: Dict[str, Any]):
+    def trigger_scan_report_processing(self, message_body: dict[str, Any]):
         """Trigger scan report processing."""
-        pass
 
     @abstractmethod
-    def trigger_rules_export(self, message_body: Dict[str, Any]):
+    def trigger_rules_export(self, message_body: dict[str, Any]):
         """Trigger rules export."""
-        pass
 
 
 class AirflowWorkerService(WorkerService):
@@ -51,34 +47,44 @@ class AirflowWorkerService(WorkerService):
         )
         self._rules_export_dag_id = settings.AIRFLOW_RULES_EXPORT_DAG_ID
 
+    def _get_airflow_access_token(self) -> str:
+        """Get a JWT access token from the Airflow API server (Airflow 3 no longer accepts basic auth)."""
+        response = requests.post(
+            urljoin(self._airflow_base_url, "/auth/token"),
+            json={
+                "username": settings.AIRFLOW_ADMIN_USERNAME,
+                "password": settings.AIRFLOW_ADMIN_PASSWORD,
+            },
+        )
+        response.raise_for_status()
+        return response.json()["access_token"]
+
     def _trigger_airflow_dag(
-        self, dag_id: str, payload: Dict[str, Any]
+        self, dag_id: str, payload: dict[str, Any]
     ) -> requests.Response:
         """Common method to trigger Airflow DAGs through the Airflow REST API."""
-        endpoint = f"dags/{dag_id}/dagRuns"
-        body = {"conf": payload}
+        endpoint = f"/api/v2/dags/{dag_id}/dagRuns"
+        body = {"conf": payload, "logical_date": None}
 
         try:
             response = requests.post(
                 urljoin(self._airflow_base_url, endpoint),
                 json=body,
-                auth=HTTPBasicAuth(
-                    settings.AIRFLOW_ADMIN_USERNAME, settings.AIRFLOW_ADMIN_PASSWORD
-                ),
+                headers={"Authorization": f"Bearer {self._get_airflow_access_token()}"},
             )
             response.raise_for_status()
             return response
         except requests.exceptions.HTTPError as e:
             logging.error(f"HTTP Trigger failed when triggering DAG {dag_id}: {e}")
             raise requests.exceptions.HTTPError(
-                f"Failed to trigger Airflow DAG {dag_id}: {str(e)}"
+                f"Failed to trigger Airflow DAG {dag_id}: {e!s}"
             ) from e
 
     def trigger_auto_mapping(
         self,
         scan_report: ScanReport,
         table: ScanReportTable,
-        data_dictionary_name: Optional[str] = None,
+        data_dictionary_name: str | None = None,
         # Placeholder for the issue #623 or enabling users to disable/enable reuse concepts function
         trigger_reuse_concepts: bool = True,
         # TODO: add death_table config here
@@ -104,10 +110,10 @@ class AirflowWorkerService(WorkerService):
 
         self._trigger_airflow_dag(self._auto_mapping_dag_id, payload)
 
-    def trigger_scan_report_processing(self, message_body: Dict[str, Any]):
+    def trigger_scan_report_processing(self, message_body: dict[str, Any]):
         self._trigger_airflow_dag(self._scan_report_processing_dag_id, message_body)
 
-    def trigger_rules_export(self, message_body: Dict[str, Any]):
+    def trigger_rules_export(self, message_body: dict[str, Any]):
         self._trigger_airflow_dag(self._rules_export_dag_id, message_body)
 
 

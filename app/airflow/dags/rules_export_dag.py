@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 
 from airflow import DAG
-from airflow.operators.empty import EmptyOperator
+from airflow.providers.standard.operators.empty import EmptyOperator
 from libs.rules_export.core import build_and_upload_rules_file, pre_process_rules
 from libs.settings import AIRFLOW_DAGRUN_TIMEOUT, AIRFLOW_DEBUG_MODE
 from libs.utils import (
@@ -41,7 +41,6 @@ dag = DAG(
     processing them and then exporting them to a file for downloading.
     """,
     tags=["rules_export"],
-    schedule_interval=None,
     catchup=False,
     is_paused_upon_creation=False,
     dagrun_timeout=timedelta(minutes=float(AIRFLOW_DAGRUN_TIMEOUT)),

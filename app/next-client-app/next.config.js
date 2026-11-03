@@ -16,7 +16,12 @@ const nextConfig = {
     },
   },
   compiler: {
-    removeConsole: process.env.NODE_ENV === "production",
+    // Strip noisy logs in production but keep warnings/errors so API
+    // failures swallowed by catch blocks still show up in the server logs.
+    removeConsole:
+      process.env.NODE_ENV === "production"
+        ? { exclude: ["error", "warn"] }
+        : false,
   },
   // Enable build caching
   onDemandEntries: {

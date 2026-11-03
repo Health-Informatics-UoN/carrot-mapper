@@ -1,29 +1,17 @@
 import ast
 import json
 import logging
-from typing import Any, Dict, List, Optional, TypedDict
+from typing import Any, TypedDict
 
-from airflow.models.connection import Connection
 from airflow.models.taskinstance import TaskInstance
-from airflow.operators.python import PythonOperator
-from airflow.providers.postgres.hooks.postgres import PostgresHook
-from airflow.utils.session import create_session
+from airflow.providers.standard.operators.python import PythonOperator
+from airflow.sdk import BaseHook
 
+from libs.db import pg_hook
 from libs.enums import JobStageType, StageStatusType, StorageType
 from libs.notifications import NotificationType, create_notification
 from libs.settings import (
-    AIRFLOW_DAGRUN_TIMEOUT,
-    AIRFLOW_VAR_S3_ACCESS_KEY,
-    AIRFLOW_VAR_S3_ENDPOINT,
-    AIRFLOW_VAR_S3_SECRET_KEY,
-    AIRFLOW_VAR_WASB_CONNECTION_STRING,
     storage_type,
-)
-
-# PostgreSQL connection hook
-pg_hook = PostgresHook(
-    postgres_conn_id="postgres_db_conn",
-    options=f"-c statement_timeout={float(AIRFLOW_DAGRUN_TIMEOUT) * 60 * 1000}ms",
 )
 
 
@@ -49,12 +37,12 @@ class ValidatedParams(TypedDict):
     table_id: int
     person_id_field: int
     date_event_field: int
-    field_vocab_pairs: List[FieldVocabPair]
-    field_domain_pairs: List[FieldDomainPair]
+    field_vocab_pairs: list[FieldVocabPair]
+    field_domain_pairs: list[FieldDomainPair]
     parent_dataset_id: int
     trigger_reuse_concepts: bool
     scan_report_blob: str
-    data_dictionary_blob: Optional[str]
+    data_dictionary_blob: str | None
     user_id: int
     file_type: str
 
@@ -77,7 +65,7 @@ def update_job_status(
     stage: JobStageType,
     status: StageStatusType,
     scan_report: int,
-    scan_report_table: Optional[int] = None,
+    scan_report_table: int | None = None,
     details: str = "",
 ) -> None:
     """
@@ -94,7 +82,7 @@ def update_job_status(
         ValueError: If there's an error updating the job status
     """
     # Base parameters used in all queries
-    params: Dict[str, Any] = {
+    params: dict[str, Any] = {
         "scan_report": scan_report,
         "status_value": status.name,
         "stage_value": stage.name,
@@ -239,15 +227,14 @@ def update_job_status_on_failure(context):
             )
 
     except Exception as e:
-        logging.error(f"Failed to update job status on skipped task: {str(e)}")
+        logging.error(f"Failed to update job status on skipped task: {e!s}")
 
 
-def create_task(task_id, python_callable, dag, provide_context=True):
+def create_task(task_id, python_callable, dag):
     """Create a task in the DAG"""
     return PythonOperator(
         task_id=task_id,
         python_callable=python_callable,
-        provide_context=provide_context,
         dag=dag,
     )
 
@@ -421,51 +408,13 @@ def pull_validated_params(kwargs: dict, task_id: str) -> ValidatedParams:
 
 def connect_to_storage() -> None:
     """
-    Connects to the storage service based on the storage type.
+    Checks that the connection for the configured storage service is available.
+
+    Airflow 3 tasks cannot write to the metadata DB, so connections must be
+    provided up front, e.g. via AIRFLOW_CONN_WASB_CONN / AIRFLOW_CONN_S3_CONN
+    environment variables or a secrets backend.
     """
-    with create_session() as session:
-        if storage_type == StorageType.AZURE:
-            # Check if WASB connection exists
-            existing_conn = (
-                session.query(Connection)
-                .filter(Connection.conn_id == "wasb_conn")
-                .first()
-            )
-
-            if existing_conn is None:
-                conn = Connection(
-                    conn_id="wasb_conn",
-                    conn_type="wasb",
-                    extra={"connection_string": AIRFLOW_VAR_WASB_CONNECTION_STRING},
-                )
-                session.add(conn)
-                session.commit()
-                logging.info("Created new WASB connection")
-
-        elif storage_type == StorageType.S3:
-            # Check if S3 connection exists
-            existing_conn = (
-                session.query(Connection)
-                .filter(Connection.conn_id == "s3_conn")
-                .first()
-            )
-
-            if existing_conn is None:
-                conn = Connection(
-                    conn_id="s3_conn",
-                    conn_type="aws",
-                    extra={
-                        "endpoint_url": AIRFLOW_VAR_S3_ENDPOINT,
-                        "aws_access_key_id": AIRFLOW_VAR_S3_ACCESS_KEY,
-                        "aws_secret_access_key": AIRFLOW_VAR_S3_SECRET_KEY,
-                        # Self-hosted S3 (RustFS): use path-style URLs
-                        # (http://host:9000/bucket/key) rather than
-                        # virtual-hosted (bucket.host), and a fixed region so
-                        # boto3 doesn't try to discover one.
-                        "region_name": "us-east-1",
-                        "config_kwargs": {"s3": {"addressing_style": "path"}},
-                    },
-                )
-                session.add(conn)
-                session.commit()
-                logging.info("Created new S3 connection")
+    conn_id = "wasb_conn" if storage_type == StorageType.AZURE else "s3_conn"
+    # Raises AirflowNotFoundException if the connection is not defined
+    BaseHook.get_connection(conn_id)
+    logging.info(f"Storage connection '{conn_id}' is available")

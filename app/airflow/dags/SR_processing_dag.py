@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 
 from airflow import DAG
-from airflow.operators.empty import EmptyOperator
+from airflow.providers.standard.operators.empty import EmptyOperator
 from libs.settings import AIRFLOW_DAGRUN_TIMEOUT, AIRFLOW_DEBUG_MODE
 from libs.SR_processing.core import (
     process_and_create_scan_report_entries,
@@ -45,7 +45,6 @@ dag = DAG(
     from a uploaded scan report and data dictionary.
     """,
     tags=["SR_processing"],
-    schedule_interval=None,
     catchup=False,
     is_paused_upon_creation=False,
     dagrun_timeout=timedelta(minutes=float(AIRFLOW_DAGRUN_TIMEOUT)),

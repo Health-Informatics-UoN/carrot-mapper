@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 
 from airflow import DAG
-from airflow.operators.empty import EmptyOperator
+from airflow.providers.standard.operators.empty import EmptyOperator
 from libs.auto_mapping.core_get_existing_concepts import (
     delete_mapping_rules,
     find_existing_concepts,
@@ -89,7 +89,6 @@ dag = DAG(
         "mapping_rules_creation",
         "search_recommendations",
     ],
-    schedule_interval=None,
     catchup=False,
     is_paused_upon_creation=False,
     dagrun_timeout=timedelta(minutes=float(AIRFLOW_DAGRUN_TIMEOUT)),

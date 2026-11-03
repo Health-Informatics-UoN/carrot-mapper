@@ -3,25 +3,16 @@ import time
 from collections import defaultdict
 from typing import Any, Dict, List, Tuple
 
-from airflow.providers.postgres.hooks.postgres import PostgresHook
+from libs.db import pg_hook
 from libs.enums import JobStageType, StageStatusType
 from libs.notifications import NotificationType, create_notification
 from libs.queries import create_fields_query
 from libs.settings import (
-    AIRFLOW_DAGRUN_TIMEOUT,
     AIRFLOW_DEBUG_MODE,
-    EXECUTE_VALUES_PAGE_SIZE,
     TEMP_TABLE_CLEANUP_DELAY,
 )
 from libs.utils import update_job_status
 from openpyxl.worksheet.worksheet import Worksheet
-from psycopg2.extras import execute_values
-
-# PostgreSQL connection hook
-pg_hook = PostgresHook(
-    postgres_conn_id="postgres_db_conn",
-    options=f"-c statement_timeout={float(AIRFLOW_DAGRUN_TIMEOUT) * 60 * 1000}ms",
-)
 
 
 def create_field_entries(
@@ -119,21 +110,19 @@ def update_temp_data_dictionary_table(
             with pg_hook.get_conn() as conn:
                 # Create a cursor for executing SQL - this automatically closes when we're done
                 with conn.cursor() as cursor:
-                    # Bulk insert all records efficiently using execute_values
-                    execute_values(
-                        cursor,
-                        f"INSERT INTO temp_data_dictionary_{scan_report_id} (table_name, field_name, value, value_description) VALUES %s",
-                        [
-                            (
-                                d["table_name"],
-                                d["field_name"],
-                                d["value"],
-                                d["value_description"],
+                    # Bulk load all records with COPY, the fastest way to insert many rows
+                    with cursor.copy(
+                        f"COPY temp_data_dictionary_{scan_report_id} (table_name, field_name, value, value_description) FROM STDIN"
+                    ) as copy:
+                        for d in dictionary_records:
+                            copy.write_row(
+                                (
+                                    d["table_name"],
+                                    d["field_name"],
+                                    d["value"],
+                                    d["value_description"],
+                                )
                             )
-                            for d in dictionary_records
-                        ],
-                        page_size=EXECUTE_VALUES_PAGE_SIZE,
-                    )
                     conn.commit()
 
         logging.info(
@@ -208,15 +197,13 @@ def create_temp_field_values_table(
         if field_values_data:
             with pg_hook.get_conn() as conn:
                 with conn.cursor() as cursor:
-                    execute_values(
-                        cursor,
-                        f"INSERT INTO temp_field_values_{table_id} (field_name, value, frequency) VALUES %s",
-                        [
-                            (d["field_name"], d["value"], d["frequency"])
-                            for d in field_values_data
-                        ],
-                        page_size=EXECUTE_VALUES_PAGE_SIZE,
-                    )
+                    with cursor.copy(
+                        f"COPY temp_field_values_{table_id} (field_name, value, frequency) FROM STDIN"
+                    ) as copy:
+                        for d in field_values_data:
+                            copy.write_row(
+                                (d["field_name"], d["value"], d["frequency"])
+                            )
                     conn.commit()
 
     except Exception as e:

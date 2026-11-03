@@ -1,20 +1,14 @@
 import logging
 
 from airflow.exceptions import AirflowException
-from airflow.providers.postgres.hooks.postgres import PostgresHook
+from libs.db import pg_hook
 from libs.notifications import NotificationType, create_notification
-from libs.settings import AIRFLOW_DAGRUN_TIMEOUT, AIRFLOW_DEBUG_MODE
+from libs.settings import AIRFLOW_DEBUG_MODE
 from libs.utils import (
     JobStageType,
     StageStatusType,
     pull_validated_params,
     update_job_status,
-)
-
-# PostgreSQL connection hook
-pg_hook = PostgresHook(
-    postgres_conn_id="postgres_db_conn",
-    options=f"-c statement_timeout={float(AIRFLOW_DAGRUN_TIMEOUT) * 60 * 1000}ms",
 )
 
 
