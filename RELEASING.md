@@ -112,78 +112,8 @@ Don't deploy `edge` or a SHA.
 ### When to deploy
 
 - Deploy on demand when a release is worth shipping. There is no fixed schedule.
-- A release must have run on **test for at least one working day** first, with
-  the checks below done there. Security fixes can skip the soak period, but not the checks.
 
-### Checklist
-
-Before:
-
-- [ ] The release is on test, and the smoke test below passes there.
-- [ ] You've read the GitHub Release notes for **every** version between what's live in
-  ```
-  production and the one you're deploying. Pay particular attention to the **BREAKING CHANGES** sections.
-  ```
-- [ ] Any new or changed environment variables or secrets are already set on the
-  ```
-  production App Services (Azure) and the `production` GitHub environment.
-  ```
-- [ ] Any new infrastructure the release needs (e.g. Keycloak) already exists in production.
-- [ ] Major release: you've backed up the production database and announced a maintenance window to users.
-
-Deploy:
-
-- [ ] Actions → **Deploy to Production (carrot.ac.uk)** → **Run workflow** → `image_tag` = `X.Y.Z`.
-- [ ] A `production` environment reviewer approves the run.
-
-After (smoke test):
-
-- [ ] You can log in to carrot.ac.uk.
-- [ ] Scan reports and projects load.
-- [ ] Uploading a small scan report triggers the Airflow DAG, and it completes.
-- [ ] The Airflow UI and API are reachable, and the scheduler is healthy.
-- [ ] No new errors show up in Azure logs / Application Insights in the first 30 minutes.
-- [ ] You've recorded the deployed version and date (e.g. in the release's GitHub notes or the team channel).
-
-### Rolling back
-
-Re-run **Deploy to Production** with the previous version's tag.
-
-- This is only safe if the release you're rolling back from didn't run
-  irreversible migrations. If in doubt, check `app/api/**/migrations/` in the
-  diff between the two tags first.
-- A rolled-back major release may also need its environment changes reverted.
-- Then fix forward on `main`. Don't leave production pinned to an old version long term.
-
-## 5. Hotfixes
-
-We **fix forward**. There are no release branches.
-
-1. Open a `fix: …` PR against `main` and get it reviewed (an expedited review is fine).
-2. Merge it, which cuts a patch release and deploys it to test automatically.
-3. Check the fix on test, then deploy that patch version to production.
-
-Because `main` is always releasable, a hotfix ships with everything else merged
-since the last production deploy. If `main` holds unreleased work that must not
-go out yet, talk to the maintainers before merging the fix. That's the one case
-where a temporary release branch may be justified.
-
-## 6. Supported versions
-
-Only the **latest release** is supported. Security and bug fixes are not
-backported to older major or minor lines. Deployers running their own instance
-should keep up with minor releases, and read the breaking-change notes before
-taking a major release.
-
-## 7. Routine maintenance
-
-| What                                                                                                | When                                           | Who                    |
-| --------------------------------------------------------------------------------------------------- | ---------------------------------------------- | ---------------------- |
-| Review and merge Dependabot PRs. Python and Actions updates are grouped; review majors individually | monthly, the week they open                    | maintainers (rotating) |
-| Deploy the latest release to production, if it has been soaking on test                             | at least monthly                               | maintainers            |
-| Check that `main` is green and test is healthy                                                      | weekly                                         | maintainers            |
-| Upgrade pinned base images (Python, Node, Airflow)                                                  | each minor release of the component, as needed | maintainers            |
-| Review open security advisories and Dependabot alerts                                               | weekly                                         | maintainers            |
+## 5. Dependabot PRs
 
 Dependabot PR titles use `fix(dependencies):` for runtime dependencies (which
 produces a patch release) and `chore(dependencies):` for GitHub Actions (no
