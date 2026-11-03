@@ -91,6 +91,11 @@ uv run pre-commit install
 
 ## Releases
 
-Releases are automated with `semantic-release` based on Conventional Commit PR titles merged to `main`: a `fix:` triggers a patch release, `feat:` a minor release, and a `BREAKING CHANGE:` footer in the squash commit message a major release. The `feat!:` shorthand is **not** recognised. This also determines the container image tags published to `ghcr.io/health-informatics-uon/carrot/`.
+Releases are automated with `semantic-release` based on Conventional Commit PR titles merged to `main`: a `fix:` triggers a patch release, `feat:` a minor release, and a breaking change a major release. This also determines the container image tags published to `ghcr.io/health-informatics-uon/carrot/`.
 
-If your PR is a breaking change, say so in the PR description so the maintainer merging it adds the footer. See [RELEASING.md](RELEASING.md) for the full release, deployment and maintenance process.
+We squash-merge with **only the PR title** as the commit message, so anything in the PR description is **not** seen by the release tooling. To mark a breaking change, either:
+
+- **Conventional style (recommended):** add `!` to the PR title, e.g. `feat!: drop support for Airflow 2`, or
+- **Angular style:** keep a normal title, and when merging add `BREAKING CHANGE: <what breaks>` to the **extended description** box in the "Squash and merge" dialog. The PR description doesn't count.
+
+See [RELEASING.md](RELEASING.md) for the full release, deployment and maintenance process.

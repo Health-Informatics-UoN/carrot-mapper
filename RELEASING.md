@@ -27,32 +27,47 @@ commit messages on `main` since the last tag ([`release.config.js`](release.conf
 | ------------------------------------------------------------------ | ------------------------ |
 | `fix: …`, `perf: …`                                                | patch, `5.0.0` → `5.0.1` |
 | `feat: …`                                                          | minor, `5.0.0` → `5.1.0` |
-| any type with a `BREAKING CHANGE:` footer                          | major, `5.0.0` → `6.0.0` |
+| any type with `!`, e.g. `feat!: …`, or a `BREAKING CHANGE:` footer | major, `5.0.0` → `6.0.0` |
 | `chore:`, `docs:`, `ci:`, `refactor:`, `test:`, `style:`, `build:` | no release               |
 
 Tags have **no** `v` **prefix** (`5.0.0`, not `v5.0.0`).
 
 ### Breaking changes: read this before merging one
 
-The `angular` preset we use does **not** understand the `feat!:` shorthand.
-A `!` in the title gives you a _minor_ release. The only thing that triggers a
-major release is a `BREAKING CHANGE:` footer **in the squash commit message**.
+semantic-release reads the **commit message on `main`**, not the PR. We
+squash-merge using **only the PR title** as the commit message, so the PR
+description never reaches git. Writing `BREAKING CHANGE:` in the PR
+description does **nothing**.
 
-semantic-release reads the commit, not the PR. Unless the repo's squash-merge
-default includes the PR description, the PR body never reaches git. So when you
-merge a breaking PR:
+There are two ways to mark a breaking change. Both give a major release:
 
-1. Click **Squash and merge**.
-2. In the commit description box, make sure this line is there, with a blank line above it:
-   ```
-    BREAKING CHANGE: <what breaks and what operators must do>
-   ```
-3. Confirm the merge, then check the new tag on the
+**Option A: conventional style (recommended).** Add `!` after the type in the PR title:
 
-   [Releases page](https://github.com/Health-Informatics-UoN/carrot-mapper/releases).
+```
+feat!: update Airflow to 3.3.2 and use Keycloak for Airflow auth
+```
 
-If it went wrong (you got a minor release instead), merge another PR with the
-same `feat:` title and the footer added at merge time. Don't delete or move tags.
+Nothing extra is needed at merge time. CI accepts `!` in PR titles.
+
+**Option B: angular style.** Keep a normal PR title (`feat: …`). Then, when you
+click **Squash and merge**, add the footer to the **extended description** box
+in the merge dialog:
+
+```
+BREAKING CHANGE: <what breaks and what operators must do>
+```
+
+This is easy to forget, because the box is empty by default. Only the person
+merging can do it, so say in the PR that it's breaking.
+
+You can use both at once: a `!` title, plus a `BREAKING CHANGE:` footer in the
+extended description. The footer text is then shown in the release notes'
+**BREAKING CHANGES** section, which is useful for telling operators what to do.
+
+After merging, check that the new major tag appears on the
+[Releases page](https://github.com/Health-Informatics-UoN/carrot-mapper/releases).
+If you got a minor release instead, merge another empty PR with a `feat!:` title.
+Don't delete or move tags.
 
 A change counts as **breaking** if anyone deploying Carrot has to do something
 beyond pulling the new images. For example:
@@ -173,12 +188,6 @@ taking a major release.
 Dependabot PR titles use `fix(dependencies):` for runtime dependencies (which
 produces a patch release) and `chore(dependencies):` for GitHub Actions (no
 release). A Dependabot **major** bump that requires deployers to change
-anything must get a `BREAKING CHANGE:` footer at merge time, like any other
-breaking PR.
-
-## Known limitations
-
-- The `feat!:` shorthand won't work until the shared
-  [`semantic-release.yml`](https://github.com/Health-Informatics-UoN/workflows/blob/main/.github/workflows/semantic-release.yml)
-  workflow installs `conventional-changelog-conventionalcommits`, and this repo
-  switches to `preset: "conventionalcommits"`.
+anything must be marked as breaking like any other breaking PR: edit the PR
+title to add `!` (e.g. `fix(dependencies)!: …`), or add a `BREAKING CHANGE:`
+footer in the extended description at merge time.
