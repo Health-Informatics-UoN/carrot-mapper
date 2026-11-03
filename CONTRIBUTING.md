@@ -80,4 +80,6 @@ uv run pre-commit install
 
 ## Releases
 
-Releases are automated with `semantic-release` based on Conventional Commit PR titles merged to `main`: a `fix:` triggers a patch release, `feat:` a minor release, and a breaking change (`!` or a `BREAKING CHANGE:` footer) a major release. This also determines the container image tags published to `ghcr.io/carrot/`.
+Releases are automated with `semantic-release` based on Conventional Commit PR titles merged to `main`: a `fix:` triggers a patch release, `feat:` a minor release, and a `BREAKING CHANGE:` footer in the squash commit message a major release. The `feat!:` shorthand is **not** recognised. This also determines the container image tags published to `ghcr.io/health-informatics-uon/carrot/`.
+
+If your PR is a breaking change, say so in the PR description so the maintainer merging it adds the footer. See [RELEASING.md](RELEASING.md) for the full release, deployment and maintenance process.
