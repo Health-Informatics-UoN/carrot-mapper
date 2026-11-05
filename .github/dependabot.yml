@@ -54,10 +54,17 @@ updates:
       day: "monday"
       time: "09:00"
       timezone: "Europe/London"
-    cooldown: 
+    cooldown:
       default-days: 7
     commit-message:
       prefix: "fix(dependencies): "
+    groups:
+      npm-minor-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:

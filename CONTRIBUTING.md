@@ -23,11 +23,15 @@ For convenience, three separate terminals should be used to start the services.
 - Terminal 2 at the `app/api` directory
 - Terminal 3 at the `app/next-client-app` directory
 
+**Note:** If you need to load the real Athena vocabularies, to test the auto-mapping functionality, for example, you must do the following steps before starting the services:
+
+- Set `SYNTHETIC_VOCABS=false` in the `.env` file,
+- Put the vocabs downloaded from Athena to the `vocabs` directory in the ROOT directory.
+
 1. At terminal 1, start Postgres and let the OMOP vocab loader finish (it's a one-shot container — wait for it to exit before continuing):
    ```bash
    cp .env.example .env
    docker compose up -d db omop-lite azurite
-   docker wait $(docker compose ps -q omop-lite)
    ```
 2. At terminal 2, bootstrap and run the API from source:
    ```bash
@@ -51,6 +55,13 @@ For convenience, three separate terminals should be used to start the services.
    ```
 
 On later days, once the schema and migrations already exist in the `db` volume, this ordering doesn't matter any more — a plain `docker compose up -d` for the whole stack (at terminal 1), then `uv run manage.py runserver` (at terminal 2) and `npm run dev` (at terminal 3), is fine.
+
+**Default login details:**
+
+- For Django API, URL: `http://localhost:8000/admin`, username: `admin`, password: `admin` (default superuser credentials, from here you can then add more users)
+- For Next.js frontend, URL: `http://localhost:3000`, username: `admin`, password: `admin` (this is the creds of the default superuser)
+- For Airflow, URL: `http://localhost:8080`, username: `carrot-admin`, password: `password123` (Airflow uses KeyCloak as auth manager)
+- For KeyCloak, URL: `http://localhost:8085`, username: `admin`, password: `admin` (default admin credentials, from here you can then add more users to access Airflow)
 
 ## Pre-commit hooks
 
@@ -80,4 +91,11 @@ uv run pre-commit install
 
 ## Releases
 
-Releases are automated with `semantic-release` based on Conventional Commit PR titles merged to `main`: a `fix:` triggers a patch release, `feat:` a minor release, and a breaking change (`!` or a `BREAKING CHANGE:` footer) a major release. This also determines the container image tags published to `ghcr.io/carrot/`.
+Releases are automated with `semantic-release` based on Conventional Commit PR titles merged to `main`: a `fix:` triggers a patch release, `feat:` a minor release, and a breaking change a major release. This also determines the container image tags published to `ghcr.io/health-informatics-uon/carrot/`.
+
+We squash-merge with **only the PR title** as the commit message, so anything in the PR description is **not** seen by the release tooling. To mark a breaking change, either:
+
+- **Conventional style (recommended):** add `!` to the PR title, e.g. `feat!: drop support for Airflow 2`, or
+- **Angular style:** keep a normal title, and when merging add `BREAKING CHANGE: <what breaks>` to the **extended description** box in the "Squash and merge" dialog. The PR description doesn't count.
+
+See [RELEASING.md](RELEASING.md) for the full release, deployment and maintenance process.
