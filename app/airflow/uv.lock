@@ -401,7 +401,7 @@ wheels = [
 
 [[package]]
 name = "apache-airflow-providers-amazon"
-version = "9.36.0"
+version = "9.39.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "apache-airflow" },
@@ -421,9 +421,9 @@ dependencies = [
     { name = "sagemaker-studio" },
     { name = "watchtower" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/9c/4c/99daf1abdc939096c3c9057bce4710d11d2c6c71827371835aefdda3e2f4/apache_airflow_providers_amazon-9.36.0.tar.gz", hash = "sha256:0151d8542d66be83639063bd74376c4a49ecba17e553726e585bb5cb2e5bdc6d", size = 2306274, upload-time = "2026-09-14T14:47:54.952Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/1d/8c/6385ca30f52110b85779fc3a59072125152002343ea16cb2450c242a5c22/apache_airflow_providers_amazon-9.39.0.tar.gz", hash = "sha256:9ffd82a9cf92ad291d277e00d2b583e34d76e1d486922017815875539886de5a", size = 2405119, upload-time = "2026-10-24T18:48:36.513Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/64/1d/df5c01a63f6e140879026a91407faf798a51085b22f90bcc88d607c21dce/apache_airflow_providers_amazon-9.36.0-py3-none-any.whl", hash = "sha256:7cf5a4cad08624e7a6b86ccad74d2af9e16fb1b282715db0c4a642c0b9b45bef", size = 790915, upload-time = "2026-09-14T14:47:11.727Z" },
+    { url = "https://files.pythonhosted.org/packages/db/c0/e043f6449bd8b807094e823b6b09f344373da32d3191f331b9a7af1cfa2b/apache_airflow_providers_amazon-9.39.0-py3-none-any.whl", hash = "sha256:7acf1c08b6dba8e879a7b9d8a280397796aa492a8d3af6b1096fcb631fca0754", size = 837613, upload-time = "2026-10-24T18:48:02.661Z" },
 ]
 
 [[package]]
@@ -490,16 +490,16 @@ wheels = [
 
 [[package]]
 name = "apache-airflow-providers-keycloak"
-version = "0.10.0"
+version = "0.11.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "apache-airflow" },
     { name = "apache-airflow-providers-common-compat" },
     { name = "python-keycloak" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/af/4b/32c2745b3fb3bbba147d02f743a4a58783347dcd1d6be0ce045718d8f720/apache_airflow_providers_keycloak-0.10.0.tar.gz", hash = "sha256:562110b5c44f8bd159e8a2d94a2bc47fbb14a5112575d24f4c17f7f2d9639f4f", size = 67062, upload-time = "2026-09-14T14:48:18.851Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/57/2d/5aeafa96f9219b02cf6a3e87f3263515e1e8d1716848ff3c764fe1fd24ec/apache_airflow_providers_keycloak-0.11.2.tar.gz", hash = "sha256:c93d9a0f4af44e715ef78f2786faa9c64191f51a21eeebf56f47ba669efc07c3", size = 74348, upload-time = "2026-10-24T18:48:54.068Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/1c/c6/b11504d5591f585a736ffd06423c8199851388877fd2a2f1047b78ceb673/apache_airflow_providers_keycloak-0.10.0-py3-none-any.whl", hash = "sha256:2f76e2094197c1a22e4acbbea602d1f9c1089f18dfe2388690ad2e06a11d255b", size = 50328, upload-time = "2026-09-14T14:47:40.744Z" },
+    { url = "https://files.pythonhosted.org/packages/b6/31/975f81185d5c84e0b79d1efd2513893ebe0c148d0679f79959cd881d76fd/apache_airflow_providers_keycloak-0.11.2-py3-none-any.whl", hash = "sha256:5329e9100ee9e1c57c5cca1c9c9e1c7cdb3c1b5d879576108ef33bda29010fda", size = 53501, upload-time = "2026-10-24T18:48:26.588Z" },
 ]
 
 [[package]]
@@ -1231,8 +1231,8 @@ test = [
 [package.metadata]
 requires-dist = [
     { name = "apache-airflow", specifier = ">=3.3.2,<4" },
-    { name = "apache-airflow-providers-amazon", specifier = "==9.36.0" },
-    { name = "apache-airflow-providers-keycloak", specifier = "==0.10.0" },
+    { name = "apache-airflow-providers-amazon", specifier = "==9.39.0" },
+    { name = "apache-airflow-providers-keycloak", specifier = "==0.11.2" },
     { name = "apache-airflow-providers-microsoft-azure", specifier = "==15.2.1" },
     { name = "apache-airflow-providers-postgres", specifier = "==7.1.1" },
     { name = "openpyxl", specifier = "==3.1.5" },
@@ -3440,11 +3440,11 @@ wheels = [
 
 [[package]]
 name = "pluggy"
-version = "1.5.0"
+version = "1.7.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/96/2d/02d4312c973c6050a18b314a5ad0b3210edb65a906f868e31c111dede4a6/pluggy-1.5.0.tar.gz", hash = "sha256:2cffa88e94fdc978c4c574f15f9e59b7f4201d439195c3715ca9e2486f1d0cf1", size = 67955, upload-time = "2024-04-20T21:34:42.531Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/bf/db/7fc19e6f2dc92a966727031389fc2e08b558f0f25eb7403c1119ad4713cd/pluggy-1.7.0.tar.gz", hash = "sha256:d1eaa46ebb595891b860ab086b4d09c8588af65ebd4361b8e8f4bb8920b90ba8", size = 123304, upload-time = "2026-10-15T09:50:58.343Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/88/5f/e351af9a41f866ac3f1fac4ca0613908d9a41741cfcf2228f4ad853b697d/pluggy-1.5.0-py3-none-any.whl", hash = "sha256:44e1ad92c8ca002de6377e165f3e0f1be63266ab4d554740532335b9d75ea669", size = 20556, upload-time = "2024-04-20T21:34:40.434Z" },
+    { url = "https://files.pythonhosted.org/packages/40/9e/2b38731e0fc536806f16490e1a12d7f0dc2a1235aa8cc07bcc75416a7daa/pluggy-1.7.0-py3-none-any.whl", hash = "sha256:7dd7b0d8832ba3cb632c306926ded123429211b83641b35dc5c41ad2d34f9bec", size = 27082, upload-time = "2026-10-15T09:50:56.808Z" },
 ]
 
 [[package]]
@@ -3884,7 +3884,7 @@ crypto = [
 
 [[package]]
 name = "pytest"
-version = "9.1.1"
+version = "9.2.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "colorama", marker = "sys_platform == 'win32'" },
@@ -3893,21 +3893,21 @@ dependencies = [
     { name = "pluggy" },
     { name = "pygments" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/e4/47/b9efed96c114afcfa3c9d3fe98a76a1d14c74a9e266d397cf6eb64be5e01/pytest-9.1.1.tar.gz", hash = "sha256:1088fbde8f2b49d95a549a195707afa7a76a3ce9bcadc26b6d71f0ffda5fe313", size = 1636369, upload-time = "2026-06-19T10:58:32.857Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/79/42/bb4641652e58dedeac2ec51abc1f8cae4fee4ec63899a0999016229a0f2a/pytest-9.2.0.tar.gz", hash = "sha256:97c4f3b1f3c7414aa36465e09b8220f1d03627993bd51b1282e193753c80557b", size = 1797555, upload-time = "2026-10-27T21:30:20.728Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/24/25/1de2678b631f5a49215c6c96fff41ba892b0a34df68d6d80292b1b48aa7f/pytest-9.1.1-py3-none-any.whl", hash = "sha256:37a86b45efb9a47a61a36449063e8e18d0cab3161329fc099eb21783169c4f0c", size = 386536, upload-time = "2026-06-19T10:58:31.347Z" },
+    { url = "https://files.pythonhosted.org/packages/51/39/1f5d8c8877a0fa327db959c19341d4be61660de1ab6b7391f9eb805bcd67/pytest-9.2.0-py3-none-any.whl", hash = "sha256:07acdcf88ec174f907dc01af70bf52d49b014bbab03faeeade31c96b18c2e588", size = 411776, upload-time = "2026-10-27T21:30:19.131Z" },
 ]
 
 [[package]]
 name = "pytest-mock"
-version = "3.15.1"
+version = "3.17.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "pytest" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/68/14/eb014d26be205d38ad5ad20d9a80f7d201472e08167f0bb4361e251084a9/pytest_mock-3.15.1.tar.gz", hash = "sha256:1849a238f6f396da19762269de72cb1814ab44416fa73a8686deac10b0d87a0f", size = 34036, upload-time = "2025-09-16T16:37:27.081Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/97/c2/28b9f5b955ff2bcd4727a6f768e2ca9b586cd7c37b95ea5f7b9b873ac7b3/pytest_mock-3.17.0.tar.gz", hash = "sha256:e36576e0985e01027e999891e7a966c67822d40c89ef1b4c8b6e22737e3590b4", size = 43064, upload-time = "2026-10-17T16:21:42.435Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/5a/cc/06253936f4a7fa2e0f48dfe6d851d9c56df896a9ab09ac019d70b760619c/pytest_mock-3.15.1-py3-none-any.whl", hash = "sha256:0a25e2eb88fe5168d535041d09a4529a188176ae608a6d249ee65abc0949630d", size = 10095, upload-time = "2025-09-16T16:37:25.734Z" },
+    { url = "https://files.pythonhosted.org/packages/e8/ea/47fbdc8f37410956fd445720e927589b1e2a47772c5f28109f0ce2fa26d9/pytest_mock-3.17.0-py3-none-any.whl", hash = "sha256:1b82aa4b37137248bd687055e109723debeb07b489de1565297dc9589c5f2d6b", size = 11248, upload-time = "2026-10-17T16:21:41.265Z" },
 ]
 
 [[package]]
