@@ -9,6 +9,7 @@ a Predicate, with a MappingJustification.
 """
 
 import uuid
+from urllib.parse import quote
 
 from django.conf import settings
 from django.db import models
@@ -200,11 +201,44 @@ class TermKind(models.TextChoices):
     OBJECT = "OBJECT", "Object"
 
 
+class TermLevel(models.TextChoices):
+    FIELD = "FIELD", "Field"
+    VALUE = "VALUE", "Value"
+
+
+# CURIE prefix for Carrot subject terms. Must be declared in each
+# MappingSet.curie_map as {CARROT_TERM_PREFIX: CARROT_TERM_NAMESPACE}.
+# The namespace does not need to resolve; it is an identifier only.
+CARROT_TERM_PREFIX = "carrot"
+CARROT_TERM_NAMESPACE = "https://w3id.org/carrot/term/"
+
+
 class Term(models.Model):
-    """A subject or object entity referenced by mappings (e.g. a source value or OMOP concept)."""
+    """
+    A subject or object entity referenced by mappings.
+
+    Subject terms (kind = SUBJECT) come from Carrot source data, at field or
+    value level. Their canonical_iri is a dataset-independent CURIE, so the
+    same field/value across datasets is one reusable term:
+
+        field level:  carrot:{field}
+        value level:  carrot:{field}/{value}
+
+    Each segment is percent-encoded (see build_subject_curie), so ':' or '/'
+    inside names cannot break parsing. The structured parts are also stored
+    in the ext_* columns (exported as declared SSSOM extension slots), so
+    consumers never need to parse the identifier or the label.
+
+    Subjects imported from SSSOM files may be any source term and carry no
+    ext_* data; those columns are only set for Carrot-shaped subjects.
+
+    Object terms (kind = OBJECT) are the target OMOP concepts, e.g.
+    SNOMED:22298006; the ext_* columns are always blank for them.
+    """
 
     id = models.BigAutoField(primary_key=True)
     canonical_iri = models.CharField(max_length=1000)
+    # Human-readable only; never parsed.
     label = models.TextField(blank=True, default="")
     type = models.CharField(max_length=255, blank=True, default="")
     category = models.CharField(max_length=255, blank=True, default="")
@@ -213,11 +247,46 @@ class Term(models.Model):
     # Only meaningful when kind = OBJECT (e.g. OMOP vocabulary version).
     object_source_version = models.CharField(max_length=255, blank=True, default="")
 
+    # SSSOM extension slots, only for kind = SUBJECT.
+    ext_term_level = models.CharField(
+        max_length=16, choices=TermLevel.choices, blank=True, default=""
+    )
+    ext_source_field = models.CharField(max_length=255, blank=True, default="")
+    # Blank unless ext_term_level = VALUE.
+    ext_source_value = models.TextField(blank=True, default="")
+
     class Meta:
         constraints = [
             models.UniqueConstraint(
                 fields=["canonical_iri", "kind"],
                 name="registry_term_iri_kind_uniq",
+            ),
+            models.CheckConstraint(
+                condition=(
+                    # No source structure: allowed for any term. Always the
+                    # case for objects (OMOP concepts), and for subjects that
+                    # come from SSSOM uploads without Carrot ext_* columns.
+                    models.Q(
+                        ext_term_level="",
+                        ext_source_field="",
+                        ext_source_value="",
+                    )
+                    # Field-level subject terms have field, no value.
+                    | models.Q(
+                        kind=TermKind.SUBJECT,
+                        ext_term_level=TermLevel.FIELD,
+                        ext_source_value="",
+                    )
+                    & ~models.Q(ext_source_field="")
+                    # Value-level subject terms have field + value.
+                    | models.Q(
+                        kind=TermKind.SUBJECT,
+                        ext_term_level=TermLevel.VALUE,
+                    )
+                    & ~models.Q(ext_source_field="")
+                    & ~models.Q(ext_source_value="")
+                ),
+                name="registry_term_ext_consistent",
             ),
         ]
         indexes = [models.Index(fields=["prefix"])]
@@ -225,9 +294,27 @@ class Term(models.Model):
     def __str__(self):
         return self.canonical_iri
 
+    @staticmethod
+    def build_subject_curie(field: str, value: str | None = None) -> str:
+        """Build the canonical CURIE for a Carrot subject term (percent-encoded segments)."""
+        parts = [field] if value is None else [field, value]
+        return f"{CARROT_TERM_PREFIX}:" + "/".join(quote(p, safe="") for p in parts)
+
+
+class MappingCardinality(models.TextChoices):
+    ONE_TO_ONE = "1:1", "1:1"
+    ONE_TO_MANY = "1:n", "1:n"
+    MANY_TO_ONE = "n:1", "n:1"
+    MANY_TO_MANY = "n:n", "n:n"
+
 
 class Mapping(models.Model):
-    """A single SSSOM mapping row: subject --predicate--> object."""
+    """
+    A single SSSOM mapping row: subject --predicate--> object.
+
+    A subject term with several target concepts appears on several rows
+    (one per object), with mapping_cardinality = 1:n.
+    """
 
     id = models.BigAutoField(primary_key=True)
     mapping_set = models.ForeignKey(
@@ -245,8 +332,17 @@ class Mapping(models.Model):
     mapping_justification = models.ForeignKey(
         MappingJustification, on_delete=models.PROTECT, related_name="mappings"
     )
-    ext_source_table = models.CharField(max_length=255, blank=True, default="")
-    ext_source_field = models.CharField(max_length=255, blank=True, default="")
+    mapping_cardinality = models.CharField(
+        max_length=3, choices=MappingCardinality.choices, blank=True, default=""
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["mapping_set", "subject", "predicate", "object"],
+                name="registry_mapping_assertion_uniq",
+            ),
+        ]
 
     def __str__(self):
         return f"{self.subject_id} {self.predicate_id} {self.object_id}"
