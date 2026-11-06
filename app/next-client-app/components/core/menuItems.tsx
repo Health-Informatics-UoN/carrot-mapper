@@ -2,8 +2,8 @@ import {
   BookMarked,
   Database,
   FileScan,
+  FolderGit2,
   Folders,
-  Github,
   Library,
   LogIn,
   LucideIcon,
@@ -49,7 +49,7 @@ export const sidebarItems: SidebarItems = {
     {
       label: "GitHub",
       href: "https://github.com/Health-Informatics-UoN/Carrot-Mapper",
-      icon: Github,
+      icon: FolderGit2,
     },
   ],
 };
