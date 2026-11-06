@@ -233,7 +233,7 @@ class Term(models.Model):
     ext_* data; those columns are only set for Carrot-shaped subjects.
 
     Object terms (kind = OBJECT) are the target OMOP concepts, e.g.
-    SNOMED:22298006; the ext_* columns are always blank for them.
+    OMOP:22298006; the ext_* columns are always blank for them.
     """
 
     id = models.BigAutoField(primary_key=True)

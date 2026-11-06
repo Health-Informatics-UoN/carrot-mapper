@@ -102,7 +102,7 @@ erDiagram
         VARCHAR category
         VARCHAR prefix "indexed"
         VARCHAR kind UK "OBJECT | SUBJECT; UNIQUE(canonical_iri, kind)"
-        VARCHAR object_source_version "only if kind = OBJECT (OMOP concept, e.g. SNOMED:22298006)"
+        VARCHAR object_source_version "only if kind = OBJECT (OMOP concept, e.g. OMOP:22298006)"
         VARCHAR ext_term_level "FIELD | VALUE; optional, Carrot-shaped SUBJECT only"
         VARCHAR ext_source_field "required if ext_term_level set"
         TEXT ext_source_value "only if ext_term_level = VALUE"
