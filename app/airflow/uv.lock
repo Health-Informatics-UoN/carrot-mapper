@@ -4586,11 +4586,11 @@ wheels = [
 
 [[package]]
 name = "types-openpyxl"
-version = "3.1.5.20260724"
+version = "3.1.5.20261017"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/e5/60/30711b24beaba011e84f3836bfd8a43e2245fb27058fff7a0c1e8891c48c/types_openpyxl-3.1.5.20260724.tar.gz", hash = "sha256:dbb200f8a615be820522314a7da70f1b0e5f470229e0a9a72550cdcbdc6247b1", size = 101611, upload-time = "2026-07-24T04:58:32.384Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/af/13/ce0b36e7e29ee31ec75d6718d48d28d2d48ad319ddf4665f81c8f3a8fc95/types_openpyxl-3.1.5.20261017.tar.gz", hash = "sha256:3deb3b6279b65ab379c126df0ee1fd27500c9628edb8d9667d73f637462917dc", size = 102026, upload-time = "2026-10-17T06:20:01.431Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/6f/87/0c2f7ac7ebe48873e6d7e9cf17fdad61467cab644ede16d4f47df89831da/types_openpyxl-3.1.5.20260724-py3-none-any.whl", hash = "sha256:f5979f292d2542724a90db5ef4123a72f163e48827c6a3a89fa380fc0b136b60", size = 165748, upload-time = "2026-07-24T04:58:31.244Z" },
+    { url = "https://files.pythonhosted.org/packages/2b/17/a091e90fde3e90eff9168354269626e210a4c3c688910d8c9176b8a08cb4/types_openpyxl-3.1.5.20261017-py3-none-any.whl", hash = "sha256:3315cfebad290cc7ade1fccaf3a46ee820b3a8e7df726ff4f18d30ab7f383d68", size = 165886, upload-time = "2026-10-17T06:19:59.944Z" },
 ]
 
 [[package]]
