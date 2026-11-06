@@ -73,6 +73,7 @@ INSTALLED_APPS = [
     "activity_log",
     "notifications",
     "users",
+    "registry",
     "rest_framework",
     "django_filters",
     "rest_framework.authtoken",
