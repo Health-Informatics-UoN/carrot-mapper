@@ -1,6 +1,8 @@
 erDiagram
     %% Carrot Mapping Registry (CMR)
     %% Phase 1 MVP: publish, search, download
+    %% Django app: registry (app/api/registry/models.py)
+    %% Seeded reference data: registry/migrations/0002_seed_reference_data.py
 
     %% Existing Carrot Mapper tables
     auth_user {
@@ -14,108 +16,109 @@ erDiagram
         TEXT dataset
         INTEGER author_id FK
     }
-    
-    import_job {
-        UUID id PK
-        UUID submitted_by_user_id FK
-        TEXT status
-        JSONB validation_issues
-        TEXT error_message
-        TIMESTAMPTZ created_at
-        TIMESTAMPTZ finished_at
-    }
 
-    %% Reference / controlled vocabulary tables
-    predicate {
-        TEXT predicate_id PK
-        TEXT label
+    %% Reference / controlled vocabulary tables (seeded)
+    registry_predicate {
+        VARCHAR predicate_id PK "CURIE, e.g. skos:exactMatch"
+        VARCHAR label
         TEXT description
         BOOLEAN is_recommended
     }
 
-    license {
-        TEXT id PK
-        TEXT license_iri
-        TEXT spdx_id
-        TEXT label
-        TEXT version
+    registry_license {
+        VARCHAR id PK "e.g. CC-BY-4.0"
+        VARCHAR license_iri UK
+        VARCHAR spdx_id
+        VARCHAR label
+        VARCHAR version
         BOOLEAN is_open
     }
 
-    mapping_justification {
-        TEXT justification_id PK
-        TEXT label
+    registry_mappingjustification {
+        VARCHAR justification_id PK "CURIE, e.g. semapv:ManualMappingCuration"
+        VARCHAR label
         TEXT description
     }
 
-    origin {
-        TEXT id PK
-        TEXT label "CARROT_DIRECT_PUBLISH | SSSOM_UPLOAD"
+    registry_origin {
+        VARCHAR id PK "CARROT_DIRECT_PUBLISH | SSSOM_UPLOAD"
+        VARCHAR label
         TEXT description
     }
 
-    status {
-        TEXT id PK
-        TEXT label "DRAFT | PUBLISHED | WITHDRAWN"
+    registry_status {
+        VARCHAR id PK "DRAFT | PUBLISHED | WITHDRAWN"
+        VARCHAR label
         TEXT description
+    }
+
+    %% Import tracking
+    registry_importjob {
+        UUID id PK
+        INTEGER submitted_by_id FK "nullable; SET NULL on user delete"
+        VARCHAR status "PENDING | RUNNING | SUCCEEDED | FAILED (default PENDING)"
+        JSONB validation_issues "default []"
+        TEXT error_message
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ finished_at "nullable"
     }
 
     %% Main entities
-    mapping_set {
+    registry_mappingset {
         UUID id PK
-        TEXT set_uri UK
-        TEXT set_version UK
-        TEXT title
+        VARCHAR set_uri UK "UNIQUE(set_uri, set_version)"
+        VARCHAR set_version UK "UNIQUE(set_uri, set_version)"
+        VARCHAR title
         TEXT description
-        TEXT license_id FK "can be overlapped between sets"
-        TEXT origin_id FK
-        TEXT status_id FK
-        TEXT import_job_id FK
-        INTEGER source_scan_report_id FK "only when origin = CARROT_DIRECT_UPLOAD"
-        JSONB curie_map
-        JSONB extra_metadata
-        TEXT file_key
+        VARCHAR license_id FK "nullable while DRAFT; PROTECT"
+        VARCHAR origin_id FK "PROTECT"
+        VARCHAR status_id FK "default DRAFT; PROTECT"
+        UUID import_job_id FK "nullable; SET NULL"
+        INTEGER source_scan_report_id FK "nullable, only when origin = CARROT_DIRECT_PUBLISH; SET NULL"
+        JSONB curie_map "default {}"
+        JSONB extra_metadata "default {}"
+        VARCHAR file_key
         TIMESTAMPTZ created_at
-        TIMESTAMPTZ published_at
+        TIMESTAMPTZ published_at "nullable"
     }
 
-    mapping {
+    registry_mapping {
         BIGINT id PK
-        UUID mapping_set_id FK
-        TEXT subject_id FK
-        TEXT predicate_id FK
-        TEXT object_id FK
-        TEXT mapping_justification_id FK
-        TEXT ext_source_table
-        TEXT ext_source_field
+        UUID mapping_set_id FK "CASCADE"
+        BIGINT subject_id FK "-> term; PROTECT"
+        VARCHAR predicate_id FK "PROTECT"
+        BIGINT object_id FK "-> term; PROTECT"
+        VARCHAR mapping_justification_id FK "PROTECT"
+        VARCHAR ext_source_table
+        VARCHAR ext_source_field
     }
 
-    term {
+    registry_term {
         BIGINT id PK
-        TEXT canonical_iri UK
+        VARCHAR canonical_iri UK "UNIQUE(canonical_iri, kind)"
         TEXT label
-        TEXT type
-        TEXT category
-        TEXT prefix
-        TEXT kind "OBJECT | SUBJECT"
-        TEXT object_source_version "if kind = OBJECT"
+        VARCHAR type
+        VARCHAR category
+        VARCHAR prefix "indexed"
+        VARCHAR kind UK "OBJECT | SUBJECT; UNIQUE(canonical_iri, kind)"
+        VARCHAR object_source_version "only if kind = OBJECT"
     }
 
     %% Relationships
     auth_user ||--o{ mapping_scanreport : authors
-    auth_user ||--o{ import_job : creates
-    import_job ||--o{ mapping_set : traces_to_import
+    auth_user |o--o{ registry_importjob : submits
+    registry_importjob |o--o{ registry_mappingset : traces_to_import
 
-    mapping_scanreport o|--o{ mapping_set : originates
+    mapping_scanreport |o--o{ registry_mappingset : originates
 
-    origin ||--o{ mapping_set : defines_origin
-    status ||--o{ mapping_set : defines_status
-    license ||--o{ mapping_set : licenses
+    registry_origin ||--o{ registry_mappingset : defines_origin
+    registry_status ||--o{ registry_mappingset : defines_status
+    registry_license |o--o{ registry_mappingset : licenses
 
-    mapping_set ||--o{ mapping : contains
+    registry_mappingset ||--o{ registry_mapping : contains
 
-    term ||--o{ mapping : subject
-    term ||--o{ mapping : object
+    registry_term ||--o{ registry_mapping : subject
+    registry_term ||--o{ registry_mapping : object
 
-    predicate ||--o{ mapping : defines_predicate
-    mapping_justification ||--o{ mapping : justifies
+    registry_predicate ||--o{ registry_mapping : defines_predicate
+    registry_mappingjustification ||--o{ registry_mapping : justifies
