@@ -1,0 +1,121 @@
+erDiagram
+    %% Carrot Mapping Registry (CMR)
+    %% Phase 1 MVP: publish, search, download
+
+    %% Existing Carrot Mapper tables
+    auth_user {
+        INTEGER id PK
+        TEXT username
+        TEXT email
+    }
+
+    mapping_scanreport {
+        INTEGER id PK
+        TEXT dataset
+        INTEGER author_id FK
+    }
+    
+    import_job {
+        UUID id PK
+        UUID submitted_by_user_id FK
+        TEXT status
+        JSONB validation_issues
+        TEXT error_message
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ finished_at
+    }
+
+    %% Reference / controlled vocabulary tables
+    predicate {
+        TEXT predicate_id PK
+        TEXT label
+        TEXT description
+        BOOLEAN is_recommended
+    }
+
+    license {
+        TEXT id PK
+        TEXT license_iri
+        TEXT spdx_id
+        TEXT label
+        TEXT version
+        BOOLEAN is_open
+    }
+
+    mapping_justification {
+        TEXT justification_id PK
+        TEXT label
+        TEXT description
+    }
+
+    origin {
+        TEXT id PK
+        TEXT label "CARROT_DIRECT_PUBLISH | SSSOM_UPLOAD"
+        TEXT description
+    }
+
+    status {
+        TEXT id PK
+        TEXT label "DRAFT | PUBLISHED | WITHDRAWN"
+        TEXT description
+    }
+
+    %% Main entities
+    mapping_set {
+        UUID id PK
+        TEXT set_uri UK
+        TEXT set_version UK
+        TEXT title
+        TEXT description
+        TEXT license_id FK "can be overlapped between sets"
+        TEXT origin_id FK
+        TEXT status_id FK
+        TEXT import_job_id FK
+        INTEGER source_scan_report_id FK "only when origin = CARROT_DIRECT_UPLOAD"
+        JSONB curie_map
+        JSONB extra_metadata
+        TEXT file_key
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ published_at
+    }
+
+    mapping {
+        BIGINT id PK
+        UUID mapping_set_id FK
+        TEXT subject_id FK
+        TEXT predicate_id FK
+        TEXT object_id FK
+        TEXT mapping_justification_id FK
+        TEXT ext_source_table
+        TEXT ext_source_field
+    }
+
+    term {
+        BIGINT id PK
+        TEXT canonical_iri UK
+        TEXT label
+        TEXT type
+        TEXT category
+        TEXT prefix
+        TEXT kind "OBJECT | SUBJECT"
+        TEXT object_source_version "if kind = OBJECT"
+    }
+
+    %% Relationships
+    auth_user ||--o{ mapping_scanreport : authors
+    auth_user ||--o{ import_job : creates
+    import_job ||--o{ mapping_set : traces_to_import
+
+    mapping_scanreport o|--o{ mapping_set : originates
+
+    origin ||--o{ mapping_set : defines_origin
+    status ||--o{ mapping_set : defines_status
+    license ||--o{ mapping_set : licenses
+
+    mapping_set ||--o{ mapping : contains
+
+    term ||--o{ mapping : subject
+    term ||--o{ mapping : object
+
+    predicate ||--o{ mapping : defines_predicate
+    mapping_justification ||--o{ mapping : justifies
