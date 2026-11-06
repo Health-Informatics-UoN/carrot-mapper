@@ -1,0 +1,130 @@
+erDiagram
+    %% Carrot Mapping Registry (CMR)
+    %% Phase 1 MVP: publish, search, download
+    %% Django app: registry (app/api/registry/models.py)
+    %% Seeded reference data: registry/migrations/0002_seed_reference_data.py
+
+    %% Existing Carrot Mapper tables
+    auth_user {
+        INTEGER id PK
+        TEXT username
+        TEXT email
+    }
+
+    mapping_scanreport {
+        INTEGER id PK
+        TEXT dataset
+        INTEGER author_id FK
+    }
+
+    %% Reference / controlled vocabulary tables (seeded)
+    registry_predicate {
+        VARCHAR predicate_id PK "CURIE, e.g. skos:exactMatch"
+        VARCHAR label
+        TEXT description
+        BOOLEAN is_recommended
+    }
+
+    registry_license {
+        VARCHAR id PK "e.g. CC-BY-4.0"
+        VARCHAR license_iri UK
+        VARCHAR spdx_id
+        VARCHAR label
+        VARCHAR version
+        BOOLEAN is_open
+    }
+
+    registry_mappingjustification {
+        VARCHAR justification_id PK "CURIE, e.g. semapv:ManualMappingCuration"
+        VARCHAR label
+        TEXT description
+    }
+
+    registry_origin {
+        VARCHAR id PK "CARROT_DIRECT_PUBLISH | SSSOM_UPLOAD"
+        VARCHAR label
+        TEXT description
+    }
+
+    registry_status {
+        VARCHAR id PK "DRAFT | PUBLISHED | WITHDRAWN"
+        VARCHAR label
+        TEXT description
+    }
+
+    %% Import tracking
+    registry_importjob {
+        UUID id PK
+        INTEGER submitted_by_id FK "nullable; SET NULL on user delete"
+        VARCHAR status "PENDING | RUNNING | SUCCEEDED | FAILED (default PENDING)"
+        JSONB validation_issues "default []"
+        TEXT error_message
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ finished_at "nullable"
+    }
+
+    %% Main entities
+    registry_mappingset {
+        UUID id PK
+        VARCHAR set_uri UK "UNIQUE(set_uri, set_version)"
+        VARCHAR set_version UK "UNIQUE(set_uri, set_version)"
+        VARCHAR title
+        TEXT description
+        VARCHAR license_id FK "nullable while DRAFT; PROTECT"
+        VARCHAR origin_id FK "PROTECT"
+        VARCHAR status_id FK "default DRAFT; PROTECT"
+        UUID import_job_id FK "nullable; SET NULL"
+        INTEGER source_scan_report_id FK "nullable, only when origin = CARROT_DIRECT_PUBLISH; SET NULL"
+        JSONB curie_map "default {}"
+        JSONB extra_metadata "default {}"
+        VARCHAR file_key
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ published_at "nullable"
+    }
+
+    registry_mapping {
+        BIGINT id PK
+        UUID mapping_set_id FK "CASCADE"
+        BIGINT subject_id FK "-> term; PROTECT"
+        VARCHAR predicate_id FK "PROTECT"
+        BIGINT object_id FK "-> term; PROTECT"
+        VARCHAR mapping_justification_id FK "PROTECT"
+        VARCHAR mapping_cardinality "1:1 | 1:n | n:1 | n:n"
+    }
+    %% registry_mapping: UNIQUE(mapping_set_id, subject_id, predicate_id, object_id)
+    %% A term with several target concepts = several rows, mapping_cardinality = 1:n
+
+    registry_term {
+        BIGINT id PK
+        VARCHAR canonical_iri UK "UNIQUE(canonical_iri, kind); SUBJECT: carrot:{field}[/{value}], percent-encoded"
+        TEXT label "human-readable only, never parsed"
+        VARCHAR type
+        VARCHAR category
+        VARCHAR prefix "indexed"
+        VARCHAR kind UK "OBJECT | SUBJECT; UNIQUE(canonical_iri, kind)"
+        VARCHAR object_source_version "only if kind = OBJECT (OMOP concept, e.g. OMOP:22298006)"
+        VARCHAR ext_term_level "FIELD | VALUE; optional, Carrot-shaped SUBJECT only"
+        VARCHAR ext_source_field "required if ext_term_level set"
+        TEXT ext_source_value "only if ext_term_level = VALUE"
+    }
+    %% carrot prefix -> https://w3id.org/carrot/term/ (declared in mapping set curie_map; need not resolve)
+    %% Dataset is intentionally NOT part of the subject IRI, so terms are reusable across datasets
+
+    %% Relationships
+    auth_user ||--o{ mapping_scanreport : authors
+    auth_user |o--o{ registry_importjob : submits
+    registry_importjob |o--o{ registry_mappingset : traces_to_import
+
+    mapping_scanreport |o--o{ registry_mappingset : originates
+
+    registry_origin ||--o{ registry_mappingset : defines_origin
+    registry_status ||--o{ registry_mappingset : defines_status
+    registry_license |o--o{ registry_mappingset : licenses
+
+    registry_mappingset ||--o{ registry_mapping : contains
+
+    registry_term ||--o{ registry_mapping : subject
+    registry_term ||--o{ registry_mapping : object
+
+    registry_predicate ||--o{ registry_mapping : defines_predicate
+    registry_mappingjustification ||--o{ registry_mapping : justifies
