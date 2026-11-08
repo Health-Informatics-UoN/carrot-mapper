@@ -10,6 +10,7 @@ from libs.rules_export.file_services import (
     build_rules_csv,
     build_rules_json,
     build_rules_json_v2,
+    build_rules_sssom,
 )
 from libs.settings import (
     AIRFLOW_DEBUG_MODE,
@@ -92,6 +93,16 @@ def build_and_upload_rules_file(**kwargs) -> None:
                 "mapping_json_v2",
                 "json",
             ),
+            "sssom": FileHandlerConfig(
+                lambda: build_rules_sssom(
+                    scan_report_name,
+                    scan_report_id,
+                    # optional: sent by the API, not required by param validation
+                    kwargs["dag_run"].conf.get("mapper_version"),
+                ),
+                "mapping_sssom",
+                "sssom.tsv",
+            ),
             "json": FileHandlerConfig(
                 lambda: (
                     build_rules_json_v2(scan_report_name, scan_report_id)
@@ -125,7 +136,9 @@ def build_and_upload_rules_file(**kwargs) -> None:
             container_name="rules-exports",
             blob_name=filename,
             data=file,
-            content_type=file_type,
+            content_type=(
+                "text/tab-separated-values" if file_type == "sssom" else file_type
+            ),
         )
 
         # Get file_type_id from files_filetype table

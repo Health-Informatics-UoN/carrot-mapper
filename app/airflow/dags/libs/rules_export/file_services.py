@@ -9,6 +9,7 @@ from typing import Any
 import pandas as pd
 from libs.db import pg_hook
 from libs.enums import JobStageType, StageStatusType
+from libs.rules_export.sssom import write_sssom_tsv
 from libs.utils import update_job_status
 
 
@@ -377,5 +378,75 @@ def build_rules_json_v2(scan_report_name: str, scan_report_id: int) -> BytesIO:
             stage=JobStageType.DOWNLOAD_RULES,
             status=StageStatusType.FAILED,
             details=f"Error building rules JSON v2 for scan report {scan_report_id}: {str(e)}",
+        )
+        raise e
+
+
+def build_rules_sssom(
+    scan_report_name: str, scan_report_id: int, mapper_version: str | None = None
+) -> BytesIO:
+    """
+    Builds the rules as an SSSOM TSV file (see libs/rules_export/sssom.py).
+
+    Args:
+        - scan_report_name: str, the name of the scan report
+        - scan_report_id: int, the id of the scan report
+        - mapper_version: str, the exporting Carrot-Mapper version, if known
+
+    Returns:
+        - BytesIO, the rules in SSSOM TSV format
+    """
+    try:
+        # Concept domain, vocabulary and vocabulary release, for SSSOM's
+        # object_category / object_source / object_source_version.
+        processed_rules = pg_hook.get_pandas_df(
+            """
+            SELECT
+                temp_rules.*,
+                omop_concept.domain_id AS concept_domain,
+                omop_concept.vocabulary_id AS concept_vocabulary,
+                omop_vocabulary.vocabulary_version
+            FROM temp_rules_export_%(scan_report_id)s_sssom AS temp_rules
+            LEFT JOIN omop.concept AS omop_concept
+                ON omop_concept.concept_id = temp_rules.concept_id
+            LEFT JOIN omop.vocabulary AS omop_vocabulary
+                ON omop_vocabulary.vocabulary_id = omop_concept.vocabulary_id
+            ORDER BY
+                temp_rules.source_table,
+                temp_rules.source_field,
+                temp_rules.sr_concept_id,
+                temp_rules.dest_table,
+                temp_rules.dest_field;
+            """,
+            parameters={"scan_report_id": scan_report_id},
+        )
+        # The OMOP vocabulary release as a whole (e.g. "v5.0 27-FEB-25")
+        release = pg_hook.get_first(
+            "SELECT vocabulary_version FROM omop.vocabulary WHERE vocabulary_id = 'None';"
+        )
+        omop_vocabulary_version = release[0] if release else None
+        if not omop_vocabulary_version:
+            logging.warning(
+                "No OMOP vocabulary release found (vocabulary_id 'None'); the SSSOM "
+                "export will not record ext_omop_vocabulary_version"
+            )
+        sssom_tsv = write_sssom_tsv(
+            processed_rules.to_dict("records"),
+            scan_report_name=scan_report_name,
+            scan_report_id=scan_report_id,
+            created=datetime.now(timezone.utc),
+            omop_vocabulary_version=omop_vocabulary_version,
+            mapper_version=mapper_version,
+        )
+        sssom_bytes = BytesIO(sssom_tsv.encode("utf-8"))
+        sssom_bytes.seek(0)
+        return sssom_bytes
+    except Exception as e:
+        logging.error(f"Error building rules SSSOM: {str(e)}")
+        update_job_status(
+            scan_report=scan_report_id,
+            stage=JobStageType.DOWNLOAD_RULES,
+            status=StageStatusType.FAILED,
+            details=f"Error building rules SSSOM for scan report {scan_report_id}: {str(e)}",
         )
         raise e
