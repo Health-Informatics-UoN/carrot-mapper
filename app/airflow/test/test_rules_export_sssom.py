@@ -91,7 +91,7 @@ def test_value_mapping_row():
     assert row["object_id"] == "OMOP:8532"
     assert row["object_label"] == "FEMALE"
     assert row["object_category"] == "Gender"
-    assert row["object_source"] == "omopvocab:Gender"
+    assert row["other"] == "vocab:Gender"
     assert row["object_source_version"] == "v5.0 01-OCT-26"
     assert row["mapping_justification"] == "semapv:ManualMappingCuration"
     assert row["mapping_cardinality"] == "1:1"
@@ -113,7 +113,7 @@ def test_field_mapping_row():
     assert row["subject_id"] == "carrot:weight"
     assert row["subject_label"] == "weight"
     assert row["object_id"] == "OMOP:3025315"
-    assert row["object_source"] == "omopvocab:LOINC"
+    assert row["other"] == "vocab:LOINC"
 
 
 @pytest.mark.parametrize(
@@ -263,7 +263,7 @@ def test_full_file_metadata_and_columns():
         "object_id",
         "object_label",
         "object_category",
-        "object_source",
+        "other",
         "object_source_version",
         "mapping_justification",
         "mapping_cardinality",
@@ -283,7 +283,7 @@ def test_shared_values_move_to_metadata_but_per_mapping_columns_stay():
     assert "mapping_date" not in rows[0]
     # ...but the vocabulary, its version and the cardinality stay columns
     assert "object_source_version" not in meta
-    assert rows[0]["object_source"] == "omopvocab:Gender"
+    assert rows[0]["other"] == "vocab:Gender"
     assert rows[0]["object_source_version"] == "v5.0 01-OCT-26"
     assert rows[0]["mapping_cardinality"] == "1:1"
 

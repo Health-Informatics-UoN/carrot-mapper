@@ -56,9 +56,9 @@ MAPPING_JUSTIFICATIONS = {
 DEFAULT_JUSTIFICATION = "semapv:UnspecifiedMatching"
 
 # Extension slots written once in the metadata block, describing the whole set.
-MAPPING_SET_EXTENSION_SLOTS: list[tuple[str, str]] = [
-    ("ext_omop_vocabulary_version", "xsd:string"),
-]
+# MAPPING_SET_EXTENSION_SLOTS: list[tuple[str, str]] = [
+#     ("ext_omop_vocabulary_version", "xsd:string"),
+# ]
 
 COLUMNS = [
     "subject_id",
@@ -68,7 +68,7 @@ COLUMNS = [
     "object_label",
     "object_category",
     "object_type",
-    "object_source",
+    "other",
     "object_source_version",
     "mapping_justification",
     "mapping_cardinality",
@@ -86,9 +86,10 @@ ALWAYS_COLUMNS = {
     "predicate_id",
     "object_id",
     "mapping_justification",
-    "object_source",
+    "other",
     "object_source_version",
     "mapping_cardinality",
+    "object_type"
 }
 
 # Propagatable slots (see the spec's "Condensation") moved to the metadata block
@@ -158,8 +159,8 @@ def _mapping_row(rule: Mapping[str, Any]) -> dict[str, str]:
         "object_label": _clean(rule.get("concept_name")),
         "object_category": _clean(rule.get("concept_domain")),
         "object_type": "skos concept",
-        "object_source": (
-            f"{OMOP_VOCABULARY_PREFIX}:{_encode(vocabulary)}" if vocabulary else ""
+        "other": (
+            f"vocab:{_encode(vocabulary)}" if vocabulary else ""
         ),
         "object_source_version": _clean(rule.get("vocabulary_version")),
         "mapping_justification": MAPPING_JUSTIFICATIONS.get(
@@ -234,25 +235,27 @@ def build_metadata(
     base = SSSOM_BASE_IRI.rstrip("/") + "/"
     curie_map = {
         SUBJECT_PREFIX: SUBJECT_IRI,
-        OMOP_CONCEPT_PREFIX: OMOP_CONCEPT_IRI,
+        "skos": "http://www.w3.org/2004/02/skos/core#",
+        "semapv": "https://w3id.org/semapv/vocab/"
+        # OMOP_CONCEPT_PREFIX: OMOP_CONCEPT_IRI,
     }
-    if any(r["object_source"] for r in rows):
-        curie_map[OMOP_VOCABULARY_PREFIX] = CARROT_SSSOM_NAMESPACE + "omop-vocabulary/"
-    if omop_vocabulary_version:
-        curie_map[EXTENSION_PREFIX] = CARROT_SSSOM_NAMESPACE
+    # if any(r["other"] for r in rows):
+        # curie_map[OMOP_VOCABULARY_PREFIX] = CARROT_SSSOM_NAMESPACE + "omop-vocabulary/"
+    # if omop_vocabulary_version:
+        # curie_map[EXTENSION_PREFIX] = CARROT_SSSOM_NAMESPACE
 
     metadata: dict[str, Any] = {
         "curie_map": curie_map,
-        "mapping_set_id": f"{base}mapping-sets/scanreport/{scan_report_id}",
-        "mapping_set_title": scan_report_name,
-        "mapping_set_description": (
-            f"Carrot-Mapper mappings from scan report {scan_report_id} "
-            f"({scan_report_name}) to OMOP standardised vocabulary concepts."
-        ),
-        "license": SSSOM_LICENSE,
+        # "mapping_set_id": f"{base}mapping-sets/scanreport/{scan_report_id}",
+        # "mapping_set_title": scan_report_name,
+        # "mapping_set_description": (
+        #     f"Carrot-Mapper mappings from scan report {scan_report_id} "
+        #     f"({scan_report_name}) to OMOP standardised vocabulary concepts."
+        # ),
+        # "license": SSSOM_LICENSE,
     }
-    if "object_type" in condensed:
-        metadata["object_type"] = condensed["object_type"]
+    # if "object_type" in condensed:
+    #     metadata["object_type"] = condensed["object_type"]
     metadata["mapping_tool"] = MAPPING_TOOL
     if mapper_version:
         metadata["mapping_tool_version"] = mapper_version
@@ -260,16 +263,16 @@ def build_metadata(
         metadata["mapping_date"] = condensed["mapping_date"]
     metadata["publication_date"] = created.date().isoformat()
 
-    if omop_vocabulary_version:
-        metadata["ext_omop_vocabulary_version"] = omop_vocabulary_version
-        metadata["extension_definitions"] = [
-            {
-                "slot_name": name,
-                "property": f"{EXTENSION_PREFIX}:{name}",
-                "type_hint": hint,
-            }
-            for name, hint in MAPPING_SET_EXTENSION_SLOTS
-        ]
+    # if omop_vocabulary_version:
+        # metadata["ext_omop_vocabulary_version"] = omop_vocabulary_version
+        # metadata["extension_definitions"] = [
+        #     {
+        #         "slot_name": name,
+        #         "property": f"{EXTENSION_PREFIX}:{name}",
+        #         "type_hint": hint,
+        #     }
+        #     for name, hint in MAPPING_SET_EXTENSION_SLOTS
+        # ]
     return metadata
 
 

@@ -398,7 +398,7 @@ def build_rules_sssom(
     """
     try:
         # Concept domain, vocabulary and vocabulary release, for SSSOM's
-        # object_category / object_source / object_source_version.
+        # object_category / other / object_source_version.
         processed_rules = pg_hook.get_pandas_df(
             """
             SELECT
