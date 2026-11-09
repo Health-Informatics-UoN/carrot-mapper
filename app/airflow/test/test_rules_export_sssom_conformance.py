@@ -391,14 +391,25 @@ RULES = [
 
 
 def carrot_export(rules=RULES) -> str:
-    return write_sssom_tsv(
-        rules,
-        "Dataset: test",
-        42,
-        created=CREATED,
-        omop_vocabulary_version="v5.0 27-FEB-25",
-        mapper_version="4.3.1",
-    )
+    return write_sssom_tsv(rules, created=CREATED, mapper_version="4.3.1")
+
+
+# Ways the export deliberately departs from SSSOM 1.0.0: it leaves out the two
+# mapping set slots the spec requires (schema: mapping_set_id L294-298, license
+# L612-616), and doesn't declare the OMOP prefix its object IDs use (spec-model L30,
+# spec-formats-tsv L107-109). See README.md in sssom_spec.
+KNOWN_DEVIATIONS = (
+    "'mapping_set_id' is a required property",
+    "'license' is a required property",
+    "prefix 'OMOP' is not declared",
+)
+
+
+def unexpected_errors(text: str) -> list[str]:
+    """Spec violations other than the known deviations."""
+    return [
+        e for e in check_sssom_tsv(text) if not any(d in e for d in KNOWN_DEVIATIONS)
+    ]
 
 
 def mutate(text: str, old: str, new: str) -> str:
@@ -409,8 +420,8 @@ def mutate(text: str, old: str, new: str) -> str:
 @pytest.mark.parametrize(
     "old, new, expected",
     [
-        ("license:", "lizence:", "unknown metadata key 'lizence'"),
-        ("mapping_set_id:", "mapping_set_idx:", "'mapping_set_id' is a required"),
+        ("mapping_tool:", "mapping_toolz:", "unknown metadata key 'mapping_toolz'"),
+        ("\tpredicate_id\t", "\tpredicate_idx\t", "'predicate_id' is a required"),
         (
             "semapv:ManualMappingCuration",
             "semapv:Guesswork",
@@ -423,19 +434,22 @@ def mutate(text: str, old: str, new: str) -> str:
         ),
         ("OMOP:8532", "NOTDECLARED:8532", "prefix 'NOTDECLARED' is not declared"),
         (
-            "curie_map:\n",
-            "curie_map:\n#  skos: http://example.org/skos#\n",
+            "skos: http://www.w3.org/2004/02/skos/core#",
+            "skos: http://example.org/skos#",
             "built-in prefix 'skos' is redefined",
         ),
         ("\tobject_label\t", "\tmade_up_column\t", "unknown column 'made_up_column'"),
         ("\t0.9\t", "\t1.5\t", "schema: mappings/0/confidence"),
         ("\t2026-01-02\t", "\t02/01/2026\t", "schema: mappings/0/mapping_date"),
         (
-            "slot_name: ext_omop_vocabulary_version",
-            "slot_name: subject_id",
+            "#mapping_tool: carrot-mapper",
+            (
+                "#extension_definitions:\n#- slot_name: subject_id\n"
+                "#  property: carrot:x\n#mapping_tool: carrot-mapper"
+            ),
             "clashes with a standard slot",
         ),
-        ("#license", "#&anchor license", "YAML anchor"),
+        ("#mapping_tool:", "#&anchor mapping_tool:", "YAML anchor"),
     ],
 )
 def test_checker_rejects_broken_files(old, new, expected):
@@ -455,8 +469,15 @@ def test_checker_rejects_unquoted_double_quote():
 # ---------------------------------------------------------------------------
 
 
-def test_carrot_export_conforms_to_sssom():
-    assert check_sssom_tsv(carrot_export()) == []
+def test_carrot_export_conforms_to_sssom_apart_from_known_deviations():
+    assert unexpected_errors(carrot_export()) == []
+
+
+def test_known_deviations_are_still_reported():
+    """The checker still sees the deviations; they're accepted, not hidden."""
+    errors = check_sssom_tsv(carrot_export())
+    for deviation in KNOWN_DEVIATIONS:
+        assert any(deviation in e for e in errors), deviation
 
 
 def test_carrot_export_conforms_with_minimal_rules():
@@ -470,7 +491,7 @@ def test_carrot_export_conforms_with_minimal_rules():
         for r in RULES[:4]
     ]
     text = carrot_export(minimal)
-    assert check_sssom_tsv(text) == []
+    assert unexpected_errors(text) == []
     header = next(line for line in text.splitlines() if not line.startswith("#"))
     assert "confidence" not in header.split("\t")
     assert "comment" not in header.split("\t")

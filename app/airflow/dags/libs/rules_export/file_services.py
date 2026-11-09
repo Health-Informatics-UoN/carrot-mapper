@@ -383,13 +383,12 @@ def build_rules_json_v2(scan_report_name: str, scan_report_id: int) -> BytesIO:
 
 
 def build_rules_sssom(
-    scan_report_name: str, scan_report_id: int, mapper_version: str | None = None
+    scan_report_id: int, mapper_version: str | None = None
 ) -> BytesIO:
     """
     Builds the rules as an SSSOM TSV file (see libs/rules_export/sssom.py).
 
     Args:
-        - scan_report_name: str, the name of the scan report
         - scan_report_id: int, the id of the scan report
         - mapper_version: str, the exporting Carrot-Mapper version, if known
 
@@ -397,7 +396,7 @@ def build_rules_sssom(
         - BytesIO, the rules in SSSOM TSV format
     """
     try:
-        # Concept domain, vocabulary and vocabulary release, for SSSOM's
+        # Concept domain, vocabulary and vocabulary version, for SSSOM's
         # object_category / other / object_source_version.
         processed_rules = pg_hook.get_pandas_df(
             """
@@ -420,22 +419,9 @@ def build_rules_sssom(
             """,
             parameters={"scan_report_id": scan_report_id},
         )
-        # The OMOP vocabulary release as a whole (e.g. "v5.0 27-FEB-25")
-        release = pg_hook.get_first(
-            "SELECT vocabulary_version FROM omop.vocabulary WHERE vocabulary_id = 'None';"
-        )
-        omop_vocabulary_version = release[0] if release else None
-        if not omop_vocabulary_version:
-            logging.warning(
-                "No OMOP vocabulary release found (vocabulary_id 'None'); the SSSOM "
-                "export will not record ext_omop_vocabulary_version"
-            )
         sssom_tsv = write_sssom_tsv(
             processed_rules.to_dict("records"),
-            scan_report_name=scan_report_name,
-            scan_report_id=scan_report_id,
             created=datetime.now(timezone.utc),
-            omop_vocabulary_version=omop_vocabulary_version,
             mapper_version=mapper_version,
         )
         sssom_bytes = BytesIO(sssom_tsv.encode("utf-8"))

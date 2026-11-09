@@ -16,8 +16,15 @@ conforms to the standard, without depending on a third-party SSSOM parser.
 | `examples/schema/extension-slots.sssom.tsv` | `examples/schema/` (official example of extension slots) |
 | `examples/schema/literals.sssom.tsv` | `examples/schema/` (official example of literal mappings) |
 
-`COMPLIANCE.md` maps each feature of the Carrot SSSOM export to the lines of the
-specification that permit it.
+## Known deviations
 
-To move to a newer SSSOM release, replace these files from the new tag, update the
-table above, and re-run the tests.
+The Carrot export deliberately departs from SSSOM 1.0.0 in three ways, so it does
+not pass a strict SSSOM validator:
+
+- no `mapping_set_id` (required: `sssom_schema.yaml` L294–298);
+- no `license` (required on the mapping set: `sssom_schema.yaml` L612–616);
+- object IDs use the `OMOP:` prefix without declaring it in `curie_map`
+  (`spec-model.md` L30, `spec-formats-tsv.md` L107–109 in the same release).
+
+The conformance tests accept exactly these (`KNOWN_DEVIATIONS` in
+`test_rules_export_sssom_conformance.py`) and fail on any other spec violation.

@@ -1,5 +1,5 @@
 version = 1
-revision = 5
+revision = 3
 requires-python = ">=3.11"
 resolution-markers = [
     "python_full_version >= '3.14' and sys_platform == 'win32'",
@@ -1207,7 +1207,6 @@ wheels = [
 [[package]]
 name = "carrot-airflow"
 source = { editable = "." }
-default-groups = ["test"]
 dependencies = [
     { name = "apache-airflow" },
     { name = "apache-airflow-providers-amazon" },
@@ -1224,8 +1223,10 @@ dev = [
     { name = "types-openpyxl" },
 ]
 test = [
+    { name = "jsonschema" },
     { name = "pytest" },
     { name = "pytest-mock" },
+    { name = "pyyaml" },
 ]
 
 [package.metadata]
@@ -1245,8 +1246,10 @@ dev = [
     { name = "types-openpyxl", specifier = ">=3.1.5" },
 ]
 test = [
+    { name = "jsonschema", specifier = ">=4" },
     { name = "pytest", specifier = ">=8.3.0" },
     { name = "pytest-mock", specifier = ">=3.14.0" },
+    { name = "pyyaml", specifier = ">=6" },
 ]
 
 [[package]]

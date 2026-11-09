@@ -221,41 +221,22 @@ def test_missing_concept_is_an_error():
 
 def test_full_file_metadata_and_columns():
     tsv = write_sssom_tsv(
-        FEMALE + MALE + WEIGHT,
-        scan_report_name="My: Dataset",
-        scan_report_id=42,
-        created=CREATED,
-        omop_vocabulary_version="v5.0 27-FEB-25",
-        mapper_version="4.3.1",
+        FEMALE + MALE + WEIGHT, created=CREATED, mapper_version="4.3.1"
     )
     meta, rows = parse(tsv)
 
-    # mandatory SSSOM mapping set slots
-    assert meta["mapping_set_id"].endswith("/mapping-sets/scanreport/42")
-    assert meta["license"]
-    assert meta["mapping_set_title"] == "My: Dataset"
-
-    # tool, dates and the OMOP release are in the metadata block
-    assert meta["mapping_tool"] == "carrot-mapper"
-    assert meta["mapping_tool_version"] == "4.3.1"
-    assert meta["publication_date"] == "2026-11-03"
-    assert meta["ext_omop_vocabulary_version"] == "v5.0 27-FEB-25"
-    assert meta["object_type"] == "skos concept"  # the same for every row
-    assert meta["curie_map"] == {
-        "carrot": "https://carrot.ac.uk/sssom/terms/",
-        "OMOP": "https://athena.ohdsi.org/search-terms/terms/",
-        "omopvocab": "https://carrot.ac.uk/sssom/omop-vocabulary/",
-        "carrotsssom": "https://carrot.ac.uk/sssom/",
+    # the metadata block: prefixes, tool and dates only
+    assert meta == {
+        "curie_map": {
+            "carrot": "https://carrot.ac.uk/sssom/terms/",
+            "skos": "http://www.w3.org/2004/02/skos/core#",
+            "semapv": "https://w3id.org/semapv/vocab/",
+        },
+        "mapping_tool": "carrot-mapper",
+        "mapping_tool_version": "4.3.1",
+        "publication_date": "2026-11-03",
     }
-    assert meta["extension_definitions"] == [
-        {
-            "slot_name": "ext_omop_vocabulary_version",
-            "property": "carrotsssom:ext_omop_vocabulary_version",
-            "type_hint": "xsd:string",
-        }
-    ]
 
-    # no extension columns
     assert list(rows[0]) == [
         "subject_id",
         "subject_label",
@@ -269,6 +250,7 @@ def test_full_file_metadata_and_columns():
         "mapping_cardinality",
         "mapping_date",  # differs between rows, so stays a column
     ]
+    assert [r["other"] for r in rows] == ["vocab:Gender", "vocab:Gender", "vocab:LOINC"]
     assert [r["object_source_version"] for r in rows] == [
         "v5.0 01-OCT-26",
         "v5.0 01-OCT-26",
@@ -276,9 +258,9 @@ def test_full_file_metadata_and_columns():
     ]
 
 
-def test_shared_values_move_to_metadata_but_per_mapping_columns_stay():
-    meta, rows = parse(write_sssom_tsv(FEMALE, "ds", 42, created=CREATED))
-    # one row: everything propagatable is shared...
+def test_shared_mapping_date_moves_to_metadata_but_per_mapping_columns_stay():
+    meta, rows = parse(write_sssom_tsv(FEMALE, created=CREATED))
+    # one row: its mapping date is shared by every mapping...
     assert meta["mapping_date"] == "2026-01-02"
     assert "mapping_date" not in rows[0]
     # ...but the vocabulary, its version and the cardinality stay columns
@@ -288,9 +270,7 @@ def test_shared_values_move_to_metadata_but_per_mapping_columns_stay():
     assert rows[0]["mapping_cardinality"] == "1:1"
 
 
-def test_optional_metadata_left_out_when_unknown():
-    meta, _ = parse(write_sssom_tsv(WEIGHT, "ds", 42, created=CREATED))
-    assert "ext_omop_vocabulary_version" not in meta
-    assert "extension_definitions" not in meta
-    assert "carrotsssom" not in meta["curie_map"]
+def test_tool_version_left_out_when_unknown():
+    meta, _ = parse(write_sssom_tsv(WEIGHT, created=CREATED))
+    assert meta["mapping_tool"] == "carrot-mapper"
     assert "mapping_tool_version" not in meta

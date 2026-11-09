@@ -1,6 +1,14 @@
 """
 Serialise a scan report's concept mappings as an SSSOM (Simple Standard for Sharing
 Ontological Mappings) TSV file: https://mapping-commons.github.io/sssom/
+
+One row per mapping, from a source field (``carrot:<field>``) or a value in a field
+(``carrot:<field>/<value>``) to an OMOP concept (``OMOP:<concept_id>``). The row's
+``other`` column names the concept's vocabulary (``vocab:<vocabulary_id>``) and
+``object_source_version`` gives that vocabulary's version.
+
+The metadata block holds the tool, its version and the publication date, plus the
+mapping date when every mapping shares one.
 """
 
 from __future__ import annotations
@@ -8,7 +16,6 @@ from __future__ import annotations
 import csv
 import io
 import math
-import os
 from collections import defaultdict
 from collections.abc import Iterable, Mapping
 from datetime import date, datetime
@@ -17,30 +24,19 @@ from urllib.parse import quote
 
 import yaml
 
-# Namespace for identifiers and extension properties minted by Carrot.
-CARROT_SSSOM_NAMESPACE = "https://carrot.ac.uk/sssom/"
-
-# Base IRI for this Carrot instance's mapping set IDs. Set it per deployment so
-# mapping_set_id is unique across Carrot instances.
-SSSOM_BASE_IRI = os.getenv("SSSOM_BASE_IRI", CARROT_SSSOM_NAMESPACE)
-# `license` is mandatory in SSSOM (a URI). The default is the "unspecified licence"
-# URI that sssom-py uses as its default; the specification itself defines none. Set
-# SSSOM_LICENSE if your organisation uses a licence.
-SSSOM_LICENSE = os.getenv("SSSOM_LICENSE", "https://w3id.org/sssom/license/unspecified")
-
 MAPPING_TOOL = "carrot-mapper"
 
 # carrot:<field>[/<value>] subjects. The same namespace on every Carrot instance, so
 # the same term has the same IRI everywhere.
 SUBJECT_PREFIX = "carrot"
-SUBJECT_IRI = CARROT_SSSOM_NAMESPACE + "terms/"
-# Kept apart from the subject namespace, so a field can't share its IRI with one of
-# our extension properties.
-EXTENSION_PREFIX = "carrotsssom"
+SUBJECT_IRI = "https://carrot.ac.uk/sssom/terms/"
 OMOP_CONCEPT_PREFIX = "OMOP"
-# Expansion of OMOP: as registered in the Bioregistry (https://bioregistry.io/omop)
-OMOP_CONCEPT_IRI = "https://athena.ohdsi.org/search-terms/terms/"
-OMOP_VOCABULARY_PREFIX = "omopvocab"
+
+CURIE_MAP = {
+    SUBJECT_PREFIX: SUBJECT_IRI,
+    "skos": "http://www.w3.org/2004/02/skos/core#",
+    "semapv": "https://w3id.org/semapv/vocab/",
+}
 
 # Carrot doesn't record how close a match is (exact, broader, narrower...), so every
 # mapping is asserted as an exact match.
@@ -55,11 +51,6 @@ MAPPING_JUSTIFICATIONS = {
 }
 DEFAULT_JUSTIFICATION = "semapv:UnspecifiedMatching"
 
-# Extension slots written once in the metadata block, describing the whole set.
-# MAPPING_SET_EXTENSION_SLOTS: list[tuple[str, str]] = [
-#     ("ext_omop_vocabulary_version", "xsd:string"),
-# ]
-
 COLUMNS = [
     "subject_id",
     "subject_label",
@@ -67,7 +58,6 @@ COLUMNS = [
     "object_id",
     "object_label",
     "object_category",
-    "object_type",
     "other",
     "object_source_version",
     "mapping_justification",
@@ -89,12 +79,7 @@ ALWAYS_COLUMNS = {
     "other",
     "object_source_version",
     "mapping_cardinality",
-    "object_type"
 }
-
-# Propagatable slots (see the spec's "Condensation") moved to the metadata block
-# when every row has the same value.
-CONDENSABLE_COLUMNS = ["object_type", "mapping_date"]
 
 
 def _clean(value: Any) -> str:
@@ -113,7 +98,7 @@ def _clean(value: Any) -> str:
         return value.date().isoformat()
     if isinstance(value, date):
         return value.isoformat()
-    return str(value).replace("﻿", "")
+    return str(value).replace("\ufeff", "")
 
 
 def _clean_int(value: Any) -> str:
@@ -123,7 +108,7 @@ def _clean_int(value: Any) -> str:
 
 
 def _encode(name: str) -> str:
-    """Percent-encode a field name or value for use in a CURIE's local part."""
+    """Percent-encode a field name, value or vocabulary for use in a CURIE."""
     return quote(name, safe="-._~")
 
 
@@ -158,10 +143,7 @@ def _mapping_row(rule: Mapping[str, Any]) -> dict[str, str]:
         "object_id": f"{OMOP_CONCEPT_PREFIX}:{concept_id}",
         "object_label": _clean(rule.get("concept_name")),
         "object_category": _clean(rule.get("concept_domain")),
-        "object_type": "skos concept",
-        "other": (
-            f"vocab:{_encode(vocabulary)}" if vocabulary else ""
-        ),
+        "other": f"vocab:{_encode(vocabulary)}" if vocabulary else "",
         "object_source_version": _clean(rule.get("vocabulary_version")),
         "mapping_justification": MAPPING_JUSTIFICATIONS.get(
             creation_type, DEFAULT_JUSTIFICATION
@@ -195,6 +177,11 @@ def set_cardinality(rows: list[dict[str, str]]) -> None:
 def build_mapping_rows(rules: Iterable[Mapping[str, Any]]) -> list[dict[str, str]]:
     """
     One SSSOM row per distinct mapping (subject, concept) in the temp-table rules.
+
+    Each ScanReportConcept's row comes from its first ``*_concept_id`` rule; its
+    other rules (source value, person_id, dates...) only say how Transform applies
+    the mapping. The table isn't part of the subject, so the same field/value mapped
+    to the same concept in several tables gives one row.
     """
     seen_concepts: set[str] = set()
     rows: dict[tuple[str, str], dict[str, str]] = {}
@@ -210,78 +197,27 @@ def build_mapping_rows(rules: Iterable[Mapping[str, Any]]) -> list[dict[str, str
     return result
 
 
-def condense(rows: list[dict[str, str]]) -> dict[str, str]:
-    """
-    Values to move to the mapping set: propagatable slots that every row shares.
-    (SSSOM "condensation": only when *all* mappings have the same, non-empty value.)
-    """
-    condensed = {}
-    for column in CONDENSABLE_COLUMNS:
-        values = {r[column] for r in rows}
-        if len(values) == 1 and "" not in values:
-            condensed[column] = values.pop()
-    return condensed
-
-
 def build_metadata(
-    scan_report_name: str,
-    scan_report_id: int,
-    created: datetime,
-    rows: list[dict[str, str]],
-    condensed: Mapping[str, str],
-    omop_vocabulary_version: str | None = None,
-    mapper_version: str | None = None,
+    rows: list[dict[str, str]], created: datetime, mapper_version: str | None = None
 ) -> dict[str, Any]:
-    base = SSSOM_BASE_IRI.rstrip("/") + "/"
-    curie_map = {
-        SUBJECT_PREFIX: SUBJECT_IRI,
-        "skos": "http://www.w3.org/2004/02/skos/core#",
-        "semapv": "https://w3id.org/semapv/vocab/"
-        # OMOP_CONCEPT_PREFIX: OMOP_CONCEPT_IRI,
-    }
-    # if any(r["other"] for r in rows):
-        # curie_map[OMOP_VOCABULARY_PREFIX] = CARROT_SSSOM_NAMESPACE + "omop-vocabulary/"
-    # if omop_vocabulary_version:
-        # curie_map[EXTENSION_PREFIX] = CARROT_SSSOM_NAMESPACE
-
     metadata: dict[str, Any] = {
-        "curie_map": curie_map,
-        # "mapping_set_id": f"{base}mapping-sets/scanreport/{scan_report_id}",
-        # "mapping_set_title": scan_report_name,
-        # "mapping_set_description": (
-        #     f"Carrot-Mapper mappings from scan report {scan_report_id} "
-        #     f"({scan_report_name}) to OMOP standardised vocabulary concepts."
-        # ),
-        # "license": SSSOM_LICENSE,
+        "curie_map": dict(CURIE_MAP),
+        "mapping_tool": MAPPING_TOOL,
     }
-    # if "object_type" in condensed:
-    #     metadata["object_type"] = condensed["object_type"]
-    metadata["mapping_tool"] = MAPPING_TOOL
     if mapper_version:
         metadata["mapping_tool_version"] = mapper_version
-    if "mapping_date" in condensed:
-        metadata["mapping_date"] = condensed["mapping_date"]
+    # A mapping date shared by every mapping is written once here instead of per row
+    # (SSSOM "condensation").
+    dates = {r["mapping_date"] for r in rows}
+    if len(dates) == 1 and "" not in dates:
+        metadata["mapping_date"] = dates.pop()
     metadata["publication_date"] = created.date().isoformat()
-
-    # if omop_vocabulary_version:
-        # metadata["ext_omop_vocabulary_version"] = omop_vocabulary_version
-        # metadata["extension_definitions"] = [
-        #     {
-        #         "slot_name": name,
-        #         "property": f"{EXTENSION_PREFIX}:{name}",
-        #         "type_hint": hint,
-        #     }
-        #     for name, hint in MAPPING_SET_EXTENSION_SLOTS
-        # ]
     return metadata
 
 
 def write_sssom_tsv(
     rules: Iterable[Mapping[str, Any]],
-    scan_report_name: str,
-    scan_report_id: int,
     created: datetime | None = None,
-    omop_vocabulary_version: str | None = None,
     mapper_version: str | None = None,
 ) -> str:
     """
@@ -294,16 +230,7 @@ def write_sssom_tsv(
     """
     created = created or datetime.now()
     rows = build_mapping_rows(rules)
-    condensed = condense(rows)
-    metadata = build_metadata(
-        scan_report_name,
-        scan_report_id,
-        created,
-        rows,
-        condensed,
-        omop_vocabulary_version,
-        mapper_version,
-    )
+    metadata = build_metadata(rows, created, mapper_version)
 
     out = io.StringIO()
     header = yaml.safe_dump(
@@ -316,7 +243,7 @@ def write_sssom_tsv(
     columns = [
         c
         for c in COLUMNS
-        if c not in condensed and (c in ALWAYS_COLUMNS or any(r[c] for r in rows))
+        if c not in metadata and (c in ALWAYS_COLUMNS or any(r[c] for r in rows))
     ]
 
     # csv's QUOTE_MINIMAL with a tab delimiter is exactly the SSSOM/TSV quoting rule:

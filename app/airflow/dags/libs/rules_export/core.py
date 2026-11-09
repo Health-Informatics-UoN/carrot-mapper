@@ -95,7 +95,6 @@ def build_and_upload_rules_file(**kwargs) -> None:
             ),
             "sssom": FileHandlerConfig(
                 lambda: build_rules_sssom(
-                    scan_report_name,
                     scan_report_id,
                     # optional: sent by the API, not required by param validation
                     kwargs["dag_run"].conf.get("mapper_version"),

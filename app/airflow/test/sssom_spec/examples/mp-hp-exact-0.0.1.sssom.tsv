@@ -1,0 +1,56 @@
+# curie_map:
+#   HP: http://purl.obolibrary.org/obo/HP_
+#   MP: http://purl.obolibrary.org/obo/MP_
+#   owl: http://www.w3.org/2002/07/owl#
+#   rdf: http://www.w3.org/1999/02/22-rdf-syntax-ns#
+#   rdfs: http://www.w3.org/2000/01/rdf-schema#
+#   semapv: https://w3id.org/semapv/vocab/
+#   skos: http://www.w3.org/2004/02/skos/core#
+#   sssom: https://w3id.org/sssom/
+# license: https://creativecommons.org/publicdomain/zero/1.0/
+# mapping_provider: http://purl.obolibrary.org/obo/upheno.owl
+# mapping_set_id: https://w3id.org/sssom/mappings/27f85fe9-8a72-4e76-909b-7ba4244d9ede
+subject_id	subject_label	predicate_id	object_id	object_label	mapping_justification
+HP:0000175	Cleft palate	skos:exactMatch	MP:0000111	cleft palate	semapv:LexicalMatching
+HP:0000252	Microcephaly	skos:exactMatch	MP:0000433	microcephaly	semapv:LexicalMatching
+HP:0000260	Wide anterior fontanel	skos:exactMatch	MP:0000085	large anterior fontanelle	semapv:LexicalMatching
+HP:0000375	Abnormal cochlea morphology	skos:exactMatch	MP:0000031	abnormal cochlea morphology	semapv:LexicalMatching
+HP:0000411	Protruding ear	skos:exactMatch	MP:0000021	prominent ears	semapv:LexicalMatching
+HP:0000822	Hypertension	skos:exactMatch	MP:0000231	hypertension	semapv:LexicalMatching
+HP:0001336	Myoclonus	skos:exactMatch	MP:0000243	myoclonus	semapv:LexicalMatching
+HP:0001363	Craniosynostosis	skos:exactMatch	MP:0000081	premature cranial suture closure	semapv:LexicalMatching
+HP:0001596	Alopecia	skos:exactMatch	MP:0000414	alopecia	semapv:LexicalMatching
+HP:0001627	Abnormal heart morphology	skos:exactMatch	MP:0000266	abnormal heart morphology	semapv:LexicalMatching
+HP:0001633	Abnormal mitral valve morphology	skos:exactMatch	MP:0000286	abnormal mitral valve morphology	semapv:LexicalMatching
+HP:0001667	Right ventricular hypertrophy	skos:exactMatch	MP:0000276	heart right ventricle hypertrophy	semapv:LexicalMatching
+HP:0001679	Abnormal aortic morphology	skos:exactMatch	MP:0000272	abnormal aorta morphology	semapv:LexicalMatching
+HP:0001719	Double outlet right ventricle	skos:exactMatch	MP:0000284	double outlet right ventricle	semapv:LexicalMatching
+HP:0001882	Leukopenia	skos:exactMatch	MP:0000221	decreased leukocyte cell number	semapv:LexicalMatching
+HP:0001913	Granulocytopenia	skos:exactMatch	MP:0000334	decreased granulocyte number	semapv:LexicalMatching
+HP:0001974	Leukocytosis	skos:exactMatch	MP:0000218	increased leukocyte cell number	semapv:LexicalMatching
+HP:0001978	Extramedullary hematopoiesis	skos:exactMatch	MP:0000240	extramedullary hematopoiesis	semapv:LexicalMatching
+HP:0001981	Schistocytosis	skos:exactMatch	MP:0000314	schistocytosis	semapv:LexicalMatching
+HP:0002212	Curly hair	skos:exactMatch	MP:0000410	waved hair	semapv:LexicalMatching
+HP:0002659	Increased susceptibility to fractures	skos:exactMatch	MP:0000061	fragile skeleton	semapv:LexicalMatching
+HP:0002763	Abnormal cartilage morphology	skos:exactMatch	MP:0000163	abnormal cartilage morphology	semapv:LexicalMatching
+HP:0003307	Hyperlordosis	skos:exactMatch	MP:0000162	lordosis	semapv:LexicalMatching
+HP:0004349	Reduced bone mineral density	skos:exactMatch	MP:0000063	decreased bone mineral density	semapv:LexicalMatching
+HP:0006288	Advanced eruption of teeth	skos:exactMatch	MP:0000122	premature tooth eruption	semapv:LexicalMatching
+HP:0008551	Microtia	skos:exactMatch	MP:0000018	small ears	semapv:LexicalMatching
+HP:0009124	Abnormal adipose tissue morphology	skos:exactMatch	MP:0000003	abnormal adipose tissue morphology	semapv:LexicalMatching
+HP:0009910	Aplasia of the middle ear ossicles	skos:exactMatch	MP:0000040	absent middle ear ossicles	semapv:LexicalMatching
+HP:0009939	Mandibular aplasia	skos:exactMatch	MP:0000087	absent mandible	semapv:LexicalMatching
+HP:0011002	Osteopetrosis	skos:exactMatch	MP:0000067	osteopetrosis	semapv:LexicalMatching
+HP:0011457	Loss of eyelashes	skos:exactMatch	MP:0000425	loss of eyelid cilia	semapv:LexicalMatching
+HP:0011897	Neutrophilia	skos:exactMatch	MP:0000219	increased neutrophil cell number	semapv:LexicalMatching
+HP:0012234	Agranulocytosis	skos:exactMatch	MP:0000334	decreased granulocyte number	semapv:LexicalMatching
+HP:0012543	Hemosiderinuria	skos:exactMatch	MP:0000327	hemosiderinuria	semapv:LexicalMatching
+HP:0025065	Abnormal mean corpuscular volume	skos:exactMatch	MP:0000226	abnormal mean corpuscular volume	semapv:LexicalMatching
+HP:0025084	Folliculitis	skos:exactMatch	MP:0000376	folliculitis	semapv:LexicalMatching
+HP:0031377	Abnormal cell proliferation	skos:exactMatch	MP:0000350	abnormal cell proliferation	semapv:LexicalMatching
+HP:0031851	Reduced hematocrit	skos:exactMatch	MP:0000208	decreased hematocrit	semapv:LexicalMatching
+HP:0032310	Granulocytosis	skos:exactMatch	MP:0000322	increased granulocyte number	semapv:LexicalMatching
+HP:0100629	Midline facial cleft	skos:exactMatch	MP:0000108	midline facial cleft	semapv:LexicalMatching
+HP:0100671	Abnormal trabecular bone morphology	skos:exactMatch	MP:0000130	abnormal trabecular bone morphology	semapv:LexicalMatching
+HP:0400001	Chin with vertical crease	skos:exactMatch	MP:0000114	cleft chin	semapv:LexicalMatching
+
