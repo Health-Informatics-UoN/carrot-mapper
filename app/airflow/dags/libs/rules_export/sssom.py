@@ -15,13 +15,13 @@ from __future__ import annotations
 
 import csv
 import io
-import math
 from collections import defaultdict
 from collections.abc import Iterable, Mapping
 from datetime import date, datetime
 from typing import Any
 from urllib.parse import quote
 
+import pandas as pd
 import yaml
 
 MAPPING_TOOL = "carrot-mapper"
@@ -83,17 +83,11 @@ ALWAYS_COLUMNS = {
 
 
 def _clean(value: Any) -> str:
-    """Normalise a DB/pandas value to a string; None/NaN/NaT become ''."""
-    if value is None:
+    """Normalise a DB/pandas value to a string; missing values become ''."""
+    # pd.isna covers every missing-value marker a pandas query result can hold:
+    # None, NaN, NaT and pd.NA.
+    if pd.api.types.is_scalar(value) and pd.isna(value):
         return ""
-    if isinstance(value, float) and math.isnan(value):
-        return ""
-    # pandas NaT / NA compare unequal to themselves
-    try:
-        if value != value:  # noqa: PLR0124 - deliberate NaN/NaT/NA check
-            return ""
-    except (TypeError, ValueError):
-        pass
     if isinstance(value, datetime):
         return value.date().isoformat()
     if isinstance(value, date):

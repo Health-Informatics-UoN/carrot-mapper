@@ -1,6 +1,7 @@
 import csv
 from datetime import UTC, datetime
 
+import pandas as pd
 import pytest
 import yaml
 from libs.rules_export.sssom import build_mapping_rows, subject_id, write_sssom_tsv
@@ -96,6 +97,18 @@ def test_value_mapping_row():
     assert row["mapping_justification"] == "semapv:ManualMappingCuration"
     assert row["mapping_cardinality"] == "1:1"
     assert row["mapping_date"] == "2026-01-02"
+
+
+@pytest.mark.parametrize("missing", [None, float("nan"), pd.NaT, pd.NA])
+def test_any_missing_value_marker_means_no_value(missing):
+    """Whatever marker pandas uses for a NULL value, it isn't written as text."""
+    rules = [
+        {**r, "term_mapping_value": missing, "description": missing} for r in WEIGHT
+    ]
+    row = build_mapping_rows(rules)[0]
+    assert row["subject_id"] == "carrot:weight"
+    assert row["subject_label"] == "weight"
+    assert row["comment"] == ""
 
 
 def test_field_mapping_row():
