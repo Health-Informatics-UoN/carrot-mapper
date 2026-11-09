@@ -9,7 +9,6 @@ a Predicate, with a MappingJustification.
 """
 
 import uuid
-from urllib.parse import quote
 
 from django.conf import settings
 from django.db import models
@@ -293,12 +292,6 @@ class Term(models.Model):
 
     def __str__(self):
         return self.canonical_iri
-
-    @staticmethod
-    def build_subject_curie(field: str, value: str | None = None) -> str:
-        """Build the canonical CURIE for a Carrot subject term (percent-encoded segments)."""
-        parts = [field] if value is None else [field, value]
-        return f"{CARROT_TERM_PREFIX}:" + "/".join(quote(p, safe="") for p in parts)
 
 
 class MappingCardinality(models.TextChoices):
