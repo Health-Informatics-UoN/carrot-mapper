@@ -7,8 +7,9 @@ One row per mapping, from a source field (``carrot:<field>``) or a value in a fi
 ``other`` column names the concept's vocabulary (``vocab:<vocabulary_id>``) and
 ``object_source_version`` gives that vocabulary's version.
 
-The metadata block holds the tool, its version and the publication date, plus the
-mapping date when every mapping shares one.
+The metadata block holds the creator (the user who exported the file: their name,
+and their ORCID iD if they've added it to their profile), the tool, its version and
+the publication date, plus the mapping date when every mapping shares one.
 """
 
 from __future__ import annotations
@@ -16,6 +17,7 @@ from __future__ import annotations
 import csv
 import io
 import math
+import re
 from collections import defaultdict
 from collections.abc import Iterable, Mapping
 from datetime import UTC, date, datetime
@@ -38,6 +40,12 @@ CURIE_MAP = {
     "skos": "http://www.w3.org/2004/02/skos/core#",
     "semapv": "https://w3id.org/semapv/vocab/",
 }
+
+# The creator's ORCID iD, as orcid:<id> (the prefix every official SSSOM example uses).
+# The orcid prefix is only declared when a file has a creator_id.
+ORCID_PREFIX = "orcid"
+ORCID_IRI = "https://orcid.org/"
+ORCID_PATTERN = re.compile(r"^\d{4}-\d{4}-\d{4}-\d{3}[\dX]$")
 
 # Carrot doesn't record how close a match is (exact, broader, narrower...), so every
 # mapping is asserted as an exact match.
@@ -201,13 +209,41 @@ def build_mapping_rows(rules: Iterable[Mapping[str, Any]]) -> list[dict[str, str
     return result
 
 
+def creator_label(username: str | None) -> str:
+    """
+    A display name from a Carrot username, which is forename_surname:
+    "john_smith" -> "John Smith". Only first letters are capitalised, so names like
+    "McDonald" keep their capitals. A username without "_" is kept as one name.
+    """
+    parts = [p for p in (username or "").strip().split("_") if p]
+    return " ".join(p[0].upper() + p[1:] for p in parts)
+
+
+def creator_id(orcid: str | None) -> str:
+    """orcid:<id> for an ORCID iD in the profile's 0000-0000-0000-0000 format, else ''."""
+    orcid = (orcid or "").strip().upper()
+    return f"{ORCID_PREFIX}:{orcid}" if ORCID_PATTERN.match(orcid) else ""
+
+
 def build_metadata(
-    rows: list[dict[str, str]], created: datetime, mapper_version: str | None = None
+    rows: list[dict[str, str]],
+    created: datetime,
+    mapper_version: str | None = None,
+    creator_username: str | None = None,
+    creator_orcid: str | None = None,
 ) -> dict[str, Any]:
-    metadata: dict[str, Any] = {
-        "curie_map": dict(CURIE_MAP),
-        "mapping_tool": MAPPING_TOOL,
-    }
+    metadata: dict[str, Any] = {"curie_map": dict(CURIE_MAP)}
+    # The creator applies to every mapping in the file, so it's given once here
+    # (creator_id and creator_label are multivalued: written as lists). creator_id
+    # is left out when the user hasn't added an ORCID iD to their profile.
+    orcid_curie = creator_id(creator_orcid)
+    if orcid_curie:
+        metadata["curie_map"][ORCID_PREFIX] = ORCID_IRI
+        metadata["creator_id"] = [orcid_curie]
+    label = creator_label(creator_username)
+    if label:
+        metadata["creator_label"] = [label]
+    metadata["mapping_tool"] = MAPPING_TOOL
     if mapper_version:
         metadata["mapping_tool_version"] = mapper_version
     # A mapping date shared by every mapping is written once here instead of per row
@@ -223,6 +259,8 @@ def write_sssom_tsv(
     rules: Iterable[Mapping[str, Any]],
     created: datetime | None = None,
     mapper_version: str | None = None,
+    creator_username: str | None = None,
+    creator_orcid: str | None = None,
 ) -> str:
     """
     Render rules (dict-like rows from the temp rules table) as an SSSOM TSV string.
@@ -230,11 +268,14 @@ def write_sssom_tsv(
     Expected keys per rule: sr_concept_id, source_field, term_mapping_value,
     dest_field, concept_id, concept_name, creation_type; and optionally
     concept_domain, concept_vocabulary, vocabulary_version, confidence, created_at,
-    description.
+    description. ``creator_username`` / ``creator_orcid`` are the exporting user's
+    username and profile ORCID iD, for the creator_label / creator_id metadata.
     """
     created = created or datetime.now()
     rows = build_mapping_rows(rules)
-    metadata = build_metadata(rows, created, mapper_version)
+    metadata = build_metadata(
+        rows, created, mapper_version, creator_username, creator_orcid
+    )
 
     out = io.StringIO()
     header = yaml.safe_dump(

@@ -4,7 +4,13 @@ from decimal import Decimal
 
 import pytest
 import yaml
-from libs.rules_export.sssom import build_mapping_rows, subject_id, write_sssom_tsv
+from libs.rules_export.sssom import (
+    build_mapping_rows,
+    creator_id,
+    creator_label,
+    subject_id,
+    write_sssom_tsv,
+)
 
 CREATED = datetime(2026, 11, 3, 12, 0, tzinfo=UTC)
 
@@ -244,17 +250,24 @@ def test_missing_concept_is_an_error():
 
 def test_full_file_metadata_and_columns():
     tsv = write_sssom_tsv(
-        FEMALE + MALE + WEIGHT, created=CREATED, mapper_version="4.3.1"
+        FEMALE + MALE + WEIGHT,
+        created=CREATED,
+        mapper_version="4.3.1",
+        creator_username="jane_doe",
+        creator_orcid="0000-0002-1825-009X",
     )
     meta, rows = parse(tsv)
 
-    # the metadata block: prefixes, tool and dates only
+    # the metadata block: prefixes, creator, tool and dates only
     assert meta == {
         "curie_map": {
             "carrot": "https://carrot.ac.uk/sssom/terms/",
             "skos": "http://www.w3.org/2004/02/skos/core#",
             "semapv": "https://w3id.org/semapv/vocab/",
+            "orcid": "https://orcid.org/",
         },
+        "creator_id": ["orcid:0000-0002-1825-009X"],
+        "creator_label": ["Jane Doe"],
         "mapping_tool": "carrot-mapper",
         "mapping_tool_version": "4.3.1",
         "publication_date": "2026-11-03",
@@ -297,3 +310,50 @@ def test_tool_version_left_out_when_unknown():
     meta, _ = parse(write_sssom_tsv(WEIGHT, created=CREATED))
     assert meta["mapping_tool"] == "carrot-mapper"
     assert "mapping_tool_version" not in meta
+
+
+def test_creator_without_orcid_has_no_creator_id():
+    meta, _ = parse(
+        write_sssom_tsv(WEIGHT, created=CREATED, creator_username="jane_doe")
+    )
+    assert meta["creator_label"] == ["Jane Doe"]
+    assert "creator_id" not in meta
+    assert "orcid" not in meta["curie_map"]
+
+
+def test_creator_left_out_when_unknown():
+    meta, _ = parse(write_sssom_tsv(WEIGHT, created=CREATED))
+    assert "creator_label" not in meta
+    assert "creator_id" not in meta
+
+
+@pytest.mark.parametrize(
+    "username, label",
+    [
+        ("john_smith", "John Smith"),
+        ("John_Smith", "John Smith"),
+        ("mary-jane_mcDonald", "Mary-jane McDonald"),
+        ("anne_marie_smith", "Anne Marie Smith"),
+        ("admin", "Admin"),
+        ("_john__smith_", "John Smith"),
+        ("", ""),
+        (None, ""),
+    ],
+)
+def test_creator_label(username, label):
+    assert creator_label(username) == label
+
+
+@pytest.mark.parametrize(
+    "orcid, expected",
+    [
+        ("0000-0002-1825-0097", "orcid:0000-0002-1825-0097"),
+        ("0000-0002-1694-233x", "orcid:0000-0002-1694-233X"),
+        (" 0000-0002-1825-0097 ", "orcid:0000-0002-1825-0097"),
+        ("", ""),
+        (None, ""),
+        ("https://orcid.org/0000-0002-1825-0097", ""),  # not the profile's format
+    ],
+)
+def test_creator_id(orcid, expected):
+    assert creator_id(orcid) == expected

@@ -135,14 +135,27 @@ def build_rules_json_v2(scan_report_name: str, scan_report_id: int) -> BytesIO:
         raise e
 
 
+def _get_creator(user_id: int) -> tuple[str | None, str | None]:
+    """The username and profile ORCID iD (None if not filled in) of a user."""
+    query = """
+        SELECT auth_user.username, users_profile.orcid
+        FROM auth_user
+        LEFT JOIN users_profile ON users_profile.user_id = auth_user.id
+        WHERE auth_user.id = %(user_id)s;
+    """
+    result = pg_hook.get_first(query, parameters={"user_id": user_id})
+    return (result[0], result[1]) if result else (None, None)
+
+
 def build_rules_sssom(
-    scan_report_id: int, mapper_version: str | None = None
+    scan_report_id: int, user_id: int, mapper_version: str | None = None
 ) -> BytesIO:
     """
     Builds the rules as an SSSOM TSV file (see libs/rules_export/sssom.py).
 
     Args:
         - scan_report_id: int, the id of the scan report
+        - user_id: int, the id of the user exporting the file (the file's creator)
         - mapper_version: str, the exporting Carrot-Mapper version, if known
 
     Returns:
@@ -182,10 +195,13 @@ def build_rules_sssom(
     """
     try:
         rules = _fetch_rows(query, scan_report_id)
+        creator_username, creator_orcid = _get_creator(user_id)
         sssom_tsv = write_sssom_tsv(
             rules,
             created=datetime.now(timezone.utc),
             mapper_version=mapper_version,
+            creator_username=creator_username,
+            creator_orcid=creator_orcid,
         )
         return _to_bytes(sssom_tsv)
     except Exception as e:

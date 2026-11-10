@@ -391,7 +391,13 @@ RULES = [
 
 
 def carrot_export(rules=RULES) -> str:
-    return write_sssom_tsv(rules, created=CREATED, mapper_version="4.3.1")
+    return write_sssom_tsv(
+        rules,
+        created=CREATED,
+        mapper_version="4.3.1",
+        creator_username="jane_doe",
+        creator_orcid="0000-0002-1825-009X",
+    )
 
 
 # Ways the export deliberately departs from SSSOM 1.0.0: it leaves out the two
@@ -478,6 +484,17 @@ def test_known_deviations_are_still_reported():
     errors = check_sssom_tsv(carrot_export())
     for deviation in KNOWN_DEVIATIONS:
         assert any(deviation in e for e in errors), deviation
+
+
+def test_carrot_export_conforms_without_creator():
+    text = write_sssom_tsv(RULES, created=CREATED)
+    assert unexpected_errors(text) == []
+
+
+def test_creator_orcid_must_be_declared():
+    """The checker would catch creator_id using an undeclared orcid prefix."""
+    text = carrot_export().replace("#  orcid: https://orcid.org/\n", "")
+    assert any("prefix 'orcid' is not declared" in e for e in check_sssom_tsv(text))
 
 
 def test_carrot_export_conforms_with_minimal_rules():
