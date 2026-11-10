@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Alert } from "@/components/ui/alert";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function SignIn() {
   const [username, setUsername] = useState("");
@@ -34,8 +34,10 @@ export default function SignIn() {
         <h1 className="text-2xl font-semibold text-center">Sign In</h1>
 
         {error && (
-          <Alert variant={"destructive"}>
-            Login failed. Please check your credentials.
+          <Alert variant="destructive">
+            <AlertDescription className="text-destructive">
+              {error}
+            </AlertDescription>
           </Alert>
         )}
 
