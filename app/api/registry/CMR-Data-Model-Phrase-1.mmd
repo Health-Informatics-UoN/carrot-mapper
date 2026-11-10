@@ -75,8 +75,15 @@ erDiagram
         VARCHAR status_id FK "default DRAFT; PROTECT"
         UUID import_job_id FK "nullable; SET NULL"
         INTEGER source_scan_report_id FK "nullable, only when origin = CARROT_DIRECT_PUBLISH; SET NULL"
+        VARCHAR sssom_version
+        JSONB creator_ids "list of CURIEs, default []"
+        DATE publication_date "nullable"
+        VARCHAR subject_source
+        VARCHAR subject_source_version
+        VARCHAR object_source
+        VARCHAR object_source_version
         JSONB curie_map "default {}"
-        JSONB extra_metadata "default {}"
+        JSONB extra_metadata "default {}; unpromoted SSSOM set slots"
         VARCHAR file_key
         TIMESTAMPTZ created_at
         TIMESTAMPTZ published_at "nullable"
@@ -87,11 +94,19 @@ erDiagram
         UUID mapping_set_id FK "CASCADE"
         BIGINT subject_id FK "-> term; PROTECT"
         VARCHAR predicate_id FK "PROTECT"
+        VARCHAR predicate_modifier "'' | Not (default '')"
         BIGINT object_id FK "-> term; PROTECT"
         VARCHAR mapping_justification_id FK "PROTECT"
         VARCHAR mapping_cardinality "1:1 | 1:n | n:1 | n:n"
+        FLOAT confidence "nullable; CHECK 0..1"
+        JSONB author_ids "list of CURIEs, default []"
+        JSONB reviewer_ids "list of CURIEs, default []"
+        DATE mapping_date "nullable"
+        TEXT comment
+        JSONB extra_metadata "default {}; unpromoted SSSOM mapping slots"
+        VARCHAR other "nullable; Carrot-specific vocabulary ID"
     }
-    %% registry_mapping: UNIQUE(mapping_set_id, subject_id, predicate_id, object_id)
+    %% registry_mapping: UNIQUE(mapping_set_id, subject_id, predicate_id, predicate_modifier, object_id, mapping_justification_id)
     %% A term with several target concepts = several rows, mapping_cardinality = 1:n
 
     registry_term {
