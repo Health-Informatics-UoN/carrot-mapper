@@ -11,14 +11,13 @@ ARG AIRFLOW_APP_VERSION=0.0.0.dev0
 ENV AIRFLOW_APP_VERSION=${AIRFLOW_APP_VERSION}
 LABEL org.opencontainers.image.version=${AIRFLOW_APP_VERSION}
 
-# Install provider packages 
+# Install provider packages
 RUN pip install --no-cache-dir \
     "apache-airflow-providers-amazon==9.39.0" \
     "apache-airflow-providers-microsoft-azure==15.2.1" \
     "apache-airflow-providers-postgres==7.1.1" \
     "apache-airflow-providers-keycloak==0.11.2" \
-    "openpyxl==3.1.5" \
-    "pandas==3.1.0"
+    "openpyxl==3.1.5"
 
 # Copy DAGs to the container
 COPY --chown=airflow:root ./dags /opt/airflow/dags
