@@ -1,4 +1,5 @@
 import json
+from importlib.metadata import version
 
 from activity_log.models import ScopeType, Verb
 from django.http import HttpResponse, JsonResponse
@@ -95,7 +96,8 @@ class FileDownloadView(GenericAPIView, ListModelMixin, RetrieveModelMixin):
             - scan_report_id (int): The ID of the scan report for which the
             file is to be generated.
             - file_type (str): The type of file to generate (e.g.,
-            'application/json_v1', 'application/json_v2', or 'text/csv').
+            'application/json_v1', 'application/json_v2', 'text/csv', or
+            'text/x-sssom+tsv').
 
         Upon successful validation of the input, a message is sent to the
         Rules Export Queue, and a job record is created in the database to
@@ -155,15 +157,15 @@ class FileDownloadView(GenericAPIView, ListModelMixin, RetrieveModelMixin):
                 "user_id": request.user.id,
                 "file_type": file_type,
                 "json_version": json_version,
+                # recorded as mapping_tool_version in SSSOM exports
+                "mapper_version": version("api"),
             }
 
-            file_type_description = (
-                "JSON V1"
-                if file_type == "application/json_v1"
-                else "JSON V2"
-                if file_type == "application/json_v2"
-                else "CSV"
-            )
+            file_type_description = {
+                "application/json_v1": "JSON V1",
+                "application/json_v2": "JSON V2",
+                "text/x-sssom+tsv": "SSSOM",
+            }.get(file_type, "CSV")
 
             worker_service.trigger_rules_export(msg)
 
