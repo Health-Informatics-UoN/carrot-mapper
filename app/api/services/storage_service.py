@@ -8,6 +8,7 @@ from urllib.parse import urlparse
 
 import boto3
 import openpyxl  # type: ignore
+from azure.core.exceptions import ResourceNotFoundError
 from azure.storage.blob import (
     BlobServiceClient,  # type: ignore
     ContentSettings,
@@ -345,15 +346,23 @@ class StorageService:
             the blob is stored.
 
         Returns:
-            bool: True if the file was successfully deleted.
+            bool: True if the file was deleted, False if it did not exist.
+            A missing file is not an error, matching S3's DeleteObject.
         """
 
         if self._azure_client:
             try:
                 container_client = self._azure_client.get_container_client(container)
                 blob_dict_client = container_client.get_blob_client(file_name)
-                blob_dict_client.delete_blob()
+                blob_dict_client.delete_blob(delete_snapshots="include")
                 return True
+
+            except ResourceNotFoundError:
+                logger.warning(
+                    f"Blob '{file_name}' not found in container '{container}'; "
+                    "treating as already deleted."
+                )
+                return False
 
             except Exception as e:
                 raise ValueError(
