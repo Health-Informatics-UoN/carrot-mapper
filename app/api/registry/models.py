@@ -117,14 +117,19 @@ class ImportJob(models.Model):
         choices=ImportJobStatus.choices,
         default=ImportJobStatus.PENDING,
     )
+    origin = models.ForeignKey(
+        Origin, on_delete=models.PROTECT, related_name="import_jobs"
+    )
+    file_key = models.CharField(max_length=500, blank=True, default="")
     validation_issues = models.JSONField(default=list, blank=True)
+    dag_run_id = models.CharField(max_length=255, blank=True, default="")
     error_message = models.TextField(blank=True, default="")
-    created_at = models.DateTimeField(auto_now_add=True)
+    started_at = models.DateTimeField(null=True, blank=True)
     finished_at = models.DateTimeField(null=True, blank=True)
+    params = models.JSONField(default=dict, blank=True)
 
     class Meta:
-        ordering = ["-created_at"]
-        indexes = [models.Index(fields=["submitted_by", "-created_at"])]
+        ordering = ["-started_at"]
 
     def __str__(self):
         return f"ImportJob {self.id} ({self.status})"
