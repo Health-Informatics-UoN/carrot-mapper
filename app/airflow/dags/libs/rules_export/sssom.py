@@ -33,10 +33,14 @@ MAPPING_TOOL = "carrot-mapper"
 # the same term has the same IRI everywhere.
 SUBJECT_PREFIX = "carrot"
 SUBJECT_IRI = "https://carrot.ac.uk/sssom/terms/"
+# OMOP:<concept_id> objects. Expands to the concept's page in Athena, OHDSI's
+# vocabulary browser, e.g. OMOP:8532 -> https://athena.ohdsi.org/search-terms/terms/8532
 OMOP_CONCEPT_PREFIX = "OMOP"
+OMOP_CONCEPT_IRI = "https://athena.ohdsi.org/search-terms/terms/"
 
 CURIE_MAP = {
     SUBJECT_PREFIX: SUBJECT_IRI,
+    OMOP_CONCEPT_PREFIX: OMOP_CONCEPT_IRI,
     "skos": "http://www.w3.org/2004/02/skos/core#",
     "semapv": "https://w3id.org/semapv/vocab/",
 }

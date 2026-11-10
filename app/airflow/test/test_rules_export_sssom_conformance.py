@@ -402,12 +402,10 @@ def carrot_export(rules=RULES) -> str:
 
 # Ways the export deliberately departs from SSSOM 1.0.0: it leaves out the two
 # mapping set slots the spec requires (schema: mapping_set_id L294-298, license
-# L612-616), and doesn't declare the OMOP prefix its object IDs use (spec-model L30,
-# spec-formats-tsv L107-109). See README.md in sssom_spec.
+# L612-616). See README.md in sssom_spec.
 KNOWN_DEVIATIONS = (
     "'mapping_set_id' is a required property",
     "'license' is a required property",
-    "prefix 'OMOP' is not declared",
 )
 
 
@@ -489,6 +487,14 @@ def test_known_deviations_are_still_reported():
 def test_carrot_export_conforms_without_creator():
     text = write_sssom_tsv(RULES, created=CREATED)
     assert unexpected_errors(text) == []
+
+
+def test_omop_prefix_must_be_declared():
+    """The checker would catch the OMOP: object IDs without the prefix declared."""
+    text = carrot_export().replace(
+        "#  OMOP: https://athena.ohdsi.org/search-terms/terms/\n", ""
+    )
+    assert any("prefix 'OMOP' is not declared" in e for e in check_sssom_tsv(text))
 
 
 def test_creator_orcid_must_be_declared():
