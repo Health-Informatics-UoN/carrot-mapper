@@ -19,6 +19,7 @@ from mapping.models import ScanReport
 # ---------------------------------------------------------------------------
 
 
+# TODO: auto-creating unknown predicates
 class Predicate(models.Model):
     """SSSOM predicate, keyed by CURIE, e.g. ``skos:exactMatch``."""
 
@@ -45,6 +46,7 @@ class License(models.Model):
         return self.label
 
 
+# TODO: auto-creating unknown justifications
 class MappingJustification(models.Model):
     """SEMAPV justification, keyed by CURIE, e.g. ``semapv:ManualMappingCuration``."""
 
@@ -172,7 +174,20 @@ class MappingSet(models.Model):
         blank=True,
         related_name="registry_mapping_sets",
     )
+    # SSSOM spec version the set conforms to (e.g. "1.0"); tells re-parsers
+    # how to read the original file later.
+    sssom_version = models.CharField(max_length=20, blank=True, default="")
+    # SSSOM creator_id: list of CURIEs (e.g. ORCIDs) of who created the set.
+    creator_ids = models.JSONField(default=list, blank=True)
+    publication_date = models.DateField(null=True, blank=True)
+    # Set-level sources, e.g. object_source = "OMOP", version = "v5.0 31-AUG-23".
+    subject_source = models.CharField(max_length=500, blank=True, default="")
+    subject_source_version = models.CharField(max_length=255, blank=True, default="")
+    object_source = models.CharField(max_length=500, blank=True, default="")
+    object_source_version = models.CharField(max_length=255, blank=True, default="")
     curie_map = models.JSONField(default=dict, blank=True)
+    # Any other SSSOM set-level slot (and ext_* extension slots) not
+    # promoted to a column above, keyed by SSSOM slot name.
     extra_metadata = models.JSONField(default=dict, blank=True)
     # Storage key of the original/generated SSSOM file.
     file_key = models.CharField(max_length=500, blank=True, default="")
@@ -294,6 +309,11 @@ class Term(models.Model):
         return self.canonical_iri
 
 
+class PredicateModifier(models.TextChoices):
+    NONE = "", "None"
+    NOT = "Not", "Not"
+
+
 class MappingCardinality(models.TextChoices):
     ONE_TO_ONE = "1:1", "1:1"
     ONE_TO_MANY = "1:n", "1:n"
@@ -307,6 +327,12 @@ class Mapping(models.Model):
 
     A subject term with several target concepts appears on several rows
     (one per object), with mapping_cardinality = 1:n.
+
+    predicate_modifier = "Not" negates the assertion ("subject is NOT a
+    <predicate> of object"); always check it when interpreting a row.
+
+    SSSOM slots not promoted to columns are kept in extra_metadata, keyed
+    by SSSOM slot name, so nothing from an imported file is dropped.
     """
 
     id = models.BigAutoField(primary_key=True)
@@ -319,6 +345,11 @@ class Mapping(models.Model):
     predicate = models.ForeignKey(
         Predicate, on_delete=models.PROTECT, related_name="mappings"
     )
+    # Blank (not NULL) when absent, so it participates in the unique
+    # constraint (NULLs are always distinct in Postgres).
+    predicate_modifier = models.CharField(
+        max_length=8, choices=PredicateModifier.choices, blank=True, default=""
+    )
     object = models.ForeignKey(
         Term, on_delete=models.PROTECT, related_name="object_mappings"
     )
@@ -328,12 +359,39 @@ class Mapping(models.Model):
     mapping_cardinality = models.CharField(
         max_length=3, choices=MappingCardinality.choices, blank=True, default=""
     )
+    # 0.0 - 1.0; NULL when the source gives no confidence.
+    confidence = models.FloatField(null=True, blank=True)
+    # SSSOM author_id / reviewer_id: lists of CURIEs (e.g. ORCIDs).
+    author_ids = models.JSONField(default=list, blank=True)
+    reviewer_ids = models.JSONField(default=list, blank=True)
+    mapping_date = models.DateField(null=True, blank=True)
+    comment = models.TextField(blank=True, default="")
+    # Any other SSSOM mapping slot (and ext_* extension slots) not promoted
+    # to a column above, keyed by SSSOM slot name.
+    extra_metadata = models.JSONField(default=dict, blank=True)
+    # TODO: write docs about this column as Carrot uses it to store the vocabulary ID
+    other = models.CharField(max_length=255, blank=True, null=True)
 
     class Meta:
         constraints = [
+            # SSSOM allows the same subject/predicate/object on several rows
+            # if they differ by justification (or negation), so both are
+            # part of the assertion identity.
             models.UniqueConstraint(
-                fields=["mapping_set", "subject", "predicate", "object"],
+                fields=[
+                    "mapping_set",
+                    "subject",
+                    "predicate",
+                    "predicate_modifier",
+                    "object",
+                    "mapping_justification",
+                ],
                 name="registry_mapping_assertion_uniq",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(confidence__isnull=True)
+                | models.Q(confidence__gte=0.0, confidence__lte=1.0),
+                name="registry_mapping_confidence_range",
             ),
         ]
 
