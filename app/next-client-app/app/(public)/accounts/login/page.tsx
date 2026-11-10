@@ -39,7 +39,10 @@ export default function SignIn() {
         </div>
 
         {error && (
-          <Alert variant="destructive" className="px-4 py-3">
+          <Alert
+            variant="destructive"
+            className="px-4 py-3 border-destructive bg-destructive/10"
+          >
             <CircleAlert />
             <AlertDescription className="text-destructive">
               {error}
