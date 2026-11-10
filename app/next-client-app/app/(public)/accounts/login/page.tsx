@@ -3,6 +3,7 @@
 import { signIn } from "next-auth/react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { CircleAlert, Eye, EyeOff } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -33,8 +34,14 @@ export default function SignIn() {
   return (
     <div className="flex flex-1 items-start justify-center pt-20">
       <div className="w-full max-w-md p-8 space-y-6 rounded-xl border bg-card text-card-foreground shadow-sm">
-        <div className="flex items-center justify-center gap-3">
-          <img src="/icon.svg" alt="Carrot" className="h-9 w-9" />
+        <div className="flex items-center justify-center gap-3 pr-6">
+          <Image
+            src="/icon.svg"
+            alt="Carrot"
+            width={36}
+            height={36}
+            priority
+          />
           <h1 className="text-2xl font-semibold">Sign In</h1>
         </div>
 
