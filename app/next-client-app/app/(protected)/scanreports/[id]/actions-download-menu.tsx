@@ -5,7 +5,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuGroup,
 } from "@/components/ui/dropdown-menu";
-import { FileJson, FileSpreadsheet } from "lucide-react";
+import { FileJson, FileSpreadsheet, FileText } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { requestFile } from "@/api/files";
@@ -41,6 +41,10 @@ export function ActionsDownloadMenu({ scanreportId }: Props) {
       <DropdownMenuItem onSelect={() => handleDownload("text/csv")}>
         <FileSpreadsheet />
         Mapping CSV
+      </DropdownMenuItem>
+      <DropdownMenuItem onSelect={() => handleDownload("text/x-sssom+tsv")}>
+        <FileText />
+        Mapping SSSOM
       </DropdownMenuItem>
     </DropdownMenuGroup>
   );

@@ -7,7 +7,7 @@
           "display_name": "Mapping Rules JSON"
       }
   },
-  
+
   {
       "model": "files.filetype",
       "pk": 2,
@@ -46,6 +46,14 @@
     "fields": {
         "value": "mapping_json_v2",
         "display_name": "Mapping Rules JSON V2"
+    }
+  },
+  {
+    "model": "files.filetype",
+    "pk": 7,
+    "fields": {
+        "value": "mapping_sssom",
+        "display_name": "Mapping Rules SSSOM"
     }
   }
 ]
