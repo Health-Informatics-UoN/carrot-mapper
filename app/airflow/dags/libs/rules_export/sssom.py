@@ -15,13 +15,14 @@ from __future__ import annotations
 
 import csv
 import io
+import math
 from collections import defaultdict
 from collections.abc import Iterable, Mapping
-from datetime import date, datetime
+from datetime import UTC, date, datetime
+from decimal import Decimal
 from typing import Any
 from urllib.parse import quote
 
-import pandas as pd
 import yaml
 
 MAPPING_TOOL = "carrot-mapper"
@@ -83,12 +84,21 @@ ALWAYS_COLUMNS = {
 
 
 def _clean(value: Any) -> str:
-    """Normalise a DB/pandas value to a string; missing values become ''."""
-    # pd.isna covers every missing-value marker a pandas query result can hold:
-    # None, NaN, NaT and pd.NA.
-    if pd.api.types.is_scalar(value) and pd.isna(value):
+    """
+    Normalise a value from the database driver to a string.
+
+    NULL (None) and not-a-number become ''; NUMERIC values (Decimal) are written as
+    floats, e.g. 0.9; timestamps become their date in UTC.
+    """
+    if value is None:
+        return ""
+    if isinstance(value, Decimal):
+        value = float(value)  # NaN is caught below
+    if isinstance(value, float) and math.isnan(value):
         return ""
     if isinstance(value, datetime):
+        if value.tzinfo is not None:
+            value = value.astimezone(UTC)
         return value.date().isoformat()
     if isinstance(value, date):
         return value.isoformat()
@@ -96,7 +106,7 @@ def _clean(value: Any) -> str:
 
 
 def _clean_int(value: Any) -> str:
-    """IDs may come back from pandas as floats (e.g. 8507.0)."""
+    """An integer ID as a string, also accepting floats such as 8507.0."""
     value = _clean(value)
     return str(int(float(value))) if value else ""
 

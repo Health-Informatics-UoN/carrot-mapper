@@ -1,7 +1,7 @@
 import csv
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta, timezone
+from decimal import Decimal
 
-import pandas as pd
 import pytest
 import yaml
 from libs.rules_export.sssom import build_mapping_rows, subject_id, write_sssom_tsv
@@ -99,9 +99,9 @@ def test_value_mapping_row():
     assert row["mapping_date"] == "2026-01-02"
 
 
-@pytest.mark.parametrize("missing", [None, float("nan"), pd.NaT, pd.NA])
-def test_any_missing_value_marker_means_no_value(missing):
-    """Whatever marker pandas uses for a NULL value, it isn't written as text."""
+@pytest.mark.parametrize("missing", [None, float("nan"), Decimal("NaN")])
+def test_missing_values_are_left_blank(missing):
+    """NULL (None) and not-a-number values aren't written as text."""
     rules = [
         {**r, "term_mapping_value": missing, "description": missing} for r in WEIGHT
     ]
@@ -112,21 +112,31 @@ def test_any_missing_value_marker_means_no_value(missing):
 
 
 def test_field_mapping_row():
-    # pandas hands back nullable int columns as floats, and NULLs as NaN
-    rules = [
-        {
-            **r,
-            "sr_concept_id": 9.0,
-            "concept_id": 3025315.0,
-            "term_mapping_value": float("nan"),
-        }
-        for r in WEIGHT
-    ]
-    row = build_mapping_rows(rules)[0]
+    row = build_mapping_rows(WEIGHT)[0]
     assert row["subject_id"] == "carrot:weight"
     assert row["subject_label"] == "weight"
     assert row["object_id"] == "OMOP:3025315"
     assert row["other"] == "vocab:LOINC"
+
+
+@pytest.mark.parametrize(
+    "confidence, expected",
+    [(Decimal("0.90"), "0.9"), (Decimal("1.00"), "1.0"), (Decimal("0.05"), "0.05")],
+)
+def test_confidence_from_numeric_column(confidence, expected):
+    """The confidence column is NUMERIC(3, 2), which the driver returns as Decimal."""
+    rules = [{**r, "confidence": confidence} for r in FEMALE]
+    assert build_mapping_rows(rules)[0]["confidence"] == expected
+
+
+def test_mapping_date_is_the_utc_date():
+    """created_at is a TIMESTAMPTZ: 23:30 in New York is already the next day in UTC."""
+    new_york = timezone(timedelta(hours=-5))
+    rules = [
+        {**r, "created_at": datetime(2026, 2, 3, 23, 30, tzinfo=new_york)}
+        for r in FEMALE
+    ]
+    assert build_mapping_rows(rules)[0]["mapping_date"] == "2026-02-04"
 
 
 @pytest.mark.parametrize(

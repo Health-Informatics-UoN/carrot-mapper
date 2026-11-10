@@ -10,7 +10,6 @@ dependencies = [
     "apache-airflow-providers-postgres==7.1.1",
     "apache-airflow-providers-keycloak==0.11.2",
     "openpyxl==3.1.5",
-    "pandas==3.1.0",
 ]
 
 [dependency-groups]
@@ -22,7 +21,6 @@ test = [
 ]
 
 dev = [
-    "pandas-stubs>=3.0.5.260914",
     "types-openpyxl>=3.1.5",
 ]
 
