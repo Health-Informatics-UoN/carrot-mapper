@@ -293,9 +293,11 @@ def _validate_dag_params(
                     value = "application/json_v2"
                 elif value == "text/csv":
                     value = "csv"
+                elif value == "text/x-sssom+tsv":
+                    value = "sssom"
                 else:
                     errors.append(
-                        f"Invalid {param}: {value}. Must be application/json, application/json_v1, application/json_v2, or text/csv."
+                        f"Invalid {param}: {value}. Must be application/json, application/json_v1, application/json_v2, text/csv, or text/x-sssom+tsv."
                     )
             elif param == "json_version":
                 if value not in ["v1", "v2"]:
