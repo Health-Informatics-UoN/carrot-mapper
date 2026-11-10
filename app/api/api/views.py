@@ -703,11 +703,7 @@ class ScanReportDetailV2(
         return self.destroy(request, *args, **kwargs)
 
     def perform_destroy(self, instance):
-        # Delete the DB rows first, in one transaction, and only then the
-        # files. If the request is cut short (timeout, refresh) the rollback
-        # leaves both the rows and the files in place, so a retry still works.
-        # The old order deleted the blob first, so a slow DB delete that never
-        # finished left a Scan Report whose file was already gone.
+        # Delete the DB rows first, in one transaction, and only then the files.
         blobs = [(instance.name, "scan-reports")]
         if instance.data_dictionary:
             blobs.append((instance.data_dictionary.name, "data-dictionaries"))
