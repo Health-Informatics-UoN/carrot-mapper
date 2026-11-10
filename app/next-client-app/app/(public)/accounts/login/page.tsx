@@ -31,8 +31,11 @@ export default function SignIn() {
 
   return (
     <div className="flex flex-1 items-start justify-center pt-20">
-      <div className="w-full max-w-md p-8 space-y-6">
-        <h1 className="text-2xl font-semibold text-center">Sign In</h1>
+      <div className="w-full max-w-md p-8 space-y-6 rounded-xl border bg-card text-card-foreground shadow-sm">
+        <div className="flex items-center justify-center gap-3">
+          <img src="/icon.svg" alt="Carrot" className="h-9 w-9" />
+          <h1 className="text-2xl font-semibold">Sign In</h1>
+        </div>
 
         {error && (
           <Alert variant="destructive" className="px-4 py-3">
