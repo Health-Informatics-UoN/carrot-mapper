@@ -3,6 +3,7 @@
 import { signIn } from "next-auth/react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { CircleAlert } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -34,7 +35,8 @@ export default function SignIn() {
         <h1 className="text-2xl font-semibold text-center">Sign In</h1>
 
         {error && (
-          <Alert variant="destructive">
+          <Alert variant="destructive" className="px-4 py-3">
+            <CircleAlert />
             <AlertDescription className="text-destructive">
               {error}
             </AlertDescription>
