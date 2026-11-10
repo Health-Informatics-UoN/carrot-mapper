@@ -130,6 +130,7 @@ class ImportJob(models.Model):
 
     class Meta:
         ordering = ["-started_at"]
+        indexes = [models.Index(fields=["status", "-started_at"])]
 
     def __str__(self):
         return f"ImportJob {self.id} ({self.status})"
