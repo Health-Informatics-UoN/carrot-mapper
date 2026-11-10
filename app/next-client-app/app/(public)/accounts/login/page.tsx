@@ -93,7 +93,7 @@ export default function SignIn() {
               </button>
             </div>
           </div>
-          <Button type="submit" className="w-full" variant="outline">
+          <Button type="submit" className="w-full">
             Sign In
           </Button>
         </form>
