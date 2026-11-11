@@ -70,6 +70,12 @@ class AutomapRanDetail:
 
 
 @dataclass(frozen=True)
+class RegistryPublishDetail:
+    title: str
+    set_version: str
+
+
+@dataclass(frozen=True)
 class ScanReportUpdatedDetail:
     """
     Sparse by design: only the fields that actually changed are passed in,
@@ -123,6 +129,8 @@ _DETAIL_SCHEMAS: dict[str, Type] = {
     Verb.RULES_EXPORT_REQUESTED: RulesExportRequestedDetail,
     Verb.RULES_DOWNLOADED: RulesDownloadedDetail,
     Verb.AUTOMAP_RAN: AutomapRanDetail,
+    Verb.REGISTRY_PUBLISH_REQUESTED: RegistryPublishDetail,
+    Verb.REGISTRY_IMPORT_REQUESTED: RegistryPublishDetail,
 }
 
 
