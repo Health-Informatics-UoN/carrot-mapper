@@ -33,6 +33,10 @@ class WorkerService(ABC):
     def trigger_rules_export(self, message_body: dict[str, Any]):
         """Trigger rules export."""
 
+    @abstractmethod
+    def trigger_registry_import(self, message_body: dict[str, Any]) -> str:
+        """Trigger a Mappings Registry import. Returns the worker's run id."""
+
 
 class AirflowWorkerService(WorkerService):
     """Airflow implementation of worker service."""
@@ -46,6 +50,7 @@ class AirflowWorkerService(WorkerService):
             settings.AIRFLOW_SCAN_REPORT_PROCESSING_DAG_ID
         )
         self._rules_export_dag_id = settings.AIRFLOW_RULES_EXPORT_DAG_ID
+        self._registry_import_dag_id = settings.AIRFLOW_REGISTRY_IMPORT_DAG_ID
 
     def _get_airflow_access_token(self) -> str:
         """Get a JWT access token from the Airflow API server (Airflow 3 no longer accepts basic auth)."""
@@ -115,6 +120,10 @@ class AirflowWorkerService(WorkerService):
 
     def trigger_rules_export(self, message_body: dict[str, Any]):
         self._trigger_airflow_dag(self._rules_export_dag_id, message_body)
+
+    def trigger_registry_import(self, message_body: dict[str, Any]) -> str:
+        response = self._trigger_airflow_dag(self._registry_import_dag_id, message_body)
+        return response.json().get("dag_run_id", "")
 
 
 # Function to create the appropriate service based on configuration
