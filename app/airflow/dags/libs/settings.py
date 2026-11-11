@@ -21,3 +21,8 @@ TEMP_TABLE_CLEANUP_DELAY = int(os.getenv("TEMP_TABLE_CLEANUP_DELAY", "60"))
 EXECUTE_VALUES_PAGE_SIZE = int(os.getenv("EXECUTE_VALUES_PAGE_SIZE", 1000000))
 
 AIRFLOW_VAR_JSON_VERSION = os.getenv("AIRFLOW_VAR_JSON_VERSION", "v1")
+
+# Source of the Mappings Registry license table (license_sync DAG)
+SPDX_LICENSE_LIST_URL = os.getenv(
+    "SPDX_LICENSE_LIST_URL", "https://spdx.org/licenses/licenses.json"
+)
