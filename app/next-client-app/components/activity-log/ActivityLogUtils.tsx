@@ -7,6 +7,8 @@ export const ACTIVITY_LOG_VERB_LABELS: Record<ActivityLogVerb, string> = {
   "rules.export_requested": "Rules export requested",
   "rules.downloaded": "Rules downloaded",
   "automap.ran": "Auto mapping ran",
+  "registry.publish_requested": "Direct SSSOM publish requested",
+  "registry.import_requested": "SSSOM import requested",
 };
 
 function formatRoleChanges(
@@ -93,6 +95,14 @@ export function describeActivityLogDetail(log: ActivityLog): string {
       return log.detail.file_name ? `File: ${log.detail.file_name}` : "";
     case "automap.ran":
       return log.detail.table_name ? `Table: ${log.detail.table_name}` : "";
+    case "registry.publish_requested": {
+      const { title, set_version } = log.detail;
+      return title ? `${title} (version ${set_version})` : "";
+    }
+    case "registry.import_requested": {
+      const { title, set_version } = log.detail;
+      return title ? `${title} (version ${set_version})` : "";
+    }
     default:
       return "";
   }
