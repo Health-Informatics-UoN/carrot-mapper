@@ -3,7 +3,7 @@ import { Forbidden } from "@/components/core/Forbidden";
 import { NavGroup } from "@/components/core/nav-group";
 import DeleteDialog from "@/components/scanreports/DeleteDialog";
 import { Button } from "@/components/ui/button";
-import { FileScan, Folders, GripVertical } from "lucide-react";
+import { FileScan, Folders, GripVertical, CloudUpload } from "lucide-react";
 import { Boundary } from "@/components/core/boundary";
 import { AvatarList } from "@/components/core/avatar-list";
 import {
@@ -181,8 +181,19 @@ export default async function ScanReportLayout(
           />
         </div>
 
+      {/* Publish to Registry button */}
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            disabled
+            className="text-black disabled:opacity-100"
+          >
+            <CloudUpload className="size-4" />
+            Publish to Registry
+          </Button>
+
         {/* Actions button */}
-        <div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline">
