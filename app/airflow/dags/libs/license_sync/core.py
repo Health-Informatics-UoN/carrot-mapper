@@ -6,13 +6,12 @@ from libs.db import pg_hook
 from libs.license_sync.spdx import LicenseRow, parse_spdx_licenses
 from libs.settings import SPDX_LICENSE_LIST_URL
 
-# `version` is left alone on update: SPDX has no separate version field.
 # Licenses are never deleted, as mapping sets may still reference them.
 upsert_license_query = """
     INSERT INTO registry_license
-        (id, license_iri, spdx_id, label, version, is_open, is_deprecated, see_also)
+        (id, license_iri, spdx_id, label, is_open, is_deprecated, see_also)
     VALUES
-        (%(id)s, %(license_iri)s, %(spdx_id)s, %(label)s, '', %(is_open)s,
+        (%(id)s, %(license_iri)s, %(spdx_id)s, %(label)s, %(is_open)s,
          %(is_deprecated)s, %(see_also)s::jsonb)
     ON CONFLICT (id) DO UPDATE SET
         license_iri = EXCLUDED.license_iri,
