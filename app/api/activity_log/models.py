@@ -22,6 +22,11 @@ class Verb(models.TextChoices):
     RULES_EXPORT_REQUESTED = "rules.export_requested", "Rules export requested"
     RULES_DOWNLOADED = "rules.downloaded", "Rules downloaded"
     AUTOMAP_RAN = "automap.ran", "Auto mapping ran"
+    REGISTRY_PUBLISH_REQUESTED = (
+        "registry.publish_requested",
+        "Direct SSSOM publish requested",
+    )
+    REGISTRY_IMPORT_REQUESTED = "registry.import_requested", "SSSOM import requested"
 
 
 class ActivityLog(BaseModel):
