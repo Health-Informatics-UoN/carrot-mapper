@@ -116,33 +116,12 @@ JUSTIFICATIONS = [
     ),
 ]
 
-# (id, license_iri, spdx_id, label, version, is_open)
-LICENSES = [
-    (
-        "CC0-1.0",
-        "https://creativecommons.org/publicdomain/zero/1.0/",
-        "CC0-1.0",
-        "Creative Commons Zero v1.0 Universal",
-        "1.0",
-        True,
-    ),
-    (
-        "CC-BY-4.0",
-        "https://creativecommons.org/licenses/by/4.0/",
-        "CC-BY-4.0",
-        "Creative Commons Attribution 4.0 International",
-        "4.0",
-        True,
-    ),
-]
-
 
 def seed(apps, schema_editor):
     Origin = apps.get_model("registry", "Origin")
     Status = apps.get_model("registry", "Status")
     Predicate = apps.get_model("registry", "Predicate")
     MappingJustification = apps.get_model("registry", "MappingJustification")
-    License = apps.get_model("registry", "License")
 
     for id_, label, desc in ORIGINS:
         Origin.objects.update_or_create(
@@ -161,17 +140,6 @@ def seed(apps, schema_editor):
         MappingJustification.objects.update_or_create(
             justification_id=jid, defaults={"label": label, "description": desc}
         )
-    for id_, iri, spdx, label, version, is_open in LICENSES:
-        License.objects.update_or_create(
-            id=id_,
-            defaults={
-                "license_iri": iri,
-                "spdx_id": spdx,
-                "label": label,
-                "version": version,
-                "is_open": is_open,
-            },
-        )
 
 
 def unseed(apps, schema_editor):
@@ -186,9 +154,6 @@ def unseed(apps, schema_editor):
     ).delete()
     apps.get_model("registry", "MappingJustification").objects.filter(
         justification_id__in=[j[0] for j in JUSTIFICATIONS]
-    ).delete()
-    apps.get_model("registry", "License").objects.filter(
-        id__in=[lic[0] for lic in LICENSES]
     ).delete()
 
 
