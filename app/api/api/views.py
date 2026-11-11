@@ -1,4 +1,5 @@
 import datetime
+import logging
 import os
 import random
 import string
@@ -25,6 +26,7 @@ from jobs.models import Job, JobStage, StageStatus
 from mapping.models import (
     DataDictionary,
     DataPartner,
+    MappingRecommendation,
     MappingRule,
     OmopField,
     Project,
@@ -103,6 +105,7 @@ from api.serializers import (
     VocabularySerializer,
 )
 
+logger = logging.getLogger(__name__)
 storage_service = StorageService()
 worker_service = get_worker_service()
 
@@ -700,18 +703,55 @@ class ScanReportDetailV2(
         return self.destroy(request, *args, **kwargs)
 
     def perform_destroy(self, instance):
-        try:
-            storage_service.delete_file(instance.name, "scan-reports")
-        except Exception as e:
-            raise Exception(f"Error deleting scan report: {e}")
+        # Delete the DB rows first, in one transaction, and only then the files.
+        blobs = [(instance.name, "scan-reports")]
         if instance.data_dictionary:
+            blobs.append((instance.data_dictionary.name, "data-dictionaries"))
+
+        with transaction.atomic():
+            _bulk_delete_scan_report_contents(instance)
+            instance.delete()
+
+        for blob_name, container in blobs:
             try:
-                storage_service.delete_file(
-                    instance.data_dictionary.name, "data-dictionaries"
+                storage_service.delete_file(blob_name, container)
+            except Exception:
+                # The Scan Report is already gone; an orphaned file is
+                # harmless, so log it for clean-up rather than returning a 500.
+                logger.exception(
+                    f"Scan Report {instance.pk} deleted but its file "
+                    f"'{blob_name}' in '{container}' could not be removed."
                 )
-            except Exception as e:
-                raise Exception(f"Error deleting data dictionary: {e}")
-        instance.delete()
+
+
+def _bulk_delete_scan_report_contents(scan_report: ScanReport) -> None:
+    """
+    Deletes a Scan Report's values, and the concepts and recommendations
+    attached to its values and fields, with set-based queries.
+
+    `ScanReportValue` and `ScanReportField` have `GenericRelation`s, which
+    stop Django's delete collector from bulk deleting them: a plain
+    `scan_report.delete()` loads every value row into Python first, which can
+    take minutes for a large report. Clearing the generic relations up front
+    and raw-deleting the values (nothing else references them, and no
+    delete signals are registered for them) leaves only the small tables for
+    the collector.
+    """
+    fields = ScanReportField.objects.filter(scan_report_table__scan_report=scan_report)
+    values = ScanReportValue.objects.filter(scan_report_field__in=fields)
+
+    for model, queryset in ((ScanReportValue, values), (ScanReportField, fields)):
+        content_type = ContentType.objects.get_for_model(model)
+        ids = queryset.values("id")
+        # Cascades to the MappingRules built from these concepts.
+        ScanReportConcept.objects.filter(
+            content_type=content_type, object_id__in=ids
+        ).delete()
+        MappingRecommendation.objects.filter(
+            content_type=content_type, object_id__in=ids
+        ).delete()
+
+    values._raw_delete(values.db)
 
 
 class ScanReportTableIndexV2(ScanReportPermissionMixin, GenericAPIView, ListModelMixin):
