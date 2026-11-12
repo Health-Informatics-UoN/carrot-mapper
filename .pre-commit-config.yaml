@@ -2,7 +2,7 @@
 # See https://pre-commit.com/hooks.html for more hooks
 # Vendored SSSOM spec files must stay byte-for-byte as published: the official
 # example TSVs end rows with empty values (trailing tabs) that are significant.
-exclude: ^app/airflow/test/sssom_spec/
+exclude: ^app/airflow/dags/libs/sssom_spec/
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.5.0

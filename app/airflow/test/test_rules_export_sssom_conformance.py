@@ -14,7 +14,7 @@ import pytest
 import yaml
 from libs.rules_export.sssom import write_sssom_tsv
 
-SPEC_DIR = Path(__file__).parent / "sssom_spec"
+SPEC_DIR = Path(__file__).parent.parent / "dags" / "libs" / "sssom_spec"
 JSON_SCHEMA = json.loads((SPEC_DIR / "sssom_schema.schema.json").read_text())
 LINKML = yaml.safe_load((SPEC_DIR / "sssom_schema.yaml").read_text())
 
@@ -568,3 +568,25 @@ def test_carrot_export_subjects_and_cardinality():
     assert {r["mapping_cardinality"] for r in rows} == {"1:1"}
     # person_id / date rules aren't mappings, and there are no extension columns
     assert not [c for c in header if c.startswith("ext_")]
+
+
+def test_export_with_registry_set_metadata_is_fully_conformant():
+    """
+    With the set identity the registry supplies, the known deviations go away:
+    the file passes the strict checker with no exceptions.
+    """
+    text = write_sssom_tsv(
+        RULES,
+        created=CREATED,
+        mapper_version="4.3.1",
+        creator_username="jane_doe",
+        creator_orcid="0000-0002-1825-009X",
+        set_metadata={
+            "mapping_set_id": "https://carrot.ac.uk/registry/sets/demo",
+            "mapping_set_version": "1.0.0",
+            "mapping_set_title": "Demo set",
+            "license": "https://creativecommons.org/licenses/by/4.0/",
+        },
+    )
+    assert check_sssom_tsv(text) == []
+    assert text.startswith("#mapping_set_id: https://carrot.ac.uk/registry/sets/demo\n")
