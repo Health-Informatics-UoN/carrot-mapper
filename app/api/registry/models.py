@@ -33,14 +33,24 @@ class Predicate(models.Model):
 
 
 class License(models.Model):
-    """License under which a mapping set is published."""
+    """
+    License under which a mapping set is published.
+
+    Synced monthly from the SPDX License List by the Airflow `license_sync`
+    DAG, keyed by SPDX license ID; do not edit synced rows by hand.
+    """
 
     id = models.CharField(max_length=255, primary_key=True)
     license_iri = models.URLField(max_length=500, unique=True)
     spdx_id = models.CharField(max_length=100, blank=True, default="")
     label = models.CharField(max_length=255)
-    version = models.CharField(max_length=50, blank=True, default="")
+    # OSI-approved or FSF-libre, per SPDX.
     is_open = models.BooleanField(default=True)
+    # Deprecated by SPDX; kept because mapping sets may still reference it.
+    is_deprecated = models.BooleanField(default=False)
+    # Other IRIs for the license (e.g. the creativecommons.org URL), used to
+    # match the license IRI given in an uploaded SSSOM file.
+    see_also = models.JSONField(default=list, blank=True)
 
     def __str__(self):
         return self.label

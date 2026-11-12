@@ -13,12 +13,12 @@ export default async function PublicLayout({
   const user = session?.token?.user;
 
   return (
-    <>
+    <div className="flex flex-col min-h-svh">
       <MenuBar user={user} />
-      <section className="w-full max-w-[1800px] mx-auto px-4 md:px-8 flex flex-col min-h-svh">
+      <section className="w-full max-w-[1800px] mx-auto px-4 md:px-8 flex flex-col flex-1">
         {children}
       </section>
       <Footer />
-    </>
+    </div>
   );
 }

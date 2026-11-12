@@ -22,6 +22,11 @@ EXECUTE_VALUES_PAGE_SIZE = int(os.getenv("EXECUTE_VALUES_PAGE_SIZE", 1000000))
 
 AIRFLOW_VAR_JSON_VERSION = os.getenv("AIRFLOW_VAR_JSON_VERSION", "v1")
 
+# Source of the Mappings Registry license table (license_sync DAG)
+SPDX_LICENSE_LIST_URL = os.getenv(
+    "SPDX_LICENSE_LIST_URL", "https://spdx.org/licenses/licenses.json"
+)
+
 # Carrot Mappings Registry (registry_import DAG)
 # Storage container/bucket holding every registry SSSOM file (ImportJob.file_key
 # and MappingSet.file_key are blob names inside it).
