@@ -10,16 +10,20 @@ from datetime import UTC, date, datetime
 from pathlib import Path
 
 import pytest
-from libs.registry_import.parse import decode, parse_sssom
-from libs.registry_import.validate import (
+from libs.registry_import.full_validate_checks import (
     DRAFT,
     PUBLISHED,
     STAGING_COLUMNS,
     Vocabulary,
     build_import,
     carrot_term_parts,
+)
+from libs.registry_import.full_validate_licenses import (
+    License,
+    LicenseLookup,
     normalise_license_iri,
 )
+from libs.registry_import.full_validate_parse import decode, parse_sssom
 from libs.rules_export.sssom import write_sssom_tsv
 
 SPEC_DIR = Path(__file__).parent.parent / "dags" / "libs" / "sssom_spec"
@@ -39,22 +43,21 @@ VOCAB = Vocabulary(
         "semapv:UnspecifiedMatching",
     },
 )
-# As the license_sync DAG stores them from the SPDX License List
-VOCAB.add_license(
-    "CC0-1.0",
-    "https://spdx.org/licenses/CC0-1.0",
-    ["https://creativecommons.org/publicdomain/zero/1.0/legalcode"],
-)
-VOCAB.add_license(
-    "CC-BY-4.0",
-    "https://spdx.org/licenses/CC-BY-4.0",
-    ["https://creativecommons.org/licenses/by/4.0/legalcode"],
-)
-VOCAB.add_license(
-    "LPPL-1.3c",
-    "https://spdx.org/licenses/LPPL-1.3c",
-    [],
-    is_deprecated=True,
+# registry_license rows, as the license_sync DAG stores them from SPDX
+LICENSES = LicenseLookup(
+    [
+        License(
+            "CC0-1.0",
+            "https://spdx.org/licenses/CC0-1.0",
+            ("https://creativecommons.org/publicdomain/zero/1.0/legalcode",),
+        ),
+        License(
+            "CC-BY-4.0",
+            "https://spdx.org/licenses/CC-BY-4.0",
+            ("https://creativecommons.org/licenses/by/4.0/legalcode",),
+        ),
+        License("LPPL-1.3c", "https://spdx.org/licenses/LPPL-1.3c", is_deprecated=True),
+    ]
 )
 
 HEADER = """\
@@ -71,7 +74,9 @@ ROW = "HP:0000175\tCleft palate\tskos:exactMatch\tMP:0000111\tcleft palate\tsema
 
 
 def plan_for(text: str, overrides=None, max_issues=1000):
-    return build_import(parse_sssom(text), VOCAB, overrides, max_issues=max_issues)
+    return build_import(
+        parse_sssom(text), VOCAB, LICENSES, overrides, max_issues=max_issues
+    )
 
 
 def codes(plan, level=None):

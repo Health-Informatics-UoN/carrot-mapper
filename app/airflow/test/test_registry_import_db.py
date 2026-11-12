@@ -23,10 +23,20 @@ from typing import Any
 import psycopg
 import pytest
 from airflow.exceptions import AirflowFailException
-from libs.registry_import import core, queries
+from libs.registry_import import (
+    finalize,
+    full_validate,
+    helpers,
+    load,
+    on_failure,
+    prepare_source,
+    queries,
+    validate_params,
+)
+from libs.registry_import.full_validate_checks import Vocabulary, build_import
+from libs.registry_import.full_validate_licenses import License, LicenseLookup
+from libs.registry_import.full_validate_parse import parse_sssom
 from libs.registry_import.load import LoadError, load_plan
-from libs.registry_import.parse import parse_sssom
-from libs.registry_import.validate import Vocabulary, build_import
 
 DATABASE_URL = os.getenv("REGISTRY_IMPORT_TEST_DATABASE_URL")
 pytestmark = pytest.mark.skipif(
@@ -241,19 +251,22 @@ def sssom(
     return "\n".join(lines) + "\n"
 
 
-def vocabulary(conn) -> Vocabulary:
+def plan_for(conn, text: str):
+    """build_import with the database's vocabularies and licenses."""
     with conn.cursor() as cursor:
         cursor.execute(queries.get_predicates_query)
         predicates = {r[0] for r in cursor.fetchall()}
         cursor.execute(queries.get_justifications_query)
         justifications = {r[0] for r in cursor.fetchall()}
         cursor.execute(queries.get_licenses_query)
-        licenses = cursor.fetchall()
+        licenses = LicenseLookup(
+            License(i, iri, tuple(see_also or ()), deprecated)
+            for i, iri, see_also, deprecated in cursor.fetchall()
+        )
     conn.rollback()
-    vocab = Vocabulary(predicates, justifications)
-    for row in licenses:
-        vocab.add_license(*row)
-    return vocab
+    return build_import(
+        parse_sssom(text), Vocabulary(predicates, justifications), licenses
+    )
 
 
 def fetch(conn, query, *params):
@@ -272,7 +285,7 @@ def fetch(conn, query, *params):
 def test_load_inserts_set_terms_and_mappings(conn, cleanup, user):
     subject, obj = unique_prefixes(cleanup)
     job = make_job(conn, cleanup, user)
-    plan = build_import(parse_sssom(sssom(subject, obj)), vocabulary(conn))
+    plan = plan_for(conn, sssom(subject, obj))
     assert plan.ok, plan.issues.as_dicts()
 
     stats = load_plan(
@@ -312,7 +325,7 @@ def test_load_inserts_set_terms_and_mappings(conn, cleanup, user):
 def test_reloading_the_same_job_is_idempotent(conn, cleanup, user):
     subject, obj = unique_prefixes(cleanup)
     job = make_job(conn, cleanup, user)
-    plan = build_import(parse_sssom(sssom(subject, obj)), vocabulary(conn))
+    plan = plan_for(conn, sssom(subject, obj))
     load_plan(conn, plan, import_job_id=job, origin="SSSOM_UPLOAD", file_key="k")
     again = load_plan(
         conn, plan, import_job_id=job, origin="SSSOM_UPLOAD", file_key="k"
@@ -332,18 +345,17 @@ def test_reloading_the_same_job_is_idempotent(conn, cleanup, user):
 
 def test_new_version_reuses_terms(conn, cleanup, user):
     subject, obj = unique_prefixes(cleanup)
-    vocab = vocabulary(conn)
     first, second = make_job(conn, cleanup, user), make_job(conn, cleanup, user)
     load_plan(
         conn,
-        build_import(parse_sssom(sssom(subject, obj, "1.0")), vocab),
+        plan_for(conn, sssom(subject, obj, "1.0")),
         import_job_id=first,
         origin="SSSOM_UPLOAD",
         file_key="a",
     )
     stats = load_plan(
         conn,
-        build_import(parse_sssom(sssom(subject, obj, "2.0")), vocab),
+        plan_for(conn, sssom(subject, obj, "2.0")),
         import_job_id=second,
         origin="SSSOM_UPLOAD",
         file_key="b",
@@ -353,8 +365,7 @@ def test_new_version_reuses_terms(conn, cleanup, user):
 
 def test_existing_set_version_is_refused(conn, cleanup, user):
     subject, obj = unique_prefixes(cleanup)
-    vocab = vocabulary(conn)
-    plan = build_import(parse_sssom(sssom(subject, obj)), vocab)
+    plan = plan_for(conn, sssom(subject, obj))
     first, second = make_job(conn, cleanup, user), make_job(conn, cleanup, user)
     load_plan(conn, plan, import_job_id=first, origin="SSSOM_UPLOAD", file_key="a")
     with pytest.raises(LoadError, match="already exists"):
@@ -369,7 +380,7 @@ def test_existing_set_version_is_refused(conn, cleanup, user):
 def test_failure_mid_load_leaves_nothing_behind(conn, cleanup, user, monkeypatch):
     subject, obj = unique_prefixes(cleanup)
     job = make_job(conn, cleanup, user)
-    plan = build_import(parse_sssom(sssom(subject, obj)), vocabulary(conn))
+    plan = plan_for(conn, sssom(subject, obj))
     # The set and terms are inserted, then the mappings insert fails
     monkeypatch.setattr(queries, "insert_mappings_query", "SELECT 1 / 0")
 
@@ -396,7 +407,7 @@ def test_invalid_plan_is_never_loaded(conn, cleanup, user):
     with pytest.raises(LoadError, match="invalid"):
         load_plan(
             conn,
-            build_import(parse_sssom(bad), vocabulary(conn)),
+            plan_for(conn, bad),
             import_job_id=job,
             origin="SSSOM_UPLOAD",
             file_key="k",
@@ -426,8 +437,8 @@ class FakeStorage:
 @pytest.fixture
 def storage(tmp_path, monkeypatch):
     fake = FakeStorage(tmp_path)
-    monkeypatch.setattr(core, "upload_blob_to_storage", fake.upload)
-    monkeypatch.setattr(core, "download_blob_to_tmp", fake.download)
+    monkeypatch.setattr(prepare_source, "upload_blob_to_storage", fake.upload)
+    monkeypatch.setattr(full_validate, "download_blob_to_tmp", fake.download)
     return fake
 
 
@@ -435,15 +446,23 @@ def run_dag(conf: dict) -> None:
     """Run the DAG's tasks in order, as Airflow would, raising the first failure."""
     dag_run = SimpleNamespace(conf=conf, run_id=f"manual__{uuid.uuid4().hex[:8]}")
     context = {"dag_run": dag_run}
-    params = core.validate_params_registry_import(**context)
+    params = validate_params.validate_params_registry_import(**context)
     ti = SimpleNamespace(xcom_pull=lambda task_ids: params)
-    for task in (core.prepare_source, core.full_validate, core.load, core.finalize):
+    steps = (
+        prepare_source.prepare_source,
+        full_validate.full_validate,
+        load.load,
+        finalize.finalize,
+    )
+    for task in steps:
         try:
             task(ti=ti, dag_run=dag_run)
         except Exception as e:
             # what Airflow does on the final failure: task callback, then DAG callback
-            core.update_import_job_on_failure({"dag_run": dag_run, "exception": e})
-            core.update_import_job_on_failure(
+            on_failure.update_import_job_on_failure(
+                {"dag_run": dag_run, "exception": e}
+            )
+            on_failure.update_import_job_on_failure(
                 {"dag_run": dag_run, "reason": "task_failure"}
             )
             raise
@@ -473,7 +492,7 @@ def notifications(conn, user):
 def test_dag_imports_an_upload(conn, cleanup, user, storage):
     subject, obj = unique_prefixes(cleanup)
     job = make_job(conn, cleanup, user)
-    key = core.file_key_for(job)
+    key = helpers.file_key_for(job)
     storage.blobs[("registry-sssom", key)] = sssom(subject, obj).encode()
 
     run_dag(
@@ -508,7 +527,7 @@ def test_dag_imports_an_upload(conn, cleanup, user, storage):
 def test_dag_records_validation_failure_once(conn, cleanup, user, storage):
     subject, obj = unique_prefixes(cleanup)
     job = make_job(conn, cleanup, user)
-    key = core.file_key_for(job)
+    key = helpers.file_key_for(job)
     bad = sssom(subject, obj).replace("skos:exactMatch", "skos:madeUp")
     storage.blobs[("registry-sssom", key)] = bad.encode()
 
@@ -536,7 +555,7 @@ def test_dag_records_validation_failure_once(conn, cleanup, user, storage):
 def test_dag_refuses_a_job_that_already_succeeded(conn, cleanup, user, storage):
     subject, obj = unique_prefixes(cleanup)
     job = make_job(conn, cleanup, user)
-    key = core.file_key_for(job)
+    key = helpers.file_key_for(job)
     storage.blobs[("registry-sssom", key)] = sssom(subject, obj).encode()
     conf = {
         "import_job_id": job,
@@ -562,7 +581,25 @@ def test_dag_refuses_a_job_that_already_succeeded(conn, cleanup, user, storage):
                 "scan_report_id": 1,
                 "overrides": {"set_uri": "https://x.org/s"},
             },
-            "needs overrides.set_version; CARROT_DIRECT_PUBLISH needs overrides.license",
+            "needs overrides.set_version; CARROT_DIRECT_PUBLISH needs overrides.title; "
+            "CARROT_DIRECT_PUBLISH needs overrides.license; CARROT_DIRECT_PUBLISH "
+            "needs overrides.include_orcid_ids",
+        ),
+        (
+            {
+                "import_job_id": str(uuid.uuid4()),
+                "origin": "CARROT_DIRECT_PUBLISH",
+                "scan_report_id": 1,
+                "overrides": {
+                    "set_uri": "https://x.org/s",
+                    "set_version": "1",
+                    "title": "T",
+                    "license": "NOT-A-LICENSE",
+                    "include_orcid_ids": "yes",
+                },
+            },
+            "needs overrides.include_orcid_ids \\(true or false\\); "
+            "Unknown license id: NOT-A-LICENSE",
         ),
         (
             {"import_job_id": str(uuid.uuid4()), "origin": "SSSOM_UPLOAD"},
@@ -573,7 +610,7 @@ def test_dag_refuses_a_job_that_already_succeeded(conn, cleanup, user, storage):
 def test_bad_parameters_fail_without_retrying(conn, conf, message):
     context = {"dag_run": SimpleNamespace(conf={"user_id": 1, **conf}, run_id="r")}
     with pytest.raises(AirflowFailException, match=message):
-        core.validate_params_registry_import(**context)
+        validate_params.validate_params_registry_import(**context)
 
 
 # Used only when the database has no OMOP concepts of its own.
@@ -745,7 +782,7 @@ def test_dag_publishes_a_scan_report(conn, cleanup, user, storage, scan_report):
             "overrides": {
                 "set_uri": set_uri,
                 "set_version": "1",
-                "title": "",
+                "title": "Demo mapping set",
                 "description": "",
                 "license": "CC-BY-4.0",
                 "status": "DRAFT",
@@ -758,7 +795,7 @@ def test_dag_publishes_a_scan_report(conn, cleanup, user, storage, scan_report):
 
     row = job_row(conn, job)
     assert row["status"] == "SUCCEEDED", row
-    assert row["file_key"] == core.file_key_for(job)
+    assert row["file_key"] == helpers.file_key_for(job)
 
     # The stored file is the exporter's, with the set identity from the request
     text = storage.blobs[("registry-sssom", row["file_key"])].decode()
@@ -771,7 +808,8 @@ def test_dag_publishes_a_scan_report(conn, cleanup, user, storage, scan_report):
     assert f"#license: {license_iri}\n" in text
     # the user didn't opt in to publishing their ORCID iD
     assert "creator_id" not in text and "orcid" not in text
-    assert "#mapping_set_title: Demo scan report\n" in text
+    # the user's title, not the scan report's name
+    assert "#mapping_set_title: Demo mapping set\n" in text
     assert "#mapping_tool_version: 4.3.1\n" in text
 
     [(status, title, license_id, source_sr, origin)] = fetch(
@@ -782,7 +820,7 @@ def test_dag_publishes_a_scan_report(conn, cleanup, user, storage, scan_report):
     )
     assert (status, title, license_id, source_sr, origin) == (
         "DRAFT",
-        "Demo scan report",
+        "Demo mapping set",
         "CC-BY-4.0",
         scan_report.id,
         "CARROT_DIRECT_PUBLISH",
@@ -807,7 +845,7 @@ def test_dag_publishes_a_scan_report(conn, cleanup, user, storage, scan_report):
             value_iri,
         ) == [(scan_report.value_concept.version, scan_report.value_concept.domain)]
     # the per-job temp rules table is gone
-    suffix = core.temp_rules_table_suffix(job)
+    suffix = helpers.temp_rules_table_suffix(job)
     assert fetch(
         conn,
         "SELECT to_regclass(%s)",
@@ -815,7 +853,7 @@ def test_dag_publishes_a_scan_report(conn, cleanup, user, storage, scan_report):
     ) == [(None,)]
     assert (
         notifications(conn, user)[-1][1]
-        == "'Demo scan report' was saved as a draft in the mappings registry"
+        == "'Demo mapping set' was saved as a draft in the mappings registry"
     )
 
 
@@ -878,7 +916,9 @@ def test_dag_fails_cleanly_for_a_scan_report_without_mappings(
                 "overrides": {
                     "set_uri": "https://x.org/s",
                     "set_version": "1",
-                    "license": CC_BY,
+                    "title": "Empty",
+                    "license": "CC-BY-4.0",
+                    "include_orcid_ids": False,
                 },
             }
         )

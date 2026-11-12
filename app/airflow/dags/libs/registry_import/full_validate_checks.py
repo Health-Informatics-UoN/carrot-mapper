@@ -37,7 +37,8 @@ from urllib.parse import unquote
 import jsonschema
 import yaml
 
-from libs.registry_import.parse import ERROR, WARNING, Issue, ParsedSSSOM
+from libs.registry_import.full_validate_licenses import LicenseLookup
+from libs.registry_import.full_validate_parse import ERROR, WARNING, Issue, ParsedSSSOM
 from libs.rules_export.sssom import (
     OMOP_CONCEPT_IRI,
     OMOP_CONCEPT_PREFIX,
@@ -280,54 +281,12 @@ def load_spec() -> Spec:
 # ---------------------------------------------------------------------------
 
 
-# Each license IRI's equivalents: "https://creativecommons.org/licenses/by/4.0/",
-# ".../by/4.0/legalcode", "http://..." and SPDX's ".../CC-BY-4.0.html" all name
-# the same license.
-_LICENSE_IRI_SUFFIX = re.compile(r"(/(legalcode|deed)(\.[a-z_-]+)?|\.(html|txt|json))$")
-
-
-def normalise_license_iri(iri: str) -> str:
-    """A comparison key for a license IRI (not for storing)."""
-    key = iri.strip().lower()
-    if key.startswith("http://"):
-        key = "https://" + key[len("http://") :]
-    key = key.rstrip("/")
-    key = _LICENSE_IRI_SUFFIX.sub("", key)
-    return key.rstrip("/")
-
-
 @dataclass
 class Vocabulary:
-    """The registry's controlled vocabularies, read from the database."""
+    """The registry's controlled vocabularies (predicates, justifications)."""
 
     predicates: set[str]
     justifications: set[str]
-    # normalise_license_iri(license_iri or a see_also IRI) -> License.id
-    licenses: dict[str, str] = field(default_factory=dict)
-    # License.id -> License.license_iri
-    license_iris: dict[str, str] = field(default_factory=dict)
-    # License.id of licenses SPDX has deprecated
-    deprecated_licenses: set[str] = field(default_factory=set)
-
-    def add_license(
-        self,
-        license_id: str,
-        license_iri: str,
-        see_also: list[str] | None = None,
-        is_deprecated: bool = False,
-    ) -> None:
-        """
-        Register a registry_license row. A file may name the license by its
-        license_iri (the SPDX IRI the license_sync DAG stores) or by any of its
-        see_also IRIs (e.g. the creativecommons.org URL); the license's own
-        IRI wins if two licenses share an equivalent IRI.
-        """
-        for iri in see_also or []:
-            self.licenses.setdefault(normalise_license_iri(iri), license_id)
-        self.licenses[normalise_license_iri(license_iri)] = license_id
-        self.license_iris[license_id] = license_iri
-        if is_deprecated:
-            self.deprecated_licenses.add(license_id)
 
 
 @dataclass
@@ -551,7 +510,7 @@ def _check_set(
     parsed: ParsedSSSOM,
     override_slots: dict[str, str],
     spec: Spec,
-    vocab: Vocabulary,
+    licenses: LicenseLookup,
     log: IssueLog,
 ) -> tuple[SetRecord, dict[str, Any], set[str], _Curies] | None:
     """
@@ -705,8 +664,9 @@ def _check_set(
         setattr(record, slot, str(metadata.get(slot) or ""))
 
     license_iri = metadata.get("license")
-    record.license_id = _resolve_license(license_iri, vocab)
-    if license_iri and record.license_id is None:
+    license = licenses.find(license_iri)
+    record.license_id = license.id if license else None
+    if license_iri and license is None:
         log.warning(
             "unknown_license",
             f"License {license_iri!r} is not one of the registry's licenses; "
@@ -714,7 +674,7 @@ def _check_set(
             "extra_metadata)",
             column="license",
         )
-    elif record.license_id in vocab.deprecated_licenses:
+    elif license and license.is_deprecated:
         log.warning(
             "deprecated_license",
             f"License {license_iri!r} ({record.license_id}) is deprecated by SPDX",
@@ -750,12 +710,6 @@ def _check_set(
         if metadata.get(slot) not in (None, "")
     }
     return record, propagated, extension_slots, curies
-
-
-def _resolve_license(license_iri: Any, vocab: Vocabulary) -> str | None:
-    if not license_iri:
-        return None
-    return vocab.licenses.get(normalise_license_iri(str(license_iri)))
 
 
 # ---------------------------------------------------------------------------
@@ -809,10 +763,14 @@ def _slot_errors(spec: Spec, slot: str, value: Any, cache: dict) -> tuple[str, .
 def build_import(
     parsed: ParsedSSSOM,
     vocab: Vocabulary,
+    licenses: LicenseLookup,
     overrides: Mapping[str, Any] | None = None,
     max_issues: int = 1000,
 ) -> ImportPlan:
-    """Validate a parsed SSSOM file and normalise it for loading."""
+    """
+    Validate a parsed SSSOM file and normalise it for loading. ``overrides``
+    are the request's metadata (license as an IRI, see helpers.file_overrides).
+    """
     spec = load_spec()
     log = IssueLog(max_issues)
     for issue in parsed.issues:
@@ -822,7 +780,7 @@ def build_import(
     if not parsed.header:
         return plan
 
-    checked = _check_set(parsed, override_slots, spec, vocab, log)
+    checked = _check_set(parsed, override_slots, spec, licenses, log)
     if checked is None:
         return plan
     plan.mapping_set, propagated, ext_slots, curies = checked

@@ -3,15 +3,13 @@ from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.providers.standard.operators.empty import EmptyOperator
 from airflow.sdk import chain
-from libs.registry_import.core import (
-    VALIDATE_PARAMS_TASK,
-    finalize,
-    full_validate,
-    load,
-    prepare_source,
-    update_import_job_on_failure,
-    validate_params_registry_import,
-)
+from libs.registry_import.finalize import finalize
+from libs.registry_import.full_validate import full_validate
+from libs.registry_import.helpers import VALIDATE_PARAMS_TASK
+from libs.registry_import.load import load
+from libs.registry_import.on_failure import update_import_job_on_failure
+from libs.registry_import.prepare_source import prepare_source
+from libs.registry_import.validate_params import validate_params_registry_import
 from libs.settings import (
     AIRFLOW_DAGRUN_TIMEOUT,
     AIRFLOW_DEBUG_MODE,
