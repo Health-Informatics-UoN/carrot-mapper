@@ -15,6 +15,7 @@ class ScanReportRegistryPublishSerializer(serializers.Serializer):
         default=Status.PUBLISHED,
         help_text="Status of the mapping set once the import succeeds.",
     )
+    include_orcid_ids = serializers.BooleanField(default=False)
 
 
 class RegistryImportAcceptedSerializer(serializers.Serializer):
