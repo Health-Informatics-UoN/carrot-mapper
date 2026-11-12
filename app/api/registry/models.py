@@ -127,6 +127,9 @@ class ImportJob(models.Model):
     started_at = models.DateTimeField(null=True, blank=True)
     finished_at = models.DateTimeField(null=True, blank=True)
     params = models.JSONField(default=dict, blank=True)
+    # Written by the registry_import DAG on success, e.g.
+    # {"rows": 1200, "terms_created": 340, "warnings": 2}.
+    stats = models.JSONField(default=dict, blank=True)
 
     class Meta:
         ordering = ["-started_at"]
