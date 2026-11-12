@@ -807,11 +807,11 @@ def test_dag_publishes_a_scan_report(conn, cleanup, user, storage, scan_report):
             value_iri,
         ) == [(scan_report.value_concept.version, scan_report.value_concept.domain)]
     # the per-job temp rules table is gone
-    suffix = uuid.UUID(job).hex[:12]
+    suffix = core.temp_rules_table_suffix(job)
     assert fetch(
         conn,
         "SELECT to_regclass(%s)",
-        f"temp_rules_export_{scan_report.id}_registry_{suffix}",
+        f"temp_rules_export_{scan_report.id}_{suffix}",
     ) == [(None,)]
     assert (
         notifications(conn, user)[-1][1]

@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 
 from airflow import DAG
 from airflow.providers.standard.operators.empty import EmptyOperator
+from airflow.sdk import chain
 from libs.registry_import.core import (
     VALIDATE_PARAMS_TASK,
     finalize,
@@ -77,9 +78,5 @@ tasks = [
 # End the workflow
 end = EmptyOperator(task_id="end", dag=dag)
 
-# Execute the tasks
-curr = start
-for task in tasks:
-    curr >> task
-    curr = task
-curr >> end
+# Execute the tasks in order
+chain(start, *tasks, end)

@@ -67,6 +67,15 @@ MAPPING_SET_URL = "/registry/mapping-sets/{mapping_set_id}"
 IMPORT_JOB_URL = "/registry/imports/{import_job_id}"
 
 
+def temp_rules_table_suffix(import_job_id: str) -> str:
+    """
+    Suffix of a direct publish's temp rules table: one per job, so concurrent
+    publishes (or a rules export) of the same scan report don't share it.
+    Postgres truncates names at 63 characters, hence the short form.
+    """
+    return f"registry_{uuid.UUID(import_job_id).hex[:12]}"
+
+
 def file_key_for(import_job_id: str) -> str:
     """Blob name of a job's SSSOM file in REGISTRY_SSSOM_CONTAINER."""
     return f"imports/{import_job_id}/original.sssom.tsv"
@@ -300,9 +309,7 @@ def _build_direct_publish_file(params: dict[str, Any]) -> str:
             raise AirflowFailException(f"Scan report {scan_report_id} does not exist")
         slots["mapping_set_title"] = row[0]
 
-    # One temp rules table per job, so concurrent publishes (or a rules export)
-    # of the same scan report don't share it. Postgres truncates names at 63.
-    table_suffix = f"registry_{uuid.UUID(import_job_id).hex[:12]}"
+    table_suffix = temp_rules_table_suffix(import_job_id)
     try:
         pg_hook.run(
             create_update_temp_rules_table_query
@@ -469,12 +476,16 @@ def update_import_job_on_failure(context) -> None:
                 IMPORT_JOB_URL.format(import_job_id=import_job_id),
             )
 
+        # A failed direct publish may leave its temp rules table behind.
         scan_report_id = conf.get("scan_report_id")
         if conf.get("origin") == CARROT_DIRECT_PUBLISH and scan_report_id:
             try:
-                suffix = f"registry_{uuid.UUID(import_job_id).hex[:12]}"
-                _drop_temp_rules_table(int(scan_report_id), suffix)
+                suffix = temp_rules_table_suffix(import_job_id)
+                scan_report_id = int(scan_report_id)
             except (TypeError, ValueError):
-                pass
+                # validate_params rejected these ids, so no table was created
+                logging.info("Invalid ids in the run conf: no temp rules table to drop")
+            else:
+                _drop_temp_rules_table(scan_report_id, suffix)
     except Exception as e:
         logging.error(f"Failed to update ImportJob on failure: {e!s}")
