@@ -16,6 +16,11 @@ class NotificationType(models.TextChoices):
     AUTOMAP_FAILED = "automap.failed", "Auto mapping failed"
     RULES_EXPORT_COMPLETE = "rules.export_complete", "Rules export complete"
     RULES_EXPORT_FAILED = "rules.export_failed", "Rules export failed"
+    REGISTRY_IMPORT_COMPLETE = (
+        "registry.import_complete",
+        "Registry import complete",
+    )
+    REGISTRY_IMPORT_FAILED = "registry.import_failed", "Registry import failed"
     BROADCAST = "broadcast", "Broadcast announcement"
 
 
