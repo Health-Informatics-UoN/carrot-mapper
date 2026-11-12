@@ -20,6 +20,7 @@ from mapping.models import (
 from registry.models import (
     ImportJob,
     ImportJobStatus,
+    License,
     MappingSet,
     Origin,
     Status,
@@ -80,6 +81,15 @@ class TestScanReportRegistryPublish(TestCase):
             ),
             object_id=self.field.id,
             creation_type="M",
+        )
+
+        License.objects.get_or_create(
+            id="CC-BY-4.0",
+            defaults={
+                "license_iri": "https://spdx.org/licenses/CC-BY-4.0.html",
+                "spdx_id": "CC-BY-4.0",
+                "label": "Creative Commons Attribution 4.0 International",
+            },
         )
 
         self.client = APIClient()
