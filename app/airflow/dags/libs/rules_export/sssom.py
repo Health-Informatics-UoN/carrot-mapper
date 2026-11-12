@@ -259,12 +259,25 @@ def build_metadata(
     return metadata
 
 
+# Mapping set slots a caller may set through write_sssom_tsv(set_metadata=...),
+# written first in the metadata block in this order. These identify and describe
+# the set, so they're what the mappings registry supplies when it publishes.
+SET_METADATA_SLOTS = (
+    "mapping_set_id",
+    "mapping_set_version",
+    "mapping_set_title",
+    "mapping_set_description",
+    "license",
+)
+
+
 def write_sssom_tsv(
     rules: Iterable[Mapping[str, Any]],
     created: datetime | None = None,
     mapper_version: str | None = None,
     creator_username: str | None = None,
     creator_orcid: str | None = None,
+    set_metadata: Mapping[str, str] | None = None,
 ) -> str:
     """
     Render rules (dict-like rows from the temp rules table) as an SSSOM TSV string.
@@ -274,12 +287,27 @@ def write_sssom_tsv(
     concept_domain, concept_vocabulary, vocabulary_version, confidence, created_at,
     description. ``creator_username`` / ``creator_orcid`` are the exporting user's
     username and profile ORCID iD, for the creator_label / creator_id metadata.
+
+    ``set_metadata`` adds the mapping set's identity, keyed by the slots in
+    SET_METADATA_SLOTS (empty values are left out). A plain rules export has none,
+    so it lacks mapping_set_id and license; publishing to the registry passes
+    them, which makes the file fully SSSOM-conformant.
     """
     created = created or datetime.now()
     rows = build_mapping_rows(rules)
     metadata = build_metadata(
         rows, created, mapper_version, creator_username, creator_orcid
     )
+    if set_metadata:
+        unknown = set(set_metadata) - set(SET_METADATA_SLOTS)
+        if unknown:
+            raise ValueError(f"Unsupported set_metadata slots: {sorted(unknown)}")
+        identity = {
+            slot: set_metadata[slot]
+            for slot in SET_METADATA_SLOTS
+            if set_metadata.get(slot)
+        }
+        metadata = {**identity, **metadata}
 
     out = io.StringIO()
     header = yaml.safe_dump(

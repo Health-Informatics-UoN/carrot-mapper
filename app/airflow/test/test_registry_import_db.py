@@ -15,9 +15,10 @@ from __future__ import annotations
 import os
 import uuid
 from contextlib import closing
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
 from types import SimpleNamespace
+from typing import Any
 
 import psycopg
 import pytest
@@ -39,7 +40,9 @@ if DATABASE_URL:
         DATABASE_URL.replace("postgresql://", "postgres://", 1),
     )
 
+# What SSSOM files usually cite, and what the registry stores (license_sync).
 CC_BY = "https://creativecommons.org/licenses/by/4.0/"
+SPDX_CC_BY = "https://spdx.org/licenses/CC-BY-4.0"
 
 
 # ---------------------------------------------------------------------------
@@ -61,6 +64,8 @@ def conn():
 def _dummy(data_type: str):
     if "timestamp" in data_type:
         return datetime.now(UTC)
+    if data_type == "date":
+        return date(1970, 1, 1)
     if data_type == "boolean":
         return False
     if data_type in ("integer", "bigint", "smallint"):
@@ -68,25 +73,29 @@ def _dummy(data_type: str):
     return "x"
 
 
-def insert(cursor, table_name: str, /, **values):
-    """Insert a row, filling other required columns with dummy values. Returns id."""
+def insert(cursor, table_name: str, /, returning: str | None = "id", **values):
+    """
+    Insert a row, filling other required columns with dummy values. Returns
+    the ``returning`` column. ``table_name`` may be schema-qualified.
+    """
+    schema, _, table = table_name.rpartition(".")
     cursor.execute(
         """
         SELECT column_name, data_type FROM information_schema.columns
-        WHERE table_name = %s AND is_nullable = 'NO'
+        WHERE table_schema = %s AND table_name = %s AND is_nullable = 'NO'
             AND column_default IS NULL AND is_identity = 'NO'
         """,
-        (table_name,),
+        (schema or "public", table),
     )
     for column, data_type in cursor.fetchall():
         values.setdefault(column, _dummy(data_type))
     columns = ", ".join(f'"{c}"' for c in values)
     placeholders = ", ".join(["%s"] * len(values))
+    sql = f"INSERT INTO {table_name} ({columns}) VALUES ({placeholders})"
     cursor.execute(
-        f"INSERT INTO {table_name} ({columns}) VALUES ({placeholders}) RETURNING id",
-        list(values.values()),
+        sql + (f" RETURNING {returning}" if returning else ""), list(values.values())
     )
-    return cursor.fetchone()[0]
+    return cursor.fetchone()[0] if returning else None
 
 
 class Cleanup:
@@ -99,6 +108,8 @@ class Cleanup:
         self.terms: set[str] = set()
         self.rows: list[tuple[str, int]] = []
         self.users: list[int] = []
+        # (table, key column, key) of OMOP rows a test added; deleted last
+        self.omop: list[tuple[str, str, Any]] = []
 
     def run(self):
         self.conn.rollback()
@@ -129,6 +140,8 @@ class Cleanup:
                 )
                 cursor.execute("DELETE FROM users_profile WHERE user_id = %s", (user,))
                 cursor.execute("DELETE FROM auth_user WHERE id = %s", (user,))
+            for table, column, key in reversed(self.omop):
+                cursor.execute(f"DELETE FROM {table} WHERE {column} = %s", (key,))
         self.conn.commit()
 
 
@@ -137,6 +150,38 @@ def cleanup(conn):
     c = Cleanup(conn)
     yield c
     c.run()
+
+
+@pytest.fixture(autouse=True)
+def cc_by_license(conn):
+    """
+    CC-BY-4.0 as the license_sync DAG stores it. Inserted only when missing
+    (a synced database already has it), and then removed afterwards.
+    """
+    if not DATABASE_URL:
+        yield
+        return
+    with conn.cursor() as cursor:
+        cursor.execute(
+            """
+            INSERT INTO registry_license
+                (id, license_iri, spdx_id, label, is_open, is_deprecated, see_also)
+            VALUES ('CC-BY-4.0', %s, 'CC-BY-4.0',
+                'Creative Commons Attribution 4.0 International', true, false,
+                '["https://creativecommons.org/licenses/by/4.0/legalcode"]')
+            ON CONFLICT (id) DO NOTHING
+            RETURNING id
+            """,
+            (SPDX_CC_BY,),
+        )
+        inserted = cursor.fetchone() is not None
+    conn.commit()
+    yield
+    if inserted:
+        conn.rollback()
+        with conn.cursor() as cursor:
+            cursor.execute("DELETE FROM registry_license WHERE id = 'CC-BY-4.0'")
+        conn.commit()
 
 
 @pytest.fixture
@@ -203,9 +248,12 @@ def vocabulary(conn) -> Vocabulary:
         cursor.execute(queries.get_justifications_query)
         justifications = {r[0] for r in cursor.fetchall()}
         cursor.execute(queries.get_licenses_query)
-        licenses = dict(cursor.fetchall())
+        licenses = cursor.fetchall()
     conn.rollback()
-    return Vocabulary(predicates, justifications, licenses)
+    vocab = Vocabulary(predicates, justifications)
+    for row in licenses:
+        vocab.add_license(*row)
+    return vocab
 
 
 def fetch(conn, query, *params):
@@ -528,19 +576,88 @@ def test_bad_parameters_fail_without_retrying(conn, conf, message):
         core.validate_params_registry_import(**context)
 
 
+# Used only when the database has no OMOP concepts of its own.
+TEST_CONCEPTS = (
+    (2_000_000_001, "Carrot test value concept", "Gender"),
+    (2_000_000_002, "Carrot test field concept", "Observation"),
+)
+TEST_VOCABULARY = "CarrotTest"
+
+
+def omop_concepts(conn, cleanup) -> list[SimpleNamespace]:
+    """
+    Two OMOP concepts to map to, with their domain and vocabulary version.
+
+    Uses concepts already in the database when there are any (omop-lite's
+    synthetic or real vocabularies), so the CDM's NOT NULL columns and any
+    foreign keys are already satisfied. Only on a database with no concepts are
+    test rows inserted. The first concept's vocabulary gets a row (with a
+    version) if it has none. Anything inserted is deleted afterwards.
+    """
+    concepts = fetch(
+        conn,
+        "SELECT concept_id, domain_id, vocabulary_id FROM omop.concept "
+        "ORDER BY concept_id LIMIT 2",
+    )
+    try:
+        with conn.cursor() as cursor:
+            if len(concepts) < 2:
+                concepts = []
+                for concept_id, name, domain in TEST_CONCEPTS:
+                    insert(
+                        cursor,
+                        "omop.concept",
+                        returning=None,
+                        concept_id=concept_id,
+                        concept_name=name,
+                        domain_id=domain,
+                        vocabulary_id=TEST_VOCABULARY,
+                        concept_code=str(concept_id),
+                    )
+                    cleanup.omop.append(("omop.concept", "concept_id", concept_id))
+                    concepts.append((concept_id, domain, TEST_VOCABULARY))
+            vocabulary_id = concepts[0][2]
+            cursor.execute(
+                "SELECT vocabulary_version FROM omop.vocabulary WHERE vocabulary_id = %s",
+                (vocabulary_id,),
+            )
+            existing = cursor.fetchone()
+            if existing:
+                version = existing[0] or ""
+            else:
+                version = "v5.0 test"
+                insert(
+                    cursor,
+                    "omop.vocabulary",
+                    returning=None,
+                    vocabulary_id=vocabulary_id,
+                    vocabulary_name="Carrot test",
+                    vocabulary_version=version,
+                    vocabulary_concept_id=concepts[0][0],
+                )
+                cleanup.omop.insert(
+                    0, ("omop.vocabulary", "vocabulary_id", vocabulary_id)
+                )
+        conn.commit()
+    except psycopg.Error as e:
+        conn.rollback()
+        pytest.skip(f"Could not set up OMOP test concepts in this database: {e}")
+    return [
+        SimpleNamespace(
+            id=concept_id, domain=domain, version=version if i == 0 else None
+        )
+        for i, (concept_id, domain, _) in enumerate(concepts)
+    ]
+
+
 @pytest.fixture
 def scan_report(conn, cleanup, user):
-    """A scan report with one value mapping and one field mapping."""
+    """
+    A scan report with one value mapping and one field mapping. Returns
+    (id, value_concept, field_concept).
+    """
+    value_concept_omop, field_concept_omop = omop_concepts(conn, cleanup)
     with conn.cursor() as cursor:
-        cursor.execute(
-            "INSERT INTO omop.vocabulary (vocabulary_id, vocabulary_version) VALUES "
-            "('Gender', 'v5.0 test') ON CONFLICT DO NOTHING"
-        )
-        cursor.execute(
-            "INSERT INTO omop.concept (concept_id, concept_name, domain_id, vocabulary_id) "
-            "VALUES (8507, 'MALE', 'Gender', 'Gender'), (4298794, 'Smoker', 'Observation', 'SNOMED') "
-            "ON CONFLICT DO NOTHING"
-        )
         cursor.execute(
             "SELECT id FROM django_content_type WHERE app_label = 'mapping' AND model = %s",
             ("scanreportvalue",),
@@ -579,14 +696,14 @@ def scan_report(conn, cleanup, user):
         )
         value_concept = add(
             "mapping_scanreportconcept",
-            concept_id=8507,
+            concept_id=value_concept_omop.id,
             content_type_id=value_type,
             object_id=male,
             creation_type="M",
         )
         field_concept = add(
             "mapping_scanreportconcept",
-            concept_id=4298794,
+            concept_id=field_concept_omop.id,
             content_type_id=field_type,
             object_id=smoker,
             creation_type="V",
@@ -606,7 +723,9 @@ def scan_report(conn, cleanup, user):
             source_field_id=smoker,
         )
     conn.commit()
-    return sr
+    return SimpleNamespace(
+        id=sr, value_concept=value_concept_omop, field_concept=field_concept_omop
+    )
 
 
 def test_dag_publishes_a_scan_report(conn, cleanup, user, storage, scan_report):
@@ -620,13 +739,17 @@ def test_dag_publishes_a_scan_report(conn, cleanup, user, storage, scan_report):
             "import_job_id": job,
             "origin": "CARROT_DIRECT_PUBLISH",
             "user_id": user,
-            "scan_report_id": scan_report,
+            "scan_report_id": scan_report.id,
             "mapper_version": "4.3.1",
+            # the shape registry.services.submit_direct_publish sends (#1552)
             "overrides": {
                 "set_uri": set_uri,
                 "set_version": "1",
+                "title": "",
+                "description": "",
                 "license": "CC-BY-4.0",
                 "status": "DRAFT",
+                "include_orcid_ids": False,
             },
         }
     )
@@ -640,7 +763,14 @@ def test_dag_publishes_a_scan_report(conn, cleanup, user, storage, scan_report):
     # The stored file is the exporter's, with the set identity from the request
     text = storage.blobs[("registry-sssom", row["file_key"])].decode()
     assert text.startswith(f"#mapping_set_id: {set_uri}\n#mapping_set_version: '1'\n")
-    assert f"#license: {CC_BY}\n" in text
+    # SPDX's IRI once license_sync has run; a database upgraded from before
+    # #1551 keeps the old seeded creativecommons.org IRI until then
+    [(license_iri,)] = fetch(
+        conn, "SELECT license_iri FROM registry_license WHERE id = 'CC-BY-4.0'"
+    )
+    assert f"#license: {license_iri}\n" in text
+    # the user didn't opt in to publishing their ORCID iD
+    assert "creator_id" not in text and "orcid" not in text
     assert "#mapping_set_title: Demo scan report\n" in text
     assert "#mapping_tool_version: 4.3.1\n" in text
 
@@ -654,7 +784,7 @@ def test_dag_publishes_a_scan_report(conn, cleanup, user, storage, scan_report):
         "DRAFT",
         "Demo scan report",
         "CC-BY-4.0",
-        scan_report,
+        scan_report.id,
         "CARROT_DIRECT_PUBLISH",
     )
     subjects = fetch(
@@ -667,21 +797,64 @@ def test_dag_publishes_a_scan_report(conn, cleanup, user, storage, scan_report):
         ("carrot:sex/M", "VALUE", "sex", "M"),
         ("carrot:smoker", "FIELD", "smoker", ""),
     ]
-    assert fetch(
-        conn,
-        "SELECT object_source_version FROM registry_term WHERE canonical_iri = 'OMOP:8507'",
-    ) == [("v5.0 test",)]
+    # the concept's vocabulary version, from omop.vocabulary
+    value_iri = f"OMOP:{scan_report.value_concept.id}"
+    if value_iri in cleanup.terms:  # created by this import, not an earlier one
+        assert fetch(
+            conn,
+            "SELECT object_source_version, category FROM registry_term "
+            "WHERE canonical_iri = %s AND kind = 'OBJECT'",
+            value_iri,
+        ) == [(scan_report.value_concept.version, scan_report.value_concept.domain)]
     # the per-job temp rules table is gone
     suffix = uuid.UUID(job).hex[:12]
     assert fetch(
         conn,
         "SELECT to_regclass(%s)",
-        f"temp_rules_export_{scan_report}_registry_{suffix}",
+        f"temp_rules_export_{scan_report.id}_registry_{suffix}",
     ) == [(None,)]
     assert (
         notifications(conn, user)[-1][1]
         == "'Demo scan report' was saved as a draft in the mappings registry"
     )
+
+
+def test_dag_publishes_orcid_only_when_opted_in(
+    conn, cleanup, user, storage, scan_report
+):
+    with conn.cursor() as cursor:
+        insert(cursor, "users_profile", user_id=user, orcid="0000-0002-1825-009X")
+    conn.commit()
+    terms = "SELECT canonical_iri FROM registry_term"
+    before = {r[0] for r in fetch(conn, terms)}
+    job = make_job(conn, cleanup, user, origin="CARROT_DIRECT_PUBLISH")
+
+    run_dag(
+        {
+            "import_job_id": job,
+            "origin": "CARROT_DIRECT_PUBLISH",
+            "user_id": user,
+            "scan_report_id": scan_report.id,
+            "overrides": {
+                "set_uri": f"https://carrot.ac.uk/sssom/mapping-sets/{uuid.uuid4().hex}",
+                "set_version": "1",
+                "title": "With ORCID",
+                "license": "CC-BY-4.0",
+                "include_orcid_ids": True,
+            },
+        }
+    )
+    cleanup.terms |= {r[0] for r in fetch(conn, terms)} - before
+
+    row = job_row(conn, job)
+    assert row["status"] == "SUCCEEDED", row
+    text = storage.blobs[("registry-sssom", row["file_key"])].decode()
+    assert "#creator_id:\n#- orcid:0000-0002-1825-009X\n" in text
+    assert fetch(
+        conn,
+        "SELECT creator_ids FROM registry_mappingset WHERE import_job_id = %s",
+        job,
+    ) == [(["orcid:0000-0002-1825-009X"],)]
 
 
 def test_dag_fails_cleanly_for_a_scan_report_without_mappings(

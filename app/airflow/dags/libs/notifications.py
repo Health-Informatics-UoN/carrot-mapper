@@ -18,6 +18,8 @@ class NotificationType(StrEnum):
     AUTOMAP_FAILED = "automap.failed"
     RULES_EXPORT_COMPLETE = "rules.export_complete"
     RULES_EXPORT_FAILED = "rules.export_failed"
+    REGISTRY_IMPORT_COMPLETE = "registry.import_complete"
+    REGISTRY_IMPORT_FAILED = "registry.import_failed"
 
 
 def create_notification(
@@ -57,5 +59,42 @@ def create_notification(
     except Exception as e:
         logging.error(
             f"Failed to create notification for scan_report={scan_report_id}, "
+            f"notif_type={notif_type}: {e}"
+        )
+
+
+def create_import_job_notification(
+    import_job_id: str, notif_type: str, text: str, url: str = ""
+) -> None:
+    """
+    Insert a Notification row for the user who submitted a registry ImportJob.
+
+    Registry imports need not come from a scan report (SSSOM uploads and SDK
+    publishes have none), so the recipient is the job's submitted_by user,
+    resolved in the same query. Like create_notification, failures are logged,
+    not raised.
+    """
+    insert_query = """
+        INSERT INTO notifications_notification (
+            recipient_id, notif_type, text, url, created_at, updated_at
+        )
+        SELECT submitted_by_id, %(notif_type)s, LEFT(%(text)s, 255),
+            LEFT(%(url)s, 255), NOW(), NOW()
+        FROM registry_importjob
+        WHERE id = %(import_job_id)s AND submitted_by_id IS NOT NULL
+    """
+    try:
+        pg_hook.run(
+            insert_query,
+            parameters={
+                "import_job_id": import_job_id,
+                "notif_type": notif_type,
+                "text": text,
+                "url": url,
+            },
+        )
+    except Exception as e:
+        logging.error(
+            f"Failed to create notification for import_job={import_job_id}, "
             f"notif_type={notif_type}: {e}"
         )

@@ -18,6 +18,7 @@ from libs.registry_import.validate import (
     Vocabulary,
     build_import,
     carrot_term_parts,
+    normalise_license_iri,
 )
 from libs.rules_export.sssom import write_sssom_tsv
 
@@ -37,10 +38,23 @@ VOCAB = Vocabulary(
         "semapv:MappingChaining",
         "semapv:UnspecifiedMatching",
     },
-    licenses={
-        "https://creativecommons.org/publicdomain/zero/1.0/": "CC0-1.0",
-        "https://creativecommons.org/licenses/by/4.0/": "CC-BY-4.0",
-    },
+)
+# As the license_sync DAG stores them from the SPDX License List
+VOCAB.add_license(
+    "CC0-1.0",
+    "https://spdx.org/licenses/CC0-1.0",
+    ["https://creativecommons.org/publicdomain/zero/1.0/legalcode"],
+)
+VOCAB.add_license(
+    "CC-BY-4.0",
+    "https://spdx.org/licenses/CC-BY-4.0",
+    ["https://creativecommons.org/licenses/by/4.0/legalcode"],
+)
+VOCAB.add_license(
+    "LPPL-1.3c",
+    "https://spdx.org/licenses/LPPL-1.3c",
+    [],
+    is_deprecated=True,
 )
 
 HEADER = """\
@@ -283,6 +297,50 @@ def test_unknown_license_is_a_warning_and_kept():
     assert plan.mapping_set.license_id is None
     assert plan.mapping_set.extra_metadata["license"] == other
     assert "unknown_license" in codes(plan, "warning")
+
+
+@pytest.mark.parametrize(
+    "iri",
+    [
+        "https://creativecommons.org/licenses/by/4.0/",  # what SSSOM files use
+        "http://creativecommons.org/licenses/by/4.0",
+        "https://creativecommons.org/licenses/by/4.0/legalcode",
+        "https://creativecommons.org/licenses/by/4.0/legalcode.en",
+        "https://creativecommons.org/licenses/by/4.0/deed.en",
+        "https://spdx.org/licenses/CC-BY-4.0",  # what the registry stores
+        "https://spdx.org/licenses/CC-BY-4.0.html",
+    ],
+)
+def test_license_matches_spdx_iri_or_see_also(iri):
+    text = HEADER.replace("https://creativecommons.org/licenses/by/4.0/", iri)
+    plan = plan_for(text + COLUMNS + ROW)
+    assert plan.ok and codes(plan) == []
+    assert plan.mapping_set.license_id == "CC-BY-4.0"
+
+
+def test_license_iri_normalisation_keeps_versions_apart():
+    assert normalise_license_iri(
+        "https://creativecommons.org/licenses/by/4.0/"
+    ) != normalise_license_iri("https://creativecommons.org/licenses/by/3.0/")
+    assert normalise_license_iri("https://spdx.org/licenses/CC-BY-4.0.html") == (
+        "https://spdx.org/licenses/cc-by-4.0"
+    )
+
+
+def test_deprecated_license_is_a_warning():
+    text = HEADER.replace(
+        "https://creativecommons.org/licenses/by/4.0/",
+        "https://spdx.org/licenses/LPPL-1.3c",
+    )
+    plan = plan_for(text + COLUMNS + ROW)
+    assert plan.ok
+    assert plan.mapping_set.license_id == "LPPL-1.3c"
+    assert codes(plan) == ["deprecated_license"]
+
+
+def test_include_orcid_ids_is_a_known_override():
+    plan = plan_for(HEADER + COLUMNS + ROW, {"include_orcid_ids": True})
+    assert plan.ok and codes(plan) == []
 
 
 def test_missing_title_falls_back_to_set_id():

@@ -5,6 +5,8 @@ type NotificationType =
   | "automap.failed"
   | "rules.export_complete"
   | "rules.export_failed"
+  | "registry.import_complete"
+  | "registry.import_failed"
   | "broadcast";
 
 // Named AppNotification, not Notification - the latter is the browser's
