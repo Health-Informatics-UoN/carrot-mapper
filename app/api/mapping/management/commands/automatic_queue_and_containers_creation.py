@@ -44,7 +44,15 @@ class Command(BaseCommand):
         os.getenv("WORKERS_UPLOAD_NAME"),
     ]
 
-    CONTAINERS = ["scan-reports", "data-dictionaries", "rules-exports", "airflow-logs"]
+    CONTAINERS = [
+        "scan-reports",
+        "data-dictionaries",
+        "rules-exports",
+        "airflow-logs",
+        # registry SSSOM files: uploads, and files built by a direct publish
+        # (read and written by the registry_import DAG)
+        "registry-sssom",
+    ]
 
     def _create_blob_containers(self, blob_service: BlobServiceClient):
         """
