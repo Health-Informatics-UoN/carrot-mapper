@@ -37,12 +37,12 @@ export function PublishToRegistryDialog({
       </DialogTrigger>
       <DialogContent
         className="
-          sm:max-w-xl
+          max-h-[calc(100svh-2rem)] max-w-[calc(100%-2rem)] sm:max-w-xl
           data-[state=open]:slide-in-from-right-full
           data-[state=closed]:slide-out-to-right-full
         "
       >
-        <DialogHeader>
+        <DialogHeader className="border-b border-border pb-5 text-left">
           <DialogTitle className="flex items-center gap-2">
             <CloudUpload className="size-5" />
             Publish to Registry

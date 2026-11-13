@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { AlertCircle, Check, ChevronsUpDown, InfoIcon } from "lucide-react";
+import { AlertCircle, Check, ChevronsUpDown, FileText, InfoIcon } from "lucide-react";
 import { Portal as TooltipPortal } from "@radix-ui/react-tooltip";
 import { getRegistryLicenses, type RegistryLicense } from "@/api/licenses";
 import { Button } from "@/components/ui/button";
@@ -58,7 +58,7 @@ export function RegistryLicenseField({ license, validationError, onChange }: Pro
   const visibleOtherLicenses = otherLicenses.slice(0, 100);
 
   return (
-    <div className="space-y-2">
+    <div className="min-w-0 space-y-2">
       <div className="flex items-center gap-1">
         <Label htmlFor="registry-license">License <span aria-hidden="true" className="text-destructive">*</span></Label>
         <TooltipProvider delayDuration={100}>
@@ -78,21 +78,22 @@ export function RegistryLicenseField({ license, validationError, onChange }: Pro
       </div>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
-          <Button id="registry-license" type="button" role="combobox" variant="outline" aria-expanded={open} aria-required="true" aria-invalid={!!validationError} aria-describedby={validationError ? "registry-license-error" : undefined} className="w-full justify-between font-normal">
-            <span className="truncate">
-              {selectedLicense ? `${selectedLicense.id} — ${selectedLicense.label}` : "Select a licence..."}
+          <Button id="registry-license" type="button" role="combobox" variant="outline" aria-expanded={open} aria-required="true" aria-invalid={!!validationError} aria-describedby={validationError ? "registry-license-error" : undefined} className="w-full justify-between gap-2 font-normal">
+            <span className="flex min-w-0 items-center gap-2">
+              <FileText aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
+              <span className="truncate">{selectedLicense ? `${selectedLicense.id} — ${selectedLicense.label}` : "Select a licence..."}</span>
             </span>
             <ChevronsUpDown className="size-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-[min(480px,calc(100vw-3rem))] p-0" align="start">
+        <PopoverContent className="w-[min(24rem,calc(100vw-2rem))] overflow-hidden p-0 shadow-lg" align="end">
           <Command shouldFilter={false}>
             <CommandInput placeholder="Search name or SPDX ID..." value={search} onValueChange={setSearch} />
-            <div className="flex items-center gap-2 border-b p-3">
+            <div className="flex items-center gap-2 border-b bg-muted/30 px-3 py-2.5">
               <Checkbox id="registry-open-only" checked={openOnly} onCheckedChange={(checked) => setOpenOnly(checked === true)} />
               <Label htmlFor="registry-open-only">Open licences only</Label>
             </div>
-            <CommandList>
+            <CommandList className="max-h-72">
               {loading ? (
                 <p className="p-4 text-sm text-muted-foreground">Loading licences...</p>
               ) : error ? (
@@ -103,9 +104,9 @@ export function RegistryLicenseField({ license, validationError, onChange }: Pro
                   {recommended.length > 0 && (
                     <CommandGroup heading="Recommended for SSSOM">
                       {recommended.map((item) => (
-                        <CommandItem key={item.id} value={item.id} onSelect={() => { onChange(item.id); setOpen(false); }}>
-                          <Check className={`mr-2 size-4 ${license === item.id ? "opacity-100" : "opacity-0"}`} />
-                          <span className="flex flex-col"><span>{item.id}</span><span className="text-xs text-muted-foreground">{item.label}</span></span>
+                        <CommandItem key={item.id} value={item.id} onSelect={() => { onChange(item.id); setOpen(false); }} className="gap-3 px-3 py-2">
+                          <span className="flex min-w-0 flex-1 flex-col"><span className="font-medium">{item.id}</span><span className="whitespace-normal text-xs text-muted-foreground">{item.label}</span></span>
+                          <Check aria-hidden="true" className={`size-4 shrink-0 ${license === item.id ? "opacity-100" : "opacity-0"}`} />
                         </CommandItem>
                       ))}
                     </CommandGroup>
@@ -113,9 +114,9 @@ export function RegistryLicenseField({ license, validationError, onChange }: Pro
                   {otherLicenses.length > 0 && (
                     <CommandGroup heading="Other licences">
                       {visibleOtherLicenses.map((item) => (
-                        <CommandItem key={item.id} value={item.id} onSelect={() => { onChange(item.id); setOpen(false); }}>
-                          <Check className={`mr-2 size-4 ${license === item.id ? "opacity-100" : "opacity-0"}`} />
-                          <span className="flex flex-col"><span>{item.id}</span><span className="text-xs text-muted-foreground">{item.label}</span></span>
+                        <CommandItem key={item.id} value={item.id} onSelect={() => { onChange(item.id); setOpen(false); }} className="gap-3 px-3 py-2">
+                          <span className="flex min-w-0 flex-1 flex-col"><span className="font-medium">{item.id}</span><span className="whitespace-normal text-xs text-muted-foreground">{item.label}</span></span>
+                          <Check aria-hidden="true" className={`size-4 shrink-0 ${license === item.id ? "opacity-100" : "opacity-0"}`} />
                         </CommandItem>
                       ))}
                       {otherLicenses.length > visibleOtherLicenses.length && (

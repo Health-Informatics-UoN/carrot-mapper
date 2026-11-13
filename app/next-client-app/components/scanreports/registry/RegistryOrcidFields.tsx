@@ -41,8 +41,8 @@ export function RegistryOrcidFields({
         </TooltipProvider>
       </div>
       {includeAuthorOrcidIds && (
-        <div className="ml-3 flex items-center gap-3 text-sm text-muted-foreground">
-          <TriangleAlert aria-hidden="true" className="size-5 shrink-0 text-amber-600 dark:text-amber-400" />
+        <div className="ml-3 flex items-center gap-3 border-l-2 border-border bg-muted/30 px-3 py-2 text-sm text-foreground">
+          <TriangleAlert aria-hidden="true" className="size-5 shrink-0 text-muted-foreground" />
           <p>Please make sure your ORCID and co-authors&apos; ORCIDs are added in the My profile page. Missing ORCIDs won&apos;t show in the published SSSOM.</p>
         </div>
       )}

@@ -84,82 +84,86 @@ export function PublishToRegistryForm({
       }}
     >
       {({ values, errors, touched, handleBlur, handleChange, handleSubmit: submitForm, setFieldValue }) => (
-        <form onSubmit={submitForm} className="space-y-5">
-          <div className="space-y-2">
-            <Label htmlFor="registry-title">Title <span aria-hidden="true" className="text-destructive">*</span></Label>
-            <Input
-              id="registry-title"
-              name="title"
-              value={values.title}
-              onChange={(event) => { handleChange(event); setPrepared(null); }}
-              onBlur={handleBlur}
-              aria-required="true"
-              aria-invalid={!!(touched.title && errors.title)}
-              aria-describedby={touched.title && errors.title ? "registry-title-error" : undefined}
-              placeholder="Enter mapping set title"
-            />
-            {touched.title && errors.title && <p id="registry-title-error" className="text-xs text-destructive">{errors.title}</p>}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="registry-description">Description</Label>
-            <Textarea
-              id="registry-description"
-              name="description"
-              value={values.description}
-              onChange={(event) => { handleChange(event); setPrepared(null); }}
-              rows={3}
-              placeholder="Describe your mapping set..."
-            />
-          </div>
-
-          <div className="space-y-2">
-            <div className="flex items-center gap-1">
-              <Label htmlFor="registry-version">Mapping Set Version <span aria-hidden="true" className="text-destructive">*</span></Label>
-              <TooltipProvider delayDuration={100}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button type="button" aria-label="Mapping set version information" className="ml-1 text-muted-foreground">
-                      <InfoIcon className="h-4 w-4" />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipPortal>
-                    <TooltipContent collisionPadding={8} className="max-w-[min(24rem,calc(100vw-2rem))] text-center whitespace-pre-wrap">
-                      The mapping set version must be unique for this mapping set. A previously published version cannot be reused.
-                    </TooltipContent>
-                  </TooltipPortal>
-                </Tooltip>
-              </TooltipProvider>
+        <form onSubmit={submitForm} className="space-y-6">
+          <section className="space-y-4 border-b border-border pb-3">
+            <div className="space-y-2">
+              <Label htmlFor="registry-title">Title <span aria-hidden="true" className="text-destructive">*</span></Label>
+              <Input
+                id="registry-title"
+                name="title"
+                value={values.title}
+                onChange={(event) => { handleChange(event); setPrepared(null); }}
+                onBlur={handleBlur}
+                aria-required="true"
+                aria-invalid={!!(touched.title && errors.title)}
+                aria-describedby={touched.title && errors.title ? "registry-title-error" : undefined}
+                placeholder="Enter mapping set title"
+              />
+              {touched.title && errors.title && <p id="registry-title-error" className="text-xs text-destructive">{errors.title}</p>}
             </div>
-            <Input
-              id="registry-version"
-              name="version"
-              value={values.version}
-              onChange={(event) => { handleChange(event); setPrepared(null); }}
-              onBlur={handleBlur}
-              aria-required="true"
-              aria-invalid={!!(touched.version && errors.version)}
-              aria-describedby={touched.version && errors.version ? "registry-version-error" : undefined}
-              placeholder="e.g. 1.0.0"
+
+            <div className="space-y-2">
+              <Label htmlFor="registry-description">Description</Label>
+              <Textarea
+                id="registry-description"
+                name="description"
+                value={values.description}
+                onChange={(event) => { handleChange(event); setPrepared(null); }}
+                rows={3}
+                placeholder="Describe your mapping set..."
+              />
+            </div>
+          </section>
+
+          <section className="-mt-2 space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="min-w-0 space-y-2">
+                <div className="flex items-center gap-1">
+                  <Label htmlFor="registry-version">Mapping Set Version <span aria-hidden="true" className="text-destructive">*</span></Label>
+                  <TooltipProvider delayDuration={100}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button type="button" aria-label="Mapping set version information" className="ml-1 text-muted-foreground">
+                          <InfoIcon className="h-4 w-4" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipPortal>
+                        <TooltipContent collisionPadding={8} className="max-w-[min(24rem,calc(100vw-2rem))] text-center whitespace-pre-wrap">
+                          The mapping set version must be unique for this mapping set. A previously published version cannot be reused.
+                        </TooltipContent>
+                      </TooltipPortal>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+                <Input
+                  id="registry-version"
+                  name="version"
+                  value={values.version}
+                  onChange={(event) => { handleChange(event); setPrepared(null); }}
+                  onBlur={handleBlur}
+                  aria-required="true"
+                  aria-invalid={!!(touched.version && errors.version)}
+                  aria-describedby={touched.version && errors.version ? "registry-version-error" : undefined}
+                  placeholder="e.g. 1.0.0"
+                />
+                {touched.version && errors.version && <p id="registry-version-error" className="text-xs text-destructive">{errors.version}</p>}
+                {lastPublishedVersion && (
+                  <p className="text-xs text-muted-foreground">Last published version: {lastPublishedVersion}</p>
+                )}
+              </div>
+
+              <RegistryLicenseField
+                license={values.license}
+                validationError={touched.license ? errors.license : undefined}
+                onChange={(value) => { setFieldValue("license", value); setPrepared(null); }}
+              />
+            </div>
+
+            <RegistryOrcidFields
+              includeAuthorOrcidIds={values.includeAuthorOrcidIds}
+              onIncludeChange={(value) => { setFieldValue("includeAuthorOrcidIds", value); setPrepared(null); }}
             />
-            {touched.version && errors.version && <p id="registry-version-error" className="text-xs text-destructive">{errors.version}</p>}
-            {lastPublishedVersion ? (
-              <p className="text-xs text-muted-foreground">Last published version: {lastPublishedVersion}</p>
-            ) : (
-              <p className="text-xs text-muted-foreground">Published version history is not connected yet.</p>
-            )}
-          </div>
-
-          <RegistryOrcidFields
-            includeAuthorOrcidIds={values.includeAuthorOrcidIds}
-            onIncludeChange={(value) => { setFieldValue("includeAuthorOrcidIds", value); setPrepared(null); }}
-          />
-
-          <RegistryLicenseField
-            license={values.license}
-            validationError={touched.license ? errors.license : undefined}
-            onChange={(value) => { setFieldValue("license", value); setPrepared(null); }}
-          />
+          </section>
 
           {prepared && (
             <div className="space-y-2 rounded-md border bg-muted/30 p-3">
@@ -174,7 +178,7 @@ export function PublishToRegistryForm({
               </pre>
             </div>
           )}
-          <DialogFooter className="gap-2 border-t pt-4">
+          <DialogFooter className="gap-2 border-t border-border pt-5">
             <Button type="button" variant="outline" onClick={onCancel}>Cancel</Button>
             <Button type="submit">
               <CloudUpload className="size-4" /> Prepare JSON
