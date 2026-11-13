@@ -6,7 +6,7 @@ import { Portal as TooltipPortal } from "@radix-ui/react-tooltip";
 import { getRegistryLicenses, type RegistryLicense } from "@/api/licenses";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from "@/components/ui/command";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -111,6 +111,7 @@ export function RegistryLicenseField({ license, validationError, onChange }: Pro
                       ))}
                     </CommandGroup>
                   )}
+                  {recommended.length > 0 && otherLicenses.length > 0 && <CommandSeparator className="mx-0 my-1" />}
                   {otherLicenses.length > 0 && (
                     <CommandGroup heading="Other licences">
                       {visibleOtherLicenses.map((item) => (
