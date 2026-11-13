@@ -11,22 +11,37 @@ import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
+/* ---- Interfaces & Constants ---- */
+
+// SPDX identifiers displayed first as recommended licences for SSSOM.
 const RECOMMENDED_LICENSE_IDS = ["CC0-1.0", "CC-BY-4.0", "ODbL-1.0"];
 
+// Props for the selected licence, validation feedback and selection callback.
 interface Props {
   license: string;
   validationError?: string;
   onChange: (license: string) => void;
 }
 
+/**
+ * Searchable licence selector for publishing mapping sets to the Registry.
+ *
+ * Retrieves licences from the Carrot backend, prioritises recommended
+ * SSSOM licences and supports searching and filtering by open licence status.
+ */
 export function RegistryLicenseField({ license, validationError, onChange }: Props) {
+  // Store the available licences and their API loading/error states.
   const [licenses, setLicenses] = useState<RegistryLicense[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  // Manage dropdown visibility, search input and open licence filtering.
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [openOnly, setOpenOnly] = useState(false);
 
+  // Fetch licences from the backend when the component mounts.
+  // Ignore responses after unmounting to avoid stale state updates.
   useEffect(() => {
     let active = true;
     getRegistryLicenses()
@@ -44,7 +59,10 @@ export function RegistryLicenseField({ license, validationError, onChange }: Pro
     return () => { active = false; };
   }, []);
 
+  // Resolve the selected SPDX ID to its corresponding licence details.
   const selectedLicense = licenses.find((item) => item.id === license);
+
+  // Filter out deprecated licences and apply the search and is_open filters.
   const filteredLicenses = useMemo(() => {
     const needle = search.trim().toLowerCase();
     return licenses.filter((item) =>
@@ -53,12 +71,17 @@ export function RegistryLicenseField({ license, validationError, onChange }: Pro
       (item.id.toLowerCase().includes(needle) || item.label.toLowerCase().includes(needle)),
     );
   }, [licenses, search, openOnly]);
+
+  // Separate recommended SSSOM licences from all other matching licences.
   const recommended = RECOMMENDED_LICENSE_IDS.flatMap((id) => filteredLicenses.filter((item) => item.id === id));
   const otherLicenses = filteredLicenses.filter((item) => !RECOMMENDED_LICENSE_IDS.includes(item.id));
+
+  // Limit the initially displayed results to keep the dropdown manageable.
   const visibleOtherLicenses = otherLicenses.slice(0, 100);
 
   return (
     <div className="min-w-0 space-y-2">
+      {/* Licence label, required indicator and information tooltip. */}
       <div className="flex items-center gap-1">
         <Label htmlFor="registry-license">License <span aria-hidden="true" className="text-destructive">*</span></Label>
         <TooltipProvider delayDuration={100}>
@@ -76,6 +99,8 @@ export function RegistryLicenseField({ license, validationError, onChange }: Pro
           </Tooltip>
         </TooltipProvider>
       </div>
+
+      {/* Searchable dropdown for selecting a licence from the backend list. */}
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button id="registry-license" type="button" role="combobox" variant="outline" aria-expanded={open} aria-required="true" aria-invalid={!!validationError} aria-describedby={validationError ? "registry-license-error" : undefined} className="w-full justify-between gap-2 font-normal">
@@ -88,11 +113,16 @@ export function RegistryLicenseField({ license, validationError, onChange }: Pro
         </PopoverTrigger>
         <PopoverContent className="w-[min(24rem,calc(100vw-2rem))] overflow-hidden p-0 shadow-lg" align="end">
           <Command shouldFilter={false}>
+            {/* Search licences by their SPDX identifier or display name. */}
             <CommandInput placeholder="Search name or SPDX ID..." value={search} onValueChange={setSearch} />
+
+            {/* Optional filter for licences marked as open by the backend. */}
             <div className="flex items-center gap-2 border-b bg-muted/30 px-3 py-2.5">
               <Checkbox id="registry-open-only" checked={openOnly} onCheckedChange={(checked) => setOpenOnly(checked === true)} />
               <Label htmlFor="registry-open-only">Open licences only</Label>
             </div>
+
+            {/* Display loading, API errors or the filtered licence groups. */}
             <CommandList className="max-h-72">
               {loading ? (
                 <p className="p-4 text-sm text-muted-foreground">Loading licences...</p>
@@ -101,6 +131,8 @@ export function RegistryLicenseField({ license, validationError, onChange }: Pro
               ) : (
                 <>
                   <CommandEmpty>No matching licences found.</CommandEmpty>
+
+                  {/* Prioritise CC0, CC-BY and ODbL when available. */}
                   {recommended.length > 0 && (
                     <CommandGroup heading="Recommended for SSSOM">
                       {recommended.map((item) => (
@@ -111,7 +143,11 @@ export function RegistryLicenseField({ license, validationError, onChange }: Pro
                       ))}
                     </CommandGroup>
                   )}
+
+                  {/* Visually separate recommended licences from other licences. */}
                   {recommended.length > 0 && otherLicenses.length > 0 && <CommandSeparator className="mx-0 my-1" />}
+
+                  {/* Display other matching licences with a maximum of 100 results. */}
                   {otherLicenses.length > 0 && (
                     <CommandGroup heading="Other licences">
                       {visibleOtherLicenses.map((item) => (
@@ -120,6 +156,8 @@ export function RegistryLicenseField({ license, validationError, onChange }: Pro
                           <Check aria-hidden="true" className={`size-4 shrink-0 ${license === item.id ? "opacity-100" : "opacity-0"}`} />
                         </CommandItem>
                       ))}
+
+                      {/* Prompt users to refine their search when results exceed the display limit. */}
                       {otherLicenses.length > visibleOtherLicenses.length && (
                         <p className="px-2 py-2 text-xs text-muted-foreground">Refine your search to see more results.</p>
                       )}
@@ -131,6 +169,8 @@ export function RegistryLicenseField({ license, validationError, onChange }: Pro
           </Command>
         </PopoverContent>
       </Popover>
+
+      {/* Display licence API errors and parent form validation errors. */}
       {error && <p className="flex items-center gap-1 text-xs text-destructive"><AlertCircle className="size-3" />{error}</p>}
       {validationError && <p id="registry-license-error" className="text-xs text-destructive">{validationError}</p>}
     </div>

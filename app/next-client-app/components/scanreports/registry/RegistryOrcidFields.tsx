@@ -6,17 +6,28 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
+/* ---- Interfaces ---- */
+
+// Props for controlling whether author ORCID identifiers are included.
 interface Props {
   includeAuthorOrcidIds: boolean;
   onIncludeChange: (include: boolean) => void;
 }
 
+/**
+ * Checkbox field for including author and co-author ORCID identifiers
+ * in the published SSSOM metadata.
+ *
+ * Displays guidance when enabled to remind users that ORCID identifiers
+ * must be available in their profiles before publication.
+ */
 export function RegistryOrcidFields({
   includeAuthorOrcidIds,
   onIncludeChange,
 }: Props) {
   return (
     <div className="space-y-3">
+      {/* Checkbox for enabling or disabling ORCID inclusion. */}
       <div className="flex items-center gap-2">
         <Checkbox
           id="include-orcids"
@@ -25,6 +36,8 @@ export function RegistryOrcidFields({
           onCheckedChange={(checked) => onIncludeChange(checked === true)}
         />
         <Label htmlFor="include-orcids">Include ORCID(s)</Label>
+
+        {/* Tooltip explaining where ORCID identifiers are retrieved from. */}
         <TooltipProvider delayDuration={100}>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -40,6 +53,8 @@ export function RegistryOrcidFields({
           </Tooltip>
         </TooltipProvider>
       </div>
+
+      {/* Show a reminder to update profile ORCIDs only when inclusion is enabled. */}
       {includeAuthorOrcidIds && (
         <div className="ml-3 flex items-center gap-3 border-l-2 border-border bg-muted/30 px-3 py-2 text-sm text-foreground">
           <TriangleAlert aria-hidden="true" className="size-5 shrink-0 text-muted-foreground" />

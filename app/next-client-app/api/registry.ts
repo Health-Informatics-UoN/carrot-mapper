@@ -3,6 +3,8 @@
 import request from "@/lib/api/request";
 import { ApiError } from "@/lib/api/error";
 
+/* ---- Interfaces ---- */
+
 export interface PublishToRegistryPayload {
   title: string;
   description: string;
@@ -15,6 +17,8 @@ interface RegistryPublishResponse {
   import_job_id: string;
   status: string;
 }
+
+/* ---- API Functions ---- */
 
 export async function publishScanReportToRegistry(
   scanReportId: string,
