@@ -18,6 +18,7 @@ from api import views
 
 urlpatterns = [
     path("v2/datasets/", include("datasets.urls")),
+    path("v2/registry/", include("registry.urls")),
     path("projects/", include("projects.urls")),
     path(
         "v2/scanreports/", views.ScanReportIndexV2.as_view(), name="scan-report-index"
