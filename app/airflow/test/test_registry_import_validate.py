@@ -10,7 +10,7 @@ from datetime import UTC, date, datetime
 from pathlib import Path
 
 import pytest
-from libs.registry_import.full_validate_checks import (
+from libs.registry_import.full_validate_and_load_checks import (
     DRAFT,
     PUBLISHED,
     STAGING_COLUMNS,
@@ -18,12 +18,7 @@ from libs.registry_import.full_validate_checks import (
     build_import,
     carrot_term_parts,
 )
-from libs.registry_import.full_validate_licenses import (
-    License,
-    LicenseLookup,
-    normalise_license_iri,
-)
-from libs.registry_import.full_validate_parse import decode, parse_sssom
+from libs.registry_import.full_validate_and_load_parse import decode, parse_sssom
 from libs.rules_export.sssom import write_sssom_tsv
 
 SPEC_DIR = Path(__file__).parent.parent / "dags" / "libs" / "sssom_spec"
@@ -43,23 +38,6 @@ VOCAB = Vocabulary(
         "semapv:UnspecifiedMatching",
     },
 )
-# registry_license rows, as the license_sync DAG stores them from SPDX
-LICENSES = LicenseLookup(
-    [
-        License(
-            "CC0-1.0",
-            "https://spdx.org/licenses/CC0-1.0",
-            ("https://creativecommons.org/publicdomain/zero/1.0/legalcode",),
-        ),
-        License(
-            "CC-BY-4.0",
-            "https://spdx.org/licenses/CC-BY-4.0",
-            ("https://creativecommons.org/licenses/by/4.0/legalcode",),
-        ),
-        License("LPPL-1.3c", "https://spdx.org/licenses/LPPL-1.3c", is_deprecated=True),
-    ]
-)
-
 HEADER = """\
 #curie_map:
 #  HP: http://purl.obolibrary.org/obo/HP_
@@ -73,9 +51,14 @@ COLUMNS = "subject_id\tsubject_label\tpredicate_id\tobject_id\tobject_label\tmap
 ROW = "HP:0000175\tCleft palate\tskos:exactMatch\tMP:0000111\tcleft palate\tsemapv:LexicalMatching\t0.9\n"
 
 
-def plan_for(text: str, overrides=None, max_issues=1000):
+def plan_for(text: str, overrides=None, max_issues=1000, license_id="CC-BY-4.0"):
+    """build_import, with the License id the request names (checked earlier)."""
     return build_import(
-        parse_sssom(text), VOCAB, LICENSES, overrides, max_issues=max_issues
+        parse_sssom(text),
+        VOCAB,
+        overrides,
+        license_id=license_id,
+        max_issues=max_issues,
     )
 
 
@@ -291,56 +274,21 @@ def test_yaml_float_version_is_read_as_text_with_warning():
     assert "coerced_value" in codes(plan, "warning")
 
 
-def test_unknown_license_is_a_warning_and_kept():
-    other = "https://opensource.org/licenses/MIT"
-    plan = plan_for(
-        HEADER.replace("https://creativecommons.org/licenses/by/4.0/", other)
-        + COLUMNS
-        + ROW
-    )
+def test_set_is_linked_to_the_requests_license():
+    plan = plan_for(HEADER + COLUMNS + ROW, license_id="CC0-1.0")
+    assert plan.ok and codes(plan) == []
+    assert plan.mapping_set.license_id == "CC0-1.0"
+    assert "license" not in plan.mapping_set.extra_metadata
+
+
+def test_without_a_license_id_the_files_license_is_kept_with_a_warning():
+    plan = plan_for(HEADER + COLUMNS + ROW, license_id=None)
     assert plan.ok
     assert plan.mapping_set.license_id is None
-    assert plan.mapping_set.extra_metadata["license"] == other
-    assert "unknown_license" in codes(plan, "warning")
-
-
-@pytest.mark.parametrize(
-    "iri",
-    [
-        "https://creativecommons.org/licenses/by/4.0/",  # what SSSOM files use
-        "http://creativecommons.org/licenses/by/4.0",
-        "https://creativecommons.org/licenses/by/4.0/legalcode",
-        "https://creativecommons.org/licenses/by/4.0/legalcode.en",
-        "https://creativecommons.org/licenses/by/4.0/deed.en",
-        "https://spdx.org/licenses/CC-BY-4.0",  # what the registry stores
-        "https://spdx.org/licenses/CC-BY-4.0.html",
-    ],
-)
-def test_license_matches_spdx_iri_or_see_also(iri):
-    text = HEADER.replace("https://creativecommons.org/licenses/by/4.0/", iri)
-    plan = plan_for(text + COLUMNS + ROW)
-    assert plan.ok and codes(plan) == []
-    assert plan.mapping_set.license_id == "CC-BY-4.0"
-
-
-def test_license_iri_normalisation_keeps_versions_apart():
-    assert normalise_license_iri(
+    assert plan.mapping_set.extra_metadata["license"] == (
         "https://creativecommons.org/licenses/by/4.0/"
-    ) != normalise_license_iri("https://creativecommons.org/licenses/by/3.0/")
-    assert normalise_license_iri("https://spdx.org/licenses/CC-BY-4.0.html") == (
-        "https://spdx.org/licenses/cc-by-4.0"
     )
-
-
-def test_deprecated_license_is_a_warning():
-    text = HEADER.replace(
-        "https://creativecommons.org/licenses/by/4.0/",
-        "https://spdx.org/licenses/LPPL-1.3c",
-    )
-    plan = plan_for(text + COLUMNS + ROW)
-    assert plan.ok
-    assert plan.mapping_set.license_id == "LPPL-1.3c"
-    assert codes(plan) == ["deprecated_license"]
+    assert codes(plan) == ["unknown_license"]
 
 
 def test_include_author_orcid_ids_is_a_known_override():

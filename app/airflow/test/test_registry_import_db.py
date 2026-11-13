@@ -25,18 +25,16 @@ import pytest
 from airflow.exceptions import AirflowFailException
 from libs.registry_import import (
     finalize,
-    full_validate,
+    full_validate_and_load,
     helpers,
-    load,
     on_failure,
     prepare_source,
     queries,
     validate_params,
 )
-from libs.registry_import.full_validate_checks import Vocabulary, build_import
-from libs.registry_import.full_validate_licenses import License, LicenseLookup
-from libs.registry_import.full_validate_parse import parse_sssom
-from libs.registry_import.load import LoadError, load_plan
+from libs.registry_import.full_validate_and_load_checks import Vocabulary, build_import
+from libs.registry_import.full_validate_and_load_db import LoadError, load_plan
+from libs.registry_import.full_validate_and_load_parse import parse_sssom
 
 DATABASE_URL = os.getenv("REGISTRY_IMPORT_TEST_DATABASE_URL")
 pytestmark = pytest.mark.skipif(
@@ -252,20 +250,17 @@ def sssom(
 
 
 def plan_for(conn, text: str):
-    """build_import with the database's vocabularies and licenses."""
+    """build_import with the database's vocabularies, licensed CC-BY-4.0."""
     with conn.cursor() as cursor:
         cursor.execute(queries.get_predicates_query)
         predicates = {r[0] for r in cursor.fetchall()}
         cursor.execute(queries.get_justifications_query)
         justifications = {r[0] for r in cursor.fetchall()}
-        cursor.execute(queries.get_licenses_query)
-        licenses = LicenseLookup(
-            License(i, iri, tuple(see_also or ()), deprecated)
-            for i, iri, see_also, deprecated in cursor.fetchall()
-        )
     conn.rollback()
     return build_import(
-        parse_sssom(text), Vocabulary(predicates, justifications), licenses
+        parse_sssom(text),
+        Vocabulary(predicates, justifications),
+        license_id="CC-BY-4.0",
     )
 
 
@@ -438,7 +433,7 @@ class FakeStorage:
 def storage(tmp_path, monkeypatch):
     fake = FakeStorage(tmp_path)
     monkeypatch.setattr(prepare_source, "upload_blob_to_storage", fake.upload)
-    monkeypatch.setattr(full_validate, "download_blob_to_tmp", fake.download)
+    monkeypatch.setattr(full_validate_and_load, "download_blob_to_tmp", fake.download)
     return fake
 
 
@@ -456,8 +451,7 @@ def run_dag(conf: dict) -> None:
     ti = SimpleNamespace(xcom_pull=xcom_pull)
     steps = (
         prepare_source.prepare_source,
-        full_validate.full_validate,
-        load.load,
+        full_validate_and_load.full_validate_and_load,
         finalize.finalize,
     )
     for task in steps:
@@ -507,11 +501,18 @@ def test_dag_imports_an_upload(conn, cleanup, user, storage):
             "origin": "SSSOM_UPLOAD",
             "user_id": user,
             "file_key": key,
+            # the License id the upload endpoint has checked
+            "overrides": {"license": "CC-BY-4.0"},
         }
     )
 
     row = job_row(conn, job)
     assert row["status"] == "SUCCEEDED" and row["error"] == ""
+    assert fetch(
+        conn,
+        "SELECT license_id FROM registry_mappingset WHERE import_job_id = %s",
+        job,
+    ) == [("CC-BY-4.0",)]
     assert row["file_key"] == key and row["dag_run_id"].startswith("manual__")
     assert row["stats"]["mappings_created"] == 3
     [(set_id, status, published)] = fetch(
@@ -544,14 +545,16 @@ def test_dag_records_validation_failure_once(conn, cleanup, user, storage):
                 "origin": "SSSOM_UPLOAD",
                 "user_id": user,
                 "file_key": key,
+                "overrides": {"license": "CC-BY-4.0"},
             }
         )
 
     row = job_row(conn, job)
     assert row["status"] == "FAILED"
     assert "unknown_predicate" in row["error"]
-    assert {i["code"] for i in row["issues"]} == {"unknown_predicate"}
-    assert [i["line"] for i in row["issues"]] == [10, 11, 12]
+    errors = [i for i in row["issues"] if i["level"] == "error"]
+    assert {i["code"] for i in errors} == {"unknown_predicate"}
+    assert [i["line"] for i in errors] == [10, 11, 12]
     assert fetch(
         conn, "SELECT count(*) FROM registry_mappingset WHERE import_job_id = %s", job
     ) == [(0,)]

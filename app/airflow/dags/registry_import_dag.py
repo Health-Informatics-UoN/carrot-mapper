@@ -4,8 +4,7 @@ from airflow import DAG
 from airflow.providers.standard.operators.empty import EmptyOperator
 from airflow.sdk import chain
 from libs.registry_import.finalize import finalize
-from libs.registry_import.full_validate import full_validate
-from libs.registry_import.load import load
+from libs.registry_import.full_validate_and_load import full_validate_and_load
 from libs.registry_import.on_failure import update_import_job_on_failure
 from libs.registry_import.prepare_source import prepare_source
 from libs.registry_import.validate_params import validate_params_registry_import
@@ -26,9 +25,10 @@ Workflow steps:
 2. Connect to storage
 3. Prepare the source: an upload is already stored; a Mapper direct publish is
    built from the scan report's mappings with the rules SSSOM exporter
-4. Fully validate the file (every row), storing the issues on the ImportJob
-5. Load it into the registry tables in one transaction (idempotent on retry)
-6. Finalize: publish the set (unless a DRAFT was asked for), job SUCCEEDED
+4. Fully validate the file (every row), storing the issues on the ImportJob,
+   then load it into the registry tables in one transaction (idempotent on
+   retry)
+5. Finalize: publish the set (unless a DRAFT was asked for), job SUCCEEDED
 
 On failure the ImportJob is marked FAILED with the reason.
 """
@@ -69,8 +69,7 @@ tasks = [
     ),
     create_task("connect_to_storage", connect_to_storage, dag),
     create_task("prepare_source", prepare_source, dag),
-    create_task("full_validate", full_validate, dag),
-    create_task("load", load, dag),
+    create_task("full_validate_and_load", full_validate_and_load, dag),
     create_task("finalize", finalize, dag),
 ]
 

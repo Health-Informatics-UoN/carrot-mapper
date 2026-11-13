@@ -56,9 +56,6 @@ get_justifications_query = "SELECT justification_id FROM registry_mappingjustifi
 get_origins_query = "SELECT id FROM registry_origin"
 
 # registry_license is filled by the license_sync DAG (SPDX License List)
-get_licenses_query = """
-    SELECT id, license_iri, see_also, is_deprecated FROM registry_license
-"""
 get_license_iri_query = """
     SELECT license_iri FROM registry_license WHERE id = %(license_id)s
 """

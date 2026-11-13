@@ -1,6 +1,6 @@
 """
-Step 4: write the validated file to the registry tables in ONE transaction, so
-a failed run never leaves a half-imported set behind:
+full_validate_and_load helper: write a validated file to the registry tables in
+ONE transaction, so a failed run never leaves a half-imported set behind:
 
 1. delete any MappingSet this job created before (makes retries idempotent);
 2. insert the MappingSet (status DRAFT; finalize publishes it);
@@ -18,35 +18,13 @@ from __future__ import annotations
 import json
 import logging
 import uuid
-from contextlib import closing
 from typing import Any
 
-from airflow.exceptions import AirflowFailException
-
-from libs.db import pg_hook
 from libs.registry_import import queries
-from libs.registry_import.full_validate import read_import_plan
-from libs.registry_import.full_validate_checks import STAGING_COLUMNS, ImportPlan
-from libs.registry_import.helpers import job_file_key
-from libs.utils import pull_validated_params
-
-
-def load(**kwargs) -> None:
-    params = pull_validated_params(kwargs, "validate_params_registry_import")
-    file_key = job_file_key(params["import_job_id"])
-    plan = read_import_plan(params, file_key)
-    try:
-        with closing(pg_hook.get_conn()) as conn:
-            load_plan(
-                conn,
-                plan,
-                import_job_id=params["import_job_id"],
-                origin=params["origin"],
-                file_key=file_key,
-                scan_report_id=params["scan_report_id"],
-            )
-    except LoadError as e:
-        raise AirflowFailException(str(e))
+from libs.registry_import.full_validate_and_load_checks import (
+    STAGING_COLUMNS,
+    ImportPlan,
+)
 
 
 class LoadError(Exception):

@@ -9,7 +9,7 @@ from airflow.exceptions import AirflowFailException
 from libs.db import pg_hook
 from libs.notifications import NotificationType, create_import_job_notification
 from libs.registry_import import queries
-from libs.registry_import.full_validate_checks import (
+from libs.registry_import.full_validate_and_load_checks import (
     PUBLISHED,
     IssueLog,
     normalise_overrides,

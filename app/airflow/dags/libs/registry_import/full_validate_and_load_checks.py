@@ -1,8 +1,8 @@
 """
 Full validation of an SSSOM file for the registry, and its normalisation into
 an ImportPlan: the mapping set's columns plus one staging row per mapping, in
-exactly the shape load.py writes. Validation and normalisation are one pass, so
-what full_validate accepts is precisely what load inserts.
+exactly the shape full_validate_and_load_db.py writes. Validation and normalisation are one pass, so
+what is accepted is precisely what is loaded.
 
 Checks, each reported as an Issue (see parse.Issue):
 
@@ -37,8 +37,12 @@ from urllib.parse import unquote
 import jsonschema
 import yaml
 
-from libs.registry_import.full_validate_licenses import LicenseLookup
-from libs.registry_import.full_validate_parse import ERROR, WARNING, Issue, ParsedSSSOM
+from libs.registry_import.full_validate_and_load_parse import (
+    ERROR,
+    WARNING,
+    Issue,
+    ParsedSSSOM,
+)
 from libs.rules_export.sssom import (
     OMOP_CONCEPT_IRI,
     OMOP_CONCEPT_PREFIX,
@@ -510,7 +514,7 @@ def _check_set(
     parsed: ParsedSSSOM,
     override_slots: dict[str, str],
     spec: Spec,
-    licenses: LicenseLookup,
+    license_id: str | None,
     log: IssueLog,
 ) -> tuple[SetRecord, dict[str, Any], set[str], _Curies] | None:
     """
@@ -663,21 +667,16 @@ def _check_set(
     ):
         setattr(record, slot, str(metadata.get(slot) or ""))
 
+    # The license was checked before the DAG read the file: the request names
+    # it by License id (validate_params checked it against registry_license),
+    # and the file's license is that License's license_iri.
     license_iri = metadata.get("license")
-    license = licenses.find(license_iri)
-    record.license_id = license.id if license else None
-    if license_iri and license is None:
+    record.license_id = license_id
+    if license_iri and license_id is None:
         log.warning(
             "unknown_license",
-            f"License {license_iri!r} is not one of the registry's licenses; "
-            "the set is stored without a license link (the IRI is kept in "
-            "extra_metadata)",
-            column="license",
-        )
-    elif license and license.is_deprecated:
-        log.warning(
-            "deprecated_license",
-            f"License {license_iri!r} ({record.license_id}) is deprecated by SPDX",
+            "The request named no License, so the set isn't linked to one; "
+            f"the file's license {license_iri!r} is kept in extra_metadata",
             column="license",
         )
 
@@ -763,13 +762,14 @@ def _slot_errors(spec: Spec, slot: str, value: Any, cache: dict) -> tuple[str, .
 def build_import(
     parsed: ParsedSSSOM,
     vocab: Vocabulary,
-    licenses: LicenseLookup,
     overrides: Mapping[str, Any] | None = None,
+    license_id: str | None = None,
     max_issues: int = 1000,
 ) -> ImportPlan:
     """
     Validate a parsed SSSOM file and normalise it for loading. ``overrides``
-    are the request's metadata (license as an IRI, see helpers.file_overrides).
+    are the request's metadata (license as an IRI, see helpers.file_overrides);
+    ``license_id`` is the request's License id, which the set is linked to.
     """
     spec = load_spec()
     log = IssueLog(max_issues)
@@ -780,7 +780,7 @@ def build_import(
     if not parsed.header:
         return plan
 
-    checked = _check_set(parsed, override_slots, spec, licenses, log)
+    checked = _check_set(parsed, override_slots, spec, license_id, log)
     if checked is None:
         return plan
     plan.mapping_set, propagated, ext_slots, curies = checked

@@ -20,7 +20,7 @@ from airflow.exceptions import AirflowFailException
 from libs.db import pg_hook
 from libs.queries import create_update_temp_rules_table_query
 from libs.registry_import import queries
-from libs.registry_import.full_validate_checks import (
+from libs.registry_import.full_validate_and_load_checks import (
     OVERRIDE_SLOTS,
     IssueLog,
     normalise_overrides,

@@ -9,7 +9,10 @@ from airflow.exceptions import AirflowFailException
 
 from libs.db import pg_hook
 from libs.registry_import import queries
-from libs.registry_import.full_validate_checks import IssueLog, normalise_overrides
+from libs.registry_import.full_validate_and_load_checks import (
+    IssueLog,
+    normalise_overrides,
+)
 from libs.registry_import.helpers import (
     CARROT_DIRECT_PUBLISH,
     get_job,
