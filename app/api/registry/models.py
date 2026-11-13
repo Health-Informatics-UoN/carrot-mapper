@@ -243,7 +243,10 @@ class TermLevel(models.TextChoices):
 # MappingSet.curie_map as {CARROT_TERM_PREFIX: CARROT_TERM_NAMESPACE}.
 # The namespace does not need to resolve; it is an identifier only.
 CARROT_TERM_PREFIX = "carrot"
-CARROT_TERM_NAMESPACE = "https://w3id.org/carrot/term/"
+CARROT_TERM_NAMESPACE = "https://carrot.ac.uk/sssom/terms/"
+# set_uri base for sets published directly from a scan report; every
+# version published from the same scan report shares one set_uri.
+CARROT_MAPPING_SET_NAMESPACE = "https://carrot.ac.uk/sssom/mapping-sets/"
 
 
 class Term(models.Model):

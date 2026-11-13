@@ -8,7 +8,9 @@ type ActivityLogVerb =
   | "mapping.deleted"
   | "rules.export_requested"
   | "rules.downloaded"
-  | "automap.ran";
+  | "automap.ran"
+  | "registry.publish_requested"
+  | "registry.import_requested";
 
 interface ActivityLog {
   id: number;
