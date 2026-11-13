@@ -17,6 +17,14 @@ from registry.services import submit_direct_publish
 
 
 class LicenseListView(ListAPIView):
+    """
+    List all registry licences for authenticated
+    users.
+
+    Note: Consider using Pagination for large
+    sets of licences in the future.
+    """
+
     queryset = License.objects.order_by("label", "id")
     serializer_class = LicenseSerializer
     pagination_class = None

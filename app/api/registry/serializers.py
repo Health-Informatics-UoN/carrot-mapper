@@ -4,6 +4,11 @@ from registry.models import ImportJobStatus, License, Status
 
 
 class LicenseSerializer(serializers.ModelSerializer):
+    """
+    Expose licence metadata used when
+    selecting a registry licence.
+    """
+
     class Meta:
         model = License
         fields = ["id", "license_iri", "spdx_id", "label", "is_open", "is_deprecated"]
@@ -25,6 +30,10 @@ class ScanReportRegistryPublishSerializer(serializers.Serializer):
     include_author_orcid_ids = serializers.BooleanField(required=False)
 
     def validate(self, attrs):
+        """
+        Normalize the author and legacy ORCID
+        flags for the import worker.
+        """
         legacy_value = attrs.get("include_orcid_ids")
         author_value = attrs.pop("include_author_orcid_ids", None)
         if (
