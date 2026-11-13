@@ -34,7 +34,9 @@ from mapping.models import (
     ScanReportConcept,
     ScanReportField,
     ScanReportTable,
+    ScanReportTableFieldMapping,
     ScanReportValue,
+    TableRole,
     UploadStatus,
 )
 from mapping.permissions import SCAN_REPORT_QUERIES, get_user_permissions_on_scan_report
@@ -72,6 +74,7 @@ from services.scan_report_build import (
     bulk_create_values,
 )
 from services.storage_service import StorageService
+from services.table_field_mappings import allowed_fields
 from services.worker_service import get_worker_service
 from users.models import Profile
 from users.serializers import ProfileEditSerializer, UserProfileSerializer
@@ -86,6 +89,7 @@ from api.paginations import CustomPagination
 from api.serializers import (
     ConceptSerializerV2,
     GetRulesAnalysis,
+    NlpSettingsSerializer,
     ScanReportConceptDetailSerializerV3,
     ScanReportConceptSerializer,
     ScanReportConceptSerializerV2,
@@ -96,6 +100,7 @@ from api.serializers import (
     ScanReportFieldListSerializerV3,
     ScanReportFilesSerializer,
     ScanReportTableEditSerializer,
+    ScanReportTableFieldMappingSerializer,
     ScanReportTableListSerializerV2,
     ScanReportValueEditSerializer,
     ScanReportValueViewSerializerV2,
@@ -103,6 +108,7 @@ from api.serializers import (
     ScanReportViewSerializerV2,
     UserSerializer,
     VocabularySerializer,
+    validation_error_detail,
 )
 
 logger = logging.getLogger(__name__)
@@ -828,6 +834,159 @@ class ScanReportTableIndexV2(ScanReportPermissionMixin, GenericAPIView, ListMode
         )
         output_serializer = ScanReportTableListSerializerV2(tables, many=True)
         return Response(output_serializer.data, status=status.HTTP_201_CREATED)
+
+
+class ScanReportTableFieldMappingsV2(ScanReportPermissionMixin, GenericAPIView):
+    """
+    Table-level field mappings of a note or note_nlp Scan Report Table: the OMOP
+    fields filled from a source column or a constant rather than from concepts
+    (e.g. note_text, lexical_variant, nlp_system).
+
+    - GET: {"fields": the OMOP fields the table's role can map, "mappings":
+      the table's field mappings}.
+    - PUT: replace all the mappings. Body: a list of
+      {"omop_field": <name>, "source_field": <field id>} or
+      {"omop_field": <name>, "constant_value": <value>}.
+      Every required field for the table's role must be included.
+    """
+
+    serializer_class = ScanReportTableFieldMappingSerializer
+
+    def get_table(self) -> ScanReportTable:
+        return get_object_or_404(
+            ScanReportTable, pk=self.kwargs["table_pk"], scan_report=self.scan_report
+        )
+
+    def _response(self, table: ScanReportTable) -> Response:
+        mappings = table.field_mappings.select_related("omop_field").order_by(
+            "omop_field__field"
+        )
+        fields = [
+            {
+                "omop_field": name,
+                "required": spec.required,
+                "source": spec.source,
+                "constant": spec.constant,
+                "concept": spec.concept,
+            }
+            for name, spec in allowed_fields(table.table_role).items()
+        ]
+        return Response(
+            {
+                "fields": fields,
+                "mappings": self.get_serializer(mappings, many=True).data,
+            }
+        )
+
+    def get(self, request, *args, **kwargs):
+        return self._response(self.get_table())
+
+    def put(self, request, *args, **kwargs):
+        table = self.get_table()
+        fields = allowed_fields(table.table_role)
+        if not fields:
+            return Response(
+                {
+                    "detail": f"Tables with role '{table.table_role}' have no field mappings."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        serializer = self.get_serializer(
+            data=request.data,
+            many=True,
+            context={**self.get_serializer_context(), "table": table},
+        )
+        if not serializer.is_valid():
+            return Response(
+                {
+                    "detail": validation_error_detail(serializer.errors),
+                    "errors": serializer.errors,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        names = [item["omop_field"].field for item in serializer.validated_data]
+        duplicated = sorted({name for name in names if names.count(name) > 1})
+        missing = sorted(
+            name for name, spec in fields.items() if spec.required and name not in names
+        )
+        if duplicated or missing:
+            problems = []
+            if missing:
+                problems.append(f"Required fields missing: {', '.join(missing)}.")
+            if duplicated:
+                problems.append(
+                    f"Fields mapped more than once: {', '.join(duplicated)}."
+                )
+            return Response(
+                {
+                    "detail": " ".join(problems),
+                    "duplicated": duplicated,
+                    "missing_required": missing,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        with transaction.atomic():
+            table.field_mappings.all().delete()
+            ScanReportTableFieldMapping.objects.bulk_create(
+                ScanReportTableFieldMapping(scan_report_table=table, **item)
+                for item in serializer.validated_data
+            )
+        return self._response(table)
+
+
+class ScanReportTableNlpSettingsV2(ScanReportPermissionMixin, GenericAPIView):
+    """
+    Derived-record settings of a note_nlp Scan Report Table. Domain records
+    derived from the table's rows (e.g. conditions) are only written for rows
+    that give a note_nlp record and match no exclusion, and are linked to their
+    note_nlp record in fact_relationship when the link concepts are set.
+
+    - GET: {"source_domain_concept", "relationship_concept",
+      "reverse_relationship_concept" (each {"concept_id", "concept_name"} or
+      null), "exclusions": [{"source_field", "source_field_name",
+      "excluded_values"}]}.
+    - PUT: replace them. Body: the concepts as concept ids (all three, or all
+      null), and "exclusions": [{"source_field": <field id>,
+      "excluded_values": [...]}].
+
+    Saving doesn't re-run auto-mapping: these settings only affect the rules
+    export.
+    """
+
+    serializer_class = NlpSettingsSerializer
+
+    def get_table(self) -> ScanReportTable:
+        return get_object_or_404(
+            ScanReportTable, pk=self.kwargs["table_pk"], scan_report=self.scan_report
+        )
+
+    def get(self, request, *args, **kwargs):
+        return Response(NlpSettingsSerializer.represent(self.get_table()))
+
+    def put(self, request, *args, **kwargs):
+        table = self.get_table()
+        if table.table_role != TableRole.NOTE_NLP:
+            return Response(
+                {"detail": "Only note_nlp tables have NLP settings."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        serializer = self.get_serializer(
+            data=request.data,
+            context={**self.get_serializer_context(), "table": table},
+        )
+        if not serializer.is_valid():
+            return Response(
+                {
+                    "detail": validation_error_detail(serializer.errors),
+                    "errors": serializer.errors,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        with transaction.atomic():
+            serializer.save_to(table)
+        return Response(NlpSettingsSerializer.represent(table))
 
 
 class ScanReportTableDetailV2(
@@ -1565,7 +1724,8 @@ class ScanReportConceptListV2(
         destination_table = None
         if not is_no_matching_concept:
             destination_table = _find_destination_table(concept, table)
-            if destination_table is None:
+            # On a note_nlp table the concept still becomes a note_nlp record
+            if destination_table is None and table.table_role != TableRole.NOTE_NLP:
                 return Response(
                     {
                         "detail": "The destination table could not be found or has not been implemented."

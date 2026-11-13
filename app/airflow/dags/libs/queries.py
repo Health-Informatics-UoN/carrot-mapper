@@ -139,11 +139,11 @@ LEFT JOIN mapping_omoptable AS omop_table ON
 -- Because concepts may or may not have the standard_concept_id, in general. And we prefer to use the standard_concept_id, if it exists.
 WHERE target_concept.concept_id = COALESCE(temp_existing_concepts.standard_concept_id, temp_existing_concepts.source_concept_id);
 
--- If the scan report table has the "death_table" flag set to TRUE, set the destination table to OMOP's "death" table.
+-- If the scan report table has the "death" role, set the destination table to OMOP's "death" table.
 -- This ensures that mapping rules will use "death" as the destination table and, for example, will select "cause_concept_id" as the mapped field.
 UPDATE temp_existing_concepts_%(table_id)s temp_existing_concepts
 SET dest_table_id = (SELECT id FROM mapping_omoptable WHERE "table" = 'death' LIMIT 1)
-WHERE (SELECT death_table FROM mapping_scanreporttable WHERE id = %(table_id)s) = TRUE;
+WHERE (SELECT table_role FROM mapping_scanreporttable WHERE id = %(table_id)s) = 'death';
 
 -- Update person field ID
 UPDATE temp_existing_concepts_%(table_id)s temp_existing_concepts
@@ -276,10 +276,11 @@ CREATE TABLE temp_reuse_concepts_%(table_id)s (
     matching_value_description TEXT,
     matching_field_name TEXT,
     matching_table_name TEXT,
-    -- TODO: when we can distinguish the source concept id/ concept_id for the model SCANREPORTCONCEPT/ M concepts, we need to work more here
     source_scanreport_id INTEGER,
     content_type_id INTEGER,
-    concept_id INTEGER
+    concept_id INTEGER,
+    -- Source vocabulary concept of the reused SR concept, if it recorded one (#1006)
+    source_concept_id INTEGER
 );
 """
 
@@ -306,7 +307,7 @@ WITH
             AND scan_report.id != %(scan_report_id)s
     ),
     -- Find values in eligible scan reports that have M-type concepts tied.
-    -- Only reuse from tables with the same death_table flag (death tables get death concepts only; non-death never get death concepts).
+    -- Only reuse from tables with the same role (e.g. death tables get death concepts only; other tables never get death concepts).
     values_with_m_concepts AS (
         SELECT
             sr_value.value AS matching_value_name,
@@ -315,11 +316,12 @@ WITH
             sr_table.name AS matching_table_name,
             value_content_type.id AS content_type_id,
             sr_concept.concept_id AS concept_id,
+            sr_concept.source_concept_id AS source_concept_id,
             eligible_report.id AS source_scanreport_id
         FROM eligible_reports AS eligible_report
         JOIN mapping_scanreporttable AS sr_table ON sr_table.scan_report_id = eligible_report.id
             AND sr_table.name = %(current_table_name)s
-            AND (SELECT death_table FROM mapping_scanreporttable WHERE id = %(table_id)s) IS NOT DISTINCT FROM sr_table.death_table
+            AND (SELECT table_role FROM mapping_scanreporttable WHERE id = %(table_id)s) = sr_table.table_role
         JOIN mapping_scanreportfield AS sr_field ON sr_field.scan_report_table_id = sr_table.id
         JOIN mapping_scanreportvalue AS sr_value ON sr_value.scan_report_field_id = sr_field.id
         JOIN mapping_scanreportconcept AS sr_concept ON sr_concept.object_id = sr_value.id
@@ -329,11 +331,11 @@ WITH
     )
 INSERT INTO temp_reuse_concepts_%(table_id)s (
     matching_value_name, matching_value_description, matching_field_name, matching_table_name,
-    content_type_id, concept_id, source_scanreport_id
+    content_type_id, concept_id, source_concept_id, source_scanreport_id
 )
 SELECT
     matching_value_name, matching_value_description, matching_field_name, matching_table_name,
-    content_type_id, concept_id, source_scanreport_id
+    content_type_id, concept_id, source_concept_id, source_scanreport_id
 FROM values_with_m_concepts;
 """
 
@@ -360,18 +362,19 @@ WITH
             AND scan_report.id != %(scan_report_id)s
     ),
     -- Find fields in eligible scan reports that have M-type concepts tied.
-    -- Match only tables with an identical death_table setting to ensure concepts from death tables are reused only with other death tables, and non-death tables only with non-death.
+    -- Match only tables with the same role, so e.g. concepts from death tables are reused only with other death tables, and non-death tables only with non-death.
     fields_with_m_concepts AS (
         SELECT
             sr_field.name AS matching_field_name,
             sr_table.name AS matching_table_name,
             field_content_type.id AS content_type_id,
             sr_concept.concept_id AS concept_id,
+            sr_concept.source_concept_id AS source_concept_id,
             eligible_report.id AS source_scanreport_id
         FROM eligible_reports AS eligible_report
         JOIN mapping_scanreporttable AS sr_table ON sr_table.scan_report_id = eligible_report.id
             AND sr_table.name = %(current_table_name)s
-            AND (SELECT death_table FROM mapping_scanreporttable WHERE id = %(table_id)s) IS NOT DISTINCT FROM sr_table.death_table
+            AND (SELECT table_role FROM mapping_scanreporttable WHERE id = %(table_id)s) = sr_table.table_role
         JOIN mapping_scanreportfield AS sr_field ON sr_field.scan_report_table_id = sr_table.id
         JOIN mapping_scanreportconcept AS sr_concept ON sr_concept.object_id = sr_field.id
             AND sr_concept.content_type_id = (SELECT id FROM field_content_type)
@@ -380,15 +383,15 @@ WITH
     )
 INSERT INTO temp_reuse_concepts_%(table_id)s (
     matching_field_name, matching_table_name,
-    content_type_id, concept_id, source_scanreport_id
+    content_type_id, concept_id, source_concept_id, source_scanreport_id
 )
 SELECT
     matching_field_name, matching_table_name,
-    content_type_id, concept_id, source_scanreport_id
+    content_type_id, concept_id, source_concept_id, source_scanreport_id
 FROM fields_with_m_concepts;
 """
 
-# Only set object_id if the death_table flag for the current table matches the source table (identified by source_scanreport_id and matching_table_name).
+# Only set object_id if the role of the current table matches the source table (identified by source_scanreport_id and matching_table_name).
 find_object_id_query = """
     UPDATE temp_reuse_concepts_%(table_id)s AS temp_table
         SET object_id =
@@ -423,13 +426,12 @@ find_object_id_query = """
                     LIMIT 1)
                 ELSE NULL
             END
-    -- We only want to reuse concepts between tables where the "death_table" status matches.
-    -- To do this, we're checking if the "death_table" flag is the same for:
+    -- We only want to reuse concepts between tables with the same role (standard, death, note, note_nlp).
+    -- To do this, we're checking the role is the same for:
     --   1. The current scan report table (id = %(table_id)s)
     --   2. The source scan report table we're trying to reuse from (using name and source_scanreport_id)
-    -- The "IS NOT DISTINCT FROM" comparison treats NULL values as equivalent, so if both tables have "death_table" as NULL, that's also accepted as a match.
-    WHERE (SELECT death_table FROM mapping_scanreporttable WHERE id = %(table_id)s) IS NOT DISTINCT FROM (
-        SELECT sr_table.death_table
+    WHERE (SELECT table_role FROM mapping_scanreporttable WHERE id = %(table_id)s) = (
+        SELECT sr_table.table_role
         FROM mapping_scanreporttable AS sr_table
         WHERE sr_table.scan_report_id = temp_table.source_scanreport_id
           AND sr_table.name = temp_table.matching_table_name
@@ -481,7 +483,6 @@ WHERE object_id IS NULL;
 """
 
 
-# TODO: when source_concept_id is added to the model SCANREPORTCONCEPT, we need to update the query belowto solve the issue #1006
 create_reuse_concept_query = """
     -- Insert standard concepts for field values (only if they don't already exist)
     INSERT INTO mapping_scanreportconcept (
@@ -489,8 +490,8 @@ create_reuse_concept_query = """
         updated_at,
         object_id,
         creation_type,
-        -- TODO: Will have the standard_concept_id (nullable) here
         concept_id,
+        source_concept_id,
         content_type_id
     )
     SELECT
@@ -498,9 +499,8 @@ create_reuse_concept_query = """
         NOW(),
         temp_reuse_concepts.object_id,
         'R',       -- Creation type: Reused
-        -- TODO: if standard_concept_id is null then we need to use the source_concept_id
-        -- TODO: add standard_concept_id here for the newly creted SR concepts
         temp_reuse_concepts.concept_id,
+        temp_reuse_concepts.source_concept_id,
         temp_reuse_concepts.content_type_id -- content_type_id for scanreportvalue/scanreportfield
     FROM temp_reuse_concepts_%(table_id)s AS temp_reuse_concepts;
     """
@@ -599,8 +599,15 @@ create_update_temp_rules_table_query = """
         )
         SELECT
             mapping_rule.concept_id AS sr_concept_id,
+            -- Always the mapped concept's name, so all rules for one SR concept share a key in the JSON
             omop_concept.concept_name,
-            sr_concept.concept_id,
+            -- <domain>_source_concept_id gets the source vocabulary concept when one was
+            -- recorded (#1006), falling back to the mapped concept otherwise
+            CASE
+                WHEN RIGHT(omop_field.field, 18) = '_source_concept_id'
+                THEN COALESCE(sr_concept.source_concept_id, sr_concept.concept_id)
+                ELSE sr_concept.concept_id
+            END AS concept_id,
             omop_field.field AS dest_field,
             omop_table.table AS dest_table,
             sr_field.name AS source_field,
@@ -634,4 +641,34 @@ create_update_temp_rules_table_query = """
 create_file_entry_query = """
     INSERT INTO files_filedownload (name, file_url, user_id, file_type_id, scan_report_id, created_at, updated_at)
     VALUES (%(name)s, %(file_url)s, %(user_id)s, %(file_type_id)s, %(scan_report_id)s, %(created_at)s, %(updated_at)s)
+"""
+
+
+# On a note_nlp table, every concept also becomes a note_nlp record: rules for its
+# date (from the table's date event) and its concept fields (from the field the
+# concept is on). note_nlp has no person_id. Concepts whose domain has no
+# destination table of its own get these rules too.
+create_note_nlp_rules_query = """
+    INSERT INTO mapping_mappingrule (
+        created_at, updated_at, omop_field_id, source_field_id, concept_id, scan_report_id, approved
+    )
+    SELECT
+        NOW(),
+        NOW(),
+        omop_field.id,
+        CASE
+            WHEN omop_field.field = 'nlp_datetime' THEN %(date_field_id)s
+            ELSE temp_table.source_field_id
+        END,
+        temp_table.sr_concept_id,
+        %(scan_report_id)s,
+        TRUE
+    FROM temp_existing_concepts_%(table_id)s AS temp_table
+    JOIN mapping_omopfield AS omop_field
+        ON omop_field.field IN ('nlp_datetime', 'note_nlp_concept_id', 'note_nlp_source_concept_id')
+    JOIN mapping_omoptable AS omop_table
+        ON omop_table.id = omop_field.table_id AND omop_table.table = 'note_nlp'
+    WHERE (SELECT table_role FROM mapping_scanreporttable WHERE id = %(table_id)s) = 'note_nlp'
+    AND temp_table.source_field_id IS NOT NULL
+    ORDER BY temp_table.object_id;
 """

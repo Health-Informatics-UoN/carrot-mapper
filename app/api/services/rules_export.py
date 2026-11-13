@@ -25,6 +25,20 @@ class NonStandardConceptMapsToSelf(Exception):
     pass
 
 
+def source_concept_id_for(scan_report_concept: ScanReportConcept) -> int:
+    """
+    The concept id to write to a `<domain>_source_concept_id` field.
+
+    This is the source vocabulary concept recorded on the ScanReportConcept
+    (e.g. the SNOMED concept a value's code was looked up as), falling back to
+    the mapped concept when none was recorded, which preserves the previous
+    behaviour for manual mappings and older data.
+    """
+    if scan_report_concept.source_concept_id is not None:
+        return scan_report_concept.source_concept_id
+    return scan_report_concept.concept_id
+
+
 def get_mapping_rules_list(
     mapping_rules: QuerySet[MappingRule],
     page_number: int | None = None,
@@ -172,10 +186,12 @@ def get_mapping_rules_list(
 
         concept_name = rule_id_to_concept_name_map[rule.id]
 
+        # <domain>_source_concept_id gets the source vocabulary concept when one
+        # was recorded (#1006); otherwise it falls back to the mapped concept.
+        if destination_field.field.endswith("_source_concept_id"):
+            concept_id = source_concept_id_for(scan_report_concept)
+
         # work out if we need term_mapping or not
-        # Two TODOs below is for the issue #1006
-        # TODO: add field source_concept_id to the model SCANREPORTCONCEPT (can be null because of uncoded concepts)
-        # TODO: Having a separate logic for <domain>_source_concept_id
         term_mapping = None
         if "concept_id" in destination_field.field:
             if scan_report_concept.id in scan_report_concepts_with_values:
