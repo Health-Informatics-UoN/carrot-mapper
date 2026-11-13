@@ -52,7 +52,7 @@ export function PublishToRegistryDialog({
               <span>Scan Report Name: <strong className="font-semibold text-foreground">{scanReportName}</strong></span>
               <span><span aria-hidden="true" className="mr-3 hidden sm:inline">|</span>ID: <strong className="font-semibold text-foreground">{scanReportId}</strong></span>
             </span>
-            Prepare a mapping set for publication in the Carrot Mappings Registry.
+            Publish a mapping set to the Carrot Mappings Registry.
           </DialogDescription>
         </DialogHeader>
         {/* Remounting on open resets unsaved form state for each session. */}

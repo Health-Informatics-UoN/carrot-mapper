@@ -3,9 +3,11 @@
 import { useState } from "react";
 import { Formik } from "formik";
 import * as Yup from "yup";
-import { CloudUpload, Copy, InfoIcon } from "lucide-react";
+import { AlertCircle, CloudUpload, InfoIcon } from "lucide-react";
 import { Portal as TooltipPortal } from "@radix-ui/react-tooltip";
 import { toast } from "sonner";
+import { publishScanReportToRegistry, type PublishToRegistryPayload } from "@/api/registry";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -21,15 +23,6 @@ interface Props {
   onCancel: () => void;
 }
 
-export interface PublishToRegistryPayload {
-  scan_report_id: number;
-  title: string;
-  description: string;
-  mapping_set_version: string;
-  include_author_orcid_ids: boolean;
-  license: string;
-}
-
 interface FormValues {
   title: string;
   description: string;
@@ -39,8 +32,8 @@ interface FormValues {
 }
 
 const validationSchema = Yup.object({
-  title: Yup.string().trim().required("Title is required."),
-  version: Yup.string().trim().required("Mapping set version is required."),
+  title: Yup.string().trim().max(500, "Title must be 500 characters or fewer.").required("Title is required."),
+  version: Yup.string().trim().max(100, "Mapping set version must be 100 characters or fewer.").required("Mapping set version is required."),
   license: Yup.string().required("License is required."),
 });
 
@@ -49,28 +42,27 @@ export function PublishToRegistryForm({
   lastPublishedVersion,
   onCancel,
 }: Props) {
-  const [prepared, setPrepared] = useState<PublishToRegistryPayload | null>(null);
+  const [submitError, setSubmitError] = useState("");
 
-  const handleSubmit = (values: FormValues) => {
+  const handleSubmit = async (values: FormValues) => {
+    setSubmitError("");
     const payload: PublishToRegistryPayload = {
-      scan_report_id: Number(scanReportId),
       title: values.title.trim(),
       description: values.description.trim(),
-      mapping_set_version: values.version.trim(),
+      set_version: values.version.trim(),
       include_author_orcid_ids: values.includeAuthorOrcidIds,
       license: values.license,
     };
-    setPrepared(payload);
-    toast.success("Publication JSON prepared. No data has been published yet.");
-  };
-
-  const copyPayload = async () => {
-    if (!prepared) return;
     try {
-      await navigator.clipboard.writeText(JSON.stringify(prepared, null, 2));
-      toast.success("JSON copied to clipboard.");
+      const result = await publishScanReportToRegistry(scanReportId, payload);
+      if (!result.ok) {
+        setSubmitError(result.message);
+        return;
+      }
+      toast.success("Publication queued.", { description: `Import job: ${result.job.import_job_id}` });
+      onCancel();
     } catch {
-      toast.error("Could not copy JSON to clipboard.");
+      setSubmitError("Could not start publication. Please try again.");
     }
   };
 
@@ -78,13 +70,16 @@ export function PublishToRegistryForm({
     <Formik<FormValues>
       initialValues={{ title: "", description: "", version: "", includeAuthorOrcidIds: false, license: "" }}
       validationSchema={validationSchema}
-      onSubmit={(values, { setSubmitting }) => {
-        handleSubmit(values);
-        setSubmitting(false);
-      }}
+      onSubmit={handleSubmit}
     >
-      {({ values, errors, touched, handleBlur, handleChange, handleSubmit: submitForm, setFieldValue }) => (
+      {({ values, errors, touched, isSubmitting, handleBlur, handleChange, handleSubmit: submitForm, setFieldValue }) => (
         <form onSubmit={submitForm} className="space-y-6">
+          {submitError && (
+            <Alert variant="destructive">
+              <AlertCircle />
+              <AlertDescription>{submitError}</AlertDescription>
+            </Alert>
+          )}
           <section className="space-y-4 border-b border-border pb-3">
             <div className="space-y-2">
               <Label htmlFor="registry-title">Title <span aria-hidden="true" className="text-destructive">*</span></Label>
@@ -92,7 +87,7 @@ export function PublishToRegistryForm({
                 id="registry-title"
                 name="title"
                 value={values.title}
-                onChange={(event) => { handleChange(event); setPrepared(null); }}
+                onChange={handleChange}
                 onBlur={handleBlur}
                 aria-required="true"
                 aria-invalid={!!(touched.title && errors.title)}
@@ -108,7 +103,7 @@ export function PublishToRegistryForm({
                 id="registry-description"
                 name="description"
                 value={values.description}
-                onChange={(event) => { handleChange(event); setPrepared(null); }}
+                onChange={handleChange}
                 rows={3}
                 placeholder="Describe your mapping set..."
               />
@@ -139,7 +134,7 @@ export function PublishToRegistryForm({
                   id="registry-version"
                   name="version"
                   value={values.version}
-                  onChange={(event) => { handleChange(event); setPrepared(null); }}
+                  onChange={handleChange}
                   onBlur={handleBlur}
                   aria-required="true"
                   aria-invalid={!!(touched.version && errors.version)}
@@ -155,33 +150,20 @@ export function PublishToRegistryForm({
               <RegistryLicenseField
                 license={values.license}
                 validationError={touched.license ? errors.license : undefined}
-                onChange={(value) => { setFieldValue("license", value); setPrepared(null); }}
+                onChange={(value) => { setFieldValue("license", value); }}
               />
             </div>
 
             <RegistryOrcidFields
               includeAuthorOrcidIds={values.includeAuthorOrcidIds}
-              onIncludeChange={(value) => { setFieldValue("includeAuthorOrcidIds", value); setPrepared(null); }}
+              onIncludeChange={(value) => { setFieldValue("includeAuthorOrcidIds", value); }}
             />
           </section>
 
-          {prepared && (
-            <div className="space-y-2 rounded-md border bg-muted/30 p-3">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-medium">Prepared publication JSON (not submitted)</p>
-                <Button type="button" size="sm" variant="outline" onClick={copyPayload}>
-                  <Copy className="size-3.5" /> Copy JSON
-                </Button>
-              </div>
-              <pre className="max-h-48 overflow-auto whitespace-pre-wrap break-all text-xs">
-                {JSON.stringify(prepared, null, 2)}
-              </pre>
-            </div>
-          )}
           <DialogFooter className="gap-2 border-t border-border pt-5">
-            <Button type="button" variant="outline" onClick={onCancel}>Cancel</Button>
-            <Button type="submit">
-              <CloudUpload className="size-4" /> Prepare JSON
+            <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>Cancel</Button>
+            <Button type="submit" disabled={isSubmitting}>
+              <CloudUpload className="size-4" /> {isSubmitting ? "Publishing..." : "Publish"}
             </Button>
           </DialogFooter>
         </form>

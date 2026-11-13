@@ -70,7 +70,7 @@ export function RegistryLicenseField({ license, validationError, onChange }: Pro
             </TooltipTrigger>
             <TooltipPortal>
               <TooltipContent collisionPadding={8} className="max-w-[min(24rem,calc(100vw-2rem))] text-center whitespace-pre-wrap">
-                The SPDX licence identifier is included in the prepared publication JSON.
+                The SPDX licence identifier is used when publishing this mapping set.
               </TooltipContent>
             </TooltipPortal>
           </Tooltip>
