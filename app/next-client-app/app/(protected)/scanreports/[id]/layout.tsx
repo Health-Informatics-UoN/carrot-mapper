@@ -3,7 +3,7 @@ import { Forbidden } from "@/components/core/Forbidden";
 import { NavGroup } from "@/components/core/nav-group";
 import DeleteDialog from "@/components/scanreports/DeleteDialog";
 import { Button } from "@/components/ui/button";
-import { FileScan, Folders, GripVertical, CloudUpload } from "lucide-react";
+import { FileScan, Folders, GripVertical } from "lucide-react";
 import { Boundary } from "@/components/core/boundary";
 import { AvatarList } from "@/components/core/avatar-list";
 import {
