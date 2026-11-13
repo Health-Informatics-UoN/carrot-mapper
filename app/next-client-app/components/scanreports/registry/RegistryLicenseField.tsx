@@ -15,10 +15,11 @@ const RECOMMENDED_LICENSE_IDS = ["CC0-1.0", "CC-BY-4.0", "ODbL-1.0"];
 
 interface Props {
   license: string;
+  validationError?: string;
   onChange: (license: string) => void;
 }
 
-export function RegistryLicenseField({ license, onChange }: Props) {
+export function RegistryLicenseField({ license, validationError, onChange }: Props) {
   const [licenses, setLicenses] = useState<RegistryLicense[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -59,7 +60,7 @@ export function RegistryLicenseField({ license, onChange }: Props) {
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-1">
-        <Label htmlFor="registry-license">License</Label>
+        <Label htmlFor="registry-license">License <span aria-hidden="true" className="text-destructive">*</span></Label>
         <TooltipProvider delayDuration={100}>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -77,7 +78,7 @@ export function RegistryLicenseField({ license, onChange }: Props) {
       </div>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
-          <Button id="registry-license" type="button" role="combobox" variant="outline" aria-expanded={open} className="w-full justify-between font-normal">
+          <Button id="registry-license" type="button" role="combobox" variant="outline" aria-expanded={open} aria-required="true" aria-invalid={!!validationError} aria-describedby={validationError ? "registry-license-error" : undefined} className="w-full justify-between font-normal">
             <span className="truncate">
               {selectedLicense ? `${selectedLicense.id} — ${selectedLicense.label}` : "Select a licence..."}
             </span>
@@ -129,6 +130,7 @@ export function RegistryLicenseField({ license, onChange }: Props) {
         </PopoverContent>
       </Popover>
       {error && <p className="flex items-center gap-1 text-xs text-destructive"><AlertCircle className="size-3" />{error}</p>}
+      {validationError && <p id="registry-license-error" className="text-xs text-destructive">{validationError}</p>}
     </div>
   );
 }
