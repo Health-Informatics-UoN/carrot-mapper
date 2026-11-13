@@ -27,12 +27,12 @@ from libs.db import pg_hook
 from libs.registry_import import queries
 from libs.registry_import.full_validate import read_import_plan
 from libs.registry_import.full_validate_checks import STAGING_COLUMNS, ImportPlan
-from libs.registry_import.helpers import VALIDATE_PARAMS_TASK, job_file_key
+from libs.registry_import.helpers import job_file_key
 from libs.utils import pull_validated_params
 
 
 def load(**kwargs) -> None:
-    params = pull_validated_params(kwargs, VALIDATE_PARAMS_TASK)
+    params = pull_validated_params(kwargs, "validate_params_registry_import")
     file_key = job_file_key(params["import_job_id"])
     plan = read_import_plan(params, file_key)
     try:

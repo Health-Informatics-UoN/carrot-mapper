@@ -447,7 +447,13 @@ def run_dag(conf: dict) -> None:
     dag_run = SimpleNamespace(conf=conf, run_id=f"manual__{uuid.uuid4().hex[:8]}")
     context = {"dag_run": dag_run}
     params = validate_params.validate_params_registry_import(**context)
-    ti = SimpleNamespace(xcom_pull=lambda task_ids: params)
+
+    def xcom_pull(task_ids):
+        # every step must read the first task's output, by its exact id
+        assert task_ids == "validate_params_registry_import", task_ids
+        return params
+
+    ti = SimpleNamespace(xcom_pull=xcom_pull)
     steps = (
         prepare_source.prepare_source,
         full_validate.full_validate,

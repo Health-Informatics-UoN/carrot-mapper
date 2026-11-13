@@ -5,7 +5,6 @@ from airflow.providers.standard.operators.empty import EmptyOperator
 from airflow.sdk import chain
 from libs.registry_import.finalize import finalize
 from libs.registry_import.full_validate import full_validate
-from libs.registry_import.helpers import VALIDATE_PARAMS_TASK
 from libs.registry_import.load import load
 from libs.registry_import.on_failure import update_import_job_on_failure
 from libs.registry_import.prepare_source import prepare_source
@@ -65,7 +64,9 @@ dag = DAG(
 start = EmptyOperator(task_id="start", dag=dag)
 
 tasks = [
-    create_task(VALIDATE_PARAMS_TASK, validate_params_registry_import, dag),
+    create_task(
+        "validate_params_registry_import", validate_params_registry_import, dag
+    ),
     create_task("connect_to_storage", connect_to_storage, dag),
     create_task("prepare_source", prepare_source, dag),
     create_task("full_validate", full_validate, dag),

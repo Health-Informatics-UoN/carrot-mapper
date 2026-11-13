@@ -24,7 +24,6 @@ from libs.registry_import.full_validate_checks import (
 from libs.registry_import.full_validate_licenses import License, LicenseLookup
 from libs.registry_import.full_validate_parse import decode, parse_sssom
 from libs.registry_import.helpers import (
-    VALIDATE_PARAMS_TASK,
     file_overrides,
     job_file_key,
 )
@@ -34,7 +33,7 @@ from libs.utils import pull_validated_params
 
 
 def full_validate(**kwargs) -> None:
-    params = pull_validated_params(kwargs, VALIDATE_PARAMS_TASK)
+    params = pull_validated_params(kwargs, "validate_params_registry_import")
     plan = read_import_plan(params, job_file_key(params["import_job_id"]))
     _check_set_version_is_new(plan, params["import_job_id"])
     pg_hook.run(

@@ -14,12 +14,12 @@ from libs.registry_import.full_validate_checks import (
     IssueLog,
     normalise_overrides,
 )
-from libs.registry_import.helpers import MAPPING_SET_URL, VALIDATE_PARAMS_TASK
+from libs.registry_import.helpers import MAPPING_SET_URL
 from libs.utils import pull_validated_params
 
 
 def finalize(**kwargs) -> None:
-    params = pull_validated_params(kwargs, VALIDATE_PARAMS_TASK)
+    params = pull_validated_params(kwargs, "validate_params_registry_import")
     import_job_id = params["import_job_id"]
     _, status = normalise_overrides(params["overrides"], IssueLog(0))
     with closing(pg_hook.get_conn()) as conn:

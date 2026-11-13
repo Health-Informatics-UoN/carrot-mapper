@@ -28,7 +28,6 @@ from libs.registry_import.full_validate_checks import (
 from libs.registry_import.helpers import (
     CARROT_DIRECT_PUBLISH,
     SSSOM_UPLOAD,
-    VALIDATE_PARAMS_TASK,
     drop_temp_rules_table,
     file_key_for,
     file_overrides,
@@ -44,7 +43,7 @@ from libs.utils import pull_validated_params
 
 def prepare_source(**kwargs) -> str:
     """Returns the job's file_key."""
-    params = pull_validated_params(kwargs, VALIDATE_PARAMS_TASK)
+    params = pull_validated_params(kwargs, "validate_params_registry_import")
     origin = params["origin"]
     if origin == SSSOM_UPLOAD:
         file_key = job_file_key(params["import_job_id"])

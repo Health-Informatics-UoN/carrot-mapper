@@ -15,11 +15,6 @@ from airflow.exceptions import AirflowFailException
 from libs.db import pg_hook
 from libs.registry_import import queries
 
-# Task id of the first step. The other steps read the run's validated
-# parameters from its XCom (pull_validated_params needs the id), so it's named
-# once here for the DAG and every step.
-VALIDATE_PARAMS_TASK = "validate_params_registry_import"
-
 # Origins with their own source preparation (prepare_source.py). Their values
 # are the ids seeded in registry_origin, which validate_params checks against.
 CARROT_DIRECT_PUBLISH = "CARROT_DIRECT_PUBLISH"
