@@ -241,10 +241,6 @@ def orcid_curie(orcid: str | None) -> str:
     return f"{ORCID_PREFIX}:{orcid}" if ORCID_PATTERN.match(orcid) else ""
 
 
-# The creator's ORCID iD as a CURIE (kept under this name for existing callers)
-creator_id = orcid_curie
-
-
 def build_metadata(
     rows: list[dict[str, str]],
     created: datetime,

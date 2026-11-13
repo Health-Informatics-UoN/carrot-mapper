@@ -6,7 +6,7 @@ import pytest
 import yaml
 from libs.rules_export.sssom import (
     build_mapping_rows,
-    creator_id,
+    orcid_curie,
     creator_label,
     subject_id,
     write_sssom_tsv,
@@ -389,5 +389,5 @@ def test_creator_label(username, label):
         ("https://orcid.org/0000-0002-1825-0097", ""),  # not the profile's format
     ],
 )
-def test_creator_id(orcid, expected):
-    assert creator_id(orcid) == expected
+def test_orcid_curie(orcid, expected):
+    assert orcid_curie(orcid) == expected
