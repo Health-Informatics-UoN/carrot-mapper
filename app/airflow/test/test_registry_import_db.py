@@ -577,6 +577,37 @@ def test_dag_refuses_a_job_that_already_succeeded(conn, cleanup, user, storage):
         run_dag(conf)
 
 
+def test_dag_refuses_an_existing_set_version(conn, cleanup, user, storage):
+    subject, obj = unique_prefixes(cleanup)
+    jobs = [make_job(conn, cleanup, user), make_job(conn, cleanup, user)]
+    for job in jobs:
+        storage.blobs[("registry-sssom", helpers.file_key_for(job))] = sssom(
+            subject, obj
+        ).encode()
+
+    def conf(job):
+        return {
+            "import_job_id": job,
+            "origin": "SSSOM_UPLOAD",
+            "user_id": user,
+            "file_key": helpers.file_key_for(job),
+            "overrides": {"license": "CC-BY-4.0"},
+        }
+
+    run_dag(conf(jobs[0]))
+    with pytest.raises(AirflowFailException, match="set_version_exists"):
+        run_dag(conf(jobs[1]))
+
+    row = job_row(conn, jobs[1])
+    assert row["status"] == "FAILED"
+    assert "set_version_exists" in {i["code"] for i in row["issues"]}
+    assert fetch(
+        conn,
+        "SELECT count(*) FROM registry_mappingset WHERE import_job_id = %s",
+        jobs[1],
+    ) == [(0,)]
+
+
 @pytest.mark.parametrize(
     "conf, message",
     [

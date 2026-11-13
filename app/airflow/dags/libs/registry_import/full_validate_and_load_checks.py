@@ -759,6 +759,23 @@ def _slot_errors(spec: Spec, slot: str, value: Any, cache: dict) -> tuple[str, .
     return cache[key]
 
 
+def check_set_version_is_new(plan: ImportPlan, conflicting_set_id: str | None) -> None:
+    """
+    Sets are immutable: corrections are a new mapping_set_version. An error if
+    another import already holds this set_uri + version (``conflicting_set_id``,
+    looked up by the caller).
+    """
+    if conflicting_set_id is None:
+        return
+    record = plan.mapping_set
+    plan.issues.error(
+        "set_version_exists",
+        f"Mapping set {record.set_uri} version {record.set_version} already "
+        "exists; publish corrections as a new mapping_set_version",
+        column="mapping_set_version",
+    )
+
+
 def build_import(
     parsed: ParsedSSSOM,
     vocab: Vocabulary,

@@ -17,6 +17,7 @@ from libs.registry_import.full_validate_and_load_checks import (
     Vocabulary,
     build_import,
     carrot_term_parts,
+    check_set_version_is_new,
 )
 from libs.registry_import.full_validate_and_load_parse import decode, parse_sssom
 from libs.rules_export.sssom import write_sssom_tsv
@@ -455,3 +456,13 @@ def test_issues_are_capped_but_all_counted():
 
 def test_empty_table_is_an_error():
     assert "no_mappings" in codes(plan_for(HEADER + COLUMNS), "error")
+
+
+def test_set_version_must_be_new():
+    plan = plan_for(HEADER + COLUMNS + ROW)
+    check_set_version_is_new(plan, None)
+    assert plan.ok
+
+    check_set_version_is_new(plan, "a-set-from-another-import")
+    assert codes(plan, "error") == ["set_version_exists"]
+    assert "https://example.org/sets/hp-mp version 1.0" in plan.issues.items[-1].message

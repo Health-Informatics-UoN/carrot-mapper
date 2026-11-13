@@ -26,6 +26,7 @@ from libs.registry_import.full_validate_and_load_checks import (
     SetRecord,
     Vocabulary,
     build_import,
+    check_set_version_is_new,
 )
 from libs.registry_import.full_validate_and_load_db import LoadError, load_plan
 from libs.registry_import.full_validate_and_load_parse import decode, parse_sssom
@@ -41,7 +42,7 @@ def full_validate_and_load(**kwargs) -> None:
     file_key = job_file_key(import_job_id)
 
     plan = _read_and_check(params, file_key)
-    _check_set_version_is_new(plan, import_job_id)
+    check_set_version_is_new(plan, _conflicting_set_id(plan, import_job_id))
     pg_hook.run(
         queries.set_import_job_issues_query,
         parameters={
@@ -104,12 +105,12 @@ def _read_and_check(params: dict[str, Any], file_key: str) -> ImportPlan:
     )
 
 
-def _check_set_version_is_new(plan: ImportPlan, import_job_id: str) -> None:
-    """Sets are immutable: another import mustn't hold this set_uri + version."""
+def _conflicting_set_id(plan: ImportPlan, import_job_id: str) -> str | None:
+    """A set from another import with this file's set_uri + version, if any."""
     record = plan.mapping_set
     if not (record.set_uri and record.set_version):
-        return
-    conflict = pg_hook.get_first(
+        return None
+    row = pg_hook.get_first(
         queries.get_conflicting_set_query,
         parameters={
             "set_uri": record.set_uri,
@@ -117,10 +118,4 @@ def _check_set_version_is_new(plan: ImportPlan, import_job_id: str) -> None:
             "import_job_id": import_job_id,
         },
     )
-    if conflict:
-        plan.issues.error(
-            "set_version_exists",
-            f"Mapping set {record.set_uri} version {record.set_version} already "
-            "exists; publish corrections as a new mapping_set_version",
-            column="mapping_set_version",
-        )
+    return row[0] if row else None
