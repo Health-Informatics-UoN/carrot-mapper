@@ -1,0 +1,69 @@
+"use client";
+
+import { useState } from "react";
+import { CloudUpload } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { PublishToRegistryForm } from "./PublishToRegistryForm";
+
+interface Props {
+  scanReportId: string;
+  scanReportName: string;
+  /** Pass this when a read endpoint for published mapping-set history exists. */
+  lastPublishedVersion?: string | null;
+}
+
+export function PublishToRegistryDialog({
+  scanReportId,
+  scanReportName,
+  lastPublishedVersion,
+}: Props) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button type="button" variant="outline" className="text-foreground">
+          <CloudUpload className="size-4" />
+          Publish to Registry
+        </Button>
+      </DialogTrigger>
+      <DialogContent
+        className="
+          sm:max-w-xl
+          data-[state=open]:slide-in-from-right-full
+          data-[state=closed]:slide-out-to-right-full
+        "
+      >
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <CloudUpload className="size-5" />
+            Publish to Registry
+          </DialogTitle>
+          <DialogDescription className="break-words pt-2 text-sm">
+            <span className="mb-1 flex flex-wrap items-baseline gap-x-3">
+              <span>Scan Report Name: <strong className="font-semibold text-foreground">{scanReportName}</strong></span>
+              <span><span aria-hidden="true" className="mr-3 hidden sm:inline">|</span>ID: <strong className="font-semibold text-foreground">{scanReportId}</strong></span>
+            </span>
+            Prepare a mapping set for publication in the Carrot Mappings Registry.
+          </DialogDescription>
+        </DialogHeader>
+        {/* Remounting on open resets unsaved form state for each session. */}
+        {open && (
+          <PublishToRegistryForm
+            scanReportId={scanReportId}
+            lastPublishedVersion={lastPublishedVersion}
+            onCancel={() => setOpen(false)}
+          />
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}

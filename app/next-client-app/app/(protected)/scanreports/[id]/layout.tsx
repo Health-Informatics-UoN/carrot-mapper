@@ -25,6 +25,7 @@ import { UploadStatusOptions } from "@/constants/scanReportStatus";
 import ExportScanReport from "@/components/scanreports/ExportScanReport";
 import { ActionsDownloadMenu } from "./actions-download-menu";
 import { DescriptionPopover } from "@/components/core/DescriptionPopover";
+import { PublishToRegistryDialog } from "@/components/scanreports/registry/PublishToRegistryDialog";
 
 export async function generateMetadata({
   params,
@@ -183,15 +184,9 @@ export default async function ScanReportLayout(
 
       {/* Publish to Registry button */}
         <div className="flex items-center gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            disabled
-            className="text-black disabled:opacity-100"
-          >
-            <CloudUpload className="size-4" />
-            Publish to Registry
-          </Button>
+          {canEdit && (
+            <PublishToRegistryDialog scanReportId={params.id} scanReportName={scanreport.dataset} />
+         )}
 
         {/* Actions button */}
           <DropdownMenu>
