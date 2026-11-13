@@ -10,6 +10,9 @@ One row per mapping, from a source field (``carrot:<field>``) or a value in a fi
 The metadata block holds the creator (the user who exported the file: their name,
 and their ORCID iD if they've added it to their profile), the tool, its version and
 the publication date, plus the mapping date when every mapping shares one.
+
+Optionally (``include_author_ids``) each row also names its author: the ORCID iD
+of the user who made that mapping, as ``author_id``.
 """
 
 from __future__ import annotations
@@ -74,6 +77,7 @@ COLUMNS = [
     "other",
     "object_source_version",
     "mapping_justification",
+    "author_id",
     "mapping_cardinality",
     "confidence",
     "mapping_date",
@@ -164,6 +168,7 @@ def _mapping_row(rule: Mapping[str, Any]) -> dict[str, str]:
         "mapping_justification": MAPPING_JUSTIFICATIONS.get(
             creation_type, DEFAULT_JUSTIFICATION
         ),
+        "author_id": "",  # filled in by build_mapping_rows when asked for
         "mapping_cardinality": "",  # filled in once all rows are known
         "confidence": _clean(rule.get("confidence")),
         "mapping_date": _clean(rule.get("created_at")),
@@ -190,7 +195,9 @@ def set_cardinality(rows: list[dict[str, str]]) -> None:
         )
 
 
-def build_mapping_rows(rules: Iterable[Mapping[str, Any]]) -> list[dict[str, str]]:
+def build_mapping_rows(
+    rules: Iterable[Mapping[str, Any]], include_author_ids: bool = False
+) -> list[dict[str, str]]:
     """
     One SSSOM row per distinct mapping (subject, concept) in the temp-table rules.
 
@@ -198,6 +205,9 @@ def build_mapping_rows(rules: Iterable[Mapping[str, Any]]) -> list[dict[str, str
     other rules (source value, person_id, dates...) only say how Transform applies
     the mapping. The table isn't part of the subject, so the same field/value mapped
     to the same concept in several tables gives one row.
+
+    With ``include_author_ids``, each row's author_id is the ORCID iD (the rule's
+    ``author_orcid``) of the user who made the mapping, when they have one.
     """
     seen_concepts: set[str] = set()
     rows: dict[tuple[str, str], dict[str, str]] = {}
@@ -207,6 +217,8 @@ def build_mapping_rows(rules: Iterable[Mapping[str, Any]]) -> list[dict[str, str
             continue
         seen_concepts.add(key)
         row = _mapping_row(rule)
+        if include_author_ids:
+            row["author_id"] = orcid_curie(rule.get("author_orcid"))
         rows.setdefault((row["subject_id"], row["object_id"]), row)
     result = list(rows.values())
     set_cardinality(result)
@@ -223,10 +235,14 @@ def creator_label(username: str | None) -> str:
     return " ".join(p[0].upper() + p[1:] for p in parts)
 
 
-def creator_id(orcid: str | None) -> str:
+def orcid_curie(orcid: str | None) -> str:
     """orcid:<id> for an ORCID iD in the profile's 0000-0000-0000-0000 format, else ''."""
     orcid = (orcid or "").strip().upper()
     return f"{ORCID_PREFIX}:{orcid}" if ORCID_PATTERN.match(orcid) else ""
+
+
+# The creator's ORCID iD as a CURIE (kept under this name for existing callers)
+creator_id = orcid_curie
 
 
 def build_metadata(
@@ -240,10 +256,11 @@ def build_metadata(
     # The creator applies to every mapping in the file, so it's given once here
     # (creator_id and creator_label are multivalued: written as lists). creator_id
     # is left out when the user hasn't added an ORCID iD to their profile.
-    orcid_curie = creator_id(creator_orcid)
-    if orcid_curie:
+    creator_curie = orcid_curie(creator_orcid)
+    if creator_curie:
+        metadata["creator_id"] = [creator_curie]
+    if creator_curie or any(r.get("author_id") for r in rows):
         metadata["curie_map"][ORCID_PREFIX] = ORCID_IRI
-        metadata["creator_id"] = [orcid_curie]
     label = creator_label(creator_username)
     if label:
         metadata["creator_label"] = [label]
@@ -278,6 +295,7 @@ def write_sssom_tsv(
     creator_username: str | None = None,
     creator_orcid: str | None = None,
     set_metadata: Mapping[str, str] | None = None,
+    include_author_ids: bool = False,
 ) -> str:
     """
     Render rules (dict-like rows from the temp rules table) as an SSSOM TSV string.
@@ -292,9 +310,13 @@ def write_sssom_tsv(
     SET_METADATA_SLOTS (empty values are left out). A plain rules export has none,
     so it lacks mapping_set_id and license; publishing to the registry passes
     them, which makes the file fully SSSOM-conformant.
+
+    ``include_author_ids`` writes each mapping's author_id (see
+    build_mapping_rows); rules then need ``author_orcid``. Off by default: an
+    author's ORCID iD is only published when they've agreed to it.
     """
     created = created or datetime.now()
-    rows = build_mapping_rows(rules)
+    rows = build_mapping_rows(rules, include_author_ids)
     metadata = build_metadata(
         rows, created, mapper_version, creator_username, creator_orcid
     )

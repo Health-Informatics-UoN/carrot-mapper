@@ -99,7 +99,7 @@ class TestScanReportRegistryPublish(TestCase):
         )
         self.body = {
             "title": "Gender mappings",
-            "include_orcid_ids": True,
+            "include_author_orcid_ids": True,
             "set_version": "1.0",
             "license": "CC-BY-4.0",
             "description": "Mappings from the test scan report.",
@@ -139,7 +139,7 @@ class TestScanReportRegistryPublish(TestCase):
                 "set_uri": scan_report_set_uri(self.scan_report),
                 "set_version": "1.0",
                 "title": "Gender mappings",
-                "include_orcid_ids": True,
+                "include_author_orcid_ids": True,
                 "description": "Mappings from the test scan report.",
                 "license": "CC-BY-4.0",
                 "status": Status.PUBLISHED,

@@ -74,9 +74,10 @@ def build_direct_publish_file(params: dict[str, Any]) -> str:
             raise AirflowFailException(
                 f"Scan report {scan_report_id} has no mappings to publish"
             )
+        # The publishing user is the set's creator: their name and, if it's in
+        # their profile, ORCID iD always go in the metadata block. Each mapping's
+        # author (author_id) is only written if the user opted in.
         creator_username, creator_orcid = get_creator(params["user_id"])
-        if not params["overrides"]["include_orcid_ids"]:
-            creator_orcid = None
         tsv = write_sssom_tsv(
             rules,
             created=datetime.now(UTC),
@@ -86,6 +87,7 @@ def build_direct_publish_file(params: dict[str, Any]) -> str:
             set_metadata={
                 k: v for k, v in slots.items() if k in OVERRIDE_SLOTS.values()
             },
+            include_author_ids=params["overrides"]["include_author_orcid_ids"],
         )
     finally:
         if AIRFLOW_DEBUG_MODE != "true":

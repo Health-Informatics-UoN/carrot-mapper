@@ -139,7 +139,9 @@ def build_rules_json_v2(scan_report_name: str, scan_report_id: int) -> BytesIO:
 # mapping's concept, while the other rules Mapper creates for a mapping (source
 # values, person_id, dates) aren't written to SSSOM. Concept domain, vocabulary
 # and vocabulary version are for SSSOM's object_category / other /
-# object_source_version. ``table_suffix`` picks the temp rules table
+# object_source_version. author_orcid is the ORCID iD of the user who made the
+# mapping (for author_id, only written when asked for). ``table_suffix`` picks
+# the temp rules table
 # (temp_rules_export_<scan_report_id>_<table_suffix>), so a registry publish and a
 # rules export of the same scan report don't share one.
 SSSOM_RULES_QUERY = """
@@ -156,12 +158,17 @@ SSSOM_RULES_QUERY = """
         temp_rules.created_at,
         omop_concept.domain_id AS concept_domain,
         omop_concept.vocabulary_id AS concept_vocabulary,
-        omop_vocabulary.vocabulary_version
+        omop_vocabulary.vocabulary_version,
+        author_profile.orcid AS author_orcid
     FROM temp_rules_export_%(scan_report_id)s_{table_suffix} AS temp_rules
     LEFT JOIN omop.concept AS omop_concept
         ON omop_concept.concept_id = temp_rules.concept_id
     LEFT JOIN omop.vocabulary AS omop_vocabulary
         ON omop_vocabulary.vocabulary_id = omop_concept.vocabulary_id
+    LEFT JOIN mapping_scanreportconcept AS sr_concept
+        ON sr_concept.id = temp_rules.sr_concept_id
+    LEFT JOIN users_profile AS author_profile
+        ON author_profile.user_id = sr_concept.created_by_id
     WHERE right(temp_rules.dest_field, 11) = '_concept_id'
     ORDER BY
         temp_rules.source_table,

@@ -590,3 +590,19 @@ def test_export_with_registry_set_metadata_is_fully_conformant():
     )
     assert check_sssom_tsv(text) == []
     assert text.startswith("#mapping_set_id: https://carrot.ac.uk/registry/sets/demo\n")
+
+
+def test_export_with_author_ids_is_fully_conformant():
+    """author_id (multivalued, orcid: CURIEs) passes the strict checker."""
+    rules = [{**rule, "author_orcid": "0000-0002-1825-009X"} for rule in RULES]
+    text = write_sssom_tsv(
+        rules,
+        created=CREATED,
+        set_metadata={
+            "mapping_set_id": "https://carrot.ac.uk/registry/sets/demo",
+            "license": "https://creativecommons.org/licenses/by/4.0/",
+        },
+        include_author_ids=True,
+    )
+    assert "orcid:0000-0002-1825-009X" in text
+    assert check_sssom_tsv(text) == []

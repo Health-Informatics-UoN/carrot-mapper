@@ -39,9 +39,10 @@ def validate_params_registry_import(**context) -> dict[str, Any]:
         file_key         SSSOM_UPLOAD only, if not already on the ImportJob
         overrides        set_uri, set_version, title, description, license (a
                          License id), status (DRAFT|PUBLISHED), and
-                         include_orcid_ids (true/false: write the user's ORCID
-                         iD as creator_id). CARROT_DIRECT_PUBLISH needs set_uri,
-                         set_version, title, license and include_orcid_ids; for
+                         include_author_orcid_ids (true/false: write the ORCID
+                         iD of each mapping's author as its author_id).
+                         CARROT_DIRECT_PUBLISH needs set_uri, set_version,
+                         title, license and include_author_orcid_ids; for
                          SSSOM_UPLOAD they're optional and override the file.
         mapper_version   optional, CARROT_DIRECT_PUBLISH only
 
@@ -83,9 +84,10 @@ def validate_params_registry_import(**context) -> dict[str, Any]:
         for slot, name in DIRECT_PUBLISH_REQUIRED_OVERRIDES.items():
             if not slots.get(slot):
                 errors.append(f"CARROT_DIRECT_PUBLISH needs overrides.{name}")
-        if not isinstance(overrides.get("include_orcid_ids"), bool):
+        if not isinstance(overrides.get("include_author_orcid_ids"), bool):
             errors.append(
-                "CARROT_DIRECT_PUBLISH needs overrides.include_orcid_ids (true or false)"
+                "CARROT_DIRECT_PUBLISH needs overrides.include_author_orcid_ids "
+                "(true or false)"
             )
 
     license_id = overrides.get("license")
@@ -111,6 +113,11 @@ def validate_params_registry_import(**context) -> dict[str, Any]:
             "dag_run_id": context["dag_run"].run_id,
         },
     )
+    # For SSSOM_UPLOAD: the API's upload endpoint (POST imports/) stores the
+    # file and sets ImportJob.file_key itself, but may also pass file_key in the
+    # conf. Record it on the job if the job doesn't have one yet, so later steps
+    # (which read ImportJob.file_key) find the file. A direct publish has no
+    # file_key yet: prepare_source builds the file and sets it.
     if params["file_key"] and not job["file_key"]:
         pg_hook.run(
             queries.set_import_job_file_key_query,

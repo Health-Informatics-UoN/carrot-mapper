@@ -102,9 +102,9 @@ OVERRIDE_SLOTS = {
 }
 
 # Overrides that aren't metadata but change how a Mapper direct publish's file
-# is built: include_orcid_ids writes the publishing user's ORCID iD as the
-# set's creator_id (off unless the user opted in).
-BUILD_OPTIONS = {"include_orcid_ids"}
+# is built: include_author_orcid_ids writes the ORCID iD of each mapping's
+# author as its author_id (off unless the user opted in).
+BUILD_OPTIONS = {"include_author_orcid_ids"}
 
 # Mapping slots stored in Mapping/Term columns. Every other slot in a row
 # (standard or extension) goes to Mapping.extra_metadata, so nothing is lost.

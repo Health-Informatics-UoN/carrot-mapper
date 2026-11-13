@@ -589,7 +589,7 @@ def test_dag_refuses_a_job_that_already_succeeded(conn, cleanup, user, storage):
             },
             "needs overrides.set_version; CARROT_DIRECT_PUBLISH needs overrides.title; "
             "CARROT_DIRECT_PUBLISH needs overrides.license; CARROT_DIRECT_PUBLISH "
-            "needs overrides.include_orcid_ids",
+            "needs overrides.include_author_orcid_ids",
         ),
         (
             {
@@ -601,10 +601,10 @@ def test_dag_refuses_a_job_that_already_succeeded(conn, cleanup, user, storage):
                     "set_version": "1",
                     "title": "T",
                     "license": "NOT-A-LICENSE",
-                    "include_orcid_ids": "yes",
+                    "include_author_orcid_ids": "yes",
                 },
             },
-            "needs overrides.include_orcid_ids \\(true or false\\); "
+            "needs overrides.include_author_orcid_ids \\(true or false\\); "
             "Unknown license id: NOT-A-LICENSE",
         ),
         (
@@ -618,6 +618,9 @@ def test_bad_parameters_fail_without_retrying(conn, conf, message):
     with pytest.raises(AirflowFailException, match=message):
         validate_params.validate_params_registry_import(**context)
 
+
+PUBLISHER_ORCID = "0000-0002-1825-009X"
+AUTHOR_ORCID = "0000-0001-5109-3700"
 
 # Used only when the database has no OMOP concepts of its own.
 TEST_CONCEPTS = (
@@ -717,6 +720,12 @@ def scan_report(conn, cleanup, user):
             cleanup.rows.append((table_name, row_id))
             return row_id
 
+        # who made the value mapping (the field mapping has no author, like an
+        # automatic one): a different user from the publisher, with an ORCID iD
+        mapper = insert(cursor, "auth_user", username=f"mapper_{uuid.uuid4().hex[:6]}")
+        cleanup.users.append(mapper)
+        insert(cursor, "users_profile", user_id=mapper, orcid=AUTHOR_ORCID)
+
         sr = add(
             "mapping_scanreport", name="sr", dataset="Demo scan report", author_id=user
         )
@@ -743,6 +752,7 @@ def scan_report(conn, cleanup, user):
             content_type_id=value_type,
             object_id=male,
             creation_type="M",
+            created_by_id=mapper,
         )
         field_concept = add(
             "mapping_scanreportconcept",
@@ -792,7 +802,7 @@ def test_dag_publishes_a_scan_report(conn, cleanup, user, storage, scan_report):
                 "description": "",
                 "license": "CC-BY-4.0",
                 "status": "DRAFT",
-                "include_orcid_ids": False,
+                "include_author_orcid_ids": False,
             },
         }
     )
@@ -812,8 +822,9 @@ def test_dag_publishes_a_scan_report(conn, cleanup, user, storage, scan_report):
         conn, "SELECT license_iri FROM registry_license WHERE id = 'CC-BY-4.0'"
     )
     assert f"#license: {license_iri}\n" in text
-    # the user didn't opt in to publishing their ORCID iD
-    assert "creator_id" not in text and "orcid" not in text
+    # the publisher has no ORCID iD, and authors' iDs weren't opted in to
+    assert "creator_id" not in text and "author_id" not in text
+    assert "orcid" not in text
     # the user's title, not the scan report's name
     assert "#mapping_set_title: Demo mapping set\n" in text
     assert "#mapping_tool_version: 4.3.1\n" in text
@@ -863,11 +874,12 @@ def test_dag_publishes_a_scan_report(conn, cleanup, user, storage, scan_report):
     )
 
 
-def test_dag_publishes_orcid_only_when_opted_in(
-    conn, cleanup, user, storage, scan_report
+@pytest.mark.parametrize("include_author_orcid_ids", [False, True])
+def test_dag_publishes_creator_orcid_and_authors_only_when_opted_in(
+    conn, cleanup, user, storage, scan_report, include_author_orcid_ids
 ):
     with conn.cursor() as cursor:
-        insert(cursor, "users_profile", user_id=user, orcid="0000-0002-1825-009X")
+        insert(cursor, "users_profile", user_id=user, orcid=PUBLISHER_ORCID)
     conn.commit()
     terms = "SELECT canonical_iri FROM registry_term"
     before = {r[0] for r in fetch(conn, terms)}
@@ -884,7 +896,7 @@ def test_dag_publishes_orcid_only_when_opted_in(
                 "set_version": "1",
                 "title": "With ORCID",
                 "license": "CC-BY-4.0",
-                "include_orcid_ids": True,
+                "include_author_orcid_ids": include_author_orcid_ids,
             },
         }
     )
@@ -893,12 +905,34 @@ def test_dag_publishes_orcid_only_when_opted_in(
     row = job_row(conn, job)
     assert row["status"] == "SUCCEEDED", row
     text = storage.blobs[("registry-sssom", row["file_key"])].decode()
-    assert "#creator_id:\n#- orcid:0000-0002-1825-009X\n" in text
+
+    # the publisher (creator) is always named, with their ORCID iD
+    assert f"#creator_id:\n#- orcid:{PUBLISHER_ORCID}\n" in text
     assert fetch(
         conn,
         "SELECT creator_ids FROM registry_mappingset WHERE import_job_id = %s",
         job,
-    ) == [(["orcid:0000-0002-1825-009X"],)]
+    ) == [([f"orcid:{PUBLISHER_ORCID}"],)]
+
+    # each mapping's author only when opted in; the field mapping has none
+    authors = fetch(
+        conn,
+        "SELECT s.canonical_iri, m.author_ids FROM registry_mapping m "
+        "JOIN registry_mappingset ms ON ms.id = m.mapping_set_id "
+        "JOIN registry_term s ON s.id = m.subject_id "
+        "WHERE ms.import_job_id = %s ORDER BY s.canonical_iri",
+        job,
+    )
+    if include_author_orcid_ids:
+        header = next(line for line in text.splitlines() if not line.startswith("#"))
+        assert "author_id" in header.split("\t")
+        assert authors == [
+            ("carrot:sex/M", [f"orcid:{AUTHOR_ORCID}"]),
+            ("carrot:smoker", []),
+        ]
+    else:
+        assert "author_id" not in text and AUTHOR_ORCID not in text
+        assert authors == [("carrot:sex/M", []), ("carrot:smoker", [])]
 
 
 def test_dag_fails_cleanly_for_a_scan_report_without_mappings(
@@ -924,7 +958,7 @@ def test_dag_fails_cleanly_for_a_scan_report_without_mappings(
                     "set_version": "1",
                     "title": "Empty",
                     "license": "CC-BY-4.0",
-                    "include_orcid_ids": False,
+                    "include_author_orcid_ids": False,
                 },
             }
         )

@@ -343,8 +343,8 @@ def test_deprecated_license_is_a_warning():
     assert codes(plan) == ["deprecated_license"]
 
 
-def test_include_orcid_ids_is_a_known_override():
-    plan = plan_for(HEADER + COLUMNS + ROW, {"include_orcid_ids": True})
+def test_include_author_orcid_ids_is_a_known_override():
+    plan = plan_for(HEADER + COLUMNS + ROW, {"include_author_orcid_ids": True})
     assert plan.ok and codes(plan) == []
 
 
