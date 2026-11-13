@@ -3,7 +3,7 @@ import { Forbidden } from "@/components/core/Forbidden";
 import { NavGroup } from "@/components/core/nav-group";
 import DeleteDialog from "@/components/scanreports/DeleteDialog";
 import { Button } from "@/components/ui/button";
-import { FileScan, Folders, GripVertical } from "lucide-react";
+import { FileScan, Folders, GripVertical, CloudUpload } from "lucide-react";
 import { Boundary } from "@/components/core/boundary";
 import { AvatarList } from "@/components/core/avatar-list";
 import {
@@ -25,6 +25,7 @@ import { UploadStatusOptions } from "@/constants/scanReportStatus";
 import ExportScanReport from "@/components/scanreports/ExportScanReport";
 import { ActionsDownloadMenu } from "./actions-download-menu";
 import { DescriptionPopover } from "@/components/core/DescriptionPopover";
+import { PublishToRegistryDialog } from "@/components/scanreports/registry/PublishToRegistryDialog";
 
 export async function generateMetadata({
   params,
@@ -181,8 +182,13 @@ export default async function ScanReportLayout(
           />
         </div>
 
+      {/* Publish to Registry button */}
+        <div className="flex items-center gap-2">
+          {canEdit && (
+            <PublishToRegistryDialog scanReportId={params.id} scanReportName={scanreport.dataset} />
+         )}
+
         {/* Actions button */}
-        <div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline">
