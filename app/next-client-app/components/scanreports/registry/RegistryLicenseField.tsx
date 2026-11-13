@@ -1,18 +1,17 @@
 "use client";
 
-import { InfoIcon } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { AlertCircle, Check, ChevronsUpDown, InfoIcon } from "lucide-react";
 import { Portal as TooltipPortal } from "@radix-ui/react-tooltip";
+import { getRegistryLicenses, type RegistryLicense } from "@/api/licenses";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
-// TODO: Replace these temporary options with the licence endpoint response.
-const licenses = [
-  { id: "CC0-1.0", label: "CC0" },
-  { id: "CC-BY-4.0", label: "Attribution" },
-  { id: "CC-BY-SA-4.0", label: "Attribution ShareAlike" },
-  { id: "ODbL-1.0", label: "Open Database" },
-];
+const RECOMMENDED_LICENSE_IDS = ["CC0-1.0", "CC-BY-4.0", "ODbL-1.0"];
 
 interface Props {
   license: string;
@@ -20,6 +19,43 @@ interface Props {
 }
 
 export function RegistryLicenseField({ license, onChange }: Props) {
+  const [licenses, setLicenses] = useState<RegistryLicense[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [openOnly, setOpenOnly] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    getRegistryLicenses()
+      .then((result) => {
+        if (!active) return;
+        if (result.ok) setLicenses(result.licenses);
+        else setError(result.message);
+      })
+      .catch(() => {
+        if (active) setError("Could not load licences from the Carrot API.");
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => { active = false; };
+  }, []);
+
+  const selectedLicense = licenses.find((item) => item.id === license);
+  const filteredLicenses = useMemo(() => {
+    const needle = search.trim().toLowerCase();
+    return licenses.filter((item) =>
+      !item.is_deprecated &&
+      (!openOnly || item.is_open) &&
+      (item.id.toLowerCase().includes(needle) || item.label.toLowerCase().includes(needle)),
+    );
+  }, [licenses, search, openOnly]);
+  const recommended = RECOMMENDED_LICENSE_IDS.flatMap((id) => filteredLicenses.filter((item) => item.id === id));
+  const otherLicenses = filteredLicenses.filter((item) => !RECOMMENDED_LICENSE_IDS.includes(item.id));
+  const visibleOtherLicenses = otherLicenses.slice(0, 100);
+
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-1">
@@ -39,18 +75,60 @@ export function RegistryLicenseField({ license, onChange }: Props) {
           </Tooltip>
         </TooltipProvider>
       </div>
-      <Select value={license} onValueChange={onChange}>
-        <SelectTrigger id="registry-license" className="w-full font-normal">
-          <SelectValue placeholder="Select a licence..." />
-        </SelectTrigger>
-        <SelectContent>
-          {licenses.map((item) => (
-            <SelectItem key={item.id} value={item.id}>
-              {item.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button id="registry-license" type="button" role="combobox" variant="outline" aria-expanded={open} className="w-full justify-between font-normal">
+            <span className="truncate">
+              {selectedLicense ? `${selectedLicense.id} — ${selectedLicense.label}` : "Select a licence..."}
+            </span>
+            <ChevronsUpDown className="size-4 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-[min(480px,calc(100vw-3rem))] p-0" align="start">
+          <Command shouldFilter={false}>
+            <CommandInput placeholder="Search name or SPDX ID..." value={search} onValueChange={setSearch} />
+            <div className="flex items-center gap-2 border-b p-3">
+              <Checkbox id="registry-open-only" checked={openOnly} onCheckedChange={(checked) => setOpenOnly(checked === true)} />
+              <Label htmlFor="registry-open-only">Open licences only</Label>
+            </div>
+            <CommandList>
+              {loading ? (
+                <p className="p-4 text-sm text-muted-foreground">Loading licences...</p>
+              ) : error ? (
+                <p className="p-4 text-sm text-destructive">{error}</p>
+              ) : (
+                <>
+                  <CommandEmpty>No matching licences found.</CommandEmpty>
+                  {recommended.length > 0 && (
+                    <CommandGroup heading="Recommended for SSSOM">
+                      {recommended.map((item) => (
+                        <CommandItem key={item.id} value={item.id} onSelect={() => { onChange(item.id); setOpen(false); }}>
+                          <Check className={`mr-2 size-4 ${license === item.id ? "opacity-100" : "opacity-0"}`} />
+                          <span className="flex flex-col"><span>{item.id}</span><span className="text-xs text-muted-foreground">{item.label}</span></span>
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  )}
+                  {otherLicenses.length > 0 && (
+                    <CommandGroup heading="Other licences">
+                      {visibleOtherLicenses.map((item) => (
+                        <CommandItem key={item.id} value={item.id} onSelect={() => { onChange(item.id); setOpen(false); }}>
+                          <Check className={`mr-2 size-4 ${license === item.id ? "opacity-100" : "opacity-0"}`} />
+                          <span className="flex flex-col"><span>{item.id}</span><span className="text-xs text-muted-foreground">{item.label}</span></span>
+                        </CommandItem>
+                      ))}
+                      {otherLicenses.length > visibleOtherLicenses.length && (
+                        <p className="px-2 py-2 text-xs text-muted-foreground">Refine your search to see more results.</p>
+                      )}
+                    </CommandGroup>
+                  )}
+                </>
+              )}
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+      {error && <p className="flex items-center gap-1 text-xs text-destructive"><AlertCircle className="size-3" />{error}</p>}
     </div>
   );
 }

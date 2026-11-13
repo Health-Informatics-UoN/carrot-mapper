@@ -4,14 +4,13 @@ import { useState, type FormEvent } from "react";
 import { CloudUpload, Copy, InfoIcon } from "lucide-react";
 import { Portal as TooltipPortal } from "@radix-ui/react-tooltip";
 import { toast } from "sonner";
-import { normaliseOrcid } from "@/lib/orcid";
 import { Button } from "@/components/ui/button";
 import { DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { RegistryOrcidFields, type OrcidEntry } from "./RegistryOrcidFields";
+import { RegistryOrcidFields } from "./RegistryOrcidFields";
 import { RegistryLicenseField } from "./RegistryLicenseField";
 
 interface Props {
@@ -25,8 +24,7 @@ export interface PublishToRegistryPayload {
   title: string;
   description: string;
   mapping_set_version: string;
-  include_orcids: boolean;
-  orcids: string[];
+  include_author_orcid_ids: boolean;
   license: string;
 }
 
@@ -38,14 +36,11 @@ export function PublishToRegistryForm({
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [version, setVersion] = useState("");
-  const [includeOrcids, setIncludeOrcids] = useState(false);
-  const [orcids, setOrcids] = useState<OrcidEntry[]>([{ key: 0, value: "" }]);
+  const [includeAuthorOrcidIds, setIncludeAuthorOrcidIds] = useState(false);
 
   const [license, setLicense] = useState("");
 
   const [prepared, setPrepared] = useState<PublishToRegistryPayload | null>(null);
-
-  const normalizedOrcids = orcids.map(({ value }) => normaliseOrcid(value));
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -55,8 +50,7 @@ export function PublishToRegistryForm({
       title: title.trim(),
       description: description.trim(),
       mapping_set_version: version.trim(),
-      include_orcids: includeOrcids,
-      orcids: includeOrcids ? normalizedOrcids : [],
+      include_author_orcid_ids: includeAuthorOrcidIds,
       license, // SPDX ID only; the backend owns all licence metadata.
     };
     setPrepared(payload);
@@ -128,10 +122,8 @@ export function PublishToRegistryForm({
       </div>
 
       <RegistryOrcidFields
-        includeOrcids={includeOrcids}
-        orcids={orcids}
-        onIncludeChange={(value) => { setIncludeOrcids(value); setPrepared(null); }}
-        onOrcidsChange={(values) => { setOrcids(values); setPrepared(null); }}
+        includeAuthorOrcidIds={includeAuthorOrcidIds}
+        onIncludeChange={(value) => { setIncludeAuthorOrcidIds(value); setPrepared(null); }}
       />
 
       <RegistryLicenseField
