@@ -6,8 +6,8 @@ import pytest
 import yaml
 from libs.rules_export.sssom import (
     build_mapping_rows,
-    orcid_curie,
     creator_label,
+    orcid_curie,
     subject_id,
     write_sssom_tsv,
 )
