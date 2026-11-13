@@ -15,7 +15,14 @@ class ScanReportRegistryPublishSerializer(serializers.Serializer):
         default=Status.PUBLISHED,
         help_text="Status of the mapping set once the import succeeds.",
     )
-    include_orcid_ids = serializers.BooleanField(default=False)
+    include_author_orcid_ids = serializers.BooleanField(
+        default=False,
+        help_text=(
+            "Write the ORCID iD of each mapping's author (author_id) in the "
+            "published file. The publishing user's ORCID iD (creator_id) is "
+            "always included when their profile has one."
+        ),
+    )
 
 
 class RegistryImportAcceptedSerializer(serializers.Serializer):

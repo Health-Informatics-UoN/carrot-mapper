@@ -59,6 +59,7 @@ erDiagram
         VARCHAR status "PENDING | RUNNING | SUCCEEDED | FAILED (default PENDING)"
         JSONB validation_issues "default []"
         TEXT error_message
+        JSONB stats "default {}; rows, terms_created, warnings"
         TIMESTAMPTZ created_at
         TIMESTAMPTZ finished_at "nullable"
     }
@@ -122,7 +123,7 @@ erDiagram
         VARCHAR ext_source_field "required if ext_term_level set"
         TEXT ext_source_value "only if ext_term_level = VALUE"
     }
-    %% carrot prefix -> https://w3id.org/carrot/term/ (declared in mapping set curie_map; need not resolve)
+    %% carrot prefix -> https://carrot.ac.uk/sssom/terms/ (declared in mapping set curie_map; need not resolve)
     %% Dataset is intentionally NOT part of the subject IRI, so terms are reusable across datasets
 
     %% Relationships
