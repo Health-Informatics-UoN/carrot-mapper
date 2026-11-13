@@ -31,6 +31,61 @@ from rest_framework.test import APIClient
 TRIGGER = "registry.services.worker_service.trigger_registry_import"
 
 
+class TestRegistryLicenses(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.client.force_authenticate(get_user_model().objects.create(username="license_user"))
+        self.url = "/api/v2/registry/licenses/"
+
+    def test_lists_license_metadata(self):
+        License.objects.create(
+            id="CC-BY-4.0",
+            license_iri="https://spdx.org/licenses/CC-BY-4.0",
+            spdx_id="CC-BY-4.0",
+            label="Creative Commons Attribution 4.0",
+            is_open=True,
+            is_deprecated=False,
+        )
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(
+            {
+                "id": "CC-BY-4.0",
+                "license_iri": "https://spdx.org/licenses/CC-BY-4.0",
+                "spdx_id": "CC-BY-4.0",
+                "label": "Creative Commons Attribution 4.0",
+                "is_open": True,
+                "is_deprecated": False,
+            },
+            response.data,
+        )
+
+    def test_returns_all_licenses(self):
+        License.objects.bulk_create(
+            [
+                License(
+                    id=f"license-{number}",
+                    license_iri=f"https://example.com/licenses/{number}",
+                    label=f"License {number:03}",
+                )
+                for number in range(120)
+            ]
+        )
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data), License.objects.count())
+        self.assertEqual(len(response.data), 120)
+
+    def test_requires_authentication_and_is_read_only(self):
+        self.assertEqual(self.client.post(self.url, {}, format="json").status_code, 405)
+        self.client.force_authenticate(user=None)
+        self.assertIn(self.client.get(self.url).status_code, (401, 403))
+
+
 class TestScanReportRegistryPublish(TestCase):
     def setUp(self):
         User = get_user_model()
@@ -150,6 +205,34 @@ class TestScanReportRegistryPublish(TestCase):
                 scope_id=self.scan_report.id, verb=Verb.REGISTRY_PUBLISH_REQUESTED
             ).exists()
         )
+
+    @patch(TRIGGER, return_value="manual__run-orcid")
+    def test_publish_accepts_author_orcid_flag(self, mock_trigger):
+        self._add_rule()
+        body = {key: value for key, value in self.body.items() if key != "include_orcid_ids"}
+
+        for enabled in (True, False):
+            with self.subTest(enabled=enabled):
+                response = self.client.post(
+                    self.url,
+                    {**body, "set_version": str(enabled), "include_author_orcid_ids": enabled},
+                    format="json",
+                )
+                self.assertEqual(response.status_code, 202)
+                self.assertEqual(
+                    mock_trigger.call_args.args[0]["overrides"]["include_orcid_ids"],
+                    enabled,
+                )
+
+    @patch(TRIGGER)
+    def test_publish_rejects_conflicting_orcid_flags(self, mock_trigger):
+        response = self.client.post(
+            self.url, {**self.body, "include_author_orcid_ids": False}, format="json"
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("include_author_orcid_ids", response.data)
+        mock_trigger.assert_not_called()
 
     @patch(TRIGGER)
     def test_viewer_cannot_publish(self, mock_trigger):

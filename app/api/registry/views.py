@@ -4,14 +4,22 @@ from api.mixins import ScanReportPermissionMixin
 from drf_spectacular.utils import extend_schema
 from mapping.models import ScanReport
 from rest_framework import status
-from rest_framework.generics import GenericAPIView
+from rest_framework.generics import GenericAPIView, ListAPIView
 from rest_framework.response import Response
 
+from registry.models import License
 from registry.serializers import (
+    LicenseSerializer,
     RegistryImportAcceptedSerializer,
     ScanReportRegistryPublishSerializer,
 )
 from registry.services import submit_direct_publish
+
+
+class LicenseListView(ListAPIView):
+    queryset = License.objects.order_by("label", "id")
+    serializer_class = LicenseSerializer
+    pagination_class = None
 
 
 class ScanReportRegistryPublishView(ScanReportPermissionMixin, GenericAPIView):
