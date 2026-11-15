@@ -11,6 +11,7 @@ a Predicate, with a MappingJustification.
 import uuid
 
 from django.conf import settings
+from django.contrib.postgres.indexes import GinIndex
 from django.db import models
 from mapping.models import ScanReport
 
@@ -223,6 +224,17 @@ class MappingSet(models.Model):
         ]
         indexes = [
             models.Index(fields=["status", "-published_at"]),
+            # Trigram indexes for fuzzy search (registry/search.py).
+            GinIndex(
+                fields=["title"],
+                opclasses=["gin_trgm_ops"],
+                name="registry_set_title_trgm",
+            ),
+            GinIndex(
+                fields=["description"],
+                opclasses=["gin_trgm_ops"],
+                name="registry_set_desc_trgm",
+            ),
         ]
 
     def __str__(self):
@@ -325,7 +337,20 @@ class Term(models.Model):
                 name="registry_term_ext_consistent",
             ),
         ]
-        indexes = [models.Index(fields=["prefix"])]
+        indexes = [
+            models.Index(fields=["prefix"]),
+            # Trigram indexes for fuzzy search (registry/search.py).
+            GinIndex(
+                fields=["label"],
+                opclasses=["gin_trgm_ops"],
+                name="registry_term_label_trgm",
+            ),
+            GinIndex(
+                fields=["canonical_iri"],
+                opclasses=["gin_trgm_ops"],
+                name="registry_term_iri_trgm",
+            ),
+        ]
 
     def __str__(self):
         return self.canonical_iri
