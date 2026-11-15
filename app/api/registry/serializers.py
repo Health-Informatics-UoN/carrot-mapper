@@ -1,6 +1,16 @@
 from rest_framework import serializers
 
-from registry.models import ImportJobStatus, License, Status
+from registry.models import (
+    ImportJob,
+    ImportJobStatus,
+    License,
+    Mapping,
+    MappingJustification,
+    MappingSet,
+    Predicate,
+    Status,
+    Term,
+)
 
 
 class ScanReportRegistryPublishSerializer(serializers.Serializer):
@@ -28,3 +38,137 @@ class ScanReportRegistryPublishSerializer(serializers.Serializer):
 class RegistryImportAcceptedSerializer(serializers.Serializer):
     import_job_id = serializers.UUIDField()
     status = serializers.ChoiceField(choices=ImportJobStatus.choices)
+
+
+# ---------------------------------------------------------------------------
+# Read: vocabularies
+# ---------------------------------------------------------------------------
+
+
+class PredicateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Predicate
+        fields = ["predicate_id", "label", "description", "is_recommended"]
+
+
+class MappingJustificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MappingJustification
+        fields = ["justification_id", "label", "description"]
+
+
+# ---------------------------------------------------------------------------
+# Read: terms, mapping sets, mappings
+# ---------------------------------------------------------------------------
+
+
+class TermSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Term
+        fields = [
+            "id",
+            "canonical_iri",
+            "label",
+            "kind",
+            "prefix",
+            "type",
+            "category",
+            "object_source_version",
+            "ext_term_level",
+            "ext_source_field",
+            "ext_source_value",
+        ]
+
+
+class MappingSetBriefSerializer(serializers.ModelSerializer):
+    status = serializers.CharField(source="status_id")
+
+    class Meta:
+        model = MappingSet
+        fields = ["id", "set_uri", "set_version", "title", "status"]
+
+
+class MappingSetListSerializer(serializers.ModelSerializer):
+    status = serializers.CharField(source="status_id")
+    origin = serializers.CharField(source="origin_id")
+    license = serializers.CharField(source="license_id")
+    mapping_count = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = MappingSet
+        fields = [
+            "id",
+            "set_uri",
+            "set_version",
+            "title",
+            "description",
+            "status",
+            "origin",
+            "license",
+            "subject_source",
+            "subject_source_version",
+            "object_source",
+            "object_source_version",
+            "creator_ids",
+            "publication_date",
+            "created_at",
+            "published_at",
+            "mapping_count",
+        ]
+
+
+class ImportProvenanceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ImportJob
+        fields = ["id", "status", "origin", "started_at", "finished_at", "stats"]
+
+
+class MappingSetDetailSerializer(MappingSetListSerializer):
+    import_job = ImportProvenanceSerializer(allow_null=True)
+    source_scan_report = serializers.PrimaryKeyRelatedField(read_only=True)
+    subject_count = serializers.IntegerField(read_only=True)
+    object_count = serializers.IntegerField(read_only=True)
+    has_file = serializers.SerializerMethodField()
+
+    class Meta(MappingSetListSerializer.Meta):
+        fields = MappingSetListSerializer.Meta.fields + [
+            "sssom_version",
+            "curie_map",
+            "extra_metadata",
+            "import_job",
+            "source_scan_report",
+            "subject_count",
+            "object_count",
+            "has_file",
+        ]
+
+    def get_has_file(self, obj) -> bool:
+        return bool(obj.file_key)
+
+
+class MappingSerializer(serializers.ModelSerializer):
+    subject = TermSerializer()
+    predicate = serializers.CharField(source="predicate_id")
+    object = TermSerializer()
+    mapping_justification = serializers.CharField(source="mapping_justification_id")
+    mapping_set = MappingSetBriefSerializer()
+
+    class Meta:
+        model = Mapping
+        fields = [
+            "id",
+            "mapping_set",
+            "subject",
+            "predicate",
+            "predicate_modifier",
+            "object",
+            "mapping_justification",
+            "mapping_cardinality",
+            "confidence",
+            "author_ids",
+            "reviewer_ids",
+            "mapping_date",
+            "comment",
+            "extra_metadata",
+            "other",
+        ]
