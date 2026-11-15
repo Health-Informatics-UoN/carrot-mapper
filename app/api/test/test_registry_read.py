@@ -183,7 +183,7 @@ class TestMappingSetDetail(RegistryReadTestBase):
         self.assertEqual(r.data["mapping_count"], 2)
         self.assertEqual(r.data["subject_count"], 2)
         self.assertEqual(r.data["object_count"], 2)
-        self.assertEqual(r.data["license"]["id"], "CC-BY-4.0")
+        self.assertEqual(r.data["license"], "CC-BY-4.0")
 
     def test_withdrawn_resolvable_by_id(self):
         r = self.get(f"mapping-sets/{self.withdrawn.id}/")
