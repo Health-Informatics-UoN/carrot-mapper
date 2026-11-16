@@ -23,7 +23,8 @@ dev = [
     "ruff>=0.17.5",
 ]
 
-
+[tool.ruff]
+src = ["app"]
 
 [tool.uv]
 default-groups = [
