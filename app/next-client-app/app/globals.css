@@ -177,7 +177,9 @@
   color: var(--popover-foreground) !important;
   border: 1px solid var(--border) !important;
   border-radius: 0.5rem !important;
-  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1) !important;
+  box-shadow:
+    0 10px 15px -3px rgb(0 0 0 / 0.1),
+    0 4px 6px -4px rgb(0 0 0 / 0.1) !important;
   z-index: 50 !important;
 }
 
@@ -315,15 +317,27 @@
   background: var(--success) !important;
   color: var(--text-toast) !important;
 }
+[data-sonner-toast][data-type="success"] [data-description] {
+  color: var(--text-toast) !important;
+}
 [data-sonner-toast][data-type="error"] {
   background: var(--destructive) !important;
+  color: var(--text-toast) !important;
+}
+[data-sonner-toast][data-type="error"] [data-description] {
   color: var(--text-toast) !important;
 }
 [data-sonner-toast][data-type="info"] {
   background: var(--info) !important;
   color: var(--text-toast) !important;
 }
+[data-sonner-toast][data-type="info"] [data-description] {
+  color: var(--text-toast) !important;
+}
 [data-sonner-toast][data-type="warning"] {
   background: var(--warning) !important;
+  color: var(--text-toast) !important;
+}
+[data-sonner-toast][data-type="warning"] [data-description] {
   color: var(--text-toast) !important;
 }
