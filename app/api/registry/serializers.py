@@ -11,7 +11,7 @@ class LicenseSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = License
-        fields = ["id", "license_iri", "spdx_id", "label", "is_open", "is_deprecated"]
+        fields = ["id", "license_iri", "label", "is_open", "is_deprecated"]
 
 
 class ScanReportRegistryPublishSerializer(serializers.Serializer):
@@ -26,28 +26,7 @@ class ScanReportRegistryPublishSerializer(serializers.Serializer):
         default=Status.PUBLISHED,
         help_text="Status of the mapping set once the import succeeds.",
     )
-    include_orcid_ids = serializers.BooleanField(required=False)
-    include_author_orcid_ids = serializers.BooleanField(required=False)
-
-    def validate(self, attrs):
-        """
-        Normalize the author and legacy ORCID
-        flags for the import worker.
-        """
-        legacy_value = attrs.get("include_orcid_ids")
-        author_value = attrs.pop("include_author_orcid_ids", None)
-        if (
-            author_value is not None
-            and legacy_value is not None
-            and author_value != legacy_value
-        ):
-            raise serializers.ValidationError(
-                {"include_author_orcid_ids": "ORCID flags must have the same value."}
-            )
-        attrs["include_orcid_ids"] = (
-            author_value if author_value is not None else (legacy_value or False)
-        )
-        return attrs
+    include_author_orcid_ids = serializers.BooleanField(default=False)
 
 
 class RegistryImportAcceptedSerializer(serializers.Serializer):
