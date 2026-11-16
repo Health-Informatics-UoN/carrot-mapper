@@ -25,7 +25,7 @@ class LicenseListView(ListAPIView):
     sets of licences in the future.
     """
 
-    queryset = License.objects.order_by("label", "id")
+    queryset = License.objects.filter(is_deprecated=False).order_by("label", "id")
     serializer_class = LicenseSerializer
     pagination_class = None
 

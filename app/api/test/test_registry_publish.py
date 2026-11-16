@@ -74,12 +74,18 @@ class TestRegistryLicenses(TestCase):
                 for number in range(120)
             ]
         )
+        License.objects.create(
+            id="deprecated-license",
+            license_iri="https://example.com/licenses/deprecated",
+            label="Deprecated license",
+            is_deprecated=True,
+        )
 
         response = self.client.get(self.url)
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.data), License.objects.count())
         self.assertEqual(len(response.data), 120)
+        self.assertTrue(all(not license["is_deprecated"] for license in response.data))
 
     def test_requires_authentication_and_is_read_only(self):
         self.assertEqual(self.client.post(self.url, {}, format="json").status_code, 405)
