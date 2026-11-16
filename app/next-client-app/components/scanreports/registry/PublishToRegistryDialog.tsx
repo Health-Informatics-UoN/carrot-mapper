@@ -43,8 +43,8 @@ export function PublishToRegistryDialog({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button type="button" variant="outline" className="text-foreground">
-          <CloudUpload className="size-4" />
           Publish to Registry
+          <CloudUpload className="size-4" />
         </Button>
       </DialogTrigger>
 
