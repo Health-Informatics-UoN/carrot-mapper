@@ -252,13 +252,13 @@ class TermLevel(models.TextChoices):
 
 
 # CURIE prefix for Carrot subject terms. Must be declared in each
-# MappingSet.curie_map as {CARROT_TERM_PREFIX: CARROT_TERM_NAMESPACE}.
+# MappingSet.curie_map as {SUBJECT_PREFIX: SUBJECT_IRI}.
 # The namespace does not need to resolve; it is an identifier only.
-CARROT_TERM_PREFIX = "carrot"
-CARROT_TERM_NAMESPACE = "https://carrot.ac.uk/sssom/terms/"
+SUBJECT_PREFIX = "carrot"
+SUBJECT_IRI = "https://carrot.ac.uk/registry/terms/"
 # set_uri base for sets published directly from a scan report; every
 # version published from the same scan report shares one set_uri.
-CARROT_MAPPING_SET_NAMESPACE = "https://carrot.ac.uk/sssom/mapping-sets/"
+CARROT_MAPPING_SET_NAMESPACE = "https://carrot.ac.uk/registry/mapping-sets/"
 
 
 class Term(models.Model):

@@ -261,7 +261,7 @@ def test_full_file_metadata_and_columns():
     # the metadata block: prefixes, creator, tool and dates only
     assert meta == {
         "curie_map": {
-            "carrot": "https://carrot.ac.uk/sssom/terms/",
+            "carrot": "https://carrot.ac.uk/registry/terms/",
             "OMOP": "https://athena.ohdsi.org/search-terms/terms/",
             "skos": "http://www.w3.org/2004/02/skos/core#",
             "semapv": "https://w3id.org/semapv/vocab/",

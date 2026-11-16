@@ -926,7 +926,7 @@ def test_dag_publishes_creator_orcid_and_authors_only_when_opted_in(
             "user_id": user,
             "scan_report_id": scan_report.id,
             "overrides": {
-                "set_uri": f"https://carrot.ac.uk/sssom/mapping-sets/{uuid.uuid4().hex}",
+                "set_uri": f"https://carrot.ac.uk/registry/mapping-sets/{uuid.uuid4().hex}",
                 "set_version": "1",
                 "title": "With ORCID",
                 "license": "CC-BY-4.0",
