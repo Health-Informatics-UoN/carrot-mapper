@@ -34,7 +34,9 @@ TRIGGER = "registry.services.worker_service.trigger_registry_import"
 class TestRegistryLicenses(TestCase):
     def setUp(self):
         self.client = APIClient()
-        self.client.force_authenticate(get_user_model().objects.create(username="license_user"))
+        self.client.force_authenticate(
+            get_user_model().objects.create(username="license_user")
+        )
         self.url = "/api/v2/registry/licenses/"
 
     def test_lists_license_metadata(self):
@@ -213,12 +215,18 @@ class TestScanReportRegistryPublish(TestCase):
             with self.subTest(enabled=enabled):
                 response = self.client.post(
                     self.url,
-                    {**self.body, "set_version": str(enabled), "include_author_orcid_ids": enabled},
+                    {
+                        **self.body,
+                        "set_version": str(enabled),
+                        "include_author_orcid_ids": enabled,
+                    },
                     format="json",
                 )
                 self.assertEqual(response.status_code, 202)
                 self.assertEqual(
-                    mock_trigger.call_args.args[0]["overrides"]["include_author_orcid_ids"],
+                    mock_trigger.call_args.args[0]["overrides"][
+                        "include_author_orcid_ids"
+                    ],
                     enabled,
                 )
 
