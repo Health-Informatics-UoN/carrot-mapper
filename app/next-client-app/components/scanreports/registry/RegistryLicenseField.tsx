@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from "@/components/ui/command";
 import { Label } from "@/components/ui/label";
+import { RequiredIndicator } from "@/components/ui/required-indicator";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -83,7 +84,7 @@ export function RegistryLicenseField({ license, validationError, onChange }: Pro
     <div className="min-w-0 space-y-2">
       {/* Licence label, required indicator and information tooltip. */}
       <div className="flex items-center gap-1">
-        <Label htmlFor="registry-license">License <span aria-hidden="true" className="text-destructive">*</span></Label>
+        <Label htmlFor="registry-license">License <RequiredIndicator /></Label>
         <TooltipProvider delayDuration={100}>
           <Tooltip>
             <TooltipTrigger asChild>

@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { RequiredIndicator } from "@/components/ui/required-indicator";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Tooltip,
@@ -144,10 +145,7 @@ export function PublishToRegistryForm({
             {/* Required mapping set title. */}
             <div className="space-y-2">
               <Label htmlFor="registry-title">
-                Title{" "}
-                <span aria-hidden="true" className="text-destructive">
-                  *
-                </span>
+                Title <RequiredIndicator />
               </Label>
 
               <Input
@@ -202,13 +200,7 @@ export function PublishToRegistryForm({
               <div className="min-w-0 space-y-2">
                 <div className="flex items-center gap-1">
                   <Label htmlFor="registry-version">
-                    Mapping Set Version{" "}
-                    <span
-                      aria-hidden="true"
-                      className="text-destructive"
-                    >
-                      *
-                    </span>
+                    Mapping Set Version <RequiredIndicator />
                   </Label>
 
                   {/* Explain version uniqueness through a tooltip. */}
