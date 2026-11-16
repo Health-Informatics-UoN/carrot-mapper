@@ -26,3 +26,16 @@ AIRFLOW_VAR_JSON_VERSION = os.getenv("AIRFLOW_VAR_JSON_VERSION", "v1")
 SPDX_LICENSE_LIST_URL = os.getenv(
     "SPDX_LICENSE_LIST_URL", "https://spdx.org/licenses/licenses.json"
 )
+
+# Carrot Mappings Registry (registry_import DAG)
+# Storage container/bucket holding every registry SSSOM file (ImportJob.file_key
+# and MappingSet.file_key are blob names inside it).
+REGISTRY_SSSOM_CONTAINER = os.getenv("REGISTRY_SSSOM_CONTAINER", "registry-sssom")
+# How many imports may run at once. Each holds one DB transaction for its load.
+REGISTRY_IMPORT_MAX_ACTIVE_RUNS = int(os.getenv("REGISTRY_IMPORT_MAX_ACTIVE_RUNS", 2))
+# Most validation issues stored in ImportJob.validation_issues. A bad file can
+# have an issue on every row (a wrong prefix in a 500,000-row file is 500,000
+# issues), which would make that JSON column, and the API response that returns
+# it, huge. The rest are still counted: an "issues_truncated" entry gives the
+# totals. 1000 is plenty to see what's wrong with a file and fix it.
+REGISTRY_IMPORT_MAX_ISSUES = int(os.getenv("REGISTRY_IMPORT_MAX_ISSUES", 1000))

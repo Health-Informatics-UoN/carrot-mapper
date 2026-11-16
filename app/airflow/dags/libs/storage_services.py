@@ -36,6 +36,8 @@ def download_blob_to_tmp(container_name: str, blob_name: str) -> Path:
     # TODO: double check temp file can be accessed by other tasks, using KubernetesExecutor
     # https://stackoverflow.com/questions/69294934/where-is-tmp-folder-located-in-airflow
     local_path = Path(f"/tmp/{blob_name}")
+    # Blob names may contain folders, e.g. imports/<job_id>/original.sssom.tsv
+    local_path.parent.mkdir(parents=True, exist_ok=True)
     # Storage hook
     storage_hook = get_storage_hook()
     try:

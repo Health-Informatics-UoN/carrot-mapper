@@ -135,7 +135,65 @@ def build_rules_json_v2(scan_report_name: str, scan_report_id: int) -> BytesIO:
         raise e
 
 
-def _get_creator(user_id: int) -> tuple[str | None, str | None]:
+# The rules SSSOM is built from: only the *_concept_id rules. Each carries its
+# mapping's concept, while the other rules Mapper creates for a mapping (source
+# values, person_id, dates) aren't written to SSSOM. Concept domain, vocabulary
+# and vocabulary version are for SSSOM's object_category / other /
+# object_source_version. author_orcid is the ORCID iD of the user who made the
+# mapping (for author_id, only written when asked for). ``table_suffix`` picks
+# the temp rules table
+# (temp_rules_export_<scan_report_id>_<table_suffix>), so a registry publish and a
+# rules export of the same scan report don't share one.
+SSSOM_RULES_QUERY = """
+    SELECT
+        temp_rules.sr_concept_id,
+        temp_rules.source_field,
+        temp_rules.term_mapping_value,
+        temp_rules.dest_field,
+        temp_rules.concept_id,
+        temp_rules.concept_name,
+        temp_rules.creation_type,
+        temp_rules.confidence,
+        temp_rules.description,
+        temp_rules.created_at,
+        omop_concept.domain_id AS concept_domain,
+        omop_concept.vocabulary_id AS concept_vocabulary,
+        omop_vocabulary.vocabulary_version,
+        author_profile.orcid AS author_orcid
+    FROM temp_rules_export_%(scan_report_id)s_{table_suffix} AS temp_rules
+    LEFT JOIN omop.concept AS omop_concept
+        ON omop_concept.concept_id = temp_rules.concept_id
+    LEFT JOIN omop.vocabulary AS omop_vocabulary
+        ON omop_vocabulary.vocabulary_id = omop_concept.vocabulary_id
+    LEFT JOIN mapping_scanreportconcept AS sr_concept
+        ON sr_concept.id = temp_rules.sr_concept_id
+    LEFT JOIN users_profile AS author_profile
+        ON author_profile.user_id = sr_concept.created_by_id
+    WHERE right(temp_rules.dest_field, 11) = '_concept_id'
+    ORDER BY
+        temp_rules.source_table,
+        temp_rules.source_field,
+        temp_rules.sr_concept_id,
+        temp_rules.dest_table,
+        temp_rules.dest_field;
+"""
+
+
+def fetch_sssom_rules(
+    scan_report_id: int, table_suffix: str = "sssom"
+) -> list[dict[str, Any]]:
+    """
+    The rows write_sssom_tsv needs, from a temp rules table already filled by
+    create_update_temp_rules_table_query with the same ``table_suffix``.
+    """
+    if not table_suffix.isidentifier():
+        raise ValueError(f"Invalid temp table suffix: {table_suffix!r}")
+    return _fetch_rows(
+        SSSOM_RULES_QUERY.format(table_suffix=table_suffix), scan_report_id
+    )
+
+
+def get_creator(user_id: int) -> tuple[str | None, str | None]:
     """The username and profile ORCID iD (None if not filled in) of a user."""
     query = """
         SELECT auth_user.username, users_profile.orcid
@@ -161,41 +219,9 @@ def build_rules_sssom(
     Returns:
         - BytesIO, the rules in SSSOM TSV format
     """
-    # Only the *_concept_id rules: each carries its mapping's concept, while the
-    # other rules Mapper creates for a mapping (source values, person_id, dates)
-    # aren't written to SSSOM. Concept domain, vocabulary and vocabulary version
-    # are for SSSOM's object_category / other / object_source_version.
-    query = """
-        SELECT
-            temp_rules.sr_concept_id,
-            temp_rules.source_field,
-            temp_rules.term_mapping_value,
-            temp_rules.dest_field,
-            temp_rules.concept_id,
-            temp_rules.concept_name,
-            temp_rules.creation_type,
-            temp_rules.confidence,
-            temp_rules.description,
-            temp_rules.created_at,
-            omop_concept.domain_id AS concept_domain,
-            omop_concept.vocabulary_id AS concept_vocabulary,
-            omop_vocabulary.vocabulary_version
-        FROM temp_rules_export_%(scan_report_id)s_sssom AS temp_rules
-        LEFT JOIN omop.concept AS omop_concept
-            ON omop_concept.concept_id = temp_rules.concept_id
-        LEFT JOIN omop.vocabulary AS omop_vocabulary
-            ON omop_vocabulary.vocabulary_id = omop_concept.vocabulary_id
-        WHERE right(temp_rules.dest_field, 11) = '_concept_id'
-        ORDER BY
-            temp_rules.source_table,
-            temp_rules.source_field,
-            temp_rules.sr_concept_id,
-            temp_rules.dest_table,
-            temp_rules.dest_field;
-    """
     try:
-        rules = _fetch_rows(query, scan_report_id)
-        creator_username, creator_orcid = _get_creator(user_id)
+        rules = fetch_sssom_rules(scan_report_id)
+        creator_username, creator_orcid = get_creator(user_id)
         sssom_tsv = write_sssom_tsv(
             rules,
             created=datetime.now(timezone.utc),

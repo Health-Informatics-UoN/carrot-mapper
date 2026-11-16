@@ -6,8 +6,8 @@ import pytest
 import yaml
 from libs.rules_export.sssom import (
     build_mapping_rows,
-    creator_id,
     creator_label,
+    orcid_curie,
     subject_id,
     write_sssom_tsv,
 )
@@ -322,6 +322,39 @@ def test_creator_without_orcid_has_no_creator_id():
     assert "orcid" not in meta["curie_map"]
 
 
+def with_author(rules, orcid):
+    return [{**rule, "author_orcid": orcid} for rule in rules]
+
+
+AUTHORED = with_author(FEMALE, "0000-0001-5109-3700") + with_author(MALE, None)
+
+
+def test_author_ids_left_out_unless_asked_for():
+    """A mapping author's ORCID iD is only published when they've agreed."""
+    tsv = write_sssom_tsv(AUTHORED, created=CREATED)
+    meta, rows = parse(tsv)
+    assert "author_id" not in rows[0]
+    assert "orcid" not in meta["curie_map"]
+    assert "0000-0001-5109-3700" not in tsv
+
+
+def test_author_ids_per_mapping_when_asked_for():
+    meta, rows = parse(
+        write_sssom_tsv(AUTHORED, created=CREATED, include_author_ids=True)
+    )
+    # orcid is declared for author_id even without a creator ORCID iD
+    assert meta["curie_map"]["orcid"] == "https://orcid.org/"
+    assert "creator_id" not in meta
+    assert [r["author_id"] for r in rows] == ["orcid:0000-0001-5109-3700", ""]
+
+
+def test_author_ids_column_left_out_when_no_author_has_an_orcid():
+    rules = with_author(FEMALE, None) + with_author(MALE, "not-an-orcid")
+    meta, rows = parse(write_sssom_tsv(rules, created=CREATED, include_author_ids=True))
+    assert "author_id" not in rows[0]
+    assert "orcid" not in meta["curie_map"]
+
+
 def test_creator_left_out_when_unknown():
     meta, _ = parse(write_sssom_tsv(WEIGHT, created=CREATED))
     assert "creator_label" not in meta
@@ -356,5 +389,5 @@ def test_creator_label(username, label):
         ("https://orcid.org/0000-0002-1825-0097", ""),  # not the profile's format
     ],
 )
-def test_creator_id(orcid, expected):
-    assert creator_id(orcid) == expected
+def test_orcid_curie(orcid, expected):
+    assert orcid_curie(orcid) == expected

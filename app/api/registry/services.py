@@ -74,7 +74,7 @@ def submit_direct_publish(
         "description": metadata.get("description", ""),
         "license": metadata["license"].pk,
         "status": metadata["status"],
-        "include_author_orcid_ids": metadata["include_author_orcid_ids"],
+        "include_author_orcid_ids": metadata.get("include_author_orcid_ids", False),
     }
 
     with transaction.atomic():
