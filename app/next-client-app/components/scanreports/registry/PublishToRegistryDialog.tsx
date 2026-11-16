@@ -59,8 +59,7 @@ export function PublishToRegistryDialog({
 
         {/* Display the dialog title and selected Scan Report details. */}
         <DialogHeader className="border-b border-border pb-5 text-left">
-          <DialogTitle className="flex items-center gap-2">
-            <CloudUpload className="size-5" />
+          <DialogTitle>
             Publish to Registry
           </DialogTitle>
 
