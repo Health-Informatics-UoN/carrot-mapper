@@ -62,6 +62,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "whitenoise.runserver_nostatic",
     "django.contrib.staticfiles",
+    "django.contrib.postgres",
     "extra_views",
     "data",
     "datasets",
@@ -213,6 +214,9 @@ SPECTACULAR_SETTINGS = {
     "DESCRIPTION": "API documentation for Carrot Mapper. All APIs are read-only.",
     "VERSION": "1.0.0",
     "SERVE_PERMISSIONS": ["rest_framework.permissions.AllowAny"],
+    "ENUM_NAME_OVERRIDES": {
+        "RegistryImportJobStatusEnum": "registry.models.ImportJobStatus",
+    },
 }
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.1/howto/static-files/
@@ -225,6 +229,13 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = int(
 )
 
 SESSION_COOKIE_AGE = 86400  # session length is 24 hours
+
+# Storage container/bucket holding registry SSSOM files.
+# Must match the Airflow REGISTRY_SSSOM_CONTAINER.
+REGISTRY_SSSOM_CONTAINER = os.environ.get("REGISTRY_SSSOM_CONTAINER", "registry-sssom")
+# pg_trgm word-similarity cut-off (0-1) for fuzzy search.
+# Lower finds more misspellings but returns noisier results.
+REGISTRY_TRIGRAM_THRESHOLD = float(os.environ.get("REGISTRY_TRIGRAM_THRESHOLD", 0.3))
 
 # Frontend
 FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:3000")

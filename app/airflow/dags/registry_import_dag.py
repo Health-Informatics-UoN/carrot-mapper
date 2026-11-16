@@ -1,6 +1,5 @@
 from datetime import datetime, timedelta
 
-from airflow import DAG
 from airflow.providers.standard.operators.empty import EmptyOperator
 from airflow.sdk import chain
 from libs.registry_import.finalize import finalize
@@ -14,6 +13,8 @@ from libs.settings import (
     REGISTRY_IMPORT_MAX_ACTIVE_RUNS,
 )
 from libs.utils import connect_to_storage, create_task
+
+from airflow import DAG
 
 """
 This DAG imports an SSSOM file into the Carrot Mappings Registry. Every publish
