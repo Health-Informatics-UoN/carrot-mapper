@@ -5,7 +5,6 @@ import request from "@/lib/api/request";
 export interface RegistryLicense {
   id: string;
   license_iri: string;
-  spdx_id: string;
   label: string;
   is_open: boolean;
   is_deprecated: boolean;
@@ -18,7 +17,7 @@ export type RegistryLicensesResult =
 export async function getRegistryLicenses(): Promise<RegistryLicensesResult> {
   try {
     const licenses = await request<RegistryLicense[]>("v2/registry/licenses/", {
-      cache: "no-store",
+      next: { revalidate: 86_400 },
     });
     return { ok: true, licenses };
   } catch {
