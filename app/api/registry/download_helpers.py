@@ -1,6 +1,6 @@
-from rest_framework.exceptions import APIException
-from rest_framework import status
 from django.utils.text import slugify
+from rest_framework import status
+from rest_framework.exceptions import APIException
 
 
 class StorageUnavailable(APIException):
