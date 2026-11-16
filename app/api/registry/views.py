@@ -53,6 +53,20 @@ storage_service = StorageService()
 # ---------------------------------------------------------------------------
 
 
+class LicenseListView(ListAPIView):
+    """
+    List all registry licences for authenticated
+    users.
+
+    Note: Consider using Pagination for large
+    sets of licences in the future.
+    """
+
+    queryset = License.objects.filter(is_deprecated=False).order_by("label", "id")
+    serializer_class = LicenseSerializer
+    pagination_class = None
+
+
 class ScanReportRegistryPublishView(ScanReportPermissionMixin, GenericAPIView):
     """
     Publish a scan report's mappings to the Carrot Mappings Registry.

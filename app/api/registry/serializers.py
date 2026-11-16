@@ -13,6 +13,17 @@ from registry.models import (
 )
 
 
+class LicenseSerializer(serializers.ModelSerializer):
+    """
+    Expose licence metadata used when
+    selecting a registry licence.
+    """
+
+    class Meta:
+        model = License
+        fields = ["id", "license_iri", "label", "is_open", "is_deprecated"]
+
+
 class ScanReportRegistryPublishSerializer(serializers.Serializer):
     """Set-level metadata for publishing a scan report's mappings to the registry."""
 

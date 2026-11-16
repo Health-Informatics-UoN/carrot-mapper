@@ -4,6 +4,7 @@ from registry import views
 
 urlpatterns = [
     # Read: discovery, search, filter
+    path("licenses/", views.LicenseListView.as_view(), name="registry-license-list"),
     path(
         "mapping-sets/",
         views.MappingSetListView.as_view(),
