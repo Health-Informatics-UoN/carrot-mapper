@@ -26,13 +26,14 @@ from registry.filters import (
     RelevanceOrderingFilter,
     TermFilter,
 )
-from registry.models import Mapping, MappingJustification, Predicate
+from registry.models import License, Mapping, MappingJustification, Predicate
 from registry.permissions import (
     published_mappings,
     published_terms,
     visible_mapping_sets,
 )
 from registry.serializers import (
+    LicenseSerializer,
     MappingJustificationSerializer,
     MappingSerializer,
     MappingSetDetailSerializer,
@@ -51,20 +52,6 @@ storage_service = StorageService()
 # ---------------------------------------------------------------------------
 # Write
 # ---------------------------------------------------------------------------
-
-
-class LicenseListView(ListAPIView):
-    """
-    List all registry licences for authenticated
-    users.
-
-    Note: Consider using Pagination for large
-    sets of licences in the future.
-    """
-
-    queryset = License.objects.filter(is_deprecated=False).order_by("label", "id")
-    serializer_class = LicenseSerializer
-    pagination_class = None
 
 
 class ScanReportRegistryPublishView(ScanReportPermissionMixin, GenericAPIView):
@@ -308,3 +295,17 @@ class MappingJustificationListView(PublicReadMixin, ListAPIView):
 
     serializer_class = MappingJustificationSerializer
     queryset = MappingJustification.objects.order_by("justification_id")
+
+
+class LicenseListView(ListAPIView):
+    """
+    List all registry licences for authenticated
+    users.
+
+    Note: Consider using Pagination for large
+    sets of licences in the future.
+    """
+
+    queryset = License.objects.filter(is_deprecated=False).order_by("label", "id")
+    serializer_class = LicenseSerializer
+    pagination_class = None
