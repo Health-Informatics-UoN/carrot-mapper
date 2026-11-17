@@ -6,6 +6,7 @@ Pure functions: no database or storage.
 from __future__ import annotations
 
 import json
+from dataclasses import replace
 from datetime import UTC, date, datetime
 from pathlib import Path
 
@@ -14,10 +15,13 @@ from libs.registry_import.full_validate_and_load_checks import (
     DRAFT,
     PUBLISHED,
     STAGING_COLUMNS,
+    SetOwner,
     Vocabulary,
     build_import,
     carrot_term_parts,
+    check_set_owner,
     check_set_version_is_new,
+    set_owner_error,
 )
 from libs.registry_import.full_validate_and_load_parse import decode, parse_sssom
 from libs.rules_export.sssom import write_sssom_tsv
@@ -339,6 +343,87 @@ def test_registry_namespace_under_another_name_is_canonicalised():
     assert plan.ok, plan.issues.as_dicts()
     assert row(plan)["object_iri"] == "OMOP:8507"
     assert row(plan)["object_prefix"] == "OMOP"
+
+
+def plan_with_prefixes(text: str, prefixes: dict[str, str]):
+    """build_import against a registry that already has ``prefixes``."""
+    return build_import(
+        parse_sssom(text), replace(VOCAB, prefixes=prefixes), license_id="CC-BY-4.0"
+    )
+
+
+def test_terms_prefixes_are_listed_for_registration():
+    plan = plan_for(HEADER + COLUMNS + ROW)
+    assert plan.prefixes == {
+        "HP": "http://purl.obolibrary.org/obo/HP_",
+        "MP": "http://purl.obolibrary.org/obo/MP_",
+    }
+
+
+def test_registered_namespace_under_another_name_is_canonicalised():
+    plan = plan_with_prefixes(
+        HEADER + COLUMNS + ROW, {"mp": "http://purl.obolibrary.org/obo/MP_"}
+    )
+    assert plan.ok, plan.issues.as_dicts()
+    assert row(plan)["object_iri"] == "mp:0000111"
+    assert plan.prefixes["mp"] == "http://purl.obolibrary.org/obo/MP_"
+
+
+def test_registered_name_for_another_namespace_is_an_error_where_used():
+    registry = {"MP": "http://example.org/another-tre/"}
+    plan = plan_with_prefixes(HEADER + COLUMNS + ROW, registry)
+    assert codes(plan, "error") == ["prefix_conflict"]
+    assert "give that namespace another prefix name" in plan.issues.items[0].message
+
+    # Declared but unused: nothing is stored under it, so no error
+    unused = HEADER.replace(
+        "#mapping_set_id", "#  extra: http://example.org/x/\n#mapping_set_id"
+    )
+    plan = plan_with_prefixes(
+        unused + COLUMNS + ROW, {"extra": "http://example.org/another-tre/"}
+    )
+    assert plan.ok, plan.issues.as_dicts()
+
+
+def test_two_names_for_a_new_namespace_become_one():
+    text = HEADER.replace(
+        "#  MP: http://purl.obolibrary.org/obo/MP_\n",
+        "#  MP: http://purl.obolibrary.org/obo/MP_\n#  MPalias: http://purl.obolibrary.org/obo/MP_\n",
+    )
+    plan = plan_for(
+        text
+        + COLUMNS
+        + ROW
+        + ROW.replace("MP:0000111", "MPalias:0000111").replace("0.9", "0.8")
+    )
+    assert "duplicate_mapping" in codes(plan, "error")
+
+
+@pytest.mark.parametrize(
+    "owner, origin, scan_report_id, user_id, allowed",
+    [
+        (None, "SSSOM_UPLOAD", None, 1, True),
+        (SetOwner(None, 1), "SSSOM_UPLOAD", None, 1, True),
+        (SetOwner(None, 1), "SSSOM_UPLOAD", None, 2, False),
+        (SetOwner(None, None), "SSSOM_UPLOAD", None, None, False),
+        (SetOwner(7, 1), "CARROT_DIRECT_PUBLISH", 7, 2, True),
+        (SetOwner(7, 1), "CARROT_DIRECT_PUBLISH", 8, 1, False),
+        (SetOwner(None, 1), "CARROT_DIRECT_PUBLISH", 7, 1, False),
+    ],
+)
+def test_set_owner_error(owner, origin, scan_report_id, user_id, allowed):
+    error = set_owner_error(
+        owner, origin=origin, scan_report_id=scan_report_id, user_id=user_id
+    )
+    assert (error is None) == allowed
+
+
+def test_set_owner_check_adds_an_error():
+    plan = plan_for(HEADER + COLUMNS + ROW)
+    check_set_owner(plan, None)
+    assert plan.ok
+    check_set_owner(plan, "it was published by another user")
+    assert codes(plan, "error") == ["set_uri_not_owned"]
 
 
 def test_undeclared_prefix_and_non_curie():
