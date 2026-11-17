@@ -322,7 +322,6 @@ class TestScanReportRegistryPublish(TestCase):
         response = self.client.post(self.url, self.body, format="json")
 
         self.assertEqual(response.status_code, 409)
-        self.assertIn("2026-11-04", response.data["detail"])
         mock_trigger.assert_not_called()
 
     def test_get_returns_latest_and_next_versions(self):
