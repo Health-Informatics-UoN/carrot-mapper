@@ -7,7 +7,7 @@ from typing import Any
 from libs.db import pg_hook
 from libs.enums import JobStageType, StageStatusType
 from libs.rules_export.formats import rules_to_csv, rules_to_json_v1, rules_to_json_v2
-from libs.rules_export.sssom import write_sssom_tsv
+from libs.rules_export.sssom import CARROT_MAPPING_SET_NAMESPACE, write_sssom_tsv
 from libs.utils import update_job_status
 
 
@@ -205,6 +205,37 @@ def get_creator(user_id: int) -> tuple[str | None, str | None]:
     return (result[0], result[1]) if result else (None, None)
 
 
+def get_scan_report_set_uri(scan_report_id: int) -> str | None:
+    """
+    The mapping_set_id of a scan report's mappings, as the API's
+    registry.services.scan_report_set_uri gives it: the set_uri of the first
+    version published to this instance's registry if there is one (scan
+    reports published before set_uris used the uuid), else
+    {CARROT_MAPPING_SET_NAMESPACE}{uuid}. None if there is no such scan report.
+    """
+    query = """
+        SELECT COALESCE(
+            (
+                SELECT set_uri FROM registry_mappingset
+                WHERE source_scan_report_id = mapping_scanreport.id
+                ORDER BY created_at
+                LIMIT 1
+            ),
+            %(namespace)s || mapping_scanreport.uuid::text
+        )
+        FROM mapping_scanreport
+        WHERE id = %(scan_report_id)s;
+    """
+    result = pg_hook.get_first(
+        query,
+        parameters={
+            "scan_report_id": scan_report_id,
+            "namespace": CARROT_MAPPING_SET_NAMESPACE,
+        },
+    )
+    return result[0] if result else None
+
+
 def build_rules_sssom(
     scan_report_id: int, user_id: int, mapper_version: str | None = None
 ) -> BytesIO:
@@ -228,6 +259,10 @@ def build_rules_sssom(
             mapper_version=mapper_version,
             creator_username=creator_username,
             creator_orcid=creator_orcid,
+            # So a file exported here and uploaded to a registry elsewhere (e.g.
+            # from a TRE) keeps one identity across versions, without clashing
+            # with another instance's scan report of the same id.
+            set_metadata={"mapping_set_id": get_scan_report_set_uri(scan_report_id)},
         )
         return _to_bytes(sssom_tsv)
     except Exception as e:

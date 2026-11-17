@@ -36,7 +36,7 @@ class WorkerUnavailable(APIException):
 
 
 def scan_report_set_uri(scan_report: ScanReport) -> str:
-    return f"{CARROT_MAPPING_SET_NAMESPACE}scanreport/{scan_report.pk}"
+    return f"{CARROT_MAPPING_SET_NAMESPACE}scanreport/{scan_report.uuid}"
 
 
 def scan_report_has_publishable_mappings(scan_report: ScanReport) -> bool:
@@ -85,6 +85,22 @@ def submit_direct_publish(
         if not scan_report_has_publishable_mappings(scan_report):
             raise ValidationError(
                 {"detail": "This scan report has no concept mappings to publish."}
+            )
+
+        # The first version of a set_uri decides who may add versions to it
+        # (the registry_import DAG checks this again when it loads the file).
+        first_version = (
+            MappingSet.objects.filter(set_uri=set_uri).order_by("created_at").first()
+        )
+        if (
+            first_version is not None
+            and first_version.source_scan_report_id != scan_report.pk
+        ):
+            raise PublishConflict(
+                {
+                    "detail": "This mapping set's identifier is already used by "
+                    "a mapping set that was not published from this scan report."
+                }
             )
 
         if MappingSet.objects.filter(set_uri=set_uri, set_version=set_version).exists():
