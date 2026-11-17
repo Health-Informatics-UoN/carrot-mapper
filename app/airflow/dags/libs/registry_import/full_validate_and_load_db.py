@@ -25,6 +25,7 @@ from libs.registry_import.full_validate_and_load_checks import (
     STAGING_COLUMNS,
     ImportPlan,
 )
+from libs.registry_import.set_versions import set_version_error
 
 
 class LoadError(Exception):
@@ -61,18 +62,14 @@ def load_plan(
             )
 
             cursor.execute(
-                queries.get_conflicting_set_query,
-                {
-                    "set_uri": record.set_uri,
-                    "set_version": record.set_version,
-                    "import_job_id": import_job_id,
-                },
+                queries.get_set_versions_query,
+                {"set_uri": record.set_uri, "import_job_id": import_job_id},
             )
-            if cursor.fetchone():
-                raise LoadError(
-                    f"Mapping set {record.set_uri} version {record.set_version} "
-                    "already exists; publish corrections as a new mapping_set_version"
-                )
+            version_error = set_version_error(
+                record.set_version, [row[0] for row in cursor.fetchall()]
+            )
+            if version_error:
+                raise LoadError(f"Mapping set {record.set_uri}: {version_error[1]}")
 
             cursor.execute(
                 queries.insert_mapping_set_query,

@@ -60,12 +60,11 @@ get_license_iri_query = """
     SELECT license_iri FROM registry_license WHERE id = %(license_id)s
 """
 
-# Another import already holds this set_uri + set_version (sets are immutable;
-# corrections are a new set_version).
-get_conflicting_set_query = """
-    SELECT id::text FROM registry_mappingset
+# Versions of this set_uri from other imports, any status: a new version must
+# be higher than all of them (see set_versions.py).
+get_set_versions_query = """
+    SELECT set_version FROM registry_mappingset
     WHERE set_uri = %(set_uri)s
-        AND set_version = %(set_version)s
         AND import_job_id IS DISTINCT FROM %(import_job_id)s
 """
 
