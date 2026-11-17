@@ -59,7 +59,9 @@ def latest_set_version(scan_report: ScanReport) -> str | None:
     try:
         return latest_semver(versions)
     except NotSemVer as e:
-        logger.exception("Non-SemVer mapping set version encountered while deriving next version.")
+        logger.exception(
+            "Non-SemVer mapping set version encountered while deriving next version."
+        )
         raise PublishConflict(
             {
                 "detail": "This mapping set has a non-SemVer version, so the next version can't be derived."
