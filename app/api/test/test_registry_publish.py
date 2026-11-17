@@ -18,6 +18,7 @@ from mapping.models import (
     ScanReportTable,
 )
 from registry.models import (
+    CARROT_MAPPING_SET_NAMESPACE,
     ImportJob,
     ImportJobStatus,
     License,
@@ -277,11 +278,63 @@ class TestScanReportRegistryPublish(TestCase):
             set_version="1.0",
             title="Existing",
             origin_id=Origin.CARROT_DIRECT_PUBLISH,
+            source_scan_report=self.scan_report,
         )
 
         response = self.client.post(self.url, self.body, format="json")
 
         self.assertEqual(response.status_code, 409)
+        self.assertIn("already exists", str(response.data["detail"]))
+        mock_trigger.assert_not_called()
+
+    def test_set_uri_is_the_scan_reports_uuid(self):
+        other = ScanReport.objects.create(
+            author=self.author, name="Other", dataset="Other"
+        )
+
+        self.assertEqual(
+            scan_report_set_uri(self.scan_report),
+            f"{CARROT_MAPPING_SET_NAMESPACE}{self.scan_report.uuid}",
+        )
+        self.assertNotEqual(
+            scan_report_set_uri(self.scan_report), scan_report_set_uri(other)
+        )
+
+    @patch(TRIGGER, return_value="run")
+    def test_new_version_of_own_set_is_accepted(self, mock_trigger):
+        self._add_rule()
+        MappingSet.objects.create(
+            set_uri=scan_report_set_uri(self.scan_report),
+            set_version="1.0",
+            title="Existing",
+            origin_id=Origin.CARROT_DIRECT_PUBLISH,
+            source_scan_report=self.scan_report,
+        )
+
+        response = self.client.post(
+            self.url, {**self.body, "set_version": "2.0"}, format="json"
+        )
+
+        self.assertEqual(response.status_code, 202)
+
+    @patch(TRIGGER)
+    def test_conflict_when_set_uri_belongs_to_another_publisher(self, mock_trigger):
+        self._add_rule()
+        # e.g. an SSSOM upload that claimed this scan report's set_uri first
+        MappingSet.objects.create(
+            set_uri=scan_report_set_uri(self.scan_report),
+            set_version="0.1",
+            title="Someone else's",
+            origin_id=Origin.SSSOM_UPLOAD,
+            publisher=self.viewer,
+        )
+
+        response = self.client.post(self.url, self.body, format="json")
+
+        self.assertEqual(response.status_code, 409)
+        self.assertIn(
+            "not published from this scan report", str(response.data["detail"])
+        )
         mock_trigger.assert_not_called()
 
     @patch(TRIGGER, return_value="run")
