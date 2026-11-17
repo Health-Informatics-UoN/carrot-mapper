@@ -28,8 +28,10 @@ from libs.registry_import.full_validate_and_load_checks import (
     Vocabulary,
     build_import,
     check_set_owner,
+    check_set_uri_not_reserved,
     check_set_version_is_new,
     set_owner_error,
+    set_uri_uuid,
 )
 from libs.registry_import.full_validate_and_load_db import LoadError, load_plan
 from libs.registry_import.full_validate_and_load_parse import decode, parse_sssom
@@ -48,6 +50,7 @@ def full_validate_and_load(**kwargs) -> None:
     publisher_id = get_job(import_job_id)["submitted_by_id"]
 
     plan = _read_and_check(params, file_key)
+    check_set_uri_not_reserved(plan, params["origin"], _local_scan_report_id(plan))
     check_set_version_is_new(plan, _conflicting_set_id(plan, import_job_id))
     if plan.mapping_set.set_uri:
         check_set_owner(
@@ -134,6 +137,18 @@ def _conflicting_set_id(plan: ImportPlan, import_job_id: str) -> str | None:
             "set_version": record.set_version,
             "import_job_id": import_job_id,
         },
+    )
+    return row[0] if row else None
+
+
+def _local_scan_report_id(plan: ImportPlan) -> int | None:
+    """The scan report on this instance whose set id the file uses, if any."""
+    scan_report_uuid = set_uri_uuid(plan.mapping_set.set_uri)
+    if scan_report_uuid is None:
+        return None
+    row = pg_hook.get_first(
+        queries.get_scan_report_by_uuid_query,
+        parameters={"uuid": scan_report_uuid},
     )
     return row[0] if row else None
 

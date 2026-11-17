@@ -67,6 +67,12 @@ get_license_iri_query = """
     SELECT license_iri FROM registry_license WHERE id = %(license_id)s
 """
 
+# A scan report on this instance, by the UUID its sets' ids end with
+# (full_validate_and_load_checks.set_uri_uuid).
+get_scan_report_by_uuid_query = """
+    SELECT id FROM mapping_scanreport WHERE uuid = %(uuid)s
+"""
+
 # Another import already holds this set_uri + set_version (sets are immutable;
 # corrections are a new set_version).
 get_conflicting_set_query = """

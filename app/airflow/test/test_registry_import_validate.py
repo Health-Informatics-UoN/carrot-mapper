@@ -20,8 +20,10 @@ from libs.registry_import.full_validate_and_load_checks import (
     build_import,
     carrot_term_parts,
     check_set_owner,
+    check_set_uri_not_reserved,
     check_set_version_is_new,
     set_owner_error,
+    set_uri_uuid,
 )
 from libs.registry_import.full_validate_and_load_parse import decode, parse_sssom
 from libs.rules_export.sssom import write_sssom_tsv
@@ -424,6 +426,43 @@ def test_set_owner_check_adds_an_error():
     assert plan.ok
     check_set_owner(plan, "it was published by another user")
     assert codes(plan, "error") == ["set_uri_not_owned"]
+
+
+SR_UUID = "0b9f6c1e-3a4d-4c55-9a51-2f6d8e7b1c20"
+
+
+@pytest.mark.parametrize(
+    "set_uri, expected",
+    [
+        (f"https://carrot.ac.uk/registry/mapping-sets/{SR_UUID}", SR_UUID),
+        (f"https://carrot.ac.uk/registry/mapping-sets/{SR_UUID.upper()}/", SR_UUID),
+        ("https://carrot.ac.uk/registry/mapping-sets/7", None),
+        ("https://example.org/sets/hp-mp", None),
+        ("", None),
+    ],
+)
+def test_set_uri_uuid(set_uri, expected):
+    assert set_uri_uuid(set_uri) == expected
+
+
+@pytest.mark.parametrize(
+    "origin, local_scan_report_id, allowed",
+    [
+        # a scan report on this instance: direct publish only
+        ("SSSOM_UPLOAD", 7, False),
+        ("CARROT_DIRECT_PUBLISH", 7, True),
+        # another instance's scan report (a TRE's export), or not Carrot's
+        ("SSSOM_UPLOAD", None, True),
+    ],
+)
+def test_local_scan_report_sets_are_reserved_for_direct_publish(
+    origin, local_scan_report_id, allowed
+):
+    plan = plan_for(HEADER + COLUMNS + ROW)
+    check_set_uri_not_reserved(plan, origin, local_scan_report_id)
+    assert plan.ok == allowed
+    if not allowed:
+        assert codes(plan, "error") == ["set_uri_reserved"]
 
 
 def test_undeclared_prefix_and_non_curie():

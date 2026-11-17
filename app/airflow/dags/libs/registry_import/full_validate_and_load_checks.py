@@ -33,6 +33,7 @@ from __future__ import annotations
 
 import json
 import re
+import uuid
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from datetime import date, datetime
@@ -868,6 +869,42 @@ def check_set_owner(plan: ImportPlan, error: str | None) -> None:
         "set_uri_not_owned",
         f"Mapping set {plan.mapping_set.set_uri} already exists and {error}; "
         "only its publisher can add versions. Use another mapping_set_id",
+        column="mapping_set_id",
+    )
+
+
+def set_uri_uuid(set_uri: str) -> str | None:
+    """
+    The UUID a set_uri ends with, if any. Carrot gives a scan report's sets the
+    id {namespace}{ScanReport.uuid} (the API's scan_report_set_uri), the same
+    namespace on every Carrot instance, so the UUID is what tells them apart.
+    """
+    last = set_uri.rstrip("/").rsplit("/", 1)[-1]
+    try:
+        return str(uuid.UUID(last))
+    except ValueError:
+        return None
+
+
+def check_set_uri_not_reserved(
+    plan: ImportPlan, origin: str, local_scan_report_id: int | None
+) -> None:
+    """
+    An error if an upload uses the set id of a scan report on this instance
+    (``local_scan_report_id``, looked up by the caller from set_uri_uuid).
+
+    Those sets come in by direct publish, which checks the scan report's
+    permissions; an upload of one (say from its SSSOM export) would own the set
+    and block the scan report's own publishes. Sets of scan reports on other
+    Carrot instances (a TRE's export) may still be uploaded.
+    """
+    if origin == CARROT_DIRECT_PUBLISH or local_scan_report_id is None:
+        return
+    plan.issues.error(
+        "set_uri_reserved",
+        f"Mapping set {plan.mapping_set.set_uri} belongs to a scan report on "
+        "this Carrot instance; publish it from the scan report instead of "
+        "uploading it",
         column="mapping_set_id",
     )
 
