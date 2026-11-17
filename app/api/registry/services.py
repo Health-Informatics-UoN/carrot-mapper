@@ -36,7 +36,7 @@ class WorkerUnavailable(APIException):
 
 
 def scan_report_set_uri(scan_report: ScanReport) -> str:
-    return f"{CARROT_MAPPING_SET_NAMESPACE}scanreport/{scan_report.uuid}"
+    return f"{CARROT_MAPPING_SET_NAMESPACE}{scan_report.uuid}"
 
 
 def scan_report_has_publishable_mappings(scan_report: ScanReport) -> bool:
