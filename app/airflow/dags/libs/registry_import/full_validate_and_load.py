@@ -23,14 +23,17 @@ from libs.registry_import import queries
 from libs.registry_import.full_validate_and_load_checks import (
     ImportPlan,
     IssueLog,
+    SetOwner,
     SetRecord,
     Vocabulary,
     build_import,
+    check_set_owner,
     check_set_version_is_new,
+    set_owner_error,
 )
 from libs.registry_import.full_validate_and_load_db import LoadError, load_plan
 from libs.registry_import.full_validate_and_load_parse import decode, parse_sssom
-from libs.registry_import.helpers import file_overrides, job_file_key
+from libs.registry_import.helpers import file_overrides, get_job, job_file_key
 from libs.settings import REGISTRY_IMPORT_MAX_ISSUES, REGISTRY_SSSOM_CONTAINER
 from libs.storage_services import download_blob_to_tmp
 from libs.utils import pull_validated_params
@@ -40,9 +43,22 @@ def full_validate_and_load(**kwargs) -> None:
     params = pull_validated_params(kwargs, "validate_params_registry_import")
     import_job_id = params["import_job_id"]
     file_key = job_file_key(import_job_id)
+    # The ImportJob's submitter, not the run conf's user_id: it's who the API
+    # authenticated.
+    publisher_id = get_job(import_job_id)["submitted_by_id"]
 
     plan = _read_and_check(params, file_key)
     check_set_version_is_new(plan, _conflicting_set_id(plan, import_job_id))
+    if plan.mapping_set.set_uri:
+        check_set_owner(
+            plan,
+            set_owner_error(
+                _first_version(plan, import_job_id),
+                origin=params["origin"],
+                scan_report_id=params["scan_report_id"],
+                user_id=publisher_id,
+            ),
+        )
     pg_hook.run(
         queries.set_import_job_issues_query,
         parameters={
@@ -78,6 +94,7 @@ def _read_and_check(params: dict[str, Any], file_key: str) -> ImportPlan:
         justifications={
             r[0] for r in pg_hook.get_records(queries.get_justifications_query)
         },
+        prefixes=dict(pg_hook.get_records(queries.get_prefixes_query)),
     )
 
     local_path: Path = download_blob_to_tmp(REGISTRY_SSSOM_CONTAINER, file_key)
@@ -119,3 +136,15 @@ def _conflicting_set_id(plan: ImportPlan, import_job_id: str) -> str | None:
         },
     )
     return row[0] if row else None
+
+
+def _first_version(plan: ImportPlan, import_job_id: str) -> SetOwner | None:
+    """The first version of the file's set_uri from another import, if any."""
+    row = pg_hook.get_first(
+        queries.get_set_first_version_query,
+        parameters={
+            "set_uri": plan.mapping_set.set_uri,
+            "import_job_id": import_job_id,
+        },
+    )
+    return SetOwner(*row) if row else None

@@ -8,17 +8,25 @@ Checks, each reported as an Issue (see parse.Issue):
 
 - metadata: the official SSSOM 1.0 JSON schema (vendored in libs/sssom_spec),
   plus what the registry needs: mapping_set_id, mapping_set_version, license;
-- prefixes: built-in prefixes not redefined; registry prefixes (carrot, OMOP...)
-  not bound to another namespace; every CURIE's prefix declared;
+- prefixes: built-in prefixes not redefined; reserved prefixes (carrot, OMOP...)
+  not bound to another namespace; every CURIE's prefix declared, and not a name
+  the registry already uses for another namespace;
 - header: the columns the registry needs, no duplicates;
 - every row: the JSON schema, CURIEs, known predicate and justification (the
   vocabularies are curated, so unknown ones are errors), value lengths that fit
   the registry columns, and no repeated assertion (subject, predicate,
   modifier, object, justification), which the database would also reject.
 
-CURIEs are stored in a canonical form: when a file binds the namespace of one
-of the registry's prefixes to another name (say ``athena:`` for OMOP's), its
-CURIEs are rewritten to the registry's prefix, so the same concept is one Term.
+CURIEs are stored in a canonical form, with the registry's prefix names
+(registry_prefix): each name stands for one namespace and each namespace has one
+name. When a file binds a known namespace to another name (say ``athena:`` for
+OMOP's), its CURIEs are rewritten to the registry's name, so the same concept is
+one Term. A namespace the registry hasn't seen keeps the file's name, which the
+load registers; a name the registry already uses for another namespace is an
+error, as it would make one CURIE mean two things.
+
+Whether the set may be added to (check_set_version_is_new, check_set_owner)
+depends on the registry's other sets, which the caller looks up.
 """
 
 from __future__ import annotations
@@ -56,6 +64,8 @@ SPEC_DIR = Path(__file__).resolve().parent.parent / "sssom_spec"
 
 DRAFT = "DRAFT"
 PUBLISHED = "PUBLISHED"
+# registry_origin ids (helpers.py has them too, but imports this module)
+CARROT_DIRECT_PUBLISH = "CARROT_DIRECT_PUBLISH"
 
 # spec-intro.md, "IRI prefixes": built-in prefixes, which MUST NOT be redefined.
 BUILTIN_PREFIXES = {
@@ -69,9 +79,11 @@ BUILTIN_PREFIXES = {
     "linkml": "https://w3id.org/linkml/",
 }
 
-# The registry's own prefix names. A file may bind these namespaces to other
-# names (CURIEs are rewritten to these), but may not bind these names to other
-# namespaces, or e.g. "carrot:x" would mean two different things.
+# The registry's reserved prefix names (also seeded in registry_prefix). A file
+# may bind these namespaces to other names (CURIEs are rewritten to these), but
+# may not bind these names to other namespaces, or e.g. "carrot:x" would mean
+# two different things: the whole file is rejected. Other registered names are
+# checked per CURIE (see _Curies).
 REGISTRY_PREFIXES = {
     **BUILTIN_PREFIXES,
     SUBJECT_PREFIX: SUBJECT_IRI,
@@ -80,7 +92,6 @@ REGISTRY_PREFIXES = {
     # used by the seeded predicate oboInOwl:hasDbXref
     "oboInOwl": "http://www.geneontology.org/formats/oboInOwl#",
 }
-_REGISTRY_PREFIX_BY_NAMESPACE = {ns: p for p, ns in REGISTRY_PREFIXES.items()}
 
 NCNAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_.\-]*$")
 CURIE = re.compile(r"^(?P<prefix>[A-Za-z_][A-Za-z0-9_.\-]*):(?P<local>.*)$")
@@ -291,6 +302,8 @@ class Vocabulary:
 
     predicates: set[str]
     justifications: set[str]
+    # registry_prefix: prefix name -> namespace
+    prefixes: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass
@@ -360,6 +373,9 @@ class ImportPlan:
     rows: list[tuple]
     issues: IssueLog
     status: str = PUBLISHED
+    # The canonical prefixes the rows' terms use (name -> namespace), which the
+    # load registers in registry_prefix.
+    prefixes: dict[str, str] = field(default_factory=dict)
 
     @property
     def ok(self) -> bool:
@@ -481,26 +497,58 @@ def carrot_term_parts(local: str) -> tuple[str, str, str]:
 
 
 class _Curies:
-    """Checks CURIEs against a file's prefixes and writes them canonically."""
+    """
+    Checks CURIEs against a file's prefixes and writes them canonically, with
+    the registry's name for each namespace (``registered``: name -> namespace,
+    the reserved prefixes and registry_prefix).
+    """
 
-    def __init__(self, curie_map: Mapping[str, str]):
+    def __init__(self, curie_map: Mapping[str, str], registered: Mapping[str, str]):
         self.prefixes = {**BUILTIN_PREFIXES, **curie_map}
-        self.canonical_prefix = {
-            p: _REGISTRY_PREFIX_BY_NAMESPACE.get(ns, p)
-            for p, ns in self.prefixes.items()
-        }
+        name_of = {ns: p for p, ns in registered.items()}
+        # file prefix -> canonical prefix, and canonical prefix -> namespace
+        self.canonical_prefix: dict[str, str] = {}
+        self.namespaces: dict[str, str] = {}
+        # file prefix -> why its CURIEs can't be stored
+        self.conflicts: dict[str, str] = {}
+        for prefix, namespace in self.prefixes.items():
+            if namespace in name_of:
+                canonical = name_of[namespace]
+            elif prefix in registered:
+                self.conflicts[prefix] = (
+                    f"prefix {prefix!r} is already used in the registry for "
+                    f"{registered[prefix]!r}, but this file binds it to "
+                    f"{namespace!r}; give that namespace another prefix name"
+                )
+                continue
+            else:
+                # New to the registry: the file's first name for it
+                canonical = prefix
+                name_of[namespace] = prefix
+            self.canonical_prefix[prefix] = canonical
+            self.namespaces[canonical] = namespace
 
     def resolve(self, value: str) -> tuple[str | None, str, str]:
         """
-        (canonical CURIE, its prefix, its local part), or (None, reason, "")
-        when ``value`` isn't a CURIE with a declared prefix.
+        (canonical CURIE, its prefix, its local part), or (None, reason, issue
+        code) when ``value`` can't be stored as a CURIE.
         """
         m = CURIE.match(value)
         if not m or m["local"].startswith("//"):
-            return None, f"{value!r} is not a CURIE (prefix:local_id)", ""
+            return (
+                None,
+                f"{value!r} is not a CURIE (prefix:local_id)",
+                "invalid_curie",
+            )
         prefix = m["prefix"]
+        if prefix in self.conflicts:
+            return None, f"{value!r}: {self.conflicts[prefix]}", "prefix_conflict"
         if prefix not in self.prefixes:
-            return None, f"prefix {prefix!r} of {value!r} is not in the curie_map", ""
+            return (
+                None,
+                f"prefix {prefix!r} of {value!r} is not in the curie_map",
+                "undeclared_prefix",
+            )
         canonical = self.canonical_prefix[prefix]
         return f"{canonical}:{m['local']}", canonical, m["local"]
 
@@ -515,6 +563,7 @@ def _check_set(
     override_slots: dict[str, str],
     spec: Spec,
     license_id: str | None,
+    registered_prefixes: Mapping[str, str],
     log: IssueLog,
 ) -> tuple[SetRecord, dict[str, Any], set[str], _Curies] | None:
     """
@@ -610,7 +659,7 @@ def _check_set(
             usable = False
     if not usable:
         return None
-    curies = _Curies(curie_map)
+    curies = _Curies(curie_map, {**registered_prefixes, **REGISTRY_PREFIXES})
 
     # The official JSON schema, for the set-level slots
     document = {
@@ -637,9 +686,9 @@ def _check_set(
     for slot in spec.entity_reference_slots & set(metadata):
         values = metadata[slot]
         for value in values if isinstance(values, list) else [values]:
-            resolved, reason, _ = curies.resolve(str(value))
+            resolved, reason, code = curies.resolve(str(value))
             if resolved is None:
-                log.error("invalid_curie", f"Metadata {slot}: {reason}", column=slot)
+                log.error(code, f"Metadata {slot}: {reason}", column=slot)
 
     # The set's columns
     record = SetRecord(curie_map=dict(curie_map))
@@ -776,6 +825,53 @@ def check_set_version_is_new(plan: ImportPlan, conflicting_set_id: str | None) -
     )
 
 
+@dataclass(frozen=True)
+class SetOwner:
+    """Who published the first version of a set_uri (looked up by the caller)."""
+
+    source_scan_report_id: int | None
+    publisher_id: int | None
+
+
+def set_owner_error(
+    owner: SetOwner | None,
+    *,
+    origin: str,
+    scan_report_id: int | None,
+    user_id: int | None,
+) -> str | None:
+    """
+    Why this import may not add a version to its set_uri, or None if it may.
+
+    The first version of a set_uri decides: versions published from a scan
+    report may only be followed by versions from the same scan report (whose
+    permissions the API checks), and an upload only by the same user's.
+    """
+    if owner is None:
+        return None
+    if origin == CARROT_DIRECT_PUBLISH:
+        if owner.source_scan_report_id is not None and (
+            owner.source_scan_report_id == scan_report_id
+        ):
+            return None
+        return "it was not published from this scan report"
+    if owner.publisher_id is not None and owner.publisher_id == user_id:
+        return None
+    return "it was published by another user"
+
+
+def check_set_owner(plan: ImportPlan, error: str | None) -> None:
+    """An error if ``error`` (from set_owner_error) says the set_uri isn't ours."""
+    if error is None:
+        return
+    plan.issues.error(
+        "set_uri_not_owned",
+        f"Mapping set {plan.mapping_set.set_uri} already exists and {error}; "
+        "only its publisher can add versions. Use another mapping_set_id",
+        column="mapping_set_id",
+    )
+
+
 def build_import(
     parsed: ParsedSSSOM,
     vocab: Vocabulary,
@@ -797,7 +893,7 @@ def build_import(
     if not parsed.header:
         return plan
 
-    checked = _check_set(parsed, override_slots, spec, license_id, log)
+    checked = _check_set(parsed, override_slots, spec, license_id, vocab.prefixes, log)
     if checked is None:
         return plan
     plan.mapping_set, propagated, ext_slots, curies = checked
@@ -840,6 +936,8 @@ def build_import(
             continue
         seen[key] = line
         plan.rows.append(row)
+        for prefix in (row[5], row[15]):
+            plan.prefixes[prefix] = curies.namespaces[prefix]
 
     if not parsed.rows:
         log.error("no_mappings", "File contains no mappings")
@@ -916,9 +1014,8 @@ def _check_row(
         values = typed[column] if isinstance(typed[column], list) else [typed[column]]
         canonical = []
         for value in values:
-            resolved, reason, _ = curies.resolve(value)
+            resolved, reason, code = curies.resolve(value)
             if resolved is None:
-                code = "undeclared_prefix" if "curie_map" in reason else "invalid_curie"
                 log.error(code, reason, line, column)
             canonical.append(resolved)
         if log.errors == errors_before:
