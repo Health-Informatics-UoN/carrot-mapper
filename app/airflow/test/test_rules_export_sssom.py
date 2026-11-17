@@ -399,10 +399,13 @@ def test_plain_export_carries_the_scan_reports_set_id(mocker):
     set_uri = "https://carrot.ac.uk/registry/mapping-sets/0b6c7f0e-5d4b-4c1e-9f57-0c4e2e7b8a11"
     mocker.patch.object(file_services, "fetch_sssom_rules", return_value=FEMALE)
     mocker.patch.object(file_services, "get_creator", return_value=("jane", None))
-    mocker.patch.object(file_services, "get_scan_report_set_uri", return_value=set_uri)
 
-    tsv = file_services.build_rules_sssom(1, 2).getvalue().decode("utf-8")
-
-    meta, _ = parse(tsv)
+    tsv = file_services.build_rules_sssom(1, 2, mapping_set_id=set_uri)
+    meta, _ = parse(tsv.getvalue().decode("utf-8"))
     assert meta["mapping_set_id"] == set_uri
     assert "license" not in meta
+
+    # Without one (e.g. a run triggered by an older API), it is left out
+    tsv = file_services.build_rules_sssom(1, 2)
+    meta, _ = parse(tsv.getvalue().decode("utf-8"))
+    assert "mapping_set_id" not in meta

@@ -8,6 +8,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema
 from jobs.models import Job, JobStage, StageStatus
 from mapping.models import ScanReport
+from registry.services import scan_report_set_uri
 from rest_framework.filters import OrderingFilter
 from rest_framework.generics import GenericAPIView
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
@@ -159,6 +160,9 @@ class FileDownloadView(GenericAPIView, ListModelMixin, RetrieveModelMixin):
                 "json_version": json_version,
                 # recorded as mapping_tool_version in SSSOM exports
                 "mapper_version": version("api"),
+                # the SSSOM export's mapping_set_id, the same set_uri a registry
+                # publish of this scan report uses
+                "mapping_set_id": scan_report_set_uri(scan_report),
             }
 
             file_type_description = {

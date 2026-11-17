@@ -1,13 +1,13 @@
 import logging
 from contextlib import closing
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 from io import BytesIO
 from typing import Any
 
 from libs.db import pg_hook
 from libs.enums import JobStageType, StageStatusType
 from libs.rules_export.formats import rules_to_csv, rules_to_json_v1, rules_to_json_v2
-from libs.rules_export.sssom import CARROT_MAPPING_SET_NAMESPACE, write_sssom_tsv
+from libs.rules_export.sssom import write_sssom_tsv
 from libs.utils import update_job_status
 
 
@@ -61,12 +61,12 @@ def build_rules_csv(scan_report_id: int) -> BytesIO:
         # Validity of each concept is checked against today's date
         return _to_bytes(rules_to_csv(rules, today=date.today()))
     except Exception as e:
-        logging.error(f"Error building rules CSV: {str(e)}")
+        logging.error(f"Error building rules CSV: {e!s}")
         update_job_status(
             scan_report=scan_report_id,
             stage=JobStageType.DOWNLOAD_RULES,
             status=StageStatusType.FAILED,
-            details=f"Error building rules CSV for scan report {scan_report_id}: {str(e)}",
+            details=f"Error building rules CSV for scan report {scan_report_id}: {e!s}",
         )
         raise e
 
@@ -84,7 +84,7 @@ def build_rules_json(scan_report_name: str, scan_report_id: int) -> BytesIO:
     """
     try:
         metadata = {
-            "date_created": datetime.now(timezone.utc).isoformat(),
+            "date_created": datetime.now(UTC).isoformat(),
             "dataset": scan_report_name,
         }
         rules = _fetch_rows(
@@ -93,12 +93,12 @@ def build_rules_json(scan_report_name: str, scan_report_id: int) -> BytesIO:
         )
         return _to_bytes(rules_to_json_v1(rules, metadata))
     except Exception as e:
-        logging.error(f"Error building rules JSON: {str(e)}")
+        logging.error(f"Error building rules JSON: {e!s}")
         update_job_status(
             scan_report=scan_report_id,
             stage=JobStageType.DOWNLOAD_RULES,
             status=StageStatusType.FAILED,
-            details=f"Error building rules JSON for scan report {scan_report_id}: {str(e)}",
+            details=f"Error building rules JSON for scan report {scan_report_id}: {e!s}",
         )
         raise e
 
@@ -116,7 +116,7 @@ def build_rules_json_v2(scan_report_name: str, scan_report_id: int) -> BytesIO:
     """
     try:
         metadata = {
-            "date_created": datetime.now(timezone.utc).isoformat(),
+            "date_created": datetime.now(UTC).isoformat(),
             "dataset": scan_report_name,
         }
         rules = _fetch_rows(
@@ -125,12 +125,12 @@ def build_rules_json_v2(scan_report_name: str, scan_report_id: int) -> BytesIO:
         )
         return _to_bytes(rules_to_json_v2(rules, metadata))
     except Exception as e:
-        logging.error(f"Error building rules JSON v2: {str(e)}")
+        logging.error(f"Error building rules JSON v2: {e!s}")
         update_job_status(
             scan_report=scan_report_id,
             stage=JobStageType.DOWNLOAD_RULES,
             status=StageStatusType.FAILED,
-            details=f"Error building rules JSON v2 for scan report {scan_report_id}: {str(e)}",
+            details=f"Error building rules JSON v2 for scan report {scan_report_id}: {e!s}",
         )
         raise e
 
@@ -205,39 +205,11 @@ def get_creator(user_id: int) -> tuple[str | None, str | None]:
     return (result[0], result[1]) if result else (None, None)
 
 
-def get_scan_report_set_uri(scan_report_id: int) -> str | None:
-    """
-    The mapping_set_id of a scan report's mappings, as the API's
-    registry.services.scan_report_set_uri gives it: the set_uri of the first
-    version published to this instance's registry if there is one (scan
-    reports published before set_uris used the uuid), else
-    {CARROT_MAPPING_SET_NAMESPACE}{uuid}. None if there is no such scan report.
-    """
-    query = """
-        SELECT COALESCE(
-            (
-                SELECT set_uri FROM registry_mappingset
-                WHERE source_scan_report_id = mapping_scanreport.id
-                ORDER BY created_at
-                LIMIT 1
-            ),
-            %(namespace)s || mapping_scanreport.uuid::text
-        )
-        FROM mapping_scanreport
-        WHERE id = %(scan_report_id)s;
-    """
-    result = pg_hook.get_first(
-        query,
-        parameters={
-            "scan_report_id": scan_report_id,
-            "namespace": CARROT_MAPPING_SET_NAMESPACE,
-        },
-    )
-    return result[0] if result else None
-
-
 def build_rules_sssom(
-    scan_report_id: int, user_id: int, mapper_version: str | None = None
+    scan_report_id: int,
+    user_id: int,
+    mapper_version: str | None = None,
+    mapping_set_id: str | None = None,
 ) -> BytesIO:
     """
     Builds the rules as an SSSOM TSV file (see libs/rules_export/sssom.py).
@@ -246,6 +218,8 @@ def build_rules_sssom(
         - scan_report_id: int, the id of the scan report
         - user_id: int, the id of the user exporting the file (the file's creator)
         - mapper_version: str, the exporting Carrot-Mapper version, if known
+        - mapping_set_id: str, the scan report's set_uri, sent by the API
+          (registry.services.scan_report_set_uri); left out if not given
 
     Returns:
         - BytesIO, the rules in SSSOM TSV format
@@ -255,22 +229,22 @@ def build_rules_sssom(
         creator_username, creator_orcid = get_creator(user_id)
         sssom_tsv = write_sssom_tsv(
             rules,
-            created=datetime.now(timezone.utc),
+            created=datetime.now(UTC),
             mapper_version=mapper_version,
             creator_username=creator_username,
             creator_orcid=creator_orcid,
             # So a file exported here and uploaded to a registry elsewhere (e.g.
             # from a TRE) keeps one identity across versions, without clashing
             # with another instance's scan report of the same id.
-            set_metadata={"mapping_set_id": get_scan_report_set_uri(scan_report_id)},
+            set_metadata={"mapping_set_id": mapping_set_id},
         )
         return _to_bytes(sssom_tsv)
     except Exception as e:
-        logging.error(f"Error building rules SSSOM: {str(e)}")
+        logging.error(f"Error building rules SSSOM: {e!s}")
         update_job_status(
             scan_report=scan_report_id,
             stage=JobStageType.DOWNLOAD_RULES,
             status=StageStatusType.FAILED,
-            details=f"Error building rules SSSOM for scan report {scan_report_id}: {str(e)}",
+            details=f"Error building rules SSSOM for scan report {scan_report_id}: {e!s}",
         )
         raise e

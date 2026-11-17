@@ -16,6 +16,7 @@ from mapping.models import (
     ScanReportField,
     ScanReportTable,
 )
+from registry.services import scan_report_set_uri
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIClient
 
@@ -113,3 +114,7 @@ class TestFileDownloadViewPersonValidation(TestCase):
 
         self.assertEqual(response.status_code, 202)
         mock_trigger.assert_called_once()
+        self.assertEqual(
+            mock_trigger.call_args.args[0]["mapping_set_id"],
+            scan_report_set_uri(self.scan_report),
+        )

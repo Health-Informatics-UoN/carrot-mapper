@@ -35,8 +35,6 @@ from libs.registry_import import (
 from libs.registry_import.full_validate_and_load_checks import Vocabulary, build_import
 from libs.registry_import.full_validate_and_load_db import LoadError, load_plan
 from libs.registry_import.full_validate_and_load_parse import parse_sssom
-from libs.rules_export.file_services import get_scan_report_set_uri
-from libs.rules_export.sssom import CARROT_MAPPING_SET_NAMESPACE
 
 DATABASE_URL = os.getenv("REGISTRY_IMPORT_TEST_DATABASE_URL")
 pytestmark = pytest.mark.skipif(
@@ -597,27 +595,6 @@ def test_direct_publish_cannot_add_to_another_scan_reports_set(conn, cleanup, us
         file_key="c",
         scan_report_id=first_sr,
     )
-
-
-def test_scan_report_set_uri_uses_its_uuid_or_earlier_set(conn, cleanup, user):
-    sr = bare_scan_report(conn, cleanup)
-    [(sr_uuid,)] = fetch(
-        conn, "SELECT uuid::text FROM mapping_scanreport WHERE id = %s", sr
-    )
-    assert get_scan_report_set_uri(sr) == f"{CARROT_MAPPING_SET_NAMESPACE}{sr_uuid}"
-
-    subject, obj = unique_prefixes(cleanup)
-    legacy = f"https://carrot.ac.uk/registry/mapping-sets/scanreport/{sr}"
-    load_plan(
-        conn,
-        plan_for(conn, sssom(subject, obj, set_uri=legacy)),
-        import_job_id=make_job(conn, cleanup, user, origin="CARROT_DIRECT_PUBLISH"),
-        origin="CARROT_DIRECT_PUBLISH",
-        file_key="a",
-        scan_report_id=sr,
-    )
-    assert get_scan_report_set_uri(sr) == legacy
-    assert get_scan_report_set_uri(-1) is None
 
 
 # ---------------------------------------------------------------------------
