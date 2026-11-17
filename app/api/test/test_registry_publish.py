@@ -162,7 +162,7 @@ class TestScanReportRegistryPublish(TestCase):
         self.body = {
             "title": "Gender mappings",
             "include_author_orcid_ids": True,
-            "set_version": "1.0",
+            "release_type": "minor",
             "license": "CC-BY-4.0",
             "description": "Mappings from the test scan report.",
         }
@@ -186,6 +186,7 @@ class TestScanReportRegistryPublish(TestCase):
         self.assertEqual(response.status_code, 202)
         job = ImportJob.objects.get(pk=response.data["import_job_id"])
         self.assertEqual(response.data["status"], ImportJobStatus.PENDING)
+        self.assertEqual(response.data["set_version"], "1.0.0")
         self.assertEqual(job.origin_id, Origin.CARROT_DIRECT_PUBLISH)
         self.assertEqual(job.submitted_by, self.author)
         self.assertEqual(job.dag_run_id, "manual__run-1")
@@ -199,7 +200,7 @@ class TestScanReportRegistryPublish(TestCase):
             conf["overrides"],
             {
                 "set_uri": scan_report_set_uri(self.scan_report),
-                "set_version": "1.0",
+                "set_version": "1.0.0",
                 "title": "Gender mappings",
                 "include_author_orcid_ids": True,
                 "description": "Mappings from the test scan report.",
@@ -221,11 +222,7 @@ class TestScanReportRegistryPublish(TestCase):
             with self.subTest(enabled=enabled):
                 response = self.client.post(
                     self.url,
-                    {
-                        **self.body,
-                        "set_version": str(enabled),
-                        "include_author_orcid_ids": enabled,
-                    },
+                    {**self.body, "include_author_orcid_ids": enabled},
                     format="json",
                 )
                 self.assertEqual(response.status_code, 202)
@@ -235,6 +232,7 @@ class TestScanReportRegistryPublish(TestCase):
                     ],
                     enabled,
                 )
+                ImportJob.objects.update(status=ImportJobStatus.FAILED)
 
     @patch(TRIGGER)
     def test_viewer_cannot_publish(self, mock_trigger):
@@ -269,20 +267,87 @@ class TestScanReportRegistryPublish(TestCase):
         self.assertIn("license", response.data)
         mock_trigger.assert_not_called()
 
-    @patch(TRIGGER)
-    def test_conflict_when_version_already_exists(self, mock_trigger):
-        self._add_rule()
+    def _add_version(self, version, status=Status.PUBLISHED):
         MappingSet.objects.create(
             set_uri=scan_report_set_uri(self.scan_report),
-            set_version="1.0",
+            set_version=version,
             title="Existing",
             origin_id=Origin.CARROT_DIRECT_PUBLISH,
+            status_id=status,
         )
+
+    @patch(TRIGGER, return_value="run")
+    def test_version_is_bumped_from_the_highest_existing_one(self, mock_trigger):
+        self._add_rule()
+        # Withdrawn and draft versions still hold their numbers, and versions
+        # compare numerically (1.10.0 > 1.9.0), not by creation order.
+        self._add_version("1.10.0", Status.WITHDRAWN)
+        self._add_version("1.9.0")
+        self._add_version("1.2.3", Status.DRAFT)
+
+        for release_type, expected in (
+            ("major", "2.0.0"),
+            ("minor", "1.11.0"),
+            ("patch", "1.10.1"),
+        ):
+            with self.subTest(release_type=release_type):
+                response = self.client.post(
+                    self.url, {**self.body, "release_type": release_type}, format="json"
+                )
+                self.assertEqual(response.status_code, 202)
+                self.assertEqual(response.data["set_version"], expected)
+                self.assertEqual(
+                    mock_trigger.call_args.args[0]["overrides"]["set_version"],
+                    expected,
+                )
+                ImportJob.objects.update(status=ImportJobStatus.FAILED)
+
+    @patch(TRIGGER)
+    def test_rejected_with_unknown_release_type(self, mock_trigger):
+        self._add_rule()
+
+        response = self.client.post(
+            self.url, {**self.body, "release_type": "1.0.0"}, format="json"
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("release_type", response.data)
+        mock_trigger.assert_not_called()
+
+    @patch(TRIGGER)
+    def test_conflict_when_an_existing_version_is_not_semver(self, mock_trigger):
+        self._add_rule()
+        self._add_version("2026-11-04")
 
         response = self.client.post(self.url, self.body, format="json")
 
         self.assertEqual(response.status_code, 409)
+        self.assertIn("2026-11-04", response.data["detail"])
         mock_trigger.assert_not_called()
+
+    def test_get_returns_latest_and_next_versions(self):
+        self.client.force_authenticate(self.viewer)
+
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.data,
+            {
+                "latest_version": None,
+                "next_versions": {"major": "1.0.0", "minor": "1.0.0", "patch": "1.0.0"},
+            },
+        )
+
+        self._add_version("0.9.0")
+        self._add_version("1.4.2", Status.WITHDRAWN)
+        response = self.client.get(self.url)
+        self.assertEqual(
+            response.data,
+            {
+                "latest_version": "1.4.2",
+                "next_versions": {"major": "2.0.0", "minor": "1.5.0", "patch": "1.4.3"},
+            },
+        )
 
     @patch(TRIGGER, return_value="run")
     def test_identical_in_flight_publish_returns_existing_job(self, mock_trigger):
@@ -297,16 +362,21 @@ class TestScanReportRegistryPublish(TestCase):
         mock_trigger.assert_called_once()
 
     @patch(TRIGGER, return_value="run")
-    def test_different_in_flight_publish_of_same_version_conflicts(self, mock_trigger):
+    def test_different_in_flight_publish_conflicts(self, mock_trigger):
         self._add_rule()
+        self._add_version("1.0.0")
 
         first = self.client.post(self.url, self.body, format="json")
-        second = self.client.post(
-            self.url, {**self.body, "title": "Another title"}, format="json"
-        )
-
-        self.assertEqual(second.status_code, 409)
-        self.assertEqual(second.data["import_job_id"], str(first.data["import_job_id"]))
+        for change in ({"title": "Another title"}, {"release_type": "major"}):
+            with self.subTest(change=change):
+                second = self.client.post(
+                    self.url, {**self.body, **change}, format="json"
+                )
+                self.assertEqual(second.status_code, 409)
+                self.assertEqual(
+                    second.data["import_job_id"], str(first.data["import_job_id"])
+                )
+                self.assertIn("'1.1.0'", second.data["detail"])
         mock_trigger.assert_called_once()
 
     @patch(TRIGGER, side_effect=RuntimeError("airflow down"))
