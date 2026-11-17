@@ -32,16 +32,10 @@ import yaml
 
 MAPPING_TOOL = "carrot-mapper"
 
-# SUBJECT_PREFIX, SUBJECT_IRI and CARROT_MAPPING_SET_NAMESPACE are also defined in
-# the API (api/registry/models.py), which the DAGs can't import: keep both the same.
-
 # carrot:<field>[/<value>] subjects. The same namespace on every Carrot instance, so
 # the same term has the same IRI everywhere.
 SUBJECT_PREFIX = "carrot"
 SUBJECT_IRI = "https://carrot.ac.uk/registry/terms/"
-# mapping_set_id of a scan report's mappings: {namespace}{mapping_scanreport.uuid}.
-# The uuid, unlike the scan report's id, is unique across Carrot instances.
-CARROT_MAPPING_SET_NAMESPACE = "https://carrot.ac.uk/registry/mapping-sets/"
 # OMOP:<concept_id> objects. Expands to the concept's page in Athena, OHDSI's
 # vocabulary browser, e.g. OMOP:8532 -> https://athena.ohdsi.org/search-terms/terms/8532
 OMOP_CONCEPT_PREFIX = "OMOP"

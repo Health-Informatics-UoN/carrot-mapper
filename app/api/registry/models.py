@@ -286,19 +286,11 @@ class TermLevel(models.TextChoices):
     VALUE = "VALUE", "Value"
 
 
-# These three are also defined in the Airflow DAGs
-# (airflow/dags/libs/rules_export/sssom.py), which can't import this module:
-# keep both copies the same.
-#
-# CURIE prefix for Carrot subject terms. Must be declared in each
-# MappingSet.curie_map as {SUBJECT_PREFIX: SUBJECT_IRI}. It is the same on
-# every Carrot instance on purpose, so a field/value is one term everywhere.
-# The namespace does not need to resolve; it is an identifier only.
-SUBJECT_PREFIX = "carrot"
-SUBJECT_IRI = "https://carrot.ac.uk/registry/terms/"
 # set_uri base for sets published or exported from a scan report:
-# {namespace}{ScanReport.uuid}. Every version from the same scan report shares
-# one set_uri, and the uuid keeps it unique across Carrot instances.
+# {namespace}{ScanReport.uuid} (registry.services.scan_report_set_uri, which
+# also gives the DAGs the mapping_set_id of SSSOM exports). Every version from
+# the same scan report shares one set_uri, and the uuid keeps it unique across
+# Carrot instances.
 CARROT_MAPPING_SET_NAMESPACE = "https://carrot.ac.uk/registry/mapping-sets/"
 
 
