@@ -1,6 +1,7 @@
 /*
  * Browser-side filtering, sorting and paging over the mock data.
  * Demonstration only: in the integration PR the Registry API does this.
+ * Delete this after Integrating to the backend.
  */
 import type { Mapping, MappingSet, SearchField, Sort } from "../../types/mapping-registry";
 
