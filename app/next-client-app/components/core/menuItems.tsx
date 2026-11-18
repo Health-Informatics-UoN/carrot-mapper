@@ -5,8 +5,8 @@ import {
   FolderGit2,
   Folders,
   Library,
-  LogIn,
   LucideIcon,
+  Network,
   Upload,
 } from "lucide-react";
 
@@ -34,6 +34,7 @@ export const sidebarItems: SidebarItems = {
       icon: Upload,
     },
     { label: "Vocabularies", href: "/vocabularies/", icon: Library },
+    { label: "Mapping Registry", href: "/mapping-registry/", icon: Network },
     {
       href: "https://carrot.ac.uk/documentation",
       icon: BookMarked,
