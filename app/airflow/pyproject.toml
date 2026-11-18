@@ -2,7 +2,7 @@
 name = "carrot-airflow"
 dynamic = ["version"]
 description = "Add your description here"
-requires-python = ">=3.11"
+requires-python = ">=3.11.5"
 dependencies = [
     "apache-airflow>=3.3.2,<4",
     "apache-airflow-providers-amazon==9.39.0",
