@@ -72,6 +72,7 @@ class RegistryReadTestBase(TestCase):
             Status.DRAFT,
             set_uri="https://x/draft",
             import_job=self.job,
+            publisher=self.owner,
         )
 
         # Terms
