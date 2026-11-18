@@ -1034,6 +1034,6 @@ def _check_row(
         json.dumps(typed.get("reviewer_id", [])),
         mapping_date,
         typed.get("comment", ""),
-        typed.get("other") or None,
+        typed.get("other", ""),
         json.dumps(extra, ensure_ascii=False),
     )

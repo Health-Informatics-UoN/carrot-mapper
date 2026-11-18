@@ -127,7 +127,7 @@ create_staging_table_query = """
         reviewer_ids JSONB NOT NULL,
         mapping_date DATE,
         comment TEXT NOT NULL,
-        other TEXT,
+        other TEXT NOT NULL,
         extra_metadata JSONB NOT NULL
     ) ON COMMIT DROP
 """
