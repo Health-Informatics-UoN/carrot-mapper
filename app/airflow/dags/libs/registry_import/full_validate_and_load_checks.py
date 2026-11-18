@@ -183,6 +183,7 @@ MAX_LENGTHS = {
     "prefix": 255,
     "ext_source_field": 255,
     "other": 255,
+    "namespace": 1000,
 }
 
 # Order of the values in each staging row (load.STAGING_TABLE has these columns).
@@ -655,6 +656,14 @@ def _check_set(
                 "prefix_conflict",
                 f"Prefix {prefix!r} is bound to {REGISTRY_PREFIXES[prefix]!r} in "
                 f"the registry, but to {namespace!r} in this file",
+                column="curie_map",
+            )
+            usable = False
+        if len(namespace) > MAX_LENGTHS["namespace"]:
+            log.error(
+                "value_too_long",
+                f"Namespace of prefix {prefix!r} is {len(namespace)} characters; "
+                f"the registry allows {MAX_LENGTHS['namespace']}",
                 column="curie_map",
             )
             usable = False

@@ -336,6 +336,14 @@ def test_registry_prefix_cannot_point_elsewhere():
     assert "prefix_conflict" in codes(plan_for(text + COLUMNS + ROW), "error")
 
 
+def test_too_long_namespace_is_an_error():
+    namespace = "http://example.org/" + "x" * 1000
+    text = HEADER.replace("#curie_map:\n", f"#curie_map:\n#  long: {namespace}\n")
+    plan = plan_for(text + COLUMNS + ROW)
+    assert not plan.ok
+    assert "value_too_long" in codes(plan, "error")
+
+
 def test_registry_namespace_under_another_name_is_canonicalised():
     text = HEADER.replace(
         "#curie_map:\n",
