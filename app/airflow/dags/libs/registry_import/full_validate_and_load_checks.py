@@ -40,7 +40,7 @@ from datetime import date, datetime
 from functools import cache
 from pathlib import Path
 from typing import Any
-from urllib.parse import unquote
+from urllib.parse import unquote, urlsplit
 
 # Both ship with apache-airflow-core, so the Airflow image already has them.
 import jsonschema
@@ -498,6 +498,14 @@ def carrot_term_parts(local: str) -> tuple[str, str, str]:
     return "FIELD", source_field, ""
 
 
+def _is_http_iri(value: str) -> bool:
+    """An absolute http(s) IRI with a host and no whitespace."""
+    if any(c.isspace() for c in value):
+        return False
+    parts = urlsplit(value)
+    return parts.scheme in ("http", "https") and bool(parts.netloc)
+
+
 class _Curies:
     """
     Checks CURIEs against a file's prefixes and writes them canonically, with
@@ -656,6 +664,14 @@ def _check_set(
                 "prefix_conflict",
                 f"Prefix {prefix!r} is bound to {REGISTRY_PREFIXES[prefix]!r} in "
                 f"the registry, but to {namespace!r} in this file",
+                column="curie_map",
+            )
+            usable = False
+        elif not _is_http_iri(namespace):
+            log.error(
+                "invalid_namespace",
+                f"Namespace {namespace!r} of prefix {prefix!r} is not an "
+                "absolute http(s) IRI",
                 column="curie_map",
             )
             usable = False
@@ -987,6 +1003,12 @@ def build_import(
 
     if not parsed.rows:
         log.error("no_mappings", "File contains no mappings")
+    # Stored CURIEs use the registry's names, which may differ from the file's
+    # (SNOMED:1 stored as snomed:1), so the stored curie_map declares those too
+    # and every stored CURIE expands from its set's metadata. The file's own
+    # names are kept; they can't clash, as a file binding a registry name to
+    # another namespace fails with prefix_conflict.
+    plan.mapping_set.curie_map.update(plan.prefixes)
     return plan
 
 

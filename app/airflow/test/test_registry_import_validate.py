@@ -377,6 +377,26 @@ def test_registered_namespace_under_another_name_is_canonicalised():
     assert plan.ok, plan.issues.as_dicts()
     assert row(plan)["object_iri"] == "mp:0000111"
     assert plan.prefixes["mp"] == "http://purl.obolibrary.org/obo/MP_"
+    # The stored curie_map can expand the stored CURIE, and keeps the file's name
+    assert plan.mapping_set.curie_map["mp"] == "http://purl.obolibrary.org/obo/MP_"
+    assert plan.mapping_set.curie_map["MP"] == "http://purl.obolibrary.org/obo/MP_"
+
+
+@pytest.mark.parametrize(
+    "namespace",
+    [
+        "banana",
+        "urn:example:",
+        "ftp://example.org/x/",
+        "http:///no-host/",
+        "http://example.org/with space/",
+    ],
+)
+def test_namespace_must_be_an_absolute_http_iri(namespace):
+    text = HEADER.replace("#curie_map:\n", f"#curie_map:\n#  X: '{namespace}'\n")
+    plan = plan_for(text + COLUMNS + ROW)
+    assert not plan.ok
+    assert "invalid_namespace" in codes(plan, "error")
 
 
 def test_registered_name_for_another_namespace_is_an_error_where_used():
