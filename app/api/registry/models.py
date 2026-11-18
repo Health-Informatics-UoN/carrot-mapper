@@ -121,6 +121,7 @@ class ImportJob(models.Model):
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True,
+        blank=True,
         related_name="registry_import_jobs",
     )
     status = models.CharField(
@@ -422,7 +423,7 @@ class Mapping(models.Model):
     # to a column above, keyed by SSSOM slot name.
     extra_metadata = models.JSONField(default=dict, blank=True)
     # TODO: write docs about this column as Carrot uses it to store the vocabulary ID
-    other = models.CharField(max_length=255, blank=True, null=True)
+    other = models.CharField(max_length=255, blank=True, default="")
     mapping_source = models.CharField(max_length=500, blank=True, default="")
     mapping_provider = models.CharField(max_length=500, blank=True, default="")
     publication_date = models.DateField(null=True, blank=True)
