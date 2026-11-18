@@ -26,7 +26,7 @@ from libs.registry_import.full_validate_and_load_checks import (
     SetRecord,
     Vocabulary,
     build_import,
-    check_set_version_is_new,
+    check_set_version_is_newer,
 )
 from libs.registry_import.full_validate_and_load_db import LoadError, load_plan
 from libs.registry_import.full_validate_and_load_parse import decode, parse_sssom
@@ -42,7 +42,7 @@ def full_validate_and_load(**kwargs) -> None:
     file_key = job_file_key(import_job_id)
 
     plan = _read_and_check(params, file_key)
-    check_set_version_is_new(plan, _conflicting_set_id(plan, import_job_id))
+    check_set_version_is_newer(plan, _existing_versions(plan, import_job_id))
     pg_hook.run(
         queries.set_import_job_issues_query,
         parameters={
@@ -105,17 +105,13 @@ def _read_and_check(params: dict[str, Any], file_key: str) -> ImportPlan:
     )
 
 
-def _conflicting_set_id(plan: ImportPlan, import_job_id: str) -> str | None:
-    """A set from another import with this file's set_uri + version, if any."""
+def _existing_versions(plan: ImportPlan, import_job_id: str) -> list[str]:
+    """Versions of this file's set_uri from other imports."""
     record = plan.mapping_set
-    if not (record.set_uri and record.set_version):
-        return None
-    row = pg_hook.get_first(
-        queries.get_conflicting_set_query,
-        parameters={
-            "set_uri": record.set_uri,
-            "set_version": record.set_version,
-            "import_job_id": import_job_id,
-        },
+    if not record.set_uri:
+        return []
+    rows = pg_hook.get_records(
+        queries.get_set_versions_query,
+        parameters={"set_uri": record.set_uri, "import_job_id": import_job_id},
     )
-    return row[0] if row else None
+    return [row[0] for row in rows]

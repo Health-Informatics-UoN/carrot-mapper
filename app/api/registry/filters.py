@@ -1,4 +1,6 @@
-from django.db.models import F, OuterRef, Q, Subquery
+from django.contrib.postgres.fields import ArrayField
+from django.db.models import F, Func, IntegerField, OuterRef, Q, Subquery, Value
+from django.db.models.functions import Cast
 from django_filters import rest_framework as filters
 from rest_framework.filters import OrderingFilter
 
@@ -50,7 +52,7 @@ class MappingSetFilter(filters.FilterSet):
     )
     latest = filters.BooleanFilter(
         method="filter_latest",
-        help_text="Only the newest version of each set_uri (among the matching statuses).",
+        help_text="Only the highest version of each set_uri (among the matching statuses).",
     )
 
     class Meta:
@@ -74,17 +76,29 @@ class MappingSetFilter(filters.FilterSet):
     def filter_latest(self, queryset, name, value):
         if not value:
             return queryset
-        # The newest version is picked among the caller-visible sets with the
+        # The highest version is picked among the caller-visible sets with the
         # requested statuses, so other filters (e.g. q) narrow the result
         # rather than surfacing an older version that happens to match.
         statuses = self.form.cleaned_data.get("status") or [Status.PUBLISHED]
         candidates = self.queryset.filter(status_id__in=statuses)
         newest = (
             candidates.filter(set_uri=OuterRef("set_uri"))
-            .order_by(F("published_at").desc(nulls_last=True), "-created_at", "-pk")
+            .order_by(version_order().desc(), "-created_at", "-pk")
             .values("pk")[:1]
         )
         return queryset.filter(pk=Subquery(newest))
+
+
+def version_order() -> Cast:
+    """
+    set_version as integers ([1, 2, 0] for 1.2.0, [2026, 11, 4] for
+    2026-11-04). Every version of a set_uri is SemVer or every one is an ISO
+    date (enforced on import), so this orders a set's versions by release.
+    """
+    return Cast(
+        Func(F("set_version"), Value("[.-]"), function="regexp_split_to_array"),
+        ArrayField(IntegerField()),
+    )
 
 
 class MappingFilter(filters.FilterSet):
