@@ -79,7 +79,7 @@ export function RegistrySearchBar({
       </div>
       {hasQuery && (
         <p className="text-center text-xs text-muted-foreground" role="status">
-          {isLoading ? "Searching mock records..." : "Results update as you type"}
+          {isLoading ? "Searching..." : "Results update as you type"}
         </p>
       )}
     </div>
