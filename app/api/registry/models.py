@@ -13,6 +13,7 @@ import uuid
 from django.conf import settings
 from django.contrib.postgres.indexes import GinIndex
 from django.db import models
+from django.db.models.functions import Now
 from mapping.models import ScanReport
 
 # ---------------------------------------------------------------------------
@@ -158,7 +159,10 @@ class ImportJob(models.Model):
     file_key = models.CharField(max_length=500, blank=True, default="")
     validation_issues = models.JSONField(default=list, blank=True)
     dag_run_id = models.CharField(max_length=255, blank=True, default="")
+    # Shown to the submitter by the API, so it must not hold internal details.
     error_message = models.TextField(blank=True, default="")
+    # A database default, as the registry_import tests insert jobs with raw SQL.
+    created_at = models.DateTimeField(db_default=Now(), editable=False)
     started_at = models.DateTimeField(null=True, blank=True)
     finished_at = models.DateTimeField(null=True, blank=True)
     params = models.JSONField(default=dict, blank=True)
@@ -167,8 +171,11 @@ class ImportJob(models.Model):
     stats = models.JSONField(default=dict, blank=True)
 
     class Meta:
-        ordering = ["-started_at"]
-        indexes = [models.Index(fields=["status", "-started_at"])]
+        ordering = ["-created_at", "-id"]
+        indexes = [
+            models.Index(fields=["status", "-started_at"]),
+            models.Index(fields=["submitted_by", "-created_at"]),
+        ]
 
     def __str__(self):
         return f"ImportJob {self.id} ({self.status})"
@@ -247,6 +254,16 @@ class MappingSet(models.Model):
     file_key = models.CharField(max_length=500, blank=True, default="")
     created_at = models.DateTimeField(auto_now_add=True)
     published_at = models.DateTimeField(null=True, blank=True)
+    withdrawn_at = models.DateTimeField(null=True, blank=True)
+    withdrawn_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+    )
+    # A database default too: the registry_import DAG inserts sets with raw SQL.
+    withdrawal_reason = models.TextField(blank=True, default="", db_default="")
 
     class Meta:
         ordering = ["-created_at"]
