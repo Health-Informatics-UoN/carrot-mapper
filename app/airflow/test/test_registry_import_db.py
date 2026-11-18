@@ -749,6 +749,65 @@ def test_dag_records_validation_failure_once(conn, cleanup, user, storage):
     assert [n[0] for n in notifications(conn, user)] == ["registry.import_failed"]
 
 
+def test_failed_finalize_removes_the_set_and_allows_a_resubmit(
+    conn, cleanup, user, storage, monkeypatch
+):
+    subject, obj = unique_prefixes(cleanup)
+    first, second = make_job(conn, cleanup, user), make_job(conn, cleanup, user)
+
+    def conf(job):
+        key = helpers.file_key_for(job)
+        storage.blobs[("registry-sssom", key)] = sssom(subject, obj).encode()
+        return {
+            "import_job_id": job,
+            "origin": "SSSOM_UPLOAD",
+            "user_id": user,
+            "file_key": key,
+            "overrides": {"license": "CC-BY-4.0"},
+        }
+
+    with monkeypatch.context() as patch:
+        patch.setattr(queries, "publish_mapping_set_query", "SELECT 1 / 0")
+        with pytest.raises(Exception, match="division by zero"):
+            run_dag(conf(first))
+
+    row = job_row(conn, first)
+    assert row["status"] == "FAILED"
+    assert row["stats"] == {}
+    # the internal error stays in the task log
+    assert row["error"] == on_failure.INTERNAL_ERROR_MESSAGE
+    assert fetch(
+        conn, "SELECT count(*) FROM registry_mappingset WHERE import_job_id = %s", first
+    ) == [(0,)]
+
+    run_dag(conf(second))
+    assert job_row(conn, second)["status"] == "SUCCEEDED"
+
+
+def test_failure_after_success_keeps_the_set(conn, cleanup, user, storage):
+    subject, obj = unique_prefixes(cleanup)
+    job = make_job(conn, cleanup, user)
+    key = helpers.file_key_for(job)
+    storage.blobs[("registry-sssom", key)] = sssom(subject, obj).encode()
+    conf = {
+        "import_job_id": job,
+        "origin": "SSSOM_UPLOAD",
+        "user_id": user,
+        "file_key": key,
+        "overrides": {"license": "CC-BY-4.0"},
+    }
+    run_dag(conf)
+
+    on_failure.update_import_job_on_failure(
+        {"dag_run": SimpleNamespace(conf=conf), "reason": "task_failure"}
+    )
+
+    assert job_row(conn, job)["status"] == "SUCCEEDED"
+    assert fetch(
+        conn, "SELECT count(*) FROM registry_mappingset WHERE import_job_id = %s", job
+    ) == [(1,)]
+
+
 def test_dag_refuses_a_job_that_already_succeeded(conn, cleanup, user, storage):
     subject, obj = unique_prefixes(cleanup)
     job = make_job(conn, cleanup, user)
