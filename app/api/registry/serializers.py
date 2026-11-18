@@ -1,3 +1,4 @@
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from registry.models import (
@@ -43,6 +44,13 @@ class ScanReportRegistryPublishSerializer(serializers.Serializer):
             "published file. The publishing user's ORCID iD (creator_id) is "
             "always included when their profile has one."
         ),
+    )
+
+
+class MappingSetWithdrawSerializer(serializers.Serializer):
+    reason = serializers.CharField(
+        max_length=2000,
+        help_text="Why the set is withdrawn; shown with the set.",
     )
 
 
@@ -99,6 +107,38 @@ class MappingSetBriefSerializer(serializers.ModelSerializer):
         fields = ["id", "set_uri", "set_version", "title", "status"]
 
 
+class ImportJobSerializer(serializers.ModelSerializer):
+    """A registry import's progress, for its submitter to poll."""
+
+    origin = serializers.CharField(source="origin_id")
+    mapping_set = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ImportJob
+        fields = [
+            "id",
+            "status",
+            "origin",
+            "validation_issues",
+            "error_message",
+            "stats",
+            "mapping_set",
+            "created_at",
+            "started_at",
+            "finished_at",
+        ]
+
+    @extend_schema_field(MappingSetBriefSerializer(allow_null=True))
+    def get_mapping_set(self, job):
+        # Until the job succeeds, any set it has loaded is not finished.
+        if job.status != ImportJobStatus.SUCCEEDED:
+            return None
+        mapping_sets = job.mapping_sets.all()
+        if not mapping_sets:
+            return None
+        return MappingSetBriefSerializer(mapping_sets[0]).data
+
+
 class MappingSetListSerializer(serializers.ModelSerializer):
     status = serializers.CharField(source="status_id")
     origin = serializers.CharField(source="origin_id")
@@ -146,6 +186,8 @@ class MappingSetDetailSerializer(MappingSetListSerializer):
             "sssom_version",
             "curie_map",
             "extra_metadata",
+            "withdrawn_at",
+            "withdrawal_reason",
             "import_job",
             "source_scan_report",
             "subject_count",
