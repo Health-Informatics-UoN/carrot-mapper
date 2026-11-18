@@ -1,7 +1,6 @@
 import { useMemo } from "react";
 import { Search } from "lucide-react";
 import { DataTable } from "@/components/data-table";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { Mapping, MappingSet, Sort, View } from "@/types/mapping-registry";
 import { getMappingColumns } from "./mapping-columns";
@@ -75,7 +74,6 @@ export function RegistryResults({
             {isMappings && !isLoading ? " · One row per published mapping" : ""}
           </p>
         </div>
-        <Badge variant="outline">Demo data — no API calls</Badge>
       </div>
 
       <div className="flex gap-2 border-b pb-2" role="tablist" aria-label="Registry results type">
