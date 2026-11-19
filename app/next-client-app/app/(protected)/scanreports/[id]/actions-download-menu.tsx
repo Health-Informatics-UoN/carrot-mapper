@@ -9,6 +9,7 @@ import { FileJson, FileSpreadsheet, FileText } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { requestFile } from "@/api/files";
+import { enableMappingsRegistryFeatures } from "@/constants";
 
 type Props = { scanreportId: string };
 
@@ -42,10 +43,12 @@ export function ActionsDownloadMenu({ scanreportId }: Props) {
         <FileSpreadsheet />
         Mapping CSV
       </DropdownMenuItem>
-      <DropdownMenuItem onSelect={() => handleDownload("text/x-sssom+tsv")}>
-        <FileText />
-        Mapping SSSOM
-      </DropdownMenuItem>
+      {enableMappingsRegistryFeatures === "true" && (
+        <DropdownMenuItem onSelect={() => handleDownload("text/x-sssom+tsv")}>
+          <FileText />
+          Mapping SSSOM
+        </DropdownMenuItem>
+      )}
     </DropdownMenuGroup>
   );
 }

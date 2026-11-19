@@ -25,6 +25,10 @@ export const recommendationServiceName = env(
   "NEXT_PUBLIC_RECOMMENDATION_SERVICE",
 );
 
+export const enableMappingsRegistryFeatures = env(
+  "NEXT_PUBLIC_ENABLE_MAPPINGS_REGISTRY_FEATURES",
+);
+
 // Re-export MAX_FILE_SIZE_BYTES from config.js
 export { MAX_FILE_SIZE_BYTES };
 
