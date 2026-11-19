@@ -14,11 +14,7 @@ export function RegistryDataContent({ stats }: RegistryDataContentProps) {
           <Database className="size-4" /> Data Content
         </span>
       </div>
-      <dl className="grid grid-cols-3 gap-x-5 gap-y-1 text-xs sm:gap-x-6">
-        <div>
-          <dt className="whitespace-nowrap text-muted-foreground">Release date</dt>
-          <dd className="mt-1 whitespace-nowrap font-semibold">{stats.releaseDate}</dd>
-        </div>
+      <dl className="grid grid-cols-2 gap-x-5 gap-y-1 text-xs sm:gap-x-6">
         <div>
           <dt className="whitespace-nowrap text-muted-foreground">Total mappings</dt>
           <dd className="mt-1 text-base font-semibold tabular-nums">{stats.totalMappings}</dd>

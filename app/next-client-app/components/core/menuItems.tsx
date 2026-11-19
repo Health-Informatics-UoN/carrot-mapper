@@ -34,7 +34,7 @@ export const sidebarItems: SidebarItems = {
       icon: Upload,
     },
     { label: "Vocabularies", href: "/vocabularies/", icon: Library },
-    { label: "Mapping Registry", href: "/mapping-registry/", icon: Network },
+    { label: "Mapping Registry", href: "/registry/", icon: Network },
     {
       href: "https://carrot.ac.uk/documentation",
       icon: BookMarked,
