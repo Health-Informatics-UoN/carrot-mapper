@@ -15,6 +15,7 @@ export type SearchFieldOption = { value: SearchField; label: string };
 
 export type Mapping = {
   id: string;
+  mappingSetId: string;
   sourceTerm: string;
   subjectId: string;
   canonicalIri: string;
@@ -47,7 +48,6 @@ export type View = "mappings" | "sets";
 export type Sort = { key: string; direction: "asc" | "desc" } | null;
 
 export type RegistryStats = {
-  releaseDate: string;
   totalMappings: number;
   totalSets: number;
 };
