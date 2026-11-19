@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { ColumnDef, HeaderContext } from "@tanstack/react-table";
 import { ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -7,10 +8,9 @@ import { RegistrySortHeader } from "./registry-sort-header";
 type MappingColumnsOptions = {
   sort: Sort;
   onSort: (sort: Sort) => void;
-  onView: (mapping: Mapping) => void;
 };
 
-export function getMappingColumns({ sort, onSort, onView }: MappingColumnsOptions): ColumnDef<Mapping>[] {
+export function getMappingColumns({ sort, onSort }: MappingColumnsOptions): ColumnDef<Mapping>[] {
   const sortableHeader =
     (title: string, sortKey: keyof Mapping): ColumnDef<Mapping>["header"] =>
     function SortableHeader({ column }: HeaderContext<Mapping, unknown>) {
@@ -66,13 +66,21 @@ export function getMappingColumns({ sort, onSort, onView }: MappingColumnsOption
       cell: ({ row }) => (
         <div className="text-right">
           <Button
-            type="button"
+            asChild
             size="sm"
             variant="outline"
-            onClick={() => onView(row.original)}
-            aria-label={`View details for ${row.original.sourceTerm}, ${row.original.publisher}`}
           >
-            View <ChevronRight className="size-4" />
+            <Link
+              href={`/registry/mappings/${row.original.id}`}
+              onClick={() => {
+                try {
+                  sessionStorage.setItem("registry:lastMappingsUrl", window.location.pathname + window.location.search);
+                } catch {}
+              }}
+              aria-label={`View details for ${row.original.sourceTerm}, ${row.original.publisher}`}
+            >
+              View <ChevronRight className="size-4" />
+            </Link>
           </Button>
         </div>
       ),
