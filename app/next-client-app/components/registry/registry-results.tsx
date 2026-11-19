@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import Link from "next/link";
 import { Search } from "lucide-react";
 import { DataTable } from "@/components/data-table";
 import { Button } from "@/components/ui/button";
@@ -24,10 +25,7 @@ type RegistryResultsProps = {
   onSortChange: (sort: Sort) => void;
   onPageChange: (page: number) => void;
   onPageSizeChange: (size: number) => void;
-  onViewChange: (view: View) => void;
   onBrowse: (view: View) => void;
-  onViewMapping: (mapping: Mapping) => void;
-  onViewSet: (mappingSet: MappingSet) => void;
 };
 
 export function RegistryResults({
@@ -43,18 +41,15 @@ export function RegistryResults({
   onSortChange,
   onPageChange,
   onPageSizeChange,
-  onViewChange,
   onBrowse,
-  onViewMapping,
-  onViewSet,
 }: RegistryResultsProps) {
   const mappingColumns = useMemo(
-    () => getMappingColumns({ sort, onSort: onSortChange, onView: onViewMapping }),
-    [sort, onSortChange, onViewMapping],
+    () => getMappingColumns({ sort, onSort: onSortChange }),
+    [sort, onSortChange],
   );
   const mappingSetColumns = useMemo(
-    () => getMappingSetColumns({ sort, onSort: onSortChange, onView: onViewSet }),
-    [sort, onSortChange, onViewSet],
+    () => getMappingSetColumns({ sort, onSort: onSortChange }),
+    [sort, onSortChange],
   );
 
   const trimmedQuery = query.trim();
@@ -77,25 +72,11 @@ export function RegistryResults({
       </div>
 
       <div className="flex gap-2 border-b pb-2" role="tablist" aria-label="Registry results type">
-        <Button
-          type="button"
-          role="tab"
-          aria-selected={isMappings}
-          size="sm"
-          variant={isMappings ? "secondary" : "ghost"}
-          onClick={() => onViewChange("mappings")}
-        >
-          Mappings
+        <Button asChild size="sm" variant={isMappings ? "secondary" : "ghost"}>
+          <Link href="/registry/mappings" aria-current={isMappings ? "page" : undefined}>Mappings</Link>
         </Button>
-        <Button
-          type="button"
-          role="tab"
-          aria-selected={!isMappings}
-          size="sm"
-          variant={!isMappings ? "secondary" : "ghost"}
-          onClick={() => onViewChange("sets")}
-        >
-          Mapping Sets
+        <Button asChild size="sm" variant={!isMappings ? "secondary" : "ghost"}>
+          <Link href="/registry/mapping-sets" aria-current={!isMappings ? "page" : undefined}>Mapping Sets</Link>
         </Button>
       </div>
 

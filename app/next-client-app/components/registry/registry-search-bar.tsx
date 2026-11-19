@@ -1,5 +1,6 @@
 import { Search, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -18,6 +19,7 @@ type RegistrySearchBarProps = {
   isLoading: boolean;
   onFieldChange: (field: SearchField) => void;
   onQueryChange: (query: string) => void;
+  mode?: "live" | "submit";
 };
 
 export function RegistrySearchBar({
@@ -27,6 +29,7 @@ export function RegistrySearchBar({
   isLoading,
   onFieldChange,
   onQueryChange,
+  mode = "live",
 }: RegistrySearchBarProps) {
   const example = useTypewriterPlaceholder(SEARCH_EXAMPLES[field]);
   const fieldOptions = view === "mappings" ? SEARCH_FIELDS : SET_SEARCH_FIELDS;
@@ -73,11 +76,15 @@ export function RegistrySearchBar({
             </button>
           )}
         </div>
-        <div className="flex items-center justify-center px-2 text-xs text-muted-foreground sm:whitespace-nowrap">
-          <span>Live search</span>
-        </div>
+        {mode === "submit" ? (
+          <Button type="submit" size="sm" className="shrink-0">Search</Button>
+        ) : (
+          <div className="flex items-center justify-center px-2 text-xs text-muted-foreground sm:whitespace-nowrap">
+            <span>Live search</span>
+          </div>
+        )}
       </div>
-      {hasQuery && (
+      {mode === "live" && hasQuery && (
         <p className="text-center text-xs text-muted-foreground" role="status">
           {isLoading ? "Searching..." : "Results update as you type"}
         </p>
