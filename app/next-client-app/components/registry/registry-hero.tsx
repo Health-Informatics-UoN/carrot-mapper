@@ -11,7 +11,7 @@ export function RegistryHero({ compact }: RegistryHeroProps) {
       className={
         compact
           ? "mb-4 text-center"
-          : "flex flex-col items-center justify-end pb-6 text-center"
+          : "flex flex-col items-center justify-end pb-3 text-center"
       }
     >
       {/* The key remounts the logo when returning to the landing page, so the
