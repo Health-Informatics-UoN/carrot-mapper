@@ -1006,8 +1006,9 @@ def build_import(
     # Stored CURIEs use the registry's names, which may differ from the file's
     # (SNOMED:1 stored as snomed:1), so the stored curie_map declares those too
     # and every stored CURIE expands from its set's metadata. The file's own
-    # names are kept; they can't clash, as a file binding a registry name to
-    # another namespace fails with prefix_conflict.
+    # names are kept, except that the registry's binding wins where a name
+    # clashes: that is only possible for a file prefix no row uses, as a used
+    # one fails with prefix_conflict, so no stored CURIE needs the file's.
     plan.mapping_set.curie_map.update(plan.prefixes)
     return plan
 
@@ -1185,6 +1186,6 @@ def _check_row(
         json.dumps(typed.get("reviewer_id", [])),
         mapping_date,
         typed.get("comment", ""),
-        typed.get("other") or None,
+        typed.get("other", ""),
         json.dumps(extra, ensure_ascii=False),
     )

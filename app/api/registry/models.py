@@ -146,6 +146,7 @@ class ImportJob(models.Model):
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True,
+        blank=True,
         related_name="registry_import_jobs",
     )
     status = models.CharField(
@@ -240,6 +241,7 @@ class MappingSet(models.Model):
     sssom_version = models.CharField(max_length=20, blank=True, default="")
     # SSSOM creator_id: list of CURIEs (e.g. ORCIDs) of who created the set.
     creator_ids = models.JSONField(default=list, blank=True)
+    creator_labels = models.JSONField(default=list, db_default=[], blank=True)
     publication_date = models.DateField(null=True, blank=True)
     # Set-level sources, e.g. object_source = "OMOP", version = "v5.0 31-AUG-23".
     subject_source = models.CharField(max_length=500, blank=True, default="")
@@ -347,6 +349,9 @@ class Term(models.Model):
     kind = models.CharField(max_length=16, choices=TermKind.choices)
     # Only meaningful when kind = OBJECT (e.g. OMOP vocabulary version).
     object_source_version = models.CharField(max_length=255, blank=True, default="")
+    subject_source_version = models.CharField(
+        max_length=255, blank=True, default="", db_default=""
+    )
 
     # SSSOM extension slots, only for kind = SUBJECT.
     ext_term_level = models.CharField(
@@ -463,6 +468,9 @@ class Mapping(models.Model):
     confidence = models.FloatField(null=True, blank=True)
     # SSSOM author_id / reviewer_id: lists of CURIEs (e.g. ORCIDs).
     author_ids = models.JSONField(default=list, blank=True)
+    author_labels = models.JSONField(default=list, db_default=[], blank=True)
+    creator_ids = models.JSONField(default=list, db_default=[], blank=True)
+    creator_labels = models.JSONField(default=list, db_default=[], blank=True)
     reviewer_ids = models.JSONField(default=list, blank=True)
     mapping_date = models.DateField(null=True, blank=True)
     comment = models.TextField(blank=True, default="")
@@ -470,7 +478,14 @@ class Mapping(models.Model):
     # to a column above, keyed by SSSOM slot name.
     extra_metadata = models.JSONField(default=dict, blank=True)
     # TODO: write docs about this column as Carrot uses it to store the vocabulary ID
-    other = models.CharField(max_length=255, blank=True, null=True)
+    other = models.CharField(max_length=255, blank=True, default="")
+    mapping_source = models.CharField(
+        max_length=500, blank=True, default="", db_default=""
+    )
+    mapping_provider = models.CharField(
+        max_length=500, blank=True, default="", db_default=""
+    )
+    publication_date = models.DateField(null=True, blank=True)
 
     class Meta:
         constraints = [

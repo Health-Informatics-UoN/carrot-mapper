@@ -382,6 +382,20 @@ def test_registered_namespace_under_another_name_is_canonicalised():
     assert plan.mapping_set.curie_map["MP"] == "http://purl.obolibrary.org/obo/MP_"
 
 
+def test_registry_binding_wins_over_an_unused_file_prefix_of_the_same_name():
+    # The file's "mp" is never used; its MP_ terms are stored as mp: (the
+    # registry's name), so the stored curie_map must bind mp as the registry does.
+    text = HEADER.replace(
+        "#curie_map:\n", "#curie_map:\n#  mp: http://example.org/other/\n"
+    )
+    plan = plan_with_prefixes(
+        text + COLUMNS + ROW, {"mp": "http://purl.obolibrary.org/obo/MP_"}
+    )
+    assert plan.ok, plan.issues.as_dicts()
+    assert row(plan)["object_iri"] == "mp:0000111"
+    assert plan.mapping_set.curie_map["mp"] == "http://purl.obolibrary.org/obo/MP_"
+
+
 @pytest.mark.parametrize(
     "namespace",
     [

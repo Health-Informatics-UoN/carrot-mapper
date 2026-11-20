@@ -26,6 +26,7 @@ import ExportScanReport from "@/components/scanreports/ExportScanReport";
 import { ActionsDownloadMenu } from "./actions-download-menu";
 import { DescriptionPopover } from "@/components/core/DescriptionPopover";
 import { PublishToRegistryDialog } from "@/components/scanreports/registry/PublishToRegistryDialog";
+import { enableMappingsRegistryFeatures } from "@/constants";
 
 export async function generateMetadata({
   params,
@@ -182,13 +183,13 @@ export default async function ScanReportLayout(
           />
         </div>
 
-      {/* Publish to Registry button */}
+        {/* Publish to Registry button */}
         <div className="flex items-center gap-2">
-          {canEdit && (
+          {canEdit && enableMappingsRegistryFeatures === "true" && (
             <PublishToRegistryDialog scanReportId={params.id} scanReportName={scanreport.dataset} />
-         )}
+          )}
 
-        {/* Actions button */}
+          {/* Actions button */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline">
