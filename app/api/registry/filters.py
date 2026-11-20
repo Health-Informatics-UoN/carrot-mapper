@@ -1,8 +1,9 @@
-from django.db.models import F, OuterRef, Q, Subquery
+from django.db.models import OuterRef, Q, Subquery
 from django_filters import rest_framework as filters
 from rest_framework.filters import OrderingFilter
 
 from registry.models import (
+    ImportJob,
     Mapping,
     MappingSet,
     PredicateModifier,
@@ -20,6 +21,17 @@ class CharInFilter(filters.BaseInFilter, filters.CharFilter):
 
 class UUIDInFilter(filters.BaseInFilter, filters.UUIDFilter):
     pass
+
+
+class ImportJobFilter(filters.FilterSet):
+    status = CharInFilter(
+        field_name="status", help_text="Comma-separated job statuses."
+    )
+    origin = CharInFilter(field_name="origin_id")
+
+    class Meta:
+        model = ImportJob
+        fields: list[str] = []
 
 
 class MappingSetFilter(filters.FilterSet):
@@ -76,12 +88,13 @@ class MappingSetFilter(filters.FilterSet):
             return queryset
         # The newest version is picked among the caller-visible sets with the
         # requested statuses, so other filters (e.g. q) narrow the result
-        # rather than surfacing an older version that happens to match.
+        # rather than surfacing an older version that happens to match. Newest
+        # means last imported: a draft of an old version can be published late.
         statuses = self.form.cleaned_data.get("status") or [Status.PUBLISHED]
         candidates = self.queryset.filter(status_id__in=statuses)
         newest = (
             candidates.filter(set_uri=OuterRef("set_uri"))
-            .order_by(F("published_at").desc(nulls_last=True), "-created_at", "-pk")
+            .order_by("-created_at", "-pk")
             .values("pk")[:1]
         )
         return queryset.filter(pk=Subquery(newest))

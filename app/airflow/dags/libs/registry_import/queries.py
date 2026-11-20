@@ -39,6 +39,8 @@ mark_import_job_failed_query = """
     UPDATE registry_importjob
     SET status = 'FAILED',
         error_message = %(error_message)s,
+        -- the load's stats describe a set the failure callback removes
+        stats = '{}'::jsonb,
         finished_at = NOW()
     WHERE id = %(import_job_id)s AND status NOT IN ('FAILED', 'SUCCEEDED')
     RETURNING id

@@ -28,6 +28,7 @@ dependencies = [
     { name = "openpyxl" },
     { name = "psycopg2-binary" },
     { name = "python-dotenv" },
+    { name = "pyyaml" },
     { name = "requests" },
     { name = "whitenoise" },
 ]
@@ -65,6 +66,7 @@ requires-dist = [
     { name = "openpyxl", specifier = "==3.1.5" },
     { name = "psycopg2-binary", specifier = "==2.9.13" },
     { name = "python-dotenv", specifier = "==1.2.4" },
+    { name = "pyyaml", specifier = ">=6.0" },
     { name = "requests", specifier = "==2.34.2" },
     { name = "whitenoise", specifier = "==6.12.0" },
 ]

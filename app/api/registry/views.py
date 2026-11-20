@@ -10,40 +10,63 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import OpenApiResponse, extend_schema
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from mapping.models import ScanReport
 from rest_framework import status
-from rest_framework.exceptions import NotFound
+from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.generics import GenericAPIView, ListAPIView, RetrieveAPIView
-from rest_framework.permissions import AllowAny
+from rest_framework.parsers import MultiPartParser
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.reverse import reverse
 from services.storage_service import StorageService
 
 from registry.download_helpers import StorageUnavailable, sssom_download_filename
 from registry.filters import (
+    ImportJobFilter,
     MappingFilter,
     MappingSetFilter,
     RelevanceOrderingFilter,
     TermFilter,
 )
-from registry.models import License, Mapping, MappingJustification, Predicate
+from registry.models import (
+    ImportJob,
+    License,
+    Mapping,
+    MappingJustification,
+    Predicate,
+)
 from registry.permissions import (
+    IsPublisherOrRegistryAdmin,
     published_mappings,
     published_terms,
+    visible_import_jobs,
     visible_mapping_sets,
 )
 from registry.serializers import (
+    ImportJobSerializer,
     LicenseSerializer,
     MappingJustificationSerializer,
     MappingSerializer,
     MappingSetDetailSerializer,
     MappingSetListSerializer,
+    MappingSetWithdrawSerializer,
     PredicateSerializer,
+    RegistryUploadAcceptedSerializer,
+    RegistryUploadSerializer,
+    RegistryUploadValidationSerializer,
     RegistryImportAcceptedSerializer,
     ScanReportRegistryPublishSerializer,
     TermSerializer,
 )
-from registry.services import submit_direct_publish
+from registry.services import (
+    UploadRejected,
+    dry_run_upload,
+    publish_mapping_set,
+    submit_direct_publish,
+    submit_upload,
+    withdraw_mapping_set,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +75,9 @@ storage_service = StorageService()
 # ---------------------------------------------------------------------------
 # Write
 # ---------------------------------------------------------------------------
+
+
+MAX_IDEMPOTENCY_KEY_LENGTH = 255
 
 
 class ScanReportRegistryPublishView(ScanReportPermissionMixin, GenericAPIView):
@@ -89,6 +115,179 @@ class ScanReportRegistryPublishView(ScanReportPermissionMixin, GenericAPIView):
         )
 
 
+class ImportValidateView(GenericAPIView):
+    """
+    Check an SSSOM file without importing it.
+
+    Runs the same quick checks as `POST imports/`: the metadata and the first
+    rows. Nothing is stored. The full file is checked during the import.
+    """
+
+    serializer_class = RegistryUploadSerializer
+    permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser]
+    http_method_names = ["post"]
+
+    @extend_schema(
+        request={"multipart/form-data": RegistryUploadSerializer},
+        responses={200: RegistryUploadValidationSerializer},
+    )
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        report = dry_run_upload(serializer.validated_data["file"], request.user)
+        return Response(RegistryUploadValidationSerializer(report.as_dict()).data)
+
+
+class ImportJobListView(ListAPIView):
+    """
+    The caller's own registry imports, newest first (GET), or submit an SSSOM
+    file for import (POST).
+
+    A POST checks the file's metadata and first rows, stores it and starts the
+    import, returning the job to poll. Repeating an upload that is still being
+    imported returns the same job, as does repeating an `Idempotency-Key`.
+    """
+
+    serializer_class = ImportJobSerializer
+    permission_classes = [IsAuthenticated]
+    pagination_class = CustomPagination
+    parser_classes = [MultiPartParser]
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = ImportJobFilter
+
+    def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return ImportJob.objects.none()
+        return ImportJob.objects.filter(
+            submitted_by=self.request.user
+        ).prefetch_related("mapping_sets")
+
+    @extend_schema(
+        request={"multipart/form-data": RegistryUploadSerializer},
+        parameters=[
+            OpenApiParameter(
+                "Idempotency-Key",
+                str,
+                OpenApiParameter.HEADER,
+                description="Makes retrying this upload safe.",
+            )
+        ],
+        responses={
+            202: RegistryUploadAcceptedSerializer,
+            400: RegistryUploadValidationSerializer,
+            409: RegistryUploadValidationSerializer,
+            503: OpenApiResponse(description="The import could not be started."),
+        },
+    )
+    def post(self, request, *args, **kwargs):
+        serializer = RegistryUploadSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        idempotency_key = request.headers.get("Idempotency-Key", "").strip()
+        if len(idempotency_key) > MAX_IDEMPOTENCY_KEY_LENGTH:
+            raise ValidationError({"Idempotency-Key": "This header is too long."})
+        try:
+            job, report, _ = submit_upload(
+                serializer.validated_data["file"],
+                request.user,
+                serializer.validated_data["status"],
+                idempotency_key,
+            )
+        except UploadRejected as rejected:
+            return Response(
+                RegistryUploadValidationSerializer(rejected.report.as_dict()).data,
+                status=rejected.status_code,
+            )
+        location = reverse("registry-import-detail", kwargs={"pk": job.pk})
+        return Response(
+            RegistryUploadAcceptedSerializer(
+                {
+                    "import_job_id": job.id,
+                    "status": job.status,
+                    "issues": report.as_dict()["issues"],
+                }
+            ).data,
+            status=status.HTTP_202_ACCEPTED,
+            headers={"Location": location},
+        )
+
+
+class ImportJobDetailView(RetrieveAPIView):
+    """
+    One registry import, for polling after a publish.
+
+    Visible to its submitter and to registry admins. `mapping_set` is set once
+    the import has succeeded.
+    """
+
+    serializer_class = ImportJobSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return visible_import_jobs(self.request.user).prefetch_related("mapping_sets")
+
+
+class MappingSetStatusView(GenericAPIView):
+    """Base for the endpoints that move a mapping set through its lifecycle."""
+
+    serializer_class = MappingSetDetailSerializer
+    permission_classes = [IsAuthenticated, IsPublisherOrRegistryAdmin]
+    http_method_names = ["post"]
+
+    def get_queryset(self):
+        return mapping_set_detail_queryset(self.request.user)
+
+    def updated_response(self) -> Response:
+        return Response(
+            self.get_serializer(self.get_queryset().get(pk=self.kwargs["pk"])).data
+        )
+
+
+class MappingSetPublishView(MappingSetStatusView):
+    """Publish a draft mapping set. For its publisher and registry admins."""
+
+    @extend_schema(
+        request=None,
+        responses={
+            200: MappingSetDetailSerializer,
+            409: OpenApiResponse(
+                description="Not a draft, or its import has not finished."
+            ),
+        },
+    )
+    def post(self, request, *args, **kwargs):
+        mapping_set = self.get_object()
+        publish_mapping_set(mapping_set.pk, request.user)
+        return self.updated_response()
+
+
+class MappingSetWithdrawView(MappingSetStatusView):
+    """
+    Withdraw a published mapping set. For its publisher and registry admins.
+
+    The set stays available by id and for download, with the reason given, but
+    leaves default listings and search. Sets are never deleted.
+    """
+
+    @extend_schema(
+        request=MappingSetWithdrawSerializer,
+        responses={
+            200: MappingSetDetailSerializer,
+            409: OpenApiResponse(
+                description="Not published, or its import has not finished."
+            ),
+        },
+    )
+    def post(self, request, *args, **kwargs):
+        mapping_set = self.get_object()
+        serializer = MappingSetWithdrawSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        withdraw_mapping_set(
+            mapping_set.pk, request.user, serializer.validated_data["reason"]
+        )
+        return self.updated_response()
+
+
 # ---------------------------------------------------------------------------
 # Read: discovery, search, filter
 #
@@ -107,6 +306,18 @@ def _count_mappings(field: str = "pk", distinct: bool = False) -> Coalesce:
         .values("n")
     )
     return Coalesce(Subquery(counts, output_field=IntegerField()), 0)
+
+
+def mapping_set_detail_queryset(user):
+    return (
+        visible_mapping_sets(user)
+        .select_related("import_job")
+        .annotate(
+            mapping_count=_count_mappings(),
+            subject_count=_count_mappings("subject", distinct=True),
+            object_count=_count_mappings("object", distinct=True),
+        )
+    )
 
 
 class PublicReadMixin:
@@ -148,15 +359,7 @@ class MappingSetDetailView(PublicReadMixin, RetrieveAPIView):
     serializer_class = MappingSetDetailSerializer
 
     def get_queryset(self):
-        return (
-            visible_mapping_sets(self.request.user)
-            .select_related("import_job")
-            .annotate(
-                mapping_count=_count_mappings(),
-                subject_count=_count_mappings("subject", distinct=True),
-                object_count=_count_mappings("object", distinct=True),
-            )
-        )
+        return mapping_set_detail_queryset(self.request.user)
 
 
 class MappingSetDownloadView(PublicReadMixin, GenericAPIView):

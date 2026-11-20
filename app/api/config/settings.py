@@ -216,6 +216,7 @@ SPECTACULAR_SETTINGS = {
     "SERVE_PERMISSIONS": ["rest_framework.permissions.AllowAny"],
     "ENUM_NAME_OVERRIDES": {
         "RegistryImportJobStatusEnum": "registry.models.ImportJobStatus",
+        "RegistryUploadStatusEnum": "registry.serializers.UPLOAD_STATUS_CHOICES",
     },
 }
 # Static files (CSS, JavaScript, Images)
