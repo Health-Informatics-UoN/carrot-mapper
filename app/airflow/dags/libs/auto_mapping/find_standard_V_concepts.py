@@ -135,6 +135,13 @@ def find_standard_concepts(**kwargs) -> None:
                 AND (
                     %(skip_domains_check)s = true
                     OR std_concept.domain_id = ANY(%(allowed_domains)s)
+                    -- Values of a column filling one note / note_nlp field (e.g.
+                    -- note_class_concept_id) can map to concepts of any domain
+                    OR EXISTS (
+                        SELECT 1 FROM mapping_scanreporttablefieldmapping AS field_mapping
+                        WHERE field_mapping.source_field_id = %(sr_field_id)s
+                        AND field_mapping.map_values
+                    )
                 );
             """
             try:

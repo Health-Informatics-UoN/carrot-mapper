@@ -98,6 +98,11 @@ urlpatterns = [
         name="scan-report-table-detail",
     ),
     path(
+        "v2/scanreports/<int:pk>/note-tables/",
+        views.ScanReportNoteTablesV2.as_view(),
+        name="scan-report-note-tables",
+    ),
+    path(
         "v2/scanreports/<int:pk>/tables/<int:table_pk>/field-mappings/",
         views.ScanReportTableFieldMappingsV2.as_view(),
         name="scan-report-table-field-mappings",

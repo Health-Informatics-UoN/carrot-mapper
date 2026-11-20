@@ -60,7 +60,7 @@ const TABLE_ROLES: { value: TableRole; label: string; description: string }[] =
       value: "note_nlp",
       label: "Note NLP",
       description:
-        "Each row is a term an NLP system found in a note. Its mapped concepts become note_nlp records linked to their note, and records in their domain's table (e.g. conditions) linked to the note_nlp record.",
+        "Each row is a term an NLP system found in a note. Its mapped concepts become note_nlp records linked to their note, and records in their domain's table (e.g. conditions), marked as NLP-derived by the type concept.",
     },
   ];
 

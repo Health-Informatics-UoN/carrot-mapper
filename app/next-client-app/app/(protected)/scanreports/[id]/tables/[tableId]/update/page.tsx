@@ -8,6 +8,8 @@ import {
 } from "@/api/scanreports";
 import { lookupConcept } from "@/api/concepts";
 import { TableFieldMappingsForm } from "@/components/scanreports/TableFieldMappingsForm";
+import { NoteTableExportStatus } from "@/components/scanreports/NoteTableExportStatus";
+import { getVocabulariesList } from "@/api/vocabularies";
 import { NlpSettingsForm } from "@/components/scanreports/NlpSettingsForm";
 import { objToQuery } from "@/lib/client-utils";
 import { AlertCircleIcon } from "lucide-react";
@@ -88,6 +90,11 @@ export default async function UpdateTable(props: UpdateTableProps) {
         ? getTableNlpSettings(id, tableId)
         : Promise.resolve(null),
     ]);
+  // For note_nlp tables whose term codes come from a vocabulary
+  const vocabularies =
+    table.table_role === "note_nlp"
+      ? (await getVocabulariesList("page_size=1000")).results
+      : [];
 
   const canUpdate =
     permissions.permissions.includes("CanEdit") ||
@@ -127,12 +134,19 @@ export default async function UpdateTable(props: UpdateTableProps) {
       </div>
       {isNoteTable && fieldMappings && (
         <div className="mt-8">
+          <NoteTableExportStatus
+            problems={fieldMappings.export_problems}
+            scanReportId={table.scan_report}
+            tableId={table.id}
+            className="max-w-2xl mb-5"
+          />
           <TableFieldMappingsForm
             scanReportId={table.scan_report}
             tableId={table.id}
             role={table.table_role}
             fieldMappings={fieldMappings}
             scanReportFields={scanReportsFields}
+            vocabularies={vocabularies}
             canUpdate={canUpdate}
           />
         </div>

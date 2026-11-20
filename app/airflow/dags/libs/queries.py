@@ -672,3 +672,48 @@ create_note_nlp_rules_query = """
     AND temp_table.source_field_id IS NOT NULL
     ORDER BY temp_table.object_id;
 """
+
+
+# Concepts on the values of a column that fills one field of a note / note_nlp
+# record (a table field mapping with map_values, e.g. note_type ->
+# note_class_concept_id) give one rule, for that field, and are then removed from
+# the table's concepts so they don't also make records in their domain's table.
+# Not a note_nlp table's term column (note_nlp_concept_id): its concepts keep
+# giving note_nlp records and records in their domain's table.
+create_value_mapped_field_rules_query = """
+    INSERT INTO mapping_mappingrule (
+        created_at, updated_at, omop_field_id, source_field_id, concept_id, scan_report_id, approved
+    )
+    SELECT
+        NOW(), NOW(), field_mapping.omop_field_id, temp_table.source_field_id,
+        temp_table.sr_concept_id, %(scan_report_id)s, TRUE
+    FROM temp_existing_concepts_%(table_id)s AS temp_table
+    JOIN mapping_scanreporttablefieldmapping AS field_mapping
+        ON field_mapping.source_field_id = temp_table.source_field_id
+        AND field_mapping.map_values
+        AND field_mapping.omop_field_id NOT IN (
+            SELECT id FROM mapping_omopfield WHERE field = 'note_nlp_concept_id'
+        )
+    JOIN mapping_scanreporttable AS sr_table
+        ON sr_table.id = field_mapping.scan_report_table_id
+        AND sr_table.table_role IN ('note', 'note_nlp')
+    JOIN mapping_scanreportconcept AS sr_concept ON sr_concept.id = temp_table.sr_concept_id
+    WHERE temp_table.content_type_id = (
+        SELECT id FROM django_content_type
+        WHERE app_label = 'mapping' AND model = 'scanreportvalue'
+    )
+    -- "No matching concept" gives no rules, as everywhere else
+    AND sr_concept.concept_id <> 0
+    ORDER BY temp_table.object_id;
+
+    DELETE FROM temp_existing_concepts_%(table_id)s AS temp_table
+    USING mapping_scanreporttablefieldmapping AS field_mapping
+    JOIN mapping_scanreporttable AS sr_table
+        ON sr_table.id = field_mapping.scan_report_table_id
+        AND sr_table.table_role IN ('note', 'note_nlp')
+    WHERE field_mapping.source_field_id = temp_table.source_field_id
+    AND field_mapping.map_values
+    AND field_mapping.omop_field_id NOT IN (
+        SELECT id FROM mapping_omopfield WHERE field = 'note_nlp_concept_id'
+    );
+"""

@@ -15,6 +15,8 @@ const fetchKeys = {
     scanReportId: string | number,
     tableId: string | number,
   ) => `v2/scanreports/${scanReportId}/tables/${tableId}/field-mappings/`,
+  noteTables: (scanReportId: string | number) =>
+    `v2/scanreports/${scanReportId}/note-tables/`,
   tableNlpSettings: (scanReportId: string | number, tableId: string | number) =>
     `v2/scanreports/${scanReportId}/tables/${tableId}/nlp-settings/`,
   tables: (scanReportId: string, filter?: string) =>
@@ -185,6 +187,19 @@ export async function updateScanReportTable(
     revalidatePath(`/scanreports/${scanReportId}/`);
   } catch (error: any) {
     return { errorMessage: error.message };
+  }
+}
+
+export async function getNoteTables(
+  scanReportId: string | number,
+): Promise<NoteTableSummary[]> {
+  try {
+    return await request<NoteTableSummary[]>(
+      fetchKeys.noteTables(scanReportId),
+    );
+  } catch (error) {
+    console.warn("Failed to fetch note tables.");
+    return [];
   }
 }
 

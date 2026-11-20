@@ -48,23 +48,53 @@ interface TableFieldSpec {
   source: boolean; // can take a source field
   constant: boolean; // can take a constant value
   concept: boolean; // the constant must be a concept id
+  values: boolean; // can take the concepts mapped to a column's values
+  vocabulary: boolean; // can take a vocabulary's codes, looked up by Transform
 }
 
 interface TableFieldMapping {
   omop_field: string;
   source_field: number | null;
+  source_field_name: string | null;
   constant_value: string | null;
   concept_name: string | null;
+  map_values: boolean;
+  // The vocabulary whose codes the column holds (note_nlp_concept_id only)
+  vocabulary_id: string | null;
+  // With map_values: how many of the column's values have a concept
+  values_total?: number;
+  values_mapped?: number;
 }
 
 interface TableFieldMappings {
   fields: TableFieldSpec[];
   mappings: TableFieldMapping[];
+  // Why the table would be left out of the exported rules (empty if it isn't)
+  export_problems: NoteTableExportProblem[];
+}
+
+// Something to set before a note / note_nlp table is fully exported, and where
+// it's set: the table settings, the table's note fields, or a column's values
+interface NoteTableExportProblem {
+  message: string;
+  where: "table" | "fields" | "values";
+}
+
+// A note / note_nlp table as listed on the rules page
+interface NoteTableSummary {
+  id: number;
+  name: string;
+  table_role: "note" | "note_nlp";
+  type_concept_id: number | null;
+  mappings: TableFieldMapping[];
+  export_problems: NoteTableExportProblem[];
 }
 
 type TableFieldMappingInput =
   | { omop_field: string; source_field: number }
-  | { omop_field: string; constant_value: string };
+  | { omop_field: string; constant_value: string }
+  | { omop_field: string; source_field: number; map_values: true }
+  | { omop_field: string; source_field: number; vocabulary_id: string };
 
 interface NlpExclusion {
   source_field: number;

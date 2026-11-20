@@ -7,7 +7,7 @@ _get_omop_field cache around the class, for the reasons given on
 test_views.TestPersonConceptValidation.
 """
 
-from data.models import Concept
+from data.models import Concept, Vocabulary
 from django.contrib.auth import get_user_model
 from django.contrib.contenttypes.models import ContentType
 from django.test import TestCase
@@ -297,20 +297,29 @@ class TestTableFieldMappingsApi(NoteTablesTestBase):
                 {
                     "omop_field": "note_class_concept_id",
                     "source_field": None,
+                    "source_field_name": None,
                     "constant_value": str(self.class_concept.concept_id),
                     "concept_name": "Clinic letter",
+                    "map_values": False,
+                    "vocabulary_id": None,
                 },
                 {
                     "omop_field": "note_id",
                     "source_field": self.notes_ref.id,
+                    "source_field_name": "note_ref",
                     "constant_value": None,
                     "concept_name": None,
+                    "map_values": False,
+                    "vocabulary_id": None,
                 },
                 {
                     "omop_field": "note_text",
                     "source_field": self.notes_text.id,
+                    "source_field_name": "text",
                     "constant_value": None,
                     "concept_name": None,
+                    "map_values": False,
+                    "vocabulary_id": None,
                 },
             ],
         )
@@ -324,6 +333,8 @@ class TestTableFieldMappingsApi(NoteTablesTestBase):
                 "source": True,
                 "constant": False,
                 "concept": False,
+                "values": False,
+                "vocabulary": False,
             },
         )
         self.assertTrue(fields["language_concept_id"]["concept"])
@@ -347,6 +358,11 @@ class TestTableFieldMappingsApi(NoteTablesTestBase):
                 {"omop_field": "note_id", "source_field": self.nlp_note_ref.id},
                 {"omop_field": "lexical_variant", "source_field": self.nlp_term.id},
                 {"omop_field": "nlp_system", "constant_value": "MedCAT 1.12"},
+                {
+                    "omop_field": "note_nlp_concept_id",
+                    "source_field": self.nlp_code.id,
+                    "map_values": True,
+                },
             ],
         )
         self.assertEqual(response.status_code, 200, response.content)
@@ -445,6 +461,177 @@ class TestTableFieldMappingsApi(NoteTablesTestBase):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         self.assertEqual(self.notes.field_mappings.count(), 0)
+
+
+class TestNoteTableExportStatus(NoteTablesTestBase):
+    """
+    Note tables are built from field mappings rather than mapping rules, so the
+    API says why one would be left out of the exported rules.
+    """
+
+    def _field_mappings(self, table):
+        return self.client.get(
+            f"/api/v2/scanreports/{self.scan_report.id}/tables/{table.id}/field-mappings/"
+        ).json()
+
+    def _note_tables(self):
+        response = self.client.get(
+            f"/api/v2/scanreports/{self.scan_report.id}/note-tables/"
+        )
+        self.assertEqual(response.status_code, 200, response.content)
+        return {table["name"]: table for table in response.json()}
+
+    def _map_notes(self):
+        self.client.put(
+            f"/api/v2/scanreports/{self.scan_report.id}/tables/{self.notes.id}/field-mappings/",
+            [
+                {"omop_field": "note_id", "source_field": self.notes_ref.id},
+                {"omop_field": "note_text", "source_field": self.notes_text.id},
+            ],
+            format="json",
+        )
+
+    def test_note_table_lists_what_is_missing(self):
+        problems = self._field_mappings(self.notes)["export_problems"]
+        self.assertEqual(
+            [problem["where"] for problem in problems], ["table", "table", "fields"]
+        )
+        self.assertIn("Person ID", problems[0]["message"])
+        self.assertIn("Date Event", problems[1]["message"])
+        self.assertIn("Save fields", problems[2]["message"])
+
+    def test_note_table_ready(self):
+        self._map_notes()
+        self.notes.person_id = _field(self.notes, "person_id", "INT")
+        self.notes.date_event = _field(self.notes, "note_date")
+        self.notes.save()
+        self.assertEqual(self._field_mappings(self.notes)["export_problems"], [])
+
+    def _map_nlp(self, term):
+        response = self.client.put(
+            f"/api/v2/scanreports/{self.scan_report.id}/tables/{self.nlp.id}/field-mappings/",
+            [
+                {"omop_field": "note_id", "source_field": self.nlp_note_ref.id},
+                {"omop_field": "lexical_variant", "source_field": self.nlp_term.id},
+                {
+                    "omop_field": "note_nlp_concept_id",
+                    "source_field": self.nlp_code.id,
+                    **term,
+                },
+            ],
+            format="json",
+        )
+        self.assertEqual(response.status_code, 200, response.content)
+        return response.json()
+
+    def test_nlp_table_needs_its_term_field(self):
+        self.client.put(
+            f"/api/v2/scanreports/{self.scan_report.id}/tables/{self.nlp.id}/field-mappings/",
+            [{"omop_field": "note_id", "source_field": self.nlp_note_ref.id}],
+            format="json",
+        )  # refused: required fields missing
+        problems = self._field_mappings(self.nlp)["export_problems"]
+        self.assertEqual([problem["where"] for problem in problems], ["fields"])
+
+    def test_nlp_table_needs_term_concepts(self):
+        self._map_nlp({"map_values": True})
+        problems = self._field_mappings(self.nlp)["export_problems"]
+        self.assertEqual([problem["where"] for problem in problems], ["values"])
+        self.assertIn("snomed_code", problems[0]["message"])
+        self.assertIn("Codes from a vocabulary", problems[0]["message"])
+
+        value = ScanReportValue.objects.create(
+            scan_report_field=self.nlp_code, value="22298006", frequency=1
+        )
+        save_mapping_rules(
+            ScanReportConcept.objects.create(
+                concept=self.condition,
+                content_type=ContentType.objects.get_for_model(ScanReportValue),
+                object_id=value.id,
+            )
+        )
+        problems = self._field_mappings(self.nlp)["export_problems"]
+        self.assertNotIn("values", [problem["where"] for problem in problems])
+
+    def test_nlp_term_codes_from_a_vocabulary(self):
+        Vocabulary.objects.create(
+            vocabulary_id="SNOMED",
+            vocabulary_name="SNOMED CT",
+            vocabulary_reference="",
+            vocabulary_concept_id=44819097,
+        )
+        listed = self._map_nlp({"vocabulary_id": "SNOMED"})
+        term = next(
+            m for m in listed["mappings"] if m["omop_field"] == "note_nlp_concept_id"
+        )
+        self.assertEqual(term["vocabulary_id"], "SNOMED")
+        self.assertEqual(term["source_field_name"], "snomed_code")
+        self.assertFalse(term["map_values"])
+        # Transform finds the concepts, so none need mapping in Mapper
+        self.assertEqual(listed["export_problems"], [])
+        fields = {f["omop_field"]: f for f in listed["fields"]}
+        self.assertTrue(fields["note_nlp_concept_id"]["vocabulary"])
+        self.assertFalse(fields["section_concept_id"]["vocabulary"])
+
+        # Hand-mapped concepts on the column still give the usual rules
+        value = ScanReportValue.objects.create(
+            scan_report_field=self.nlp_code, value="22298006", frequency=1
+        )
+        rules = save_mapping_rules(
+            ScanReportConcept.objects.create(
+                concept=self.condition,
+                content_type=ContentType.objects.get_for_model(ScanReportValue),
+                object_id=value.id,
+            )
+        )
+        tables = {rule.omop_field.table.table for rule in rules}
+        self.assertEqual(tables, {"note_nlp", "condition_occurrence"})
+
+    def test_vocabulary_validation(self):
+        url = f"/api/v2/scanreports/{self.scan_report.id}/tables/{self.nlp.id}/field-mappings/"
+        base = [
+            {"omop_field": "note_id", "source_field": self.nlp_note_ref.id},
+            {"omop_field": "lexical_variant", "source_field": self.nlp_term.id},
+        ]
+        cases = {
+            "unknown vocabulary": {
+                "omop_field": "note_nlp_concept_id",
+                "source_field": self.nlp_code.id,
+                "vocabulary_id": "NOPE",
+            },
+            "no column": {
+                "omop_field": "note_nlp_concept_id",
+                "vocabulary_id": "SNOMED",
+            },
+            "not the term field": {
+                "omop_field": "section_concept_id",
+                "source_field": self.nlp_code.id,
+                "vocabulary_id": "SNOMED",
+            },
+        }
+        Vocabulary.objects.create(
+            vocabulary_id="SNOMED",
+            vocabulary_name="SNOMED CT",
+            vocabulary_reference="",
+            vocabulary_concept_id=44819097,
+        )
+        for case, item in cases.items():
+            with self.subTest(case):
+                response = self.client.put(url, base + [item], format="json")
+                self.assertEqual(response.status_code, 400, response.content)
+
+    def test_note_tables_endpoint(self):
+        self._map_notes()
+        ScanReportTable.objects.create(scan_report=self.scan_report, name="other.csv")
+        tables = self._note_tables()
+        self.assertEqual(sorted(tables), ["nlp.csv", "notes.csv"])
+        notes = tables["notes.csv"]
+        self.assertEqual(notes["table_role"], TableRole.NOTE)
+        self.assertEqual(
+            [(m["omop_field"], m["source_field_name"]) for m in notes["mappings"]],
+            [("note_id", "note_ref"), ("note_text", "text")],
+        )
+        self.assertIn("Person ID", notes["export_problems"][0]["message"])
 
 
 class TestNlpSettingsApi(NoteTablesTestBase):
@@ -624,3 +811,177 @@ class TestTableRoleDatabaseDefault(TestCase):
         self.assertEqual(
             ScanReportTable.objects.get(id=table_id).table_role, TableRole.STANDARD
         )
+
+
+class TestValueMappedConceptFields(NoteTablesTestBase):
+    """A note concept field whose concepts come from a column's values."""
+
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
+        cls.note_type = _field(cls.notes, "note_type")
+        cls.notes.person_id = _field(cls.notes, "patient_id", "INT")
+        cls.notes.date_event = _field(cls.notes, "note_date")
+        cls.notes.save()
+        cls.outpatient = ScanReportValue.objects.create(
+            scan_report_field=cls.note_type, value="Outpatient note", frequency=10
+        )
+        cls.discharge = ScanReportValue.objects.create(
+            scan_report_field=cls.note_type, value="Discharge summary", frequency=3
+        )
+        # Note class concepts aren't in a domain with an OMOP table
+        cls.outpatient_class = _concept(920101, "Outpatient note", "Note Type")
+        cls.discharge_class = _concept(920102, "Discharge summary", "Note Type")
+
+    def _fields_url(self):
+        return f"/api/v2/scanreports/{self.scan_report.id}/tables/{self.notes.id}/field-mappings/"
+
+    def _put_fields(self, class_mapping):
+        return self.client.put(
+            self._fields_url(),
+            [
+                {"omop_field": "note_id", "source_field": self.notes_ref.id},
+                {"omop_field": "note_text", "source_field": self.notes_text.id},
+                {"omop_field": "note_class_concept_id", **class_mapping},
+            ],
+            format="json",
+        )
+
+    def _map_value(self, value, concept):
+        return self.client.post(
+            "/api/v2/scanreports/concepts/",
+            {
+                "object_id": value.id,
+                "concept": concept.concept_id,
+                "content_type": "scanreportvalue",
+                "table_id": self.notes.id,
+            },
+            format="json",
+        )
+
+    def _class_rules(self):
+        return MappingRule.objects.filter(
+            omop_field__table__table="note", omop_field__field="note_class_concept_id"
+        )
+
+    def test_map_values_mapping_and_progress(self):
+        response = self._put_fields(
+            {"source_field": self.note_type.id, "map_values": True}
+        )
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertEqual(
+            self._map_value(self.outpatient, self.outpatient_class).status_code, 201
+        )
+
+        listed = self.client.get(self._fields_url()).json()
+        mapping = next(
+            m for m in listed["mappings"] if m["omop_field"] == "note_class_concept_id"
+        )
+        self.assertEqual(
+            mapping,
+            {
+                "omop_field": "note_class_concept_id",
+                "source_field": self.note_type.id,
+                "constant_value": None,
+                "concept_name": None,
+                "map_values": True,
+                "vocabulary_id": None,
+                "source_field_name": "note_type",
+                "values_total": 2,
+                "values_mapped": 1,
+            },
+        )
+        fields = {f["omop_field"]: f for f in listed["fields"]}
+        self.assertTrue(fields["note_class_concept_id"]["values"])
+        self.assertFalse(fields["note_event_field_concept_id"]["values"])
+        self.assertFalse(fields["note_text"]["values"])
+
+    def test_value_concepts_fill_the_field_only(self):
+        self._put_fields({"source_field": self.note_type.id, "map_values": True})
+
+        response = self._map_value(self.outpatient, self.outpatient_class)
+        self.assertEqual(response.status_code, 201, response.content)
+
+        rules = MappingRule.objects.filter(concept__object_id=self.outpatient.id)
+        self.assertEqual(
+            [
+                (r.omop_field.table.table, r.omop_field.field, r.source_field_id)
+                for r in rules
+            ],
+            [("note", "note_class_concept_id", self.note_type.id)],
+        )
+
+    def test_one_concept_per_value_and_no_field_level_concepts(self):
+        self._put_fields({"source_field": self.note_type.id, "map_values": True})
+        self._map_value(self.outpatient, self.outpatient_class)
+
+        second = self._map_value(self.outpatient, self.discharge_class)
+        self.assertEqual(second.status_code, 400)
+        self.assertIn("can only have one concept", second.json()["detail"])
+
+        field_level = self.client.post(
+            "/api/v2/scanreports/concepts/",
+            {
+                "object_id": self.note_type.id,
+                "concept": self.outpatient_class.concept_id,
+                "content_type": "scanreportfield",
+                "table_id": self.notes.id,
+            },
+            format="json",
+        )
+        self.assertEqual(field_level.status_code, 400)
+        self.assertIn("map a concept to each value", field_level.json()["detail"])
+
+    def test_rules_follow_the_mapping_being_switched(self):
+        # Concepts mapped before the column is chosen get their rules when it is
+        concept = ScanReportConcept.objects.create(
+            concept=self.discharge_class,
+            content_type=ContentType.objects.get_for_model(ScanReportValue),
+            object_id=self.discharge.id,
+        )
+        self.assertFalse(self._class_rules().exists())
+
+        self._put_fields({"source_field": self.note_type.id, "map_values": True})
+        self.assertEqual(
+            list(self._class_rules().values_list("concept_id", flat=True)), [concept.id]
+        )
+
+        # ...and lose them when it stops filling the field
+        self._put_fields({"constant_value": str(self.outpatient_class.concept_id)})
+        self.assertFalse(self._class_rules().exists())
+
+    def test_validation(self):
+        cases = {
+            "field without values option": [
+                {"omop_field": "note_id", "source_field": self.notes_ref.id},
+                {
+                    "omop_field": "note_text",
+                    "source_field": self.note_type.id,
+                    "map_values": True,
+                },
+            ],
+            "no column": [
+                {"omop_field": "note_id", "source_field": self.notes_ref.id},
+                {"omop_field": "note_text", "source_field": self.notes_text.id},
+                {"omop_field": "note_class_concept_id", "map_values": True},
+            ],
+            "column used twice": [
+                {"omop_field": "note_id", "source_field": self.notes_ref.id},
+                {"omop_field": "note_text", "source_field": self.notes_text.id},
+                {
+                    "omop_field": "note_class_concept_id",
+                    "source_field": self.note_type.id,
+                    "map_values": True,
+                },
+                {
+                    "omop_field": "language_concept_id",
+                    "source_field": self.note_type.id,
+                    "map_values": True,
+                },
+            ],
+        }
+        for name, body in cases.items():
+            with self.subTest(name):
+                response = self.client.put(self._fields_url(), body, format="json")
+                self.assertEqual(response.status_code, 400, response.content)
+                self.assertTrue(response.json()["detail"])

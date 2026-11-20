@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Save } from "lucide-react";
+import Link from "next/link";
+import { ArrowRight, Save } from "lucide-react";
 import { toast } from "sonner";
 import { updateTableFieldMappings } from "@/api/scanreports";
 import { Badge } from "@/components/ui/badge";
@@ -23,13 +24,16 @@ import {
 } from "@/components/ui/select";
 import { ConceptIdInput } from "./ConceptIdInput";
 
-type Mode = "source" | "constant" | "none";
+type Mode = "source" | "values" | "vocabulary" | "constant" | "none";
 
 interface Row {
   mode: Mode;
   sourceField: string; // field id, as a string for the select
+  vocabularyId: string; // for "vocabulary": the vocabulary of the codes
   constant: string;
   conceptName: string | null;
+  // As saved, for "values": the column and how many of its values are mapped
+  saved?: { sourceField: string; total: number; mapped: number };
 }
 
 // What each mappable OMOP field holds, in plain words
@@ -50,6 +54,8 @@ const FIELD_HELP: Record<TableRole, Record<string, string>> = {
   note_nlp: {
     note_id:
       "The column holding the key of the note each term was found in (the note table's note_id column).",
+    note_nlp_concept_id:
+      "The concept for each term. It also gives note_nlp_source_concept_id and the records derived from the term, such as conditions.",
     lexical_variant: "The term as it appears in the note.",
     snippet: "The text around the term.",
     offset: "Where the term starts in the note.",
@@ -70,20 +76,37 @@ function initialRows(
   const rows: Record<string, Row> = {};
   for (const spec of specs) {
     const mapping = mappings.find((m) => m.omop_field === spec.omop_field);
-    const defaultMode: Mode = spec.required
-      ? spec.source
+    const defaultMode: Mode = !spec.required
+      ? "none"
+      : spec.source
         ? "source"
-        : "constant"
-      : "none";
+        : spec.vocabulary
+          ? "vocabulary"
+          : spec.values
+            ? "values"
+            : "constant";
     rows[spec.omop_field] = {
       mode: mapping
-        ? mapping.source_field !== null
-          ? "source"
-          : "constant"
+        ? mapping.map_values
+          ? "values"
+          : mapping.vocabulary_id
+            ? "vocabulary"
+            : mapping.source_field !== null
+              ? "source"
+              : "constant"
         : defaultMode,
       sourceField: mapping?.source_field?.toString() ?? "",
+      vocabularyId: mapping?.vocabulary_id ?? "",
       constant: mapping?.constant_value ?? "",
       conceptName: mapping?.concept_name ?? null,
+      saved:
+        mapping?.map_values && mapping.source_field !== null
+          ? {
+              sourceField: mapping.source_field.toString(),
+              total: mapping.values_total ?? 0,
+              mapped: mapping.values_mapped ?? 0,
+            }
+          : undefined,
     };
   }
   return rows;
@@ -95,6 +118,7 @@ export function TableFieldMappingsForm({
   role,
   fieldMappings,
   scanReportFields,
+  vocabularies = [],
   canUpdate,
 }: {
   scanReportId: number;
@@ -102,6 +126,8 @@ export function TableFieldMappingsForm({
   role: TableRole;
   fieldMappings: TableFieldMappings;
   scanReportFields: ScanReportField[];
+  // The vocabularies loaded in Mapper, for fields that take a vocabulary's codes
+  vocabularies?: Vocabulary[];
   canUpdate: boolean;
 }) {
   const specs = fieldMappings.fields;
@@ -121,7 +147,11 @@ export function TableFieldMappingsForm({
       .filter((spec) => spec.required)
       .filter((spec) => {
         const row = rows[spec.omop_field];
-        return row.mode === "source" ? !row.sourceField : !row.constant;
+        return row.mode === "vocabulary"
+          ? !row.sourceField || !row.vocabularyId
+          : row.mode === "source" || row.mode === "values"
+            ? !row.sourceField
+            : !row.constant;
       })
       .map((spec) => spec.omop_field);
     if (missing.length) {
@@ -132,7 +162,31 @@ export function TableFieldMappingsForm({
     const mappings: TableFieldMappingInput[] = [];
     for (const spec of specs) {
       const row = rows[spec.omop_field];
-      if (row.mode === "source" && row.sourceField) {
+      if (row.mode === "values") {
+        if (!row.sourceField) {
+          toast.error(
+            `Choose the column whose values give ${spec.omop_field}, or pick another option.`,
+          );
+          return;
+        }
+        mappings.push({
+          omop_field: spec.omop_field,
+          source_field: Number(row.sourceField),
+          map_values: true,
+        });
+      } else if (row.mode === "vocabulary") {
+        if (!row.sourceField || !row.vocabularyId) {
+          toast.error(
+            `Choose the column holding the codes for ${spec.omop_field}, and their vocabulary.`,
+          );
+          return;
+        }
+        mappings.push({
+          omop_field: spec.omop_field,
+          source_field: Number(row.sourceField),
+          vocabulary_id: row.vocabularyId,
+        });
+      } else if (row.mode === "source" && row.sourceField) {
         mappings.push({
           omop_field: spec.omop_field,
           source_field: Number(row.sourceField),
@@ -169,9 +223,10 @@ export function TableFieldMappingsForm({
         <CardDescription>
           {role === "note"
             ? "Each row of this table becomes a note. Choose the column or fixed value for each note field."
-            : "Each term found by NLP becomes a note_nlp record, alongside the concepts mapped to it. Choose the column or fixed value for the other note_nlp fields."}{" "}
-          These only affect the exported rules, so saving doesn&apos;t re-run
-          auto-mapping.
+            : "Each term found by NLP becomes a note_nlp record. Choose the column holding each term's code for note_nlp_concept_id, and the column or fixed value for the other note_nlp fields."}{" "}
+          For concept fields that vary from row to row, such as the kind of
+          note, choose &ldquo;Map column values&rdquo; and map the column&apos;s
+          values to concepts, as you would for any other field.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
@@ -180,6 +235,17 @@ export function TableFieldMappingsForm({
           const modes: { value: Mode; label: string }[] = [
             ...(spec.source
               ? [{ value: "source" as Mode, label: "From a column" }]
+              : []),
+            ...(spec.vocabulary
+              ? [
+                  {
+                    value: "vocabulary" as Mode,
+                    label: "Codes from a vocabulary",
+                  },
+                ]
+              : []),
+            ...(spec.values
+              ? [{ value: "values" as Mode, label: "Map column values" }]
               : []),
             ...(spec.constant
               ? [
@@ -196,7 +262,7 @@ export function TableFieldMappingsForm({
           return (
             <div
               key={spec.omop_field}
-              className="grid gap-2 border-b border-border pb-4 last:border-b-0 md:grid-cols-[16rem_10rem_1fr] md:items-start"
+              className="grid gap-2 border-b border-border pb-4 last:border-b-0 md:grid-cols-[16rem_14rem_1fr] md:items-start"
             >
               <div className="flex flex-col gap-1">
                 <div className="flex flex-wrap items-center gap-2">
@@ -236,7 +302,9 @@ export function TableFieldMappingsForm({
               )}
 
               <div>
-                {row.mode === "source" && (
+                {(row.mode === "source" ||
+                  row.mode === "values" ||
+                  row.mode === "vocabulary") && (
                   <Select
                     value={row.sourceField || undefined}
                     onValueChange={(sourceField) =>
@@ -258,6 +326,24 @@ export function TableFieldMappingsForm({
                       ))}
                     </SelectContent>
                   </Select>
+                )}
+                {row.mode === "vocabulary" && (
+                  <VocabularyCodes
+                    vocabularyId={row.vocabularyId}
+                    vocabularies={vocabularies}
+                    onChange={(vocabularyId) =>
+                      update(spec.omop_field, { vocabularyId })
+                    }
+                    label={spec.omop_field}
+                    disabled={!canUpdate}
+                  />
+                )}
+                {row.mode === "values" && (
+                  <ValueMappingStatus
+                    row={row}
+                    scanReportId={scanReportId}
+                    tableId={tableId}
+                  />
                 )}
                 {row.mode === "constant" &&
                   (spec.concept ? (
@@ -296,5 +382,104 @@ export function TableFieldMappingsForm({
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+// Under a "Map column values" field: what to do next, and how far it's got
+function ValueMappingStatus({
+  row,
+  scanReportId,
+  tableId,
+}: {
+  row: Row;
+  scanReportId: number;
+  tableId: number;
+}) {
+  const saved = row.saved && row.saved.sourceField === row.sourceField;
+  if (!row.sourceField) {
+    return (
+      <p className="mt-2 text-sm text-muted-foreground">
+        Choose the column whose values say what this field should be, e.g. the
+        note type.
+      </p>
+    );
+  }
+  if (!saved) {
+    return (
+      <p className="mt-2 text-sm text-muted-foreground">
+        Save, then map each value of this column to a concept.
+      </p>
+    );
+  }
+  const { total, mapped } = row.saved!;
+  return (
+    <div className="mt-2 flex flex-wrap items-center gap-3">
+      <span className="text-sm">
+        {mapped} of {total} value{total === 1 ? "" : "s"} mapped to concepts
+      </span>
+      <Button asChild variant="outline" size="sm">
+        <Link
+          href={`/scanreports/${scanReportId}/tables/${tableId}/fields/${row.sourceField}`}
+        >
+          Map values
+          <ArrowRight className="h-4 w-4" />
+        </Link>
+      </Button>
+      <p className="w-full text-sm text-muted-foreground">
+        Each record gets the concept its value is mapped to. Values without a
+        concept give 0 (no matching concept).
+      </p>
+    </div>
+  );
+}
+
+// Under a "Codes from a vocabulary" field: which vocabulary, and what that means
+function VocabularyCodes({
+  vocabularyId,
+  vocabularies,
+  onChange,
+  label,
+  disabled,
+}: {
+  vocabularyId: string;
+  vocabularies: Vocabulary[];
+  onChange: (vocabularyId: string) => void;
+  label: string;
+  disabled: boolean;
+}) {
+  const vocabulary = vocabularies.find((v) => v.vocabulary_id === vocabularyId);
+  return (
+    <div className="mt-2 flex flex-col gap-2">
+      <Select
+        value={vocabularyId || undefined}
+        onValueChange={onChange}
+        disabled={disabled}
+      >
+        <SelectTrigger
+          className="max-w-sm"
+          aria-label={`Vocabulary for ${label}`}
+        >
+          <SelectValue placeholder="Choose the codes' vocabulary" />
+        </SelectTrigger>
+        <SelectContent>
+          {vocabularies.map((v) => (
+            <SelectItem key={v.vocabulary_id} value={v.vocabulary_id}>
+              {v.vocabulary_id}
+              {v.vocabulary_name && v.vocabulary_name !== v.vocabulary_id
+                ? ` (${v.vocabulary_name})`
+                : ""}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <p className="text-sm text-muted-foreground">
+        Each value is a {vocabulary?.vocabulary_id ?? "vocabulary"} code as the
+        vocabulary itself writes it (e.g. 22298006 for SNOMED), not an OMOP
+        concept ID. Carrot Transform finds each code&apos;s concept in the
+        vocabulary, so the values don&apos;t need mapping here. Codes it
+        can&apos;t find give 0 (no matching concept) and no derived records. Any
+        value you do map to a concept by hand is used instead.
+      </p>
+    </div>
   );
 }

@@ -146,10 +146,11 @@ export function NlpSettingsForm({
         <CardDescription>
           Concepts mapped on this table also become records in their own
           domain&apos;s table, such as conditions, with the type concept set
-          above. A derived record is only written when its note_nlp record is
-          (so when its note was found) and the row matches none of the
-          exclusions below. These settings only affect the exported rules, so
-          saving doesn&apos;t re-run auto-mapping.
+          above (use 32858, NLP, to mark them as NLP-derived). A derived record
+          is only written when its note_nlp record is (so when its note was
+          found) and the row matches none of the exclusions below. These
+          settings only affect the exported rules, so saving doesn&apos;t re-run
+          auto-mapping.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-8">
@@ -243,6 +244,13 @@ export function NlpSettingsForm({
               in fact_relationship, in both directions. The derived
               records&apos; domains come from the vocabulary. Leave these empty
               to write derived records without links.
+            </p>
+            <p className="text-sm text-muted-foreground mt-2">
+              The standard vocabularies don&apos;t yet have a domain concept for
+              note_nlp or relationship concepts for NLP derivation, so most
+              people should leave these empty. Derived records are still marked
+              as NLP-derived by the type concept set above (32858, NLP). Only
+              fill these in if your vocabulary has suitable concepts.
             </p>
           </div>
           {LINK_FIELDS.map((field) => (

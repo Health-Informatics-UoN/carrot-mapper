@@ -150,7 +150,9 @@ def _fetch_table_level_mappings(
             sr_table.name AS source_table,
             omop_field.field AS omop_field,
             sr_field.name AS source_field,
-            mapping.constant_value
+            mapping.constant_value,
+            mapping.map_values,
+            mapping.vocabulary_id
         FROM mapping_scanreporttablefieldmapping AS mapping
         JOIN mapping_scanreporttable AS sr_table ON sr_table.id = mapping.scan_report_table_id
         JOIN mapping_omopfield AS omop_field ON omop_field.id = mapping.omop_field_id

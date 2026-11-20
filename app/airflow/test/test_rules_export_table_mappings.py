@@ -300,3 +300,196 @@ def test_json_v2_passes_nlp_settings_through():
     derived = cdm["condition_occurrence"]["nlp.csv"]["derived_from"]
     assert derived["exclude_values"] == {"negated": ["true"]}
     assert derived["fact_relationship"]["domain_concept_id"] == 900019
+
+
+def note_rule(dest_field, value, concept_id, sr_concept_id, source_field="note_type"):
+    """A rule for a value of a notes.csv column, as the rules export returns it."""
+    return {
+        "sr_concept_id": sr_concept_id,
+        "source_table": "notes.csv",
+        "source_field": source_field,
+        "term_mapping_value": value,
+        "dest_table": "note",
+        "dest_field": dest_field,
+        "concept_id": concept_id,
+        "concept_name": f"Concept {concept_id}",
+    }
+
+
+def test_note_concept_field_from_values_becomes_value_mappings():
+    note_fields = [
+        field_mapping("notes.csv", "note_id", source_field="note_ref"),
+        field_mapping("notes.csv", "note_text", source_field="text"),
+        {
+            **field_mapping(
+                "notes.csv", "note_class_concept_id", source_field="note_type"
+            ),
+            "map_values": True,
+        },
+    ]
+    rules = [
+        note_rule("note_class_concept_id", "Outpatient note", 706556, 11),
+        note_rule("note_class_concept_id", "Discharge summary", 706531, 12),
+        # A second concept on a value: the first one is kept
+        note_rule("note_class_concept_id", "Outpatient note", 999999, 13),
+    ]
+
+    cdm = json.loads(
+        rules_to_json_v2(
+            rules, METADATA, [table("notes.csv", "note")], note_fields, TYPE_FIELDS
+        )
+    )["cdm"]
+
+    note = cdm["note"]["notes.csv"]
+    assert note["value_mappings"] == {
+        "note_class_concept_id": {
+            "source_field": "note_type",
+            "values": {"Outpatient note": 706556, "Discharge summary": 706531},
+        }
+    }
+    # The column isn't copied, and its concepts don't make blocks of their own
+    assert note["field_mappings"] == {"note_text": "text"}
+    assert "concept_mappings" not in note
+    assert list(cdm) == ["note"]
+
+
+def test_note_nlp_section_from_values_keeps_term_concepts_separate():
+    nlp_fields = [
+        field_mapping("nlp.csv", "note_id", source_field="note_ref"),
+        {
+            **field_mapping("nlp.csv", "section_concept_id", source_field="section"),
+            "map_values": True,
+        },
+    ]
+    rules = [
+        rule("note_nlp", "note_nlp_concept_id", 4329847),
+        {
+            **rule(
+                "note_nlp",
+                "section_concept_id",
+                1234,
+                source_field="section",
+                value="History",
+            ),
+            "sr_concept_id": 2,
+        },
+    ]
+
+    cdm = json.loads(
+        rules_to_json_v2(rules, METADATA, [nlp_table()], nlp_fields, TYPE_FIELDS)
+    )["cdm"]
+
+    block = cdm["note_nlp"]["nlp.csv"]
+    assert block["value_mappings"] == {
+        "section_concept_id": {"source_field": "section", "values": {"History": 1234}}
+    }
+    assert list(block["concept_mappings"]) == ["snomed_code"]
+
+
+def vocabulary_mapping(vocabulary_id="SNOMED", source_field="snomed_code"):
+    return {
+        **field_mapping("nlp.csv", "note_nlp_concept_id", source_field=source_field),
+        "map_values": False,
+        "vocabulary_id": vocabulary_id,
+    }
+
+
+def test_term_codes_from_a_vocabulary_become_code_lookup():
+    # No concepts are mapped in Mapper: the block is made for the lookup alone
+    result: dict = {}
+    mappings = [
+        vocabulary_mapping(),
+        field_mapping("nlp.csv", "note_id", source_field="note_ref"),
+        field_mapping("nlp.csv", "lexical_variant", source_field="term"),
+    ]
+
+    add_table_level_mappings(
+        result,
+        [nlp_table(**LINK)],
+        mappings,
+        TYPE_FIELDS,
+        nlp_exclusions=[
+            {
+                "source_table": "nlp.csv",
+                "source_field": "negated",
+                "excluded_values": ["true"],
+            }
+        ],
+        domain_concepts={"condition_occurrence": 19},
+    )
+
+    block = result["note_nlp"]["nlp.csv"]
+    assert block["date_mapping"] == {
+        "source_field": "note_date",
+        "dest_field": ["nlp_datetime"],
+    }
+    assert block["references"]["note_id"]["source_field"] == "note_ref"
+    # The codes aren't copied into note_nlp_concept_id
+    assert block["field_mappings"] == {"lexical_variant": "term"}
+    assert block["code_lookup"] == {
+        "source_field": "snomed_code",
+        "vocabulary_id": "SNOMED",
+        "derived_records": {
+            "person_id_mapping": {
+                "source_field": "patient_id",
+                "dest_field": "person_id",
+            },
+            "date_mapping": {"source_field": "note_date"},
+            "type_concept_id": 32858,
+            "exclude_values": {"negated": ["true"]},
+            "fact_relationship": {
+                "domain_concept_ids": {"condition_occurrence": 19},
+                **LINK,
+            },
+        },
+    }
+
+
+def test_code_lookup_keeps_hand_mapped_term_concepts():
+    rules = [
+        rule("note_nlp", "note_nlp_concept_id", 1),
+        rule("condition_occurrence", "condition_concept_id", 1),
+    ]
+
+    output = json.loads(
+        rules_to_json_v2(
+            rules, METADATA, [nlp_table()], [vocabulary_mapping()], TYPE_FIELDS
+        )
+    )["cdm"]
+
+    block = output["note_nlp"]["nlp.csv"]
+    assert block["code_lookup"]["vocabulary_id"] == "SNOMED"
+    assert block["concept_mappings"]["snomed_code"]["22298006"] == {
+        "note_nlp_concept_id": [1]
+    }
+    assert "derived_from" in output["condition_occurrence"]["nlp.csv"]
+
+
+def test_term_column_from_values_keeps_its_usual_rules():
+    rules = [
+        rule("note_nlp", "note_nlp_concept_id", 1),
+        rule("condition_occurrence", "condition_concept_id", 1),
+    ]
+    mapping = {
+        **field_mapping("nlp.csv", "note_nlp_concept_id", source_field="snomed_code"),
+        "map_values": True,
+    }
+
+    output = json.loads(
+        rules_to_json_v2(rules, METADATA, [nlp_table()], [mapping], TYPE_FIELDS)
+    )["cdm"]
+
+    block = output["note_nlp"]["nlp.csv"]
+    assert "value_mappings" not in block and "code_lookup" not in block
+    assert block["concept_mappings"]["snomed_code"]["22298006"] == {
+        "note_nlp_concept_id": [1]
+    }
+    assert "condition_occurrence" in output
+
+
+def test_code_lookup_needs_person_and_date():
+    result: dict = {}
+    add_table_level_mappings(
+        result, [{**nlp_table(), "person_field": None}], [vocabulary_mapping()], {}
+    )
+    assert result == {}
