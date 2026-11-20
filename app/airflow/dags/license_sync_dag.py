@@ -1,9 +1,10 @@
 from datetime import datetime, timedelta
 
-from airflow import DAG
 from airflow.providers.standard.operators.empty import EmptyOperator
 from libs.license_sync.core import sync_spdx_licenses
 from libs.utils import create_task
+
+from airflow import DAG
 
 """
 This DAG keeps the Mappings Registry license table in sync with the SPDX

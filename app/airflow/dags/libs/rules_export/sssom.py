@@ -35,7 +35,7 @@ MAPPING_TOOL = "carrot-mapper"
 # carrot:<field>[/<value>] subjects. The same namespace on every Carrot instance, so
 # the same term has the same IRI everywhere.
 SUBJECT_PREFIX = "carrot"
-SUBJECT_IRI = "https://carrot.ac.uk/sssom/terms/"
+SUBJECT_IRI = "https://carrot.ac.uk/registry/terms/"
 # OMOP:<concept_id> objects. Expands to the concept's page in Athena, OHDSI's
 # vocabulary browser, e.g. OMOP:8532 -> https://athena.ohdsi.org/search-terms/terms/8532
 OMOP_CONCEPT_PREFIX = "OMOP"

@@ -1,6 +1,5 @@
 from datetime import datetime, timedelta
 
-from airflow import DAG
 from airflow.providers.standard.operators.empty import EmptyOperator
 from libs.auto_mapping.core_get_existing_concepts import (
     delete_mapping_rules,
@@ -34,6 +33,8 @@ from libs.utils import (
     update_job_status_on_failure,
     validate_params_auto_mapping,
 )
+
+from airflow import DAG
 
 """
 This DAG automates the process of creating and reusing concepts from scan reports and generating mapping rules.

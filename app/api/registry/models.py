@@ -11,6 +11,7 @@ a Predicate, with a MappingJustification.
 import uuid
 
 from django.conf import settings
+from django.contrib.postgres.indexes import GinIndex
 from django.db import models
 from mapping.models import ScanReport
 
@@ -120,6 +121,7 @@ class ImportJob(models.Model):
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True,
+        blank=True,
         related_name="registry_import_jobs",
     )
     status = models.CharField(
@@ -198,6 +200,7 @@ class MappingSet(models.Model):
     sssom_version = models.CharField(max_length=20, blank=True, default="")
     # SSSOM creator_id: list of CURIEs (e.g. ORCIDs) of who created the set.
     creator_ids = models.JSONField(default=list, blank=True)
+    creator_labels = models.JSONField(default=list, db_default=[], blank=True)
     publication_date = models.DateField(null=True, blank=True)
     # Set-level sources, e.g. object_source = "OMOP", version = "v5.0 31-AUG-23".
     subject_source = models.CharField(max_length=500, blank=True, default="")
@@ -223,6 +226,17 @@ class MappingSet(models.Model):
         ]
         indexes = [
             models.Index(fields=["status", "-published_at"]),
+            # Trigram indexes for fuzzy search (registry/search.py).
+            GinIndex(
+                fields=["title"],
+                opclasses=["gin_trgm_ops"],
+                name="registry_set_title_trgm",
+            ),
+            GinIndex(
+                fields=["description"],
+                opclasses=["gin_trgm_ops"],
+                name="registry_set_desc_trgm",
+            ),
         ]
 
     def __str__(self):
@@ -240,13 +254,13 @@ class TermLevel(models.TextChoices):
 
 
 # CURIE prefix for Carrot subject terms. Must be declared in each
-# MappingSet.curie_map as {CARROT_TERM_PREFIX: CARROT_TERM_NAMESPACE}.
+# MappingSet.curie_map as {SUBJECT_PREFIX: SUBJECT_IRI}.
 # The namespace does not need to resolve; it is an identifier only.
-CARROT_TERM_PREFIX = "carrot"
-CARROT_TERM_NAMESPACE = "https://carrot.ac.uk/sssom/terms/"
+SUBJECT_PREFIX = "carrot"
+SUBJECT_IRI = "https://carrot.ac.uk/registry/terms/"
 # set_uri base for sets published directly from a scan report; every
 # version published from the same scan report shares one set_uri.
-CARROT_MAPPING_SET_NAMESPACE = "https://carrot.ac.uk/sssom/mapping-sets/"
+CARROT_MAPPING_SET_NAMESPACE = "https://carrot.ac.uk/registry/mapping-sets/"
 
 
 class Term(models.Model):
@@ -282,6 +296,9 @@ class Term(models.Model):
     kind = models.CharField(max_length=16, choices=TermKind.choices)
     # Only meaningful when kind = OBJECT (e.g. OMOP vocabulary version).
     object_source_version = models.CharField(max_length=255, blank=True, default="")
+    subject_source_version = models.CharField(
+        max_length=255, blank=True, default="", db_default=""
+    )
 
     # SSSOM extension slots, only for kind = SUBJECT.
     ext_term_level = models.CharField(
@@ -325,7 +342,20 @@ class Term(models.Model):
                 name="registry_term_ext_consistent",
             ),
         ]
-        indexes = [models.Index(fields=["prefix"])]
+        indexes = [
+            models.Index(fields=["prefix"]),
+            # Trigram indexes for fuzzy search (registry/search.py).
+            GinIndex(
+                fields=["label"],
+                opclasses=["gin_trgm_ops"],
+                name="registry_term_label_trgm",
+            ),
+            GinIndex(
+                fields=["canonical_iri"],
+                opclasses=["gin_trgm_ops"],
+                name="registry_term_iri_trgm",
+            ),
+        ]
 
     def __str__(self):
         return self.canonical_iri
@@ -385,6 +415,9 @@ class Mapping(models.Model):
     confidence = models.FloatField(null=True, blank=True)
     # SSSOM author_id / reviewer_id: lists of CURIEs (e.g. ORCIDs).
     author_ids = models.JSONField(default=list, blank=True)
+    author_labels = models.JSONField(default=list, db_default=[], blank=True)
+    creator_ids = models.JSONField(default=list, db_default=[], blank=True)
+    creator_labels = models.JSONField(default=list, db_default=[], blank=True)
     reviewer_ids = models.JSONField(default=list, blank=True)
     mapping_date = models.DateField(null=True, blank=True)
     comment = models.TextField(blank=True, default="")
@@ -392,7 +425,14 @@ class Mapping(models.Model):
     # to a column above, keyed by SSSOM slot name.
     extra_metadata = models.JSONField(default=dict, blank=True)
     # TODO: write docs about this column as Carrot uses it to store the vocabulary ID
-    other = models.CharField(max_length=255, blank=True, null=True)
+    other = models.CharField(max_length=255, blank=True, default="")
+    mapping_source = models.CharField(
+        max_length=500, blank=True, default="", db_default=""
+    )
+    mapping_provider = models.CharField(
+        max_length=500, blank=True, default="", db_default=""
+    )
+    publication_date = models.DateField(null=True, blank=True)
 
     class Meta:
         constraints = [

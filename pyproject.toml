@@ -20,10 +20,11 @@ dev = [
     "pre-commit>=3.6.1,<4",
     "mypy>=1.8.0,<2",
     "flake8>=7.0.0,<8",
-    "ruff>=0.13.0",
+    "ruff>=0.17.5",
 ]
 
-
+[tool.ruff]
+src = ["app"]
 
 [tool.uv]
 default-groups = [

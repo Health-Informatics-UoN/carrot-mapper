@@ -1,6 +1,5 @@
 from datetime import datetime, timedelta
 
-from airflow import DAG
 from airflow.providers.standard.operators.empty import EmptyOperator
 from libs.settings import AIRFLOW_DAGRUN_TIMEOUT, AIRFLOW_DEBUG_MODE
 from libs.SR_processing.core import (
@@ -13,6 +12,8 @@ from libs.utils import (
     create_task,
     validate_params_SR_processing,
 )
+
+from airflow import DAG
 
 """
 This DAG automates the process of creating scan report tables, fields and values 
