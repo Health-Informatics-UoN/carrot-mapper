@@ -7,7 +7,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("registry", "0007_importjob_created_at"),
+        ("registry", "0008_importjob_created_at"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 

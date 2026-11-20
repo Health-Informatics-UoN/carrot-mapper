@@ -15,7 +15,7 @@ def backfill_created_at(apps, schema_editor):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("registry", "0006_prefix_and_publisher"),
+        ("registry", "0007_prefix_and_publisher"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
