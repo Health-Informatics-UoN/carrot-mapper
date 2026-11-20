@@ -92,7 +92,6 @@ class AirflowWorkerService(WorkerService):
         data_dictionary_name: str | None = None,
         # Placeholder for the issue #623 or enabling users to disable/enable reuse concepts function
         trigger_reuse_concepts: bool = True,
-        # TODO: add death_table config here
     ):
         payload = {
             "parent_dataset_id": scan_report.parent_dataset.pk,

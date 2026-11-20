@@ -34,7 +34,9 @@ from mapping.models import (
     ScanReportConcept,
     ScanReportField,
     ScanReportTable,
+    ScanReportTableFieldMapping,
     ScanReportValue,
+    TableRole,
     UploadStatus,
 )
 from mapping.permissions import SCAN_REPORT_QUERIES, get_user_permissions_on_scan_report
@@ -59,7 +61,9 @@ from services.rules import (
     NO_MATCHING_CONCEPT_ID,
     PERSON_DOMAINS,
     _find_destination_table,
+    refresh_field_rules,
     save_mapping_rules,
+    value_mapped_field,
 )
 from services.rules_export import (
     get_mapping_rules_json,
@@ -72,6 +76,7 @@ from services.scan_report_build import (
     bulk_create_values,
 )
 from services.storage_service import StorageService
+from services.table_field_mappings import allowed_fields, export_problems
 from services.worker_service import get_worker_service
 from users.models import Profile
 from users.serializers import ProfileEditSerializer, UserProfileSerializer
@@ -86,6 +91,7 @@ from api.paginations import CustomPagination
 from api.serializers import (
     ConceptSerializerV2,
     GetRulesAnalysis,
+    NlpSettingsSerializer,
     ScanReportConceptDetailSerializerV3,
     ScanReportConceptSerializer,
     ScanReportConceptSerializerV2,
@@ -96,6 +102,7 @@ from api.serializers import (
     ScanReportFieldListSerializerV3,
     ScanReportFilesSerializer,
     ScanReportTableEditSerializer,
+    ScanReportTableFieldMappingSerializer,
     ScanReportTableListSerializerV2,
     ScanReportValueEditSerializer,
     ScanReportValueViewSerializerV2,
@@ -103,6 +110,7 @@ from api.serializers import (
     ScanReportViewSerializerV2,
     UserSerializer,
     VocabularySerializer,
+    validation_error_detail,
 )
 
 logger = logging.getLogger(__name__)
@@ -830,6 +838,230 @@ class ScanReportTableIndexV2(ScanReportPermissionMixin, GenericAPIView, ListMode
         return Response(output_serializer.data, status=status.HTTP_201_CREATED)
 
 
+class ScanReportTableFieldMappingsV2(ScanReportPermissionMixin, GenericAPIView):
+    """
+    Table-level field mappings of a note or note_nlp Scan Report Table: the OMOP
+    fields filled from a source column or a constant rather than from concepts
+    (e.g. note_text, lexical_variant, nlp_system).
+
+    - GET: {"fields": the OMOP fields the table's role can map, "mappings":
+      the table's field mappings, "export_problems": why the table would be
+      left out of the exported rules (empty if it isn't)}.
+    - PUT: replace all the mappings. Body: a list of
+      {"omop_field": <name>, "source_field": <field id>},
+      {"omop_field": <name>, "constant_value": <value>}, or, for a concept field,
+      {"omop_field": <name>, "source_field": <field id>, "map_values": true}
+      to take its concepts from the concepts mapped to that field's values.
+      A note_nlp table's note_nlp_concept_id can instead take
+      {"omop_field": ..., "source_field": <field id>, "vocabulary_id": <id>}:
+      the column holds that vocabulary's codes, looked up by Carrot Transform.
+      Every required field for the table's role must be included.
+    """
+
+    serializer_class = ScanReportTableFieldMappingSerializer
+
+    def get_table(self) -> ScanReportTable:
+        return get_object_or_404(
+            ScanReportTable, pk=self.kwargs["table_pk"], scan_report=self.scan_report
+        )
+
+    def _response(self, table: ScanReportTable) -> Response:
+        mappings = table.field_mappings.select_related("omop_field").order_by(
+            "omop_field__field"
+        )
+        fields = [
+            {
+                "omop_field": name,
+                "required": spec.required,
+                "source": spec.source,
+                "constant": spec.constant,
+                "concept": spec.concept,
+                "values": spec.values,
+                "vocabulary": spec.vocabulary,
+            }
+            for name, spec in allowed_fields(table.table_role).items()
+        ]
+        return Response(
+            {
+                "fields": fields,
+                "mappings": self.get_serializer(mappings, many=True).data,
+                "export_problems": export_problems(table),
+            }
+        )
+
+    def get(self, request, *args, **kwargs):
+        return self._response(self.get_table())
+
+    def put(self, request, *args, **kwargs):
+        table = self.get_table()
+        fields = allowed_fields(table.table_role)
+        if not fields:
+            return Response(
+                {
+                    "detail": f"Tables with role '{table.table_role}' have no field mappings."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        serializer = self.get_serializer(
+            data=request.data,
+            many=True,
+            context={**self.get_serializer_context(), "table": table},
+        )
+        if not serializer.is_valid():
+            return Response(
+                {
+                    "detail": validation_error_detail(serializer.errors),
+                    "errors": serializer.errors,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        names = [item["omop_field"].field for item in serializer.validated_data]
+        value_fields = [
+            item["source_field"]
+            for item in serializer.validated_data
+            if item.get("map_values")
+        ]
+        reused = sorted(
+            {field.name for field in value_fields if value_fields.count(field) > 1}
+        )
+        if reused:
+            return Response(
+                {
+                    "detail": "A column's values can only be mapped to concepts for one field: "
+                    f"{', '.join(reused)} is used for more than one."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        duplicated = sorted({name for name in names if names.count(name) > 1})
+        missing = sorted(
+            name for name, spec in fields.items() if spec.required and name not in names
+        )
+        if duplicated or missing:
+            problems = []
+            if missing:
+                problems.append(f"Required fields missing: {', '.join(missing)}.")
+            if duplicated:
+                problems.append(
+                    f"Fields mapped more than once: {', '.join(duplicated)}."
+                )
+            return Response(
+                {
+                    "detail": " ".join(problems),
+                    "duplicated": duplicated,
+                    "missing_required": missing,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        with transaction.atomic():
+            old_value_fields = {
+                mapping.source_field
+                for mapping in table.field_mappings.filter(map_values=True)
+            }
+            table.field_mappings.all().delete()
+            ScanReportTableFieldMapping.objects.bulk_create(
+                ScanReportTableFieldMapping(scan_report_table=table, **item)
+                for item in serializer.validated_data
+            )
+            # Concepts on columns that start or stop filling a field from their
+            # values now give different rules
+            for field in old_value_fields | set(value_fields):
+                refresh_field_rules(field)
+        return self._response(table)
+
+
+class ScanReportNoteTablesV2(ScanReportPermissionMixin, GenericAPIView):
+    """
+    The note and note_nlp tables of a Scan Report, for the rules page: their
+    records are built from table-level field mappings rather than from mapping
+    rules, so they're listed separately.
+
+    - GET: [{"id", "name", "table_role", "type_concept_id", "mappings" (as the
+      field-mappings endpoint gives them), "export_problems"}], in table order.
+    """
+
+    serializer_class = ScanReportTableFieldMappingSerializer
+    http_method_names = ["get"]
+
+    def get(self, request, *args, **kwargs):
+        tables = ScanReportTable.objects.filter(
+            scan_report=self.scan_report,
+            table_role__in=[TableRole.NOTE, TableRole.NOTE_NLP],
+        ).order_by("id")
+        return Response(
+            [
+                {
+                    "id": table.id,
+                    "name": table.name,
+                    "table_role": table.table_role,
+                    "type_concept_id": table.type_concept_id,
+                    "mappings": self.get_serializer(
+                        table.field_mappings.select_related(
+                            "omop_field", "source_field"
+                        ).order_by("omop_field__field"),
+                        many=True,
+                    ).data,
+                    "export_problems": export_problems(table),
+                }
+                for table in tables
+            ]
+        )
+
+
+class ScanReportTableNlpSettingsV2(ScanReportPermissionMixin, GenericAPIView):
+    """
+    Derived-record settings of a note_nlp Scan Report Table. Domain records
+    derived from the table's rows (e.g. conditions) are only written for rows
+    that give a note_nlp record and match no exclusion, and are linked to their
+    note_nlp record in fact_relationship when the link concepts are set.
+
+    - GET: {"source_domain_concept", "relationship_concept",
+      "reverse_relationship_concept" (each {"concept_id", "concept_name"} or
+      null), "exclusions": [{"source_field", "source_field_name",
+      "excluded_values"}]}.
+    - PUT: replace them. Body: the concepts as concept ids (all three, or all
+      null), and "exclusions": [{"source_field": <field id>,
+      "excluded_values": [...]}].
+
+    Saving doesn't re-run auto-mapping: these settings only affect the rules
+    export.
+    """
+
+    serializer_class = NlpSettingsSerializer
+
+    def get_table(self) -> ScanReportTable:
+        return get_object_or_404(
+            ScanReportTable, pk=self.kwargs["table_pk"], scan_report=self.scan_report
+        )
+
+    def get(self, request, *args, **kwargs):
+        return Response(NlpSettingsSerializer.represent(self.get_table()))
+
+    def put(self, request, *args, **kwargs):
+        table = self.get_table()
+        if table.table_role != TableRole.NOTE_NLP:
+            return Response(
+                {"detail": "Only note_nlp tables have NLP settings."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        serializer = self.get_serializer(
+            data=request.data,
+            context={**self.get_serializer_context(), "table": table},
+        )
+        if not serializer.is_valid():
+            return Response(
+                {
+                    "detail": validation_error_detail(serializer.errors),
+                    "errors": serializer.errors,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        with transaction.atomic():
+            serializer.save_to(table)
+        return Response(NlpSettingsSerializer.represent(table))
+
+
 class ScanReportTableDetailV2(
     ScanReportPermissionMixin, GenericAPIView, RetrieveModelMixin, UpdateModelMixin
 ):
@@ -1539,17 +1771,45 @@ class ScanReportConceptListV2(
             ).scan_report_field
         field_datatype = source_field.type_column
 
+        # A column whose values fill one field of a note / note_nlp record (e.g.
+        # note_type -> note_class_concept_id): each value gets one concept, of
+        # any domain, which fills that field only.
+        value_field = value_mapped_field(source_field)
+        if value_field is not None:
+            target = value_field.omop_field.field
+            if content_type_str == "scanreportfield":
+                return Response(
+                    {
+                        "detail": f"The values of '{source_field.name}' fill {target}, so map a concept to each value rather than to the whole field."
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            if ScanReportConcept.objects.filter(
+                object_id=body["object_id"], content_type=content_type
+            ).exists():
+                return Response(
+                    {
+                        "detail": f"Each value of '{source_field.name}' fills {target}, so it can only have one concept. Remove the current one to change it."
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
         # Checking field's datatype for concept with domain Observation
-        if domain == "observation" and field_datatype.lower() not in [
-            "real",
-            "int",
-            "tinyint",
-            "smallint",
-            "bigint",
-            "varchar",
-            "nvarchar",
-            "float",
-        ]:
+        if (
+            value_field is None
+            and domain == "observation"
+            and field_datatype.lower()
+            not in [
+                "real",
+                "int",
+                "tinyint",
+                "smallint",
+                "bigint",
+                "varchar",
+                "nvarchar",
+                "float",
+            ]
+        ):
             return Response(
                 {
                     "detail": "Concept having 'Observation' domain should be only added to fields having REAL, INT, FLOAT, NVARCHAR or VARCHAR data type."
@@ -1563,9 +1823,10 @@ class ScanReportConceptListV2(
 
         # validate the destination_table
         destination_table = None
-        if not is_no_matching_concept:
+        if not is_no_matching_concept and value_field is None:
             destination_table = _find_destination_table(concept, table)
-            if destination_table is None:
+            # On a note_nlp table the concept still becomes a note_nlp record
+            if destination_table is None and table.table_role != TableRole.NOTE_NLP:
                 return Response(
                     {
                         "detail": "The destination table could not be found or has not been implemented."
@@ -1593,7 +1854,7 @@ class ScanReportConceptListV2(
         # merge into one Person record. But two concepts of the *same* Person
         # domain (e.g. two Gender concepts) would both target the same column,
         # producing multiple/ambiguous Person records for one person.
-        if domain in PERSON_DOMAINS:
+        if domain in PERSON_DOMAINS and value_field is None:
             existing_concepts_on_object = ScanReportConcept.objects.filter(
                 object_id=body["object_id"],
                 content_type=content_type,

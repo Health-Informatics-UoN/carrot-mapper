@@ -12,11 +12,16 @@ from mapping.models import (
     Dataset,
     MappingRecommendation,
     MappingStatus,
+    NlpDerivedRecordExclusion,
+    NlpLinkSettings,
+    OmopField,
     ScanReport,
     ScanReportConcept,
     ScanReportField,
     ScanReportTable,
+    ScanReportTableFieldMapping,
     ScanReportValue,
+    TableRole,
     UploadStatus,
     VisibilityChoices,
 )
@@ -25,6 +30,7 @@ from openpyxl.workbook.workbook import Workbook  # type: ignore
 from rest_framework import serializers
 from rest_framework.exceptions import NotFound, ParseError, PermissionDenied
 from services.rules_export import analyse_concepts
+from services.table_field_mappings import ROLE_OMOP_TABLE, allowed_fields
 from users.serializers import UserSerializer
 
 from api.logger import logger
@@ -807,6 +813,188 @@ class ScanReportTableEditSerializer(DynamicFieldsMixin, serializers.ModelSeriali
         model = ScanReportTable
         fields = "__all__"
 
+    def update(self, instance, validated_data):
+        old_role = instance.table_role
+        instance = super().update(instance, validated_data)
+        if instance.table_role != old_role:
+            # Field mappings belong to the old role's OMOP table, and the NLP
+            # link settings only apply to note_nlp tables
+            instance.field_mappings.all().delete()
+            if instance.table_role != TableRole.NOTE_NLP:
+                NlpLinkSettings.objects.filter(scan_report_table=instance).delete()
+                instance.nlp_exclusions.all().delete()
+        return instance
+
+
+class ScanReportTableFieldMappingSerializer(serializers.Serializer):
+    """
+    One table-level field mapping. `omop_field` is the field's name in the OMOP
+    table for the table's role (note or note_nlp); exactly one of
+    `source_field` (a field of this Scan Report Table) and `constant_value` is
+    given. With `map_values`, a *_concept_id field takes the concepts mapped to
+    `source_field`'s values. With `vocabulary_id` (note_nlp_concept_id only),
+    `source_field` holds that vocabulary's codes, looked up by Carrot Transform.
+    Expects the ScanReportTable as context["table"].
+    """
+
+    omop_field = serializers.CharField()
+    source_field = serializers.PrimaryKeyRelatedField(
+        queryset=ScanReportField.objects.all(), required=False, allow_null=True
+    )
+    constant_value = serializers.CharField(
+        required=False, allow_null=True, max_length=255
+    )
+    map_values = serializers.BooleanField(required=False, default=False)
+    vocabulary_id = serializers.CharField(
+        required=False, allow_null=True, max_length=20
+    )
+
+    def to_representation(self, instance: ScanReportTableFieldMapping):
+        name = instance.omop_field.field
+        concept_name = None
+        if name.endswith("_concept_id") and (instance.constant_value or "").isdigit():
+            concept = Concept.objects.filter(
+                concept_id=int(instance.constant_value)
+            ).first()
+            concept_name = concept.concept_name if concept else None
+        representation = {
+            "omop_field": name,
+            "source_field": instance.source_field_id,
+            "source_field_name": instance.source_field.name
+            if instance.source_field_id
+            else None,
+            "constant_value": instance.constant_value,
+            "concept_name": concept_name,
+            "map_values": instance.map_values,
+            "vocabulary_id": instance.vocabulary_id,
+        }
+        if instance.map_values and instance.source_field_id:
+            representation.update(value_mapping_progress(instance.source_field))
+        return representation
+
+    def validate(self, data):
+        table: ScanReportTable = self.context["table"]
+        fields = allowed_fields(table.table_role)
+        name = data["omop_field"]
+        spec = fields.get(name)
+        if spec is None:
+            raise serializers.ValidationError(
+                {
+                    "omop_field": f"'{name}' can't be mapped on a table with role "
+                    f"'{table.table_role}'. Allowed: {sorted(fields) or 'none'}."
+                }
+            )
+
+        source_field = data.get("source_field")
+        constant = data.get("constant_value")
+        vocabulary_id = data.get("vocabulary_id")
+        if vocabulary_id:
+            if not spec.vocabulary:
+                raise serializers.ValidationError(
+                    {"vocabulary_id": f"'{name}' can't take codes of a vocabulary."}
+                )
+            if source_field is None or constant is not None or data.get("map_values"):
+                raise serializers.ValidationError(
+                    f"'{name}': choose the column holding the vocabulary's codes."
+                )
+            if source_field.scan_report_table_id != table.id:
+                raise serializers.ValidationError(
+                    {
+                        "source_field": f"'{name}': the source field must belong to this table."
+                    }
+                )
+            if not Vocabulary.objects.filter(vocabulary_id=vocabulary_id).exists():
+                raise serializers.ValidationError(
+                    {
+                        "vocabulary_id": f"'{vocabulary_id}' isn't a vocabulary loaded in Mapper."
+                    }
+                )
+            data["omop_field"] = OmopField.objects.get(
+                table__table=ROLE_OMOP_TABLE[table.table_role], field=name
+            )
+            return data
+        data["vocabulary_id"] = None
+        if data.get("map_values"):
+            if not spec.values:
+                raise serializers.ValidationError(
+                    {
+                        "map_values": f"'{name}' can't take concepts from a column's values."
+                    }
+                )
+            if source_field is None or constant is not None:
+                raise serializers.ValidationError(
+                    f"'{name}': choose the column whose values are mapped to concepts."
+                )
+            if source_field.scan_report_table_id != table.id:
+                raise serializers.ValidationError(
+                    {
+                        "source_field": f"'{name}': the source field must belong to this table."
+                    }
+                )
+            data["omop_field"] = OmopField.objects.get(
+                table__table=ROLE_OMOP_TABLE[table.table_role], field=name
+            )
+            return data
+        if (source_field is None) == (constant is None):
+            raise serializers.ValidationError(
+                f"'{name}' needs exactly one of source_field and constant_value."
+            )
+        if source_field is not None:
+            if not spec.source:
+                raise serializers.ValidationError(
+                    {"source_field": f"'{name}' can't take a source field."}
+                )
+            if source_field.scan_report_table_id != table.id:
+                raise serializers.ValidationError(
+                    {
+                        "source_field": f"'{name}': the source field must belong to this table."
+                    }
+                )
+        if constant is not None:
+            if not spec.constant:
+                raise serializers.ValidationError(
+                    {"constant_value": f"'{name}' can't take a constant value."}
+                )
+            if spec.concept and not (
+                constant.isdigit()
+                and Concept.objects.filter(concept_id=int(constant)).exists()
+            ):
+                raise serializers.ValidationError(
+                    {
+                        "constant_value": f"'{name}': '{constant}' is not a known concept id."
+                    }
+                )
+
+        data["omop_field"] = OmopField.objects.get(
+            table__table=ROLE_OMOP_TABLE[table.table_role], field=name
+        )
+        return data
+
+
+def value_mapping_progress(source_field: ScanReportField) -> dict:
+    """How many of a field's values are mapped to concepts, for the UI"""
+    from django.contrib.contenttypes.models import ContentType
+
+    value_ids = ScanReportValue.objects.filter(scan_report_field=source_field).values(
+        "id"
+    )
+    mapped = (
+        ScanReportConcept.objects.filter(
+            content_type=ContentType.objects.get_for_model(ScanReportValue),
+            object_id__in=value_ids,
+        )
+        .values("object_id")
+        .distinct()
+        .count()
+    )
+    return {
+        "source_field_name": source_field.name,
+        "values_total": ScanReportValue.objects.filter(
+            scan_report_field=source_field
+        ).count(),
+        "values_mapped": mapped,
+    }
+
 
 class ScanReportFieldEditSerializer(DynamicFieldsMixin, serializers.ModelSerializer):
     name = serializers.CharField(
@@ -934,3 +1122,152 @@ class GetRulesAnalysis(DynamicFieldsMixin, serializers.ModelSerializer):
 
     def to_representation(self, scan_report):
         return analyse_concepts(scan_report.id)
+
+
+def concept_summary(concept_id: int | None) -> dict | None:
+    """{"concept_id", "concept_name"} for a concept id, or None"""
+    if concept_id is None:
+        return None
+    concept = Concept.objects.filter(concept_id=concept_id).first()
+    return {
+        "concept_id": concept_id,
+        "concept_name": concept.concept_name if concept else None,
+    }
+
+
+class NlpDerivedRecordExclusionSerializer(serializers.Serializer):
+    """
+    One exclusion on a note_nlp table: rows whose `source_field` (a field of the
+    table, in context["table"]) holds one of `excluded_values` give no derived
+    domain records.
+    """
+
+    source_field = serializers.PrimaryKeyRelatedField(
+        queryset=ScanReportField.objects.all()
+    )
+    excluded_values = serializers.ListField(
+        child=serializers.CharField(max_length=255), allow_empty=False
+    )
+
+    def validate_source_field(self, source_field: ScanReportField):
+        if source_field.scan_report_table_id != self.context["table"].id:
+            raise serializers.ValidationError("The field must belong to this table.")
+        return source_field
+
+    def validate_excluded_values(self, values: list[str]):
+        # Matching ignores case and surrounding spaces, so store them trimmed
+        values = list(dict.fromkeys(v.strip() for v in values if v.strip()))
+        if not values:
+            raise serializers.ValidationError("Give at least one value to exclude.")
+        return values
+
+
+class NlpSettingsSerializer(serializers.Serializer):
+    """
+    A note_nlp table's derived-record settings: the fact_relationship link
+    concepts (all three, or none) and the exclusions.
+    """
+
+    LINK_FIELDS = [
+        "source_domain_concept",
+        "relationship_concept",
+        "reverse_relationship_concept",
+    ]
+
+    source_domain_concept = serializers.IntegerField(required=False, allow_null=True)
+    relationship_concept = serializers.IntegerField(required=False, allow_null=True)
+    reverse_relationship_concept = serializers.IntegerField(
+        required=False, allow_null=True
+    )
+    exclusions = NlpDerivedRecordExclusionSerializer(many=True, required=False)
+
+    def validate(self, data):
+        link = [data.get(name) for name in self.LINK_FIELDS]
+        if any(link) and not all(link):
+            raise serializers.ValidationError(
+                "Set all three fact_relationship concepts, or none of them."
+            )
+        for name in self.LINK_FIELDS:
+            concept_id = data.get(name)
+            if (
+                concept_id
+                and not Concept.objects.filter(concept_id=concept_id).exists()
+            ):
+                raise serializers.ValidationError(
+                    {name: f"'{concept_id}' is not a known concept id."}
+                )
+        fields = [item["source_field"].id for item in data.get("exclusions", [])]
+        if len(fields) != len(set(fields)):
+            raise serializers.ValidationError(
+                "Each field can only have one exclusion; list all its values there."
+            )
+        return data
+
+    @staticmethod
+    def represent(table: ScanReportTable) -> dict:
+        link = NlpLinkSettings.objects.filter(scan_report_table=table).first()
+        exclusions = table.nlp_exclusions.select_related("source_field").order_by(
+            "source_field__name"
+        )
+        return {
+            "source_domain_concept": concept_summary(
+                link.source_domain_concept_id if link else None
+            ),
+            "relationship_concept": concept_summary(
+                link.relationship_concept_id if link else None
+            ),
+            "reverse_relationship_concept": concept_summary(
+                link.reverse_relationship_concept_id if link else None
+            ),
+            "exclusions": [
+                {
+                    "source_field": exclusion.source_field_id,
+                    "source_field_name": exclusion.source_field.name,
+                    "excluded_values": exclusion.excluded_values,
+                }
+                for exclusion in exclusions
+            ],
+        }
+
+    def save_to(self, table: ScanReportTable) -> None:
+        data = self.validated_data
+        NlpLinkSettings.objects.update_or_create(
+            scan_report_table=table,
+            defaults={
+                f"{name}_id": data.get(name) or None for name in self.LINK_FIELDS
+            },
+        )
+        table.nlp_exclusions.all().delete()
+        NlpDerivedRecordExclusion.objects.bulk_create(
+            NlpDerivedRecordExclusion(
+                scan_report_table=table,
+                source_field=item["source_field"],
+                excluded_values=item["excluded_values"],
+            )
+            for item in data.get("exclusions", [])
+        )
+
+
+def validation_error_detail(errors) -> str:
+    """Flatten DRF validation errors into one readable message"""
+    messages: list[str] = []
+
+    def walk(value, prefix: str = ""):
+        if isinstance(value, dict):
+            for key, inner in value.items():
+                # list items' errors are keyed by index; their messages say what
+                # they're about, so only name real fields
+                label = (
+                    ""
+                    if key == "non_field_errors" or isinstance(key, int)
+                    else f"{key}: "
+                )
+                walk(inner, f"{prefix}{label}")
+        elif isinstance(value, list):
+            for item in value:
+                walk(item, prefix)
+        elif value:
+            messages.append(f"{prefix}{value}")
+
+    walk(errors)
+    return " ".join(messages) or "Invalid data."

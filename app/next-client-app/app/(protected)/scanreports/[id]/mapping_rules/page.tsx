@@ -3,7 +3,8 @@ import { objToQuery } from "@/lib/client-utils";
 import { DataTable } from "@/components/data-table";
 import { columns } from "./columns";
 import { RulesButton } from "./rules-buttons";
-import { getScanReport } from "@/api/scanreports";
+import { getNoteTables, getScanReport } from "@/api/scanreports";
+import { NoteTablesRulesSummary } from "@/components/scanreports/NoteTablesRulesSummary";
 
 interface ScanReportsMappingRulesProps {
   params: Promise<{
@@ -27,9 +28,10 @@ export default async function ScanReportsMappingRules(
   };
   const combinedParams = { ...defaultParams, ...searchParams };
   const query = objToQuery(combinedParams);
-  const [mappingRulesList, scanReport] = await Promise.all([
+  const [mappingRulesList, scanReport, noteTables] = await Promise.all([
     getMappingRulesList(id, query),
     getScanReport(id),
+    getNoteTables(id),
   ]);
   const fileName = `${
     scanReport?.dataset
@@ -40,6 +42,7 @@ export default async function ScanReportsMappingRules(
 
   return (
     <div>
+      <NoteTablesRulesSummary scanReportId={id} tables={noteTables} />
       <DataTable
         columns={columns}
         data={mappingRulesList.results}

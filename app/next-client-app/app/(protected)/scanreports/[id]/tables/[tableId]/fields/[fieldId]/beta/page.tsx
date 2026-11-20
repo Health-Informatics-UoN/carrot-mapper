@@ -9,6 +9,7 @@ import { columns } from "../columns";
 import { ConceptDataTableV3 } from "@/components/concepts/ConceptDataTableV3";
 import { TableBreadcrumbs } from "@/components/scanreports/TableBreadcrumbs";
 import { ConceptDataFilter } from "@/components/concepts/ConceptDataFilter";
+import { ValueMappedFieldNotice } from "@/components/scanreports/ValueMappedFieldNotice";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
@@ -60,8 +61,17 @@ export default async function ScanReportsValue(props: ScanReportsValueProps) {
     <div>
       <div className="flex justify-between items-center">
         {breadcrumbs}
-        <Button variant="link" asChild><Link href={`/scanreports/${id}/tables/${tableId}/fields/${fieldId}`}>Back to old experience <ArrowLeft className="text-carrot-brand" /></Link></Button>
+        <Button variant="link" asChild>
+          <Link href={`/scanreports/${id}/tables/${tableId}/fields/${fieldId}`}>
+            Back to old experience <ArrowLeft className="text-carrot-brand" />
+          </Link>
+        </Button>
       </div>
+      <ValueMappedFieldNotice
+        scanReportId={id}
+        table={table}
+        fieldId={fieldId}
+      />
       <div>
         <ConceptDataTableV3
           count={scanReportsValues.count}

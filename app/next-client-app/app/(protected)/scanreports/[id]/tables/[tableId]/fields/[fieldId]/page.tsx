@@ -9,6 +9,7 @@ import { columns } from "./columns";
 import { ConceptDataTableV3 } from "@/components/concepts/ConceptDataTableV3";
 import { TableBreadcrumbs } from "@/components/scanreports/TableBreadcrumbs";
 import { ConceptDataFilter } from "@/components/concepts/ConceptDataFilter";
+import { ValueMappedFieldNotice } from "@/components/scanreports/ValueMappedFieldNotice";
 
 interface ScanReportsValueProps {
   params: Promise<{
@@ -55,9 +56,12 @@ export default async function ScanReportsValue(props: ScanReportsValueProps) {
 
   return (
     <div>
-      <div className="flex justify-between items-center">
-        {breadcrumbs}
-      </div>
+      <div className="flex justify-between items-center">{breadcrumbs}</div>
+      <ValueMappedFieldNotice
+        scanReportId={id}
+        table={table}
+        fieldId={fieldId}
+      />
       <div>
         <ConceptDataTableV3
           count={scanReportsValues.count}
