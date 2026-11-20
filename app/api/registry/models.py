@@ -69,6 +69,30 @@ class MappingJustification(models.Model):
         return self.justification_id
 
 
+class Prefix(models.Model):
+    """
+    The registry's CURIE prefixes: each name stands for exactly one namespace
+    and each namespace has exactly one name, across every imported file.
+
+    Term.canonical_iri is a CURIE written with these names, so it identifies
+    one IRI: the same concept is one Term whatever name a file gave its
+    namespace, and two files can't use one name for different namespaces.
+    Seeded with the reserved prefixes (carrot, OMOP, SSSOM's built-ins...);
+    the registry_import DAG adds a file's prefixes the first time a term uses
+    them. Do not edit rows by hand: stored CURIEs depend on them.
+    """
+
+    prefix = models.CharField(max_length=255, primary_key=True)
+    namespace = models.CharField(max_length=1000, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["prefix"]
+
+    def __str__(self):
+        return f"{self.prefix}: {self.namespace}"
+
+
 class Origin(models.Model):
     """How a mapping set entered the registry (CARROT_DIRECT_PUBLISH | SSSOM_UPLOAD)."""
 
@@ -187,6 +211,16 @@ class MappingSet(models.Model):
         blank=True,
         related_name="mapping_sets",
     )
+    # The user who submitted the import (ImportJob.submitted_by, copied so it
+    # outlives the job). The first version of a set_uri decides who may add
+    # versions to it; see registry_import's check_set_owner.
+    publisher = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="registry_mapping_sets",
+    )
     # Only populated when origin = CARROT_DIRECT_PUBLISH.
     source_scan_report = models.ForeignKey(
         ScanReport,
@@ -226,6 +260,7 @@ class MappingSet(models.Model):
         ]
         indexes = [
             models.Index(fields=["status", "-published_at"]),
+            models.Index(fields=["set_uri", "created_at"]),
             # Trigram indexes for fuzzy search (registry/search.py).
             GinIndex(
                 fields=["title"],
@@ -253,13 +288,11 @@ class TermLevel(models.TextChoices):
     VALUE = "VALUE", "Value"
 
 
-# CURIE prefix for Carrot subject terms. Must be declared in each
-# MappingSet.curie_map as {SUBJECT_PREFIX: SUBJECT_IRI}.
-# The namespace does not need to resolve; it is an identifier only.
-SUBJECT_PREFIX = "carrot"
-SUBJECT_IRI = "https://carrot.ac.uk/registry/terms/"
-# set_uri base for sets published directly from a scan report; every
-# version published from the same scan report shares one set_uri.
+# set_uri base for sets published or exported from a scan report:
+# {namespace}{ScanReport.uuid} (registry.services.scan_report_set_uri, which
+# also gives the DAGs the mapping_set_id of SSSOM exports). Every version from
+# the same scan report shares one set_uri, and the uuid keeps it unique across
+# Carrot instances.
 CARROT_MAPPING_SET_NAMESPACE = "https://carrot.ac.uk/registry/mapping-sets/"
 
 
@@ -284,6 +317,9 @@ class Term(models.Model):
 
     Object terms (kind = OBJECT) are the target OMOP concepts, e.g.
     OMOP:22298006; the ext_* columns are always blank for them.
+
+    canonical_iri is a CURIE whose prefix is a registry Prefix, so it expands
+    to exactly one IRI (see Prefix).
     """
 
     id = models.BigAutoField(primary_key=True)
