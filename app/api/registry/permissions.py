@@ -15,7 +15,6 @@ A set's status can be changed by its publisher and by registry admins.
 """
 
 from django.db.models import Exists, OuterRef, Q, QuerySet
-
 from rest_framework.permissions import BasePermission
 
 from registry.models import ImportJob, Mapping, MappingSet, Status, Term

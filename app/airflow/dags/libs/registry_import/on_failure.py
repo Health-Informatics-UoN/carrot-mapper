@@ -21,7 +21,6 @@ from libs.registry_import.helpers import (
     temp_rules_table_suffix,
 )
 
-
 # ImportJob.error_message is shown to the submitter by the API.
 INTERNAL_ERROR_MESSAGE = (
     "The import failed because of an internal error. Please try again, and "

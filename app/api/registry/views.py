@@ -52,10 +52,10 @@ from registry.serializers import (
     MappingSetListSerializer,
     MappingSetWithdrawSerializer,
     PredicateSerializer,
+    RegistryImportAcceptedSerializer,
     RegistryUploadAcceptedSerializer,
     RegistryUploadSerializer,
     RegistryUploadValidationSerializer,
-    RegistryImportAcceptedSerializer,
     ScanReportRegistryPublishSerializer,
     TermSerializer,
 )
