@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, ChevronRight, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Mapping, MappingSet } from "@/types/mapping-registry";
 import { Detail } from "./detail";
@@ -38,8 +38,15 @@ export function MappingSetDetails({ mappingSet, originMapping }: { mappingSet: M
 
       <div className="space-y-5">
         <div className="rounded-lg border p-4">
-          <h1 className="text-lg font-semibold">{mappingSet.title}</h1>
-          <p className="mt-2 text-sm text-muted-foreground">{mappingSet.description}</p>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h1 className="text-lg font-semibold">{mappingSet.title}</h1>
+              <p className="mt-2 text-sm text-muted-foreground">{mappingSet.description}</p>
+            </div>
+            <Button type="button" variant="outline" size="sm" className="shrink-0">
+              <Download className="size-4" /> Download SSSOM
+            </Button>
+          </div>
         </div>
 
         <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
