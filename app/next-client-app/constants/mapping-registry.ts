@@ -39,15 +39,6 @@ export const PAGE_SIZE_OPTIONS = [10, 20, 30, 40, 50];
 export const DEFAULT_PAGE_SIZE = 10;
 export const SEARCH_DEBOUNCE_MS = 350;
 
-// Carrot artwork only; the cloud, title, tagline and label are drawn in code
-// (components/registry/registry-logo.tsx) on the same canvas.
-export const CARROT_SRC = "/mapper-registry-carrot.svg";
-
-// Size of the logo canvas shared by the carrot SVG and the code-drawn parts.
-// These set the aspect ratio; the rendered size comes from the h-* classes.
-export const LOGO_WIDTH = 565;
-export const LOGO_HEIGHT = 660;
-
 // Keeps the dialogs fading/zooming in place instead of sliding in from the top-left.
 export const STATIC_DIALOG_STYLE = {
   "--tw-enter-translate-x": "0px",
