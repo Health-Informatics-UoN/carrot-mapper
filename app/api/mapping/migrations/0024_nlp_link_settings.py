@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
     dependencies = [
         ("data", "__first__"),
-        ("mapping", "0022_table_role_and_field_mappings"),
+        ("mapping", "0023_table_role_and_field_mappings"),
     ]
 
     operations = [

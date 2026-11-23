@@ -24,7 +24,7 @@ def role_to_death_table(apps, schema_editor):
 class Migration(migrations.Migration):
     dependencies = [
         ("data", "__first__"),
-        ("mapping", "0021_add_cdm54_note_fields"),
+        ("mapping", "0022_add_cdm54_note_fields"),
     ]
 
     operations = [

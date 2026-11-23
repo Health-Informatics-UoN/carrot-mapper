@@ -4,7 +4,7 @@ from django.apps import apps
 from django.test import TestCase
 from mapping.models import OmopField, OmopTable
 
-migration = importlib.import_module("mapping.migrations.0019_fix_note_nlp_omop_fields")
+migration = importlib.import_module("mapping.migrations.0020_fix_note_nlp_omop_fields")
 
 
 class TestFixNoteNlpOmopFields(TestCase):

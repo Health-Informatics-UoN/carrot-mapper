@@ -69,7 +69,7 @@ def fix_note_nlp_fields(apps, schema_editor):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("mapping", "0018_alter_scanreportconcept_creation_type"),
+        ("mapping", "0019_scanreport_uuid"),
     ]
 
     operations = [

@@ -3,7 +3,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("mapping", "0023_nlp_link_settings"),
+        ("mapping", "0024_nlp_link_settings"),
     ]
 
     operations = [

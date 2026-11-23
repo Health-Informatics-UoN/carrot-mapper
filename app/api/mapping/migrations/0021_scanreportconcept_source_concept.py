@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
     dependencies = [
         ("data", "__first__"),
-        ("mapping", "0019_fix_note_nlp_omop_fields"),
+        ("mapping", "0020_fix_note_nlp_omop_fields"),
     ]
 
     operations = [

@@ -3,7 +3,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("mapping", "0024_scanreporttable_table_role_db_default"),
+        ("mapping", "0025_scanreporttable_table_role_db_default"),
     ]
 
     operations = [

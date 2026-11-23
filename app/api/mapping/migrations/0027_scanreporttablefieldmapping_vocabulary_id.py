@@ -3,7 +3,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("mapping", "0025_scanreporttablefieldmapping_map_values"),
+        ("mapping", "0026_scanreporttablefieldmapping_map_values"),
     ]
 
     operations = [

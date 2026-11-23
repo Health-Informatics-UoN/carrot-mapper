@@ -27,7 +27,7 @@ def remove_note_fields(apps, schema_editor):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("mapping", "0020_scanreportconcept_source_concept"),
+        ("mapping", "0021_scanreportconcept_source_concept"),
     ]
 
     operations = [
