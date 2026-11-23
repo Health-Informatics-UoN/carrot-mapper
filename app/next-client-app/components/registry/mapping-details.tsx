@@ -1,22 +1,40 @@
 import Link from "next/link";
-import { ArrowDown, ArrowRight, Layers } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowRight, Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import type { Mapping } from "@/types/mapping-registry";
+import type { Mapping, MappingSet } from "@/types/mapping-registry";
 import { Detail } from "./detail";
 import { RegistryBreadcrumbs } from "./registry-breadcrumbs";
 import { BackToResultsLink } from "./back-to-results-link";
 
-export function MappingDetails({ mapping }: { mapping: Mapping }) {
+export function MappingDetails({ mapping, parentSet }: { mapping: Mapping; parentSet?: MappingSet }) {
   return (
     <div className="mx-auto w-full max-w-2xl space-y-5 py-6">
       <RegistryBreadcrumbs
-        items={[
-          { label: "Registry", href: "/registry" },
-          { label: "Mappings", href: "/registry/mappings" },
-          { label: mapping.sourceTerm },
-        ]}
+        items={
+          parentSet
+            ? [
+                { label: "Registry", href: "/registry" },
+                { label: "Mapping sets", href: "/registry/mapping-sets" },
+                { label: parentSet.title, href: `/registry/mapping-sets/${parentSet.id}` },
+                { label: mapping.sourceTerm },
+              ]
+            : [
+                { label: "Registry", href: "/registry" },
+                { label: "Mappings", href: "/registry/mappings" },
+                { label: mapping.sourceTerm },
+              ]
+        }
       />
-      <BackToResultsLink fallbackHref="/registry/mappings" sessionKey="registry:lastMappingsUrl" />
+      {parentSet ? (
+        <Link
+          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+          href={`/registry/mapping-sets/${parentSet.id}`}
+        >
+          <ArrowLeft className="size-4" /> Back to {parentSet.title}
+        </Link>
+      ) : (
+        <BackToResultsLink fallbackHref="/registry/mappings" sessionKey="registry:lastMappingsUrl" />
+      )}
 
       <div className="space-y-6">
         <div className="rounded-xl border bg-card p-5 shadow-sm">
@@ -58,7 +76,7 @@ export function MappingDetails({ mapping }: { mapping: Mapping }) {
             <Detail label="License" value={mapping.license} />
           </dl>
           <Button asChild variant="outline" className="mt-4">
-            <Link href={`/registry/mapping-sets/${mapping.mappingSetId}`}>
+            <Link href={`/registry/mapping-sets/${mapping.mappingSetId}?fromMapping=${encodeURIComponent(mapping.id)}`}>
               <Layers className="size-4" /> View mapping set
             </Link>
           </Button>

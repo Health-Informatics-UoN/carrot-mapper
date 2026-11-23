@@ -1,22 +1,40 @@
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
+import { ArrowLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import type { MappingSet } from "@/types/mapping-registry";
+import type { Mapping, MappingSet } from "@/types/mapping-registry";
 import { Detail } from "./detail";
 import { RegistryBreadcrumbs } from "./registry-breadcrumbs";
 import { BackToResultsLink } from "./back-to-results-link";
 
-export function MappingSetDetails({ mappingSet }: { mappingSet: MappingSet }) {
+export function MappingSetDetails({ mappingSet, originMapping }: { mappingSet: MappingSet; originMapping?: Mapping }) {
   return (
     <div className="mx-auto w-full max-w-2xl space-y-5 py-6">
       <RegistryBreadcrumbs
-        items={[
-          { label: "Registry", href: "/registry" },
-          { label: "Mapping sets", href: "/registry/mapping-sets" },
-          { label: mappingSet.title },
-        ]}
+        items={
+          originMapping
+            ? [
+                { label: "Registry", href: "/registry" },
+                { label: "Mappings", href: "/registry/mappings" },
+                { label: originMapping.sourceTerm, href: `/registry/mappings/${originMapping.id}` },
+                { label: mappingSet.title },
+              ]
+            : [
+                { label: "Registry", href: "/registry" },
+                { label: "Mapping sets", href: "/registry/mapping-sets" },
+                { label: mappingSet.title },
+              ]
+        }
       />
-      <BackToResultsLink fallbackHref="/registry/mapping-sets" sessionKey="registry:lastMappingSetsUrl" />
+      {originMapping ? (
+        <Link
+          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+          href={`/registry/mappings/${originMapping.id}`}
+        >
+          <ArrowLeft className="size-4" /> Back to {originMapping.sourceTerm}
+        </Link>
+      ) : (
+        <BackToResultsLink fallbackHref="/registry/mapping-sets" sessionKey="registry:lastMappingSetsUrl" />
+      )}
 
       <div className="space-y-5">
         <div className="rounded-lg border p-4">
@@ -37,7 +55,7 @@ export function MappingSetDetails({ mappingSet }: { mappingSet: MappingSet }) {
           <div className="space-y-2">
             {mappingSet.mappings.map((mapping) => (
               <Button key={mapping.id} asChild variant="outline" className="h-auto w-full justify-between gap-3 p-3 text-left">
-                <Link href={`/registry/mappings/${mapping.id}`}>
+                <Link href={`/registry/mappings/${mapping.id}?fromMappingSet=${encodeURIComponent(mappingSet.id)}`}>
                   <div className="min-w-0">
                     <p className="text-sm font-semibold">{mapping.sourceTerm} → {mapping.targetConcept}</p>
                     <p className="text-xs text-muted-foreground">OMOP concept ID: {mapping.conceptId}</p>

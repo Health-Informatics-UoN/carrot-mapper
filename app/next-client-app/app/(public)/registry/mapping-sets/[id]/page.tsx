@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { MappingSetDetails } from "@/components/registry/mapping-set-details";
-import { getMappingSetById } from "@/lib/registry/mock-data";
+import { getMappingById, getMappingSetById } from "@/lib/registry/mock-data";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
@@ -13,9 +13,22 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   };
 }
 
-export default async function RegistryMappingSetDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function RegistryMappingSetDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ fromMapping?: string }>;
+}) {
   const { id } = await params;
+  const { fromMapping } = await searchParams;
   const mappingSet = getMappingSetById(id);
   if (!mappingSet) notFound();
-  return <MappingSetDetails mappingSet={mappingSet} />;
+
+  const candidate = fromMapping ? getMappingById(fromMapping) : undefined;
+  const originMapping = candidate && mappingSet.mappings.some((item) => item.id === candidate.id)
+    ? candidate
+    : undefined;
+
+  return <MappingSetDetails mappingSet={mappingSet} originMapping={originMapping} />;
 }
