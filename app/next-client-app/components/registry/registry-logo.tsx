@@ -1,74 +1,64 @@
-import { CARROT_SRC, LOGO_HEIGHT, LOGO_WIDTH } from "@/constants/mapping-registry";
-import {
-  CLOUD_PATHS,
-  COUGH_PATHS,
-  TAGLINE_PATHS,
-  TITLE_PATHS,
-  type LogoPath,
-} from "./registry-logo-paths";
+import { CARROT_SRC } from "@/constants/mapping-registry";
+import { TAGLINE_PATHS, TITLE_PATHS, type LogoPath } from "./registry-logo-paths";
 import styles from "./registry-logo.module.css";
+
+// Layout, in the coordinate space of the "CARROT MAPPER / REGISTRY" text paths.
+// The text spans x 72–559 and y 547–657; the carrot sits centred above it.
+const CARROT_SIZE = 340;
+const CARROT_GAP = 34;
+
+const TEXT_LEFT = 72;
+const TEXT_RIGHT = 559;
+const TEXT_TOP = 547;
+const TEXT_BOTTOM = 657;
+const TEXT_CENTER_X = (TEXT_LEFT + TEXT_RIGHT) / 2;
+const PADDING = 4;
+
+const carrotX = TEXT_CENTER_X - CARROT_SIZE / 2;
+const carrotY = TEXT_TOP - CARROT_GAP - CARROT_SIZE;
+const viewX = Math.min(TEXT_LEFT, carrotX) - PADDING;
+const viewY = carrotY - PADDING;
+const viewWidth = Math.max(TEXT_RIGHT, carrotX + CARROT_SIZE) + PADDING - viewX;
+const viewHeight = TEXT_BOTTOM + PADDING - viewY;
 
 type RegistryLogoProps = {
   className?: string;
+  /** Play the entrance animation on mount. The final frame is the static logo. */
   animated?: boolean;
 };
 
-function LogoPaths({
-  paths,
-  strokeWidth,
-}: {
-  paths: LogoPath[];
-  strokeWidth?: number;
-}) {
+function LogoPaths({ paths }: { paths: LogoPath[] }) {
   return (
     <>
       {paths.map((path, index) => (
-        <path
-          key={index}
-          fill={path.fill}
-          d={path.d}
-          stroke={strokeWidth ? path.fill : undefined}
-          strokeWidth={strokeWidth}
-          strokeLinejoin="round"
-        />
+        <path key={index} fill={path.fill} d={path.d} />
       ))}
     </>
   );
 }
 
-/**
- * The Carrot Mapper Registry logo, assembled from separate layers so each one
- * can be animated: the carrot comes from public/mapper-registry-carrot.svg and
- * the rest is drawn here. All layers share the same 565 x 660 canvas, so at
- * rest it is identical to the original single-file logo.
- */
+/** Carrot icon with the "CARROT MAPPER / REGISTRY" text underneath. */
 export function RegistryLogo({ className, animated = false }: RegistryLogoProps) {
   const classes = [className, animated ? styles.animated : undefined].filter(Boolean).join(" ");
 
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      viewBox={`0 0 ${LOGO_WIDTH} ${LOGO_HEIGHT}`}
-      width={LOGO_WIDTH}
-      height={LOGO_HEIGHT}
+      viewBox={`${viewX} ${viewY} ${viewWidth} ${viewHeight}`}
+      width={viewWidth}
+      height={viewHeight}
       role="img"
       aria-label="Carrot Mapper Registry"
       className={classes}
     >
       <image
         href={CARROT_SRC}
-        x={0}
-        y={0}
-        width={LOGO_WIDTH}
-        height={LOGO_HEIGHT}
+        x={carrotX}
+        y={carrotY}
+        width={CARROT_SIZE}
+        height={CARROT_SIZE}
         className={styles.carrot}
       />
-      <g className={styles.cloud}>
-        <LogoPaths paths={CLOUD_PATHS} />
-      </g>
-      <g className={styles.cough}>
-        <LogoPaths paths={COUGH_PATHS} strokeWidth={1.5} />
-      </g>
       <g className={styles.title}>
         <LogoPaths paths={TITLE_PATHS} />
       </g>

@@ -19,7 +19,7 @@ export function RegistryHero({ compact }: RegistryHeroProps) {
       <RegistryLogo
         key={compact ? "compact" : "landing"}
         animated={!compact}
-        className={`mx-auto w-auto ${compact ? "h-24" : "h-44 sm:h-60"}`}
+        className={`mx-auto w-auto ${compact ? "h-16" : "h-32 sm:h-44"}`}
       />
       <h1 className="mt-2 text-3xl font-semibold tracking-tight">Discover reusable mappings</h1>
       {!compact && (
