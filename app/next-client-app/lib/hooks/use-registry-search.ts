@@ -86,7 +86,7 @@ export function useRegistrySearch(view: View = "mappings") {
   const mappingSets = useMemo(() => paginate(filteredMappingSets, page, pageSize), [filteredMappingSets, page, pageSize]);
 
   function changeField(nextField: SearchField) {
-    pushUrl({ field: nextField === (view === "mappings" ? "sourceTerm" : "mappingSet") ? null : nextField, page: 1, sort: null });
+    pushUrl({ field: nextField === (view === "mappings" ? "sourceTerm" : "mappingSet") ? null : nextField, page: 1 });
   }
   function changeQuery(nextQuery: string) { setInputQuery(nextQuery); }
   function changePageSize(size: number) { pushUrl({ pageSize: size, page: 1 }); }
