@@ -15,6 +15,7 @@ from mapping.models import (
     ScanReportValue,
     TableRole,
 )
+
 from services.table_field_mappings import TERM_CONCEPT_FIELD
 
 # OMOP's standard concept_id for "No matching concept". Its domain (Metadata)
