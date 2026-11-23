@@ -1,6 +1,5 @@
 import logging
 from datetime import datetime
-from typing import Dict
 
 from libs.db import pg_hook
 from libs.enums import JobStageType, StageStatusType
@@ -54,12 +53,12 @@ def pre_process_rules(**kwargs) -> None:
             },
         )
     except Exception as e:
-        logging.error(f"Error creating or updating the temp table: {str(e)}")
+        logging.error(f"Error creating or updating the temp table: {e!s}")
         update_job_status(
             scan_report=scan_report_id,
             stage=JobStageType.DOWNLOAD_RULES,
             status=StageStatusType.FAILED,
-            details=f"Error creating or updating the temp table: {str(e)}",
+            details=f"Error creating or updating the temp table: {e!s}",
         )
         raise e
 
@@ -77,7 +76,7 @@ def build_and_upload_rules_file(**kwargs) -> None:
 
     try:
         # Setup file config.
-        file_handlers: Dict[str, FileHandlerConfig] = {
+        file_handlers: dict[str, FileHandlerConfig] = {
             "csv": FileHandlerConfig(
                 lambda: build_rules_csv(scan_report_id),
                 "mapping_csv",
@@ -99,6 +98,7 @@ def build_and_upload_rules_file(**kwargs) -> None:
                     user_id,
                     # optional: sent by the API, not required by param validation
                     kwargs["dag_run"].conf.get("mapper_version"),
+                    kwargs["dag_run"].conf.get("mapping_set_id"),
                 ),
                 "mapping_sssom",
                 "sssom.tsv",
@@ -194,20 +194,20 @@ def build_and_upload_rules_file(**kwargs) -> None:
                 }
             )
         except Exception as e:
-            logging.error(f"Error creating file entry: {str(e)}")
+            logging.error(f"Error creating file entry: {e!s}")
             update_job_status(
                 scan_report=scan_report_id,
                 stage=JobStageType.DOWNLOAD_RULES,
                 status=StageStatusType.FAILED,
-                details=f"Export rules file failed: {str(e)}",
+                details=f"Export rules file failed: {e!s}",
             )
             raise e
     except Exception as e:
-        logging.error(f"Error building and uploading rules file: {str(e)}")
+        logging.error(f"Error building and uploading rules file: {e!s}")
         update_job_status(
             scan_report=scan_report_id,
             stage=JobStageType.DOWNLOAD_RULES,
             status=StageStatusType.FAILED,
-            details=f"Export rules file failed: {str(e)}",
+            details=f"Export rules file failed: {e!s}",
         )
         raise e

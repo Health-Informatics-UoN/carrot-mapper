@@ -8,6 +8,10 @@ get_import_job_query = """
     WHERE id = %(import_job_id)s
 """
 
+get_import_job_submitter_query = """
+    SELECT submitted_by_id FROM registry_importjob WHERE id = %(import_job_id)s
+"""
+
 mark_import_job_running_query = """
     UPDATE registry_importjob
     SET status = 'RUNNING',
@@ -55,9 +59,18 @@ get_justifications_query = "SELECT justification_id FROM registry_mappingjustifi
 # Origins a job can have (seeded by the registry migrations)
 get_origins_query = "SELECT id FROM registry_origin"
 
+# The registry's CURIE prefixes (registry.models.Prefix)
+get_prefixes_query = "SELECT prefix, namespace FROM registry_prefix"
+
 # registry_license is filled by the license_sync DAG (SPDX License List)
 get_license_iri_query = """
     SELECT license_iri FROM registry_license WHERE id = %(license_id)s
+"""
+
+# A scan report on this instance, by the UUID its sets' ids end with
+# (full_validate_and_load_checks.set_uri_uuid).
+get_scan_report_by_uuid_query = """
+    SELECT id FROM mapping_scanreport WHERE uuid = %(uuid)s
 """
 
 # Another import already holds this set_uri + set_version (sets are immutable;
@@ -69,7 +82,21 @@ get_conflicting_set_query = """
         AND import_job_id IS DISTINCT FROM %(import_job_id)s
 """
 
+# The first version of a set_uri from another import: it decides who may add
+# versions (see full_validate_and_load_checks.set_owner_error).
+get_set_first_version_query = """
+    SELECT source_scan_report_id, publisher_id FROM registry_mappingset
+    WHERE set_uri = %(set_uri)s
+        AND import_job_id IS DISTINCT FROM %(import_job_id)s
+    ORDER BY created_at, id
+    LIMIT 1
+"""
+
 # --- Load (one transaction) ----------------------------------------------------
+
+# Held until the load commits, so two imports of one set_uri can't both pass
+# the version and owner checks before either inserts its set.
+lock_set_uri_query = "SELECT pg_advisory_xact_lock(hashtextextended(%(set_uri)s, 0))"
 
 # Undo an earlier attempt of this job that committed its load, so retries are
 # idempotent. Mapping.mapping_set's CASCADE is Django-side only, so mappings are
@@ -87,14 +114,14 @@ delete_job_mapping_sets_query = """
 insert_mapping_set_query = """
     INSERT INTO registry_mappingset (
         id, set_uri, set_version, title, description, license_id, origin_id,
-        status_id, import_job_id, source_scan_report_id, sssom_version,
+        status_id, import_job_id, publisher_id, source_scan_report_id, sssom_version,
         creator_ids, publication_date, subject_source, subject_source_version,
         object_source, object_source_version, curie_map, extra_metadata,
         file_key, created_at, published_at
     ) VALUES (
         %(id)s, %(set_uri)s, %(set_version)s, %(title)s, %(description)s,
         %(license_id)s, %(origin_id)s, 'DRAFT', %(import_job_id)s,
-        %(source_scan_report_id)s, %(sssom_version)s, %(creator_ids)s::jsonb,
+        %(publisher_id)s, %(source_scan_report_id)s, %(sssom_version)s, %(creator_ids)s::jsonb,
         %(publication_date)s, %(subject_source)s, %(subject_source_version)s,
         %(object_source)s, %(object_source_version)s, %(curie_map)s::jsonb,
         %(extra_metadata)s::jsonb, %(file_key)s, NOW(), NULL
@@ -134,6 +161,22 @@ create_staging_table_query = """
 """
 
 copy_staging_query = "COPY registry_import_staging ({columns}) FROM STDIN"
+
+# Registers the prefixes the file's terms use. A name or namespace already
+# registered is left alone; get_prefixes_by_name_query then shows whether it is
+# bound as the file was validated against (another import may have registered
+# it since). Sorted, so concurrent imports lock rows in the same order.
+insert_prefixes_query = """
+    INSERT INTO registry_prefix (prefix, namespace, created_at)
+    SELECT prefix, namespace, NOW()
+    FROM unnest(%(prefixes)s::text[], %(namespaces)s::text[]) AS p(prefix, namespace)
+    ORDER BY prefix
+    ON CONFLICT DO NOTHING
+"""
+
+get_prefixes_by_name_query = """
+    SELECT prefix, namespace FROM registry_prefix WHERE prefix = ANY(%(prefixes)s)
+"""
 
 # New terms only; an existing term (same canonical_iri and kind) is reused as is.
 # DISTINCT ON keeps the first row's label etc. for a term repeated in the file.

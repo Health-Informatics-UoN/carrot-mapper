@@ -1,3 +1,5 @@
+import uuid
+
 from data.models import Concept
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
@@ -277,6 +279,10 @@ class ScanReport(BaseModel):
         related_query_name="scanreport_editor",
         blank=True,
     )
+    # Globally unique, unlike the database id, which every Carrot instance
+    # numbers from 1. Identifies the scan report outside this instance, e.g. in
+    # the mapping_set_id of its SSSOM exports and registry publishes.
+    uuid = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
 
     class Meta:
         app_label = "mapping"
