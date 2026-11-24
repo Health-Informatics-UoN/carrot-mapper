@@ -21,9 +21,9 @@ from libs.registry_import.full_validate_and_load_checks import (
     carrot_term_parts,
     check_set_owner,
     check_set_uri_not_reserved,
+    check_set_version_is_newer,
     set_owner_error,
     set_uri_uuid,
-    check_set_version_is_newer,
 )
 from libs.registry_import.full_validate_and_load_parse import decode, parse_sssom
 from libs.rules_export.sssom import write_sssom_tsv
