@@ -28,14 +28,11 @@ from libs.registry_import.full_validate_and_load_checks import (
     Vocabulary,
     build_import,
     check_set_version_is_newer,
-    check_set_owner,
-    check_set_uri_not_reserved,
-    set_owner_error,
     set_uri_uuid,
 )
 from libs.registry_import.full_validate_and_load_db import LoadError, load_plan
 from libs.registry_import.full_validate_and_load_parse import decode, parse_sssom
-from libs.registry_import.helpers import file_overrides, get_job, job_file_key
+from libs.registry_import.helpers import file_overrides, job_file_key
 from libs.settings import REGISTRY_IMPORT_MAX_ISSUES, REGISTRY_SSSOM_CONTAINER
 from libs.storage_services import download_blob_to_tmp
 from libs.utils import pull_validated_params
@@ -45,12 +42,9 @@ def full_validate_and_load(**kwargs) -> None:
     params = pull_validated_params(kwargs, "validate_params_registry_import")
     import_job_id = params["import_job_id"]
     file_key = job_file_key(import_job_id)
-    # The ImportJob's submitter, not the run conf's user_id: it's who the API
-    # authenticated.
-    publisher_id = get_job(import_job_id)["submitted_by_id"]
 
     plan = _read_and_check(params, file_key)
-    check_set_version_is_new(plan, _conflicting_set_id(plan, import_job_id))
+    check_set_version_is_newer(plan, _existing_versions(plan, import_job_id))
     pg_hook.run(
         queries.set_import_job_issues_query,
         parameters={

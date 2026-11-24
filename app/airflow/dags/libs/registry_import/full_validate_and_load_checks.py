@@ -7,7 +7,8 @@ what is accepted is precisely what is loaded.
 Checks, each reported as an Issue (see parse.Issue):
 
 - metadata: the official SSSOM 1.0 JSON schema (vendored in libs/sssom_spec),
-  plus what the registry needs: mapping_set_id, mapping_set_version, license;
+  plus what the registry needs: mapping_set_id, mapping_set_version (SemVer or
+  an ISO date, see set_versions.py), license;
 - prefixes: built-in prefixes not redefined; reserved prefixes (carrot, OMOP...)
   not bound to another namespace; every CURIE's prefix declared, and not a name
   the registry already uses for another namespace;

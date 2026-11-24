@@ -73,14 +73,6 @@ get_scan_report_by_uuid_query = """
     SELECT id FROM mapping_scanreport WHERE uuid = %(uuid)s
 """
 
-# Another import already holds this set_uri + set_version (sets are immutable;
-# corrections are a new set_version).
-get_conflicting_set_query = """
-    SELECT id::text FROM registry_mappingset
-    WHERE set_uri = %(set_uri)s
-        AND import_job_id IS DISTINCT FROM %(import_job_id)s
-"""
-
 # The first version of a set_uri from another import: it decides who may add
 # versions (see full_validate_and_load_checks.set_owner_error).
 get_set_first_version_query = """
@@ -89,6 +81,14 @@ get_set_first_version_query = """
         AND import_job_id IS DISTINCT FROM %(import_job_id)s
     ORDER BY created_at, id
     LIMIT 1
+"""
+
+# Versions of this set_uri from other imports, any status: a new version must
+# be higher than all of them (see set_versions.py).
+get_set_versions_query = """
+    SELECT set_version FROM registry_mappingset
+    WHERE set_uri = %(set_uri)s
+        AND import_job_id IS DISTINCT FROM %(import_job_id)s
 """
 
 # --- Load (one transaction) ----------------------------------------------------
