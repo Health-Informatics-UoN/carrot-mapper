@@ -16,7 +16,10 @@ from django.db import models
 FIRST_VERSION = "1.0.0"
 
 # NOTE: The regex below has to match the same regex used in the dags/libs/registry_import/set_versions.py file.
-_SEMVER = re.compile(r"^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$")
+# Each part is capped at 9 digits so it fits the integer cast in
+# api/registry/filters.py version_order(). Use with fullmatch: "$" would also
+# match before a trailing newline.
+_SEMVER = re.compile(r"(0|[1-9][0-9]{0,8})\.(0|[1-9][0-9]{0,8})\.(0|[1-9][0-9]{0,8})")
 
 
 class ReleaseType(models.TextChoices):
@@ -30,7 +33,7 @@ class NotSemVer(ValueError):
 
 
 def parse_semver(version: str) -> tuple[int, int, int] | None:
-    match = _SEMVER.match(version)
+    match = _SEMVER.fullmatch(version)
     if match is None:
         return None
     major, minor, patch = (int(part) for part in match.groups())

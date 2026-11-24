@@ -12,11 +12,14 @@ from collections.abc import Iterable
 from datetime import date
 
 ISO_DATE = "date"
-_ISO_DATE = re.compile(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}$")
+_ISO_DATE = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}")
 
 SEMVER = "semver"
 # NOTE: The regex below has to match the same regex used in the api/registry/versions.py file.
-_SEMVER = re.compile(r"^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$")
+# Each part is capped at 9 digits so it fits the integer cast in
+# api/registry/filters.py version_order(). Use with fullmatch: "$" would also
+# match before a trailing newline.
+_SEMVER = re.compile(r"(0|[1-9][0-9]{0,8})\.(0|[1-9][0-9]{0,8})\.(0|[1-9][0-9]{0,8})")
 
 
 FORMAT_HINT = "SemVer MAJOR.MINOR.PATCH (e.g. 1.0.0) or an ISO date (YYYY-MM-DD)"
@@ -24,9 +27,9 @@ FORMAT_HINT = "SemVer MAJOR.MINOR.PATCH (e.g. 1.0.0) or an ISO date (YYYY-MM-DD)
 
 def version_key(version: str) -> tuple[str, tuple[int, ...]] | None:
     """(scheme, sortable parts) of a valid version, None for any other text."""
-    if match := _SEMVER.match(version):
+    if match := _SEMVER.fullmatch(version):
         return SEMVER, tuple(int(part) for part in match.groups())
-    if _ISO_DATE.match(version):
+    if _ISO_DATE.fullmatch(version):
         try:
             day = date.fromisoformat(version)
         except ValueError:

@@ -291,7 +291,22 @@ def test_yaml_date_version_is_an_iso_date_version():
 
 
 @pytest.mark.parametrize(
-    "version", ["1.0", "1", "v1.0.0", "01.0.0", "1.0.0-rc.1", "2026-13-01", "2026-1-4"]
+    "version",
+    [
+        "1.0",
+        "1",
+        "v1.0.0",
+        "01.0.0",
+        "1.0.0-rc.1",
+        "2026-13-01",
+        "2026-1-4",
+        # a trailing newline would slip past a "$"-anchored match
+        "1.0.0\n",
+        "2026-11-04\n",
+        # parts over 9 digits don't fit the API's version ordering
+        "1000000000.0.0",
+        "99999999999.0.0",
+    ],
 )
 def test_set_version_must_be_semver_or_iso_date(version):
     plan = plan_for(HEADER + COLUMNS + ROW, {"set_version": version})
