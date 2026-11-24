@@ -74,6 +74,10 @@ PUBLISHED = "PUBLISHED"
 # registry_origin ids (helpers.py has them too, but imports this module)
 CARROT_DIRECT_PUBLISH = "CARROT_DIRECT_PUBLISH"
 
+# The API's registry.models.CARROT_MAPPING_SET_NAMESPACE: Carrot set ids are
+# {namespace}{uuid}, and their series has that uuid as its id (series_id_for).
+CARROT_MAPPING_SET_NAMESPACE = "https://carrot.ac.uk/registry/mapping-sets/"
+
 # spec-intro.md, "IRI prefixes": built-in prefixes, which MUST NOT be redefined.
 BUILTIN_PREFIXES = {
     "owl": "http://www.w3.org/2002/07/owl#",
@@ -574,6 +578,50 @@ class _Curies:
 # ---------------------------------------------------------------------------
 
 
+def resolve_set_uri(
+    file_id: str,
+    request_id: str | None,
+    series_set_uri: str | None,
+    log: IssueLog,
+) -> str:
+    """
+    The set_uri a file's mapping set is stored under, from its mapping_set_id
+    (``file_id``), the request's set_uri override (``request_id``) and the
+    set_uri of the existing series the request adds a version to
+    (``series_set_uri``).
+
+    The file and the request may not disagree, since the stored file is served
+    as-is: an id in the file must match the request's. A file without one takes
+    the request's, or a new Carrot set id, so the raw file has no id (warned).
+    """
+    requested = {r for r in (request_id, series_set_uri) if r}
+    if len(requested) > 1:
+        log.error(
+            "mapping_set_id_mismatch",
+            f"The request's set_uri {request_id!r} is not the set_uri of the "
+            f"mapping set it adds a version to ({series_set_uri!r})",
+            column="mapping_set_id",
+        )
+    requested_id = series_set_uri or request_id
+    if file_id:
+        if requested_id and requested_id != file_id:
+            log.error(
+                "mapping_set_id_mismatch",
+                f"mapping_set_id {file_id!r} in the file is not the request's "
+                f"{requested_id!r}; the file and the request must agree",
+                column="mapping_set_id",
+            )
+        return file_id
+    set_uri = requested_id or f"{CARROT_MAPPING_SET_NAMESPACE}{uuid.uuid4()}"
+    log.warning(
+        "mapping_set_id_not_in_file",
+        f"The file has no mapping_set_id; the set is stored as {set_uri!r}, "
+        "but the downloadable file stays without one",
+        column="mapping_set_id",
+    )
+    return set_uri
+
+
 def _check_set(
     parsed: ParsedSSSOM,
     override_slots: dict[str, str],
@@ -581,6 +629,7 @@ def _check_set(
     license_id: str | None,
     registered_prefixes: Mapping[str, str],
     log: IssueLog,
+    series_set_uri: str | None = None,
 ) -> tuple[SetRecord, dict[str, Any], set[str], _Curies] | None:
     """
     Check the metadata block (with the overrides applied). Returns the set's
@@ -588,6 +637,15 @@ def _check_set(
     CURIE resolver; None when the prefixes are unusable.
     """
     metadata = dict(parsed.metadata)
+
+    override_slots = dict(override_slots)
+    file_id = metadata.get("mapping_set_id")
+    metadata["mapping_set_id"] = resolve_set_uri(
+        "" if file_id is None else str(file_id),
+        override_slots.pop("mapping_set_id", None),
+        series_set_uri,
+        log,
+    )
 
     for slot, value in override_slots.items():
         current = metadata.get(slot)
@@ -867,7 +925,7 @@ def check_set_version_is_newer(plan: ImportPlan, existing_versions: list[str]) -
 
 @dataclass(frozen=True)
 class SetOwner:
-    """Who published the first version of a set_uri (looked up by the caller)."""
+    """Who owns a set: its registry_mappingsetseries row (looked up by the caller)."""
 
     source_scan_report_id: int | None
     publisher_id: int | None
@@ -883,9 +941,9 @@ def set_owner_error(
     """
     Why this import may not add a version to its set_uri, or None if it may.
 
-    The first version of a set_uri decides: versions published from a scan
-    report may only be followed by versions from the same scan report (whose
-    permissions the API checks), and an upload only by the same user's.
+    The set's owner decides: a set created by a scan report's publish may only
+    get versions from the same scan report (whose permissions the API checks),
+    and an uploaded set only from the same user.
     """
     if owner is None:
         return None
@@ -910,6 +968,22 @@ def check_set_owner(plan: ImportPlan, error: str | None) -> None:
         "only its publisher can add versions. Use another mapping_set_id",
         column="mapping_set_id",
     )
+
+
+def series_id_for(set_uri: str) -> str:
+    """
+    The id of a new series for ``set_uri``: the uuid a Carrot set_uri ends
+    with, else a random one (the API's registry.models.series_id_for). It is
+    the set's page URL, so a Carrot set_uri opens as a link.
+    """
+    if set_uri.startswith(CARROT_MAPPING_SET_NAMESPACE):
+        try:
+            return str(
+                uuid.UUID(set_uri[len(CARROT_MAPPING_SET_NAMESPACE) :].strip("/"))
+            )
+        except ValueError:
+            pass
+    return str(uuid.uuid4())
 
 
 def set_uri_uuid(set_uri: str) -> str | None:
@@ -954,11 +1028,14 @@ def build_import(
     overrides: Mapping[str, Any] | None = None,
     license_id: str | None = None,
     max_issues: int = 1000,
+    series_set_uri: str | None = None,
 ) -> ImportPlan:
     """
     Validate a parsed SSSOM file and normalise it for loading. ``overrides``
     are the request's metadata (license as an IRI, see helpers.file_overrides);
-    ``license_id`` is the request's License id, which the set is linked to.
+    ``license_id`` is the request's License id, which the set is linked to;
+    ``series_set_uri`` is the set_uri of the existing set the request adds a
+    version to (see resolve_set_uri).
     """
     spec = load_spec()
     log = IssueLog(max_issues)
@@ -969,7 +1046,15 @@ def build_import(
     if not parsed.header:
         return plan
 
-    checked = _check_set(parsed, override_slots, spec, license_id, vocab.prefixes, log)
+    checked = _check_set(
+        parsed,
+        override_slots,
+        spec,
+        license_id,
+        vocab.prefixes,
+        log,
+        series_set_uri=series_set_uri,
+    )
     if checked is None:
         return plan
     plan.mapping_set, propagated, ext_slots, curies = checked
