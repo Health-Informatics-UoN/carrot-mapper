@@ -23,7 +23,6 @@ from libs.registry_import import queries
 from libs.registry_import.full_validate_and_load_checks import (
     ImportPlan,
     IssueLog,
-    SetOwner,
     SetRecord,
     Vocabulary,
     build_import,
@@ -105,6 +104,8 @@ def _read_and_check(params: dict[str, Any], file_key: str) -> ImportPlan:
         # the License id validate_params checked (None if the request had none)
         license_id=params["overrides"].get("license") or None,
         max_issues=REGISTRY_IMPORT_MAX_ISSUES,
+        # the set a request adds a version to (validate_params checked it)
+        series_set_uri=params.get("series_set_uri"),
     )
 
 
@@ -130,15 +131,3 @@ def _local_scan_report_id(plan: ImportPlan) -> int | None:
         parameters={"uuid": scan_report_uuid},
     )
     return row[0] if row else None
-
-
-def _first_version(plan: ImportPlan, import_job_id: str) -> SetOwner | None:
-    """The first version of the file's set_uri from another import, if any."""
-    row = pg_hook.get_first(
-        queries.get_set_first_version_query,
-        parameters={
-            "set_uri": plan.mapping_set.set_uri,
-            "import_job_id": import_job_id,
-        },
-    )
-    return SetOwner(*row) if row else None
