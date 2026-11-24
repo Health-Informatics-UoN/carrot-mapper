@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useRegistrySearch } from "@/lib/hooks/use-registry-search";
+import { useRegistrySearch } from "@/lib/hooks/useRegistrySearch";
 import type { View } from "@/types/mapping-registry";
 import { RegistryHero } from "./registry-hero";
 import { RegistrySearchBar } from "./registry-search-bar";

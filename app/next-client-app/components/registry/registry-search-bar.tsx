@@ -8,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useTypewriterPlaceholder } from "@/lib/hooks/use-typewriter-placeholder";
+import { useTypewriterPlaceholder } from "@/lib/hooks/useTypewriterPlaceholder";
 import {
   SEARCH_EXAMPLES,
   SEARCH_FIELDS,

@@ -1,5 +1,5 @@
 /*
- * Demo data for the UI PR only. Nothing outside hooks/use-registry-search.ts may
+ * Demo data for the UI PR only. Nothing outside hooks/useRegistrySearch.ts may
  * import from this file, so the integration PR can delete it without touching
  * any component.
  */
