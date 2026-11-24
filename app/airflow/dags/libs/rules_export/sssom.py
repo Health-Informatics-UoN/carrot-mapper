@@ -303,9 +303,9 @@ def write_sssom_tsv(
     username and profile ORCID iD, for the creator_label / creator_id metadata.
 
     ``set_metadata`` adds the mapping set's identity, keyed by the slots in
-    SET_METADATA_SLOTS (empty values are left out). A plain rules export has none,
-    so it lacks mapping_set_id and license; publishing to the registry passes
-    them, which makes the file fully SSSOM-conformant.
+    SET_METADATA_SLOTS (empty values are left out). A plain rules export gives
+    only the mapping_set_id (so lacks a license); publishing to the registry
+    passes them all, which makes the file fully SSSOM-conformant.
 
     ``include_author_ids`` writes each mapping's author_id (see
     build_mapping_rows); rules then need ``author_orcid``. Off by default: an
