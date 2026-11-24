@@ -12,6 +12,7 @@ from pathlib import Path
 
 import pytest
 from libs.registry_import.full_validate_and_load_checks import (
+    CARROT_MAPPING_SET_NAMESPACE,
     DRAFT,
     PUBLISHED,
     STAGING_COLUMNS,
@@ -22,6 +23,7 @@ from libs.registry_import.full_validate_and_load_checks import (
     check_set_owner,
     check_set_uri_not_reserved,
     check_set_version_is_newer,
+    series_id_for,
     set_owner_error,
     set_uri_uuid,
 )
@@ -58,7 +60,13 @@ COLUMNS = "subject_id\tsubject_label\tpredicate_id\tobject_id\tobject_label\tmap
 ROW = "HP:0000175\tCleft palate\tskos:exactMatch\tMP:0000111\tcleft palate\tsemapv:LexicalMatching\t0.9\n"
 
 
-def plan_for(text: str, overrides=None, max_issues=1000, license_id="CC-BY-4.0"):
+def plan_for(
+    text: str,
+    overrides=None,
+    max_issues=1000,
+    license_id="CC-BY-4.0",
+    series_set_uri=None,
+):
     """build_import, with the License id the request names (checked earlier)."""
     return build_import(
         parse_sssom(text),
@@ -66,6 +74,7 @@ def plan_for(text: str, overrides=None, max_issues=1000, license_id="CC-BY-4.0")
         overrides,
         license_id=license_id,
         max_issues=max_issues,
+        series_set_uri=series_set_uri,
     )
 
 
@@ -268,6 +277,87 @@ def test_overrides_fill_gaps_and_win_with_a_warning():
     assert plan.mapping_set.title == "New title"
     assert plan.status == DRAFT
     assert codes(plan) == ["metadata_overridden"]  # the title differed
+
+
+FILE_ID = "https://example.org/sets/hp-mp"
+NO_ID = HEADER.replace(f"#mapping_set_id: {FILE_ID}\n", "") + COLUMNS + ROW
+
+
+@pytest.mark.parametrize(
+    "text, request_id, series_set_uri, set_uri, code",
+    [
+        # file id, no request: the file's
+        (HEADER + COLUMNS + ROW, None, None, FILE_ID, None),
+        # the request agrees with the file
+        (HEADER + COLUMNS + ROW, FILE_ID, None, FILE_ID, None),
+        (HEADER + COLUMNS + ROW, None, FILE_ID, FILE_ID, None),
+        # the request disagrees with the file
+        (
+            HEADER + COLUMNS + ROW,
+            "https://x/other",
+            None,
+            FILE_ID,
+            "mapping_set_id_mismatch",
+        ),
+        (
+            HEADER + COLUMNS + ROW,
+            None,
+            "https://x/other",
+            FILE_ID,
+            "mapping_set_id_mismatch",
+        ),
+        # no file id: the request's, with a warning
+        (
+            NO_ID,
+            None,
+            "https://x/series",
+            "https://x/series",
+            "mapping_set_id_not_in_file",
+        ),
+        (NO_ID, "https://x/req", None, "https://x/req", "mapping_set_id_not_in_file"),
+        # the set_uri override and the series disagree
+        (
+            NO_ID,
+            "https://x/req",
+            "https://x/series",
+            "https://x/series",
+            "mapping_set_id_mismatch",
+        ),
+    ],
+)
+def test_mapping_set_id_resolution(text, request_id, series_set_uri, set_uri, code):
+    overrides = {"set_uri": request_id} if request_id else None
+    plan = plan_for(text, overrides, series_set_uri=series_set_uri)
+    assert plan.mapping_set.set_uri == set_uri
+    assert "metadata_overridden" not in codes(plan)
+    if code is None:
+        assert plan.ok and codes(plan) == []
+    else:
+        assert code in codes(plan)
+        assert plan.ok == (code == "mapping_set_id_not_in_file")
+
+
+def test_file_without_mapping_set_id_gets_a_new_carrot_id():
+    plan = plan_for(NO_ID)
+    assert plan.ok
+    assert codes(plan) == ["mapping_set_id_not_in_file"]
+    set_uri = plan.mapping_set.set_uri
+    assert set_uri.startswith(CARROT_MAPPING_SET_NAMESPACE)
+    # so its series id is the uuid in it, and the set_uri opens the set page
+    assert series_id_for(set_uri) == set_uri_uuid(set_uri)
+    assert plan_for(NO_ID).mapping_set.set_uri != set_uri
+
+
+def test_series_id_for():
+    sr = "0b7b3c1e-7a39-4a0a-9f3c-5a3e0c2f6a11"
+    assert series_id_for(f"{CARROT_MAPPING_SET_NAMESPACE}{sr}") == sr
+    # anything else gets a new random id
+    for set_uri in (
+        "http://pretendurl.com",
+        f"{CARROT_MAPPING_SET_NAMESPACE}not-a-uuid",
+        f"https://example.org/{sr}",
+    ):
+        assert series_id_for(set_uri) != series_id_for(set_uri)
 
 
 def test_unknown_override_and_bad_status():
