@@ -11,11 +11,13 @@ import re
 from collections.abc import Iterable
 from datetime import date
 
-SEMVER = "semver"
 ISO_DATE = "date"
-
-_SEMVER = re.compile(r"^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$")
 _ISO_DATE = re.compile(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}$")
+
+SEMVER = "semver"
+# NOTE: The regex below has to match the same regex used in the api/registry/versions.py file.
+_SEMVER = re.compile(r"^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$")
+
 
 FORMAT_HINT = "SemVer MAJOR.MINOR.PATCH (e.g. 1.0.0) or an ISO date (YYYY-MM-DD)"
 

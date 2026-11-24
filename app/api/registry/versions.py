@@ -15,6 +15,7 @@ from django.db import models
 
 FIRST_VERSION = "1.0.0"
 
+# NOTE: The regex below has to match the same regex used in the dags/libs/registry_import/set_versions.py file.
 _SEMVER = re.compile(r"^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$")
 
 
