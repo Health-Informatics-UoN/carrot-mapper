@@ -35,7 +35,8 @@ class MappingSetFilter(filters.FilterSet):
     )
     origin = CharInFilter(field_name="origin_id")
     license = CharInFilter(field_name="license_id")
-    set_uri = filters.CharFilter(field_name="set_uri")
+    set_uri = filters.CharFilter(field_name="series__set_uri")
+    series = UUIDInFilter(field_name="series_id")
     subject_source = filters.CharFilter(
         field_name="subject_source", lookup_expr="iexact"
     )
@@ -82,7 +83,7 @@ class MappingSetFilter(filters.FilterSet):
         statuses = self.form.cleaned_data.get("status") or [Status.PUBLISHED]
         candidates = self.queryset.filter(status_id__in=statuses)
         newest = (
-            candidates.filter(set_uri=OuterRef("set_uri"))
+            candidates.filter(series_id=OuterRef("series_id"))
             .order_by(version_order().desc(), "-created_at", "-pk")
             .values("pk")[:1]
         )
