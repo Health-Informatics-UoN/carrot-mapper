@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, CloudUpload, FolderUp, Layers } from "lucide-react";
+import { ArrowRight, CloudUpload, Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { View } from "@/types/mapping-registry";
 
@@ -37,14 +37,6 @@ export function RegistryLandingActions({
         <Link href="/scanreports/">
           <CloudUpload className="size-3.5" /> Publish Mapping SSSOM
         </Link>
-      </Button>
-      <Button
-        size="sm"
-        type="button"
-        variant="outline"
-        className="h-7 px-2.5 text-xs"
-      >
-        <FolderUp className="size-3.5" /> Publish Mapping Sets
       </Button>
     </div>
   );
