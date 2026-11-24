@@ -1,7 +1,5 @@
-import { RegistryLogo } from "./registry-logo";
-
 type RegistryHeroProps = {
-  /** Smaller logo and no subtitle, used once results are showing. */
+  /** Compact title and no subtitle, used once results are showing. */
   compact: boolean;
 };
 
@@ -14,15 +12,8 @@ export function RegistryHero({ compact }: RegistryHeroProps) {
           : "flex flex-col items-center justify-end pb-3 text-center"
       }
     >
-      {/* The key remounts the logo when returning to the landing page, so the
-          entrance animation replays there; the compact results view stays static. */}
-      <RegistryLogo
-        key={compact ? "compact" : "landing"}
-        animated={!compact}
-        className={`mx-auto w-auto ${compact ? "h-16" : "h-32 sm:h-44"}`}
-      />
-      <h1 className="mt-2 text-3xl font-semibold tracking-tight">
-        Discover reusable mappings
+      <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+        Carrot Mapper Registry
       </h1>
       {!compact && (
         <p className="mt-2 text-sm text-muted-foreground sm:text-base">

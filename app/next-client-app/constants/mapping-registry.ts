@@ -39,9 +39,6 @@ export const PAGE_SIZE_OPTIONS = [10, 20, 30, 40, 50];
 export const DEFAULT_PAGE_SIZE = 10;
 export const SEARCH_DEBOUNCE_MS = 350;
 
-// Carrot icon shown above the "CARROT MAPPER / REGISTRY" text in the Registry logo.
-export const CARROT_SRC = "/icon.svg";
-
 // Keeps the dialogs fading/zooming in place instead of sliding in from the top-left.
 export const STATIC_DIALOG_STYLE = {
   "--tw-enter-translate-x": "0px",
