@@ -7,21 +7,43 @@ type RegistryLandingActionsProps = {
   onBrowse: (view: View) => void;
 };
 
-export function RegistryLandingActions({ onBrowse }: RegistryLandingActionsProps) {
+export function RegistryLandingActions({
+  onBrowse,
+}: RegistryLandingActionsProps) {
   return (
     <div className="flex flex-wrap items-start justify-center gap-2 pt-3">
-      <Button size="sm" variant="outline" className="h-7 px-2.5 text-xs" onClick={() => onBrowse("mappings")}>
+      <Button
+        size="sm"
+        variant="outline"
+        className="h-7 px-2.5 text-xs"
+        onClick={() => onBrowse("mappings")}
+      >
         Browse all mappings <ArrowRight className="size-3.5" />
       </Button>
-      <Button size="sm" variant="outline" className="h-7 px-2.5 text-xs" onClick={() => onBrowse("sets")}>
+      <Button
+        size="sm"
+        variant="outline"
+        className="h-7 px-2.5 text-xs"
+        onClick={() => onBrowse("sets")}
+      >
         <Layers className="size-3.5" /> Mapping sets
       </Button>
-      <Button size="sm" asChild variant="outline" className="h-7 px-2.5 text-xs">
+      <Button
+        size="sm"
+        asChild
+        variant="outline"
+        className="h-7 px-2.5 text-xs"
+      >
         <Link href="/scanreports/">
           <CloudUpload className="size-3.5" /> Publish Mapping SSSOM
         </Link>
       </Button>
-      <Button size="sm" type="button" variant="outline" className="h-7 px-2.5 text-xs">
+      <Button
+        size="sm"
+        type="button"
+        variant="outline"
+        className="h-7 px-2.5 text-xs"
+      >
         <FolderUp className="size-3.5" /> Publish Mapping Sets
       </Button>
     </div>

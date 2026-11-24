@@ -64,19 +64,34 @@ export function RegistryResults({
             {isMappings ? "Mapping search results" : "Published mapping sets"}
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            {isLoading ? "Searching..." : `${total} ${noun}${total === 1 ? "" : "s"}`}
+            {isLoading
+              ? "Searching..."
+              : `${total} ${noun}${total === 1 ? "" : "s"}`}
             {trimmedQuery && !isLoading ? ` for “${trimmedQuery}”` : ""}
             {isMappings && !isLoading ? " · One row per published mapping" : ""}
           </p>
         </div>
       </div>
 
-      <nav className="flex gap-2 border-b pb-2" aria-label="Registry results type">
+      <nav
+        className="flex gap-2 border-b pb-2"
+        aria-label="Registry results type"
+      >
         <Button asChild size="sm" variant={isMappings ? "secondary" : "ghost"}>
-          <Link href="/registry/mappings" aria-current={isMappings ? "page" : undefined}>Mappings</Link>
+          <Link
+            href="/registry/mappings"
+            aria-current={isMappings ? "page" : undefined}
+          >
+            Mappings
+          </Link>
         </Button>
         <Button asChild size="sm" variant={!isMappings ? "secondary" : "ghost"}>
-          <Link href="/registry/mapping-sets" aria-current={!isMappings ? "page" : undefined}>Mapping Sets</Link>
+          <Link
+            href="/registry/mapping-sets"
+            aria-current={!isMappings ? "page" : undefined}
+          >
+            Mapping Sets
+          </Link>
         </Button>
       </nav>
 
@@ -85,9 +100,21 @@ export function RegistryResults({
       ) : total > 0 ? (
         <>
           {isMappings ? (
-            <DataTable key="mappings" columns={mappingColumns} data={mappings} count={total} paginated={false} />
+            <DataTable
+              key="mappings"
+              columns={mappingColumns}
+              data={mappings}
+              count={total}
+              paginated={false}
+            />
           ) : (
-            <DataTable key="sets" columns={mappingSetColumns} data={mappingSets} count={total} paginated={false} />
+            <DataTable
+              key="sets"
+              columns={mappingSetColumns}
+              data={mappingSets}
+              count={total}
+              paginated={false}
+            />
           )}
           <RegistryTablePagination
             page={page}
@@ -100,9 +127,17 @@ export function RegistryResults({
       ) : (
         <div className="rounded-lg border border-dashed px-6 py-12 text-center">
           <Search className="mx-auto mb-3 size-9 text-muted-foreground" />
-          <h3 className="font-semibold">No matching {isMappings ? "mappings" : "mapping sets"}</h3>
-          <p className="mt-2 text-sm text-muted-foreground">Try a different search term or search field.</p>
-          <Button className="mt-4" variant="outline" onClick={() => onBrowse(view)}>
+          <h3 className="font-semibold">
+            No matching {isMappings ? "mappings" : "mapping sets"}
+          </h3>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Try a different search term or search field.
+          </p>
+          <Button
+            className="mt-4"
+            variant="outline"
+            onClick={() => onBrowse(view)}
+          >
             Browse all {isMappings ? "mappings" : "mapping sets"}
           </Button>
         </div>

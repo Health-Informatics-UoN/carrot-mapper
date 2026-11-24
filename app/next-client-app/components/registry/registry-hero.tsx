@@ -21,7 +21,9 @@ export function RegistryHero({ compact }: RegistryHeroProps) {
         animated={!compact}
         className={`mx-auto w-auto ${compact ? "h-16" : "h-32 sm:h-44"}`}
       />
-      <h1 className="mt-2 text-3xl font-semibold tracking-tight">Discover reusable mappings</h1>
+      <h1 className="mt-2 text-3xl font-semibold tracking-tight">
+        Discover reusable mappings
+      </h1>
       {!compact && (
         <p className="mt-2 text-sm text-muted-foreground sm:text-base">
           Explore how researchers map source terms to OMOP concepts.

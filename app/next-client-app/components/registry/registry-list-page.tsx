@@ -50,7 +50,12 @@ export function RegistryListPage({ view }: { view: View }) {
         onPageChange={registry.setPage}
         onPageSizeChange={registry.changePageSize}
         onBrowse={(nextView) => {
-          router.push(nextView === "mappings" ? "/registry/mappings" : "/registry/mapping-sets", { scroll: false });
+          router.push(
+            nextView === "mappings"
+              ? "/registry/mappings"
+              : "/registry/mapping-sets",
+            { scroll: false },
+          );
         }}
       />
     </div>

@@ -9,7 +9,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useTypewriterPlaceholder } from "@/lib/hooks/use-typewriter-placeholder";
-import { SEARCH_EXAMPLES, SEARCH_FIELDS, SET_SEARCH_FIELDS } from "@/constants/mapping-registry";
+import {
+  SEARCH_EXAMPLES,
+  SEARCH_FIELDS,
+  SET_SEARCH_FIELDS,
+} from "@/constants/mapping-registry";
 import type { SearchField, View } from "@/types/mapping-registry";
 
 type RegistrySearchBarProps = {
@@ -38,8 +42,14 @@ export function RegistrySearchBar({
   return (
     <div className="space-y-2">
       <div className="flex flex-col gap-2 rounded-xl border bg-background p-2 shadow-sm sm:flex-row">
-        <Select value={field} onValueChange={(value) => onFieldChange(value as SearchField)}>
-          <SelectTrigger aria-label="Search by" className="h-9 w-full shrink-0 sm:w-48">
+        <Select
+          value={field}
+          onValueChange={(value) => onFieldChange(value as SearchField)}
+        >
+          <SelectTrigger
+            aria-label="Search by"
+            className="h-9 w-full shrink-0 sm:w-48"
+          >
             <SelectValue placeholder="Search by" />
           </SelectTrigger>
           <SelectContent>
@@ -77,7 +87,9 @@ export function RegistrySearchBar({
           )}
         </div>
         {mode === "submit" ? (
-          <Button type="submit" className="h-9 shrink-0 px-4">Search</Button>
+          <Button type="submit" className="h-9 shrink-0 px-4">
+            Search
+          </Button>
         ) : (
           <div className="flex items-center justify-center px-2 text-xs text-muted-foreground sm:whitespace-nowrap">
             <span>Live search</span>

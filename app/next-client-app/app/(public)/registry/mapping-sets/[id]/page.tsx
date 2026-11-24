@@ -3,7 +3,11 @@ import { notFound } from "next/navigation";
 import { MappingSetDetails } from "@/components/registry/mapping-set-details";
 import { getMappingById, getMappingSetById } from "@/lib/registry/mock-data";
 
-export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
   const { id } = await params;
   const mappingSet = getMappingSetById(id);
   return {
@@ -26,9 +30,12 @@ export default async function RegistryMappingSetDetailPage({
   if (!mappingSet) notFound();
 
   const candidate = fromMapping ? getMappingById(fromMapping) : undefined;
-  const originMapping = candidate && mappingSet.mappings.some((item) => item.id === candidate.id)
-    ? candidate
-    : undefined;
+  const originMapping =
+    candidate && mappingSet.mappings.some((item) => item.id === candidate.id)
+      ? candidate
+      : undefined;
 
-  return <MappingSetDetails mappingSet={mappingSet} originMapping={originMapping} />;
+  return (
+    <MappingSetDetails mappingSet={mappingSet} originMapping={originMapping} />
+  );
 }

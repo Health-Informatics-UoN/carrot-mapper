@@ -47,7 +47,13 @@ export function RegistryLandingPage({ stats }: { stats: RegistryStats }) {
           />
         </form>
         <RegistryLandingActions
-          onBrowse={(view) => router.push(view === "mappings" ? "/registry/mappings" : "/registry/mapping-sets")}
+          onBrowse={(view) =>
+            router.push(
+              view === "mappings"
+                ? "/registry/mappings"
+                : "/registry/mapping-sets",
+            )
+          }
         />
       </div>
     </div>

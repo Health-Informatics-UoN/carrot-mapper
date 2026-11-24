@@ -9,7 +9,10 @@ interface BackToResultsLinkProps {
   sessionKey: string;
 }
 
-export function BackToResultsLink({ fallbackHref, sessionKey }: BackToResultsLinkProps) {
+export function BackToResultsLink({
+  fallbackHref,
+  sessionKey,
+}: BackToResultsLinkProps) {
   const [href, setHref] = useState(fallbackHref);
 
   useEffect(() => {
@@ -23,7 +26,10 @@ export function BackToResultsLink({ fallbackHref, sessionKey }: BackToResultsLin
   }, [sessionKey]);
 
   return (
-    <Link className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground" href={href}>
+    <Link
+      className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+      href={href}
+    >
       <ArrowLeft className="size-4" /> Back to results
     </Link>
   );

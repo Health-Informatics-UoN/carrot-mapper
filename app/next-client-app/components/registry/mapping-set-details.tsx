@@ -6,7 +6,13 @@ import { Detail } from "./detail";
 import { RegistryBreadcrumbs } from "./registry-breadcrumbs";
 import { BackToResultsLink } from "./back-to-results-link";
 
-export function MappingSetDetails({ mappingSet, originMapping }: { mappingSet: MappingSet; originMapping?: Mapping }) {
+export function MappingSetDetails({
+  mappingSet,
+  originMapping,
+}: {
+  mappingSet: MappingSet;
+  originMapping?: Mapping;
+}) {
   return (
     <div className="mx-auto w-full max-w-2xl space-y-5 py-6">
       <RegistryBreadcrumbs
@@ -15,7 +21,10 @@ export function MappingSetDetails({ mappingSet, originMapping }: { mappingSet: M
             ? [
                 { label: "Registry", href: "/registry" },
                 { label: "Mappings", href: "/registry/mappings" },
-                { label: originMapping.sourceTerm, href: `/registry/mappings/${originMapping.id}` },
+                {
+                  label: originMapping.sourceTerm,
+                  href: `/registry/mappings/${originMapping.id}`,
+                },
                 { label: mappingSet.title },
               ]
             : [
@@ -33,7 +42,10 @@ export function MappingSetDetails({ mappingSet, originMapping }: { mappingSet: M
           <ArrowLeft className="size-4" /> Back to {originMapping.sourceTerm}
         </Link>
       ) : (
-        <BackToResultsLink fallbackHref="/registry/mapping-sets" sessionKey="registry:lastMappingSetsUrl" />
+        <BackToResultsLink
+          fallbackHref="/registry/mapping-sets"
+          sessionKey="registry:lastMappingSetsUrl"
+        />
       )}
 
       <div className="space-y-5">
@@ -41,9 +53,16 @@ export function MappingSetDetails({ mappingSet, originMapping }: { mappingSet: M
           <div className="flex items-start justify-between gap-4">
             <div>
               <h1 className="text-lg font-semibold">{mappingSet.title}</h1>
-              <p className="mt-2 text-sm text-muted-foreground">{mappingSet.description}</p>
+              <p className="mt-2 text-sm text-muted-foreground">
+                {mappingSet.description}
+              </p>
             </div>
-            <Button type="button" variant="outline" size="sm" className="shrink-0">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="shrink-0"
+            >
               <Download className="size-4" /> Download SSSOM
             </Button>
           </div>
@@ -61,11 +80,22 @@ export function MappingSetDetails({ mappingSet, originMapping }: { mappingSet: M
           <h2 className="mb-3 text-lg font-semibold">Mappings in this set</h2>
           <div className="space-y-2">
             {mappingSet.mappings.map((mapping) => (
-              <Button key={mapping.id} asChild variant="outline" className="h-auto w-full justify-between gap-3 p-3 text-left">
-                <Link href={`/registry/mappings/${mapping.id}?fromMappingSet=${encodeURIComponent(mappingSet.id)}`}>
+              <Button
+                key={mapping.id}
+                asChild
+                variant="outline"
+                className="h-auto w-full justify-between gap-3 p-3 text-left"
+              >
+                <Link
+                  href={`/registry/mappings/${mapping.id}?fromMappingSet=${encodeURIComponent(mappingSet.id)}`}
+                >
                   <div className="min-w-0">
-                    <p className="text-sm font-semibold">{mapping.sourceTerm} → {mapping.targetConcept}</p>
-                    <p className="text-xs text-muted-foreground">OMOP concept ID: {mapping.conceptId}</p>
+                    <p className="text-sm font-semibold">
+                      {mapping.sourceTerm} → {mapping.targetConcept}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      OMOP concept ID: {mapping.conceptId}
+                    </p>
                   </div>
                   <ChevronRight className="size-4 shrink-0" />
                 </Link>

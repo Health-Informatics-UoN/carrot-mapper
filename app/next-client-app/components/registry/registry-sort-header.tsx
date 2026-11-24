@@ -23,7 +23,6 @@ type RegistrySortHeaderProps<T> = {
   onSort: (sort: Sort) => void;
 };
 
-
 export function RegistrySortHeader<T>({
   column,
   title,
@@ -55,10 +54,14 @@ export function RegistrySortHeader<T>({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start">
-          <DropdownMenuItem onClick={() => onSort({ key: sortKey, direction: "asc" })}>
+          <DropdownMenuItem
+            onClick={() => onSort({ key: sortKey, direction: "asc" })}
+          >
             <ArrowUpIcon className="mr-2 size-4 text-muted-foreground" /> Asc
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => onSort({ key: sortKey, direction: "desc" })}>
+          <DropdownMenuItem
+            onClick={() => onSort({ key: sortKey, direction: "desc" })}
+          >
             <ArrowDownIcon className="mr-2 size-4 text-muted-foreground" /> Desc
           </DropdownMenuItem>
           <DropdownMenuSeparator />

@@ -10,9 +10,14 @@ type MappingColumnsOptions = {
   onSort: (sort: Sort) => void;
 };
 
-export function getMappingColumns({ sort, onSort }: MappingColumnsOptions): ColumnDef<Mapping>[] {
-  const sortableHeader =
-    (title: string, sortKey: keyof Mapping): ColumnDef<Mapping>["header"] =>
+export function getMappingColumns({
+  sort,
+  onSort,
+}: MappingColumnsOptions): ColumnDef<Mapping>[] {
+  const sortableHeader = (
+    title: string,
+    sortKey: keyof Mapping,
+  ): ColumnDef<Mapping>["header"] =>
     function SortableHeader({ column }: HeaderContext<Mapping, unknown>) {
       return (
         <RegistrySortHeader
@@ -29,7 +34,9 @@ export function getMappingColumns({ sort, onSort }: MappingColumnsOptions): Colu
     {
       accessorKey: "sourceTerm",
       header: sortableHeader("Source term", "sourceTerm"),
-      cell: ({ row }) => <span className="font-medium">{row.original.sourceTerm}</span>,
+      cell: ({ row }) => (
+        <span className="font-medium">{row.original.sourceTerm}</span>
+      ),
     },
     {
       accessorKey: "targetConcept",
@@ -38,7 +45,9 @@ export function getMappingColumns({ sort, onSort }: MappingColumnsOptions): Colu
     {
       accessorKey: "conceptId",
       header: sortableHeader("Concept ID", "conceptId"),
-      cell: ({ row }) => <span className="font-mono text-xs">{row.original.conceptId}</span>,
+      cell: ({ row }) => (
+        <span className="font-mono text-xs">{row.original.conceptId}</span>
+      ),
     },
     {
       accessorKey: "vocabulary",
@@ -54,27 +63,32 @@ export function getMappingColumns({ sort, onSort }: MappingColumnsOptions): Colu
       cell: ({ row }) => (
         <div className="max-w-52 whitespace-normal">
           {row.original.mappingSet}
-          <span className="block text-xs text-muted-foreground">v{row.original.mappingSetVersion}</span>
+          <span className="block text-xs text-muted-foreground">
+            v{row.original.mappingSetVersion}
+          </span>
         </div>
       ),
     },
     {
       id: "details",
-      header: () => <div className="text-right text-sm font-semibold sm:text-base">Details</div>,
+      header: () => (
+        <div className="text-right text-sm font-semibold sm:text-base">
+          Details
+        </div>
+      ),
       enableHiding: false,
       enableSorting: false,
       cell: ({ row }) => (
         <div className="text-right">
-          <Button
-            asChild
-            size="sm"
-            variant="outline"
-          >
+          <Button asChild size="sm" variant="outline">
             <Link
               href={`/registry/mappings/${row.original.id}`}
               onClick={() => {
                 try {
-                  sessionStorage.setItem("registry:lastMappingsUrl", window.location.pathname + window.location.search);
+                  sessionStorage.setItem(
+                    "registry:lastMappingsUrl",
+                    window.location.pathname + window.location.search,
+                  );
                 } catch {}
               }}
               aria-label={`View details for ${row.original.sourceTerm}, ${row.original.publisher}`}

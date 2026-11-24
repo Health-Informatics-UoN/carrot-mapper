@@ -1,5 +1,9 @@
 import { CARROT_SRC } from "@/constants/mapping-registry";
-import { TAGLINE_PATHS, TITLE_PATHS, type LogoPath } from "./registry-logo-paths";
+import {
+  TAGLINE_PATHS,
+  TITLE_PATHS,
+  type LogoPath,
+} from "./registry-logo-paths";
 import styles from "./registry-logo.module.css";
 
 // Layout, in the coordinate space of the "CARROT MAPPER / REGISTRY" text paths.
@@ -38,8 +42,13 @@ function LogoPaths({ paths }: { paths: LogoPath[] }) {
 }
 
 /** Carrot icon with the "CARROT MAPPER / REGISTRY" text underneath. */
-export function RegistryLogo({ className, animated = false }: RegistryLogoProps) {
-  const classes = [className, animated ? styles.animated : undefined].filter(Boolean).join(" ");
+export function RegistryLogo({
+  className,
+  animated = false,
+}: RegistryLogoProps) {
+  const classes = [className, animated ? styles.animated : undefined]
+    .filter(Boolean)
+    .join(" ");
 
   return (
     <svg

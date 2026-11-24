@@ -16,12 +16,20 @@ export function RegistryDataContent({ stats }: RegistryDataContentProps) {
       </div>
       <dl className="grid grid-cols-2 gap-x-5 gap-y-1 text-xs sm:gap-x-6">
         <div>
-          <dt className="whitespace-nowrap text-muted-foreground">Total mappings</dt>
-          <dd className="mt-1 text-base font-semibold tabular-nums">{stats.totalMappings}</dd>
+          <dt className="whitespace-nowrap text-muted-foreground">
+            Total mappings
+          </dt>
+          <dd className="mt-1 text-base font-semibold tabular-nums">
+            {stats.totalMappings}
+          </dd>
         </div>
         <div>
-          <dt className="whitespace-nowrap text-muted-foreground">Total sets</dt>
-          <dd className="mt-1 text-base font-semibold tabular-nums">{stats.totalSets}</dd>
+          <dt className="whitespace-nowrap text-muted-foreground">
+            Total sets
+          </dt>
+          <dd className="mt-1 text-base font-semibold tabular-nums">
+            {stats.totalSets}
+          </dd>
         </div>
       </dl>
     </aside>
