@@ -17,8 +17,9 @@ from registry.models import (
     TermKind,
     TermLevel,
 )
-from registry_test_helper import series_id_for
 from rest_framework.test import APIClient
+
+from test.registry_test_helper import series_id_for
 
 BASE = "/api/v2/registry/"
 

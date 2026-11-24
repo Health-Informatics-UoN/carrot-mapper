@@ -28,8 +28,9 @@ from registry.models import (
     Status,
 )
 from registry.services import scan_report_set_uri
-from registry_test_helper import series_id_for
 from rest_framework.test import APIClient
+
+from test.registry_test_helper import series_id_for
 
 TRIGGER = "registry.services.worker_service.trigger_registry_import"
 
