@@ -19,7 +19,6 @@ import { PublishToRegistryForm } from "./PublishToRegistryForm";
 interface Props {
   scanReportId: string;
   scanReportName: string;
-  lastPublishedVersion?: string | null;
 }
 
 /**
@@ -32,7 +31,6 @@ interface Props {
 export function PublishToRegistryDialog({
   scanReportId,
   scanReportName,
-  lastPublishedVersion,
 }: Props) {
 
   // Dialog open or closed State.
@@ -78,7 +76,6 @@ export function PublishToRegistryDialog({
         {open && (
           <PublishToRegistryForm
             scanReportId={scanReportId}
-            lastPublishedVersion={lastPublishedVersion}
             onCancel={() => setOpen(false)}
           />
         )}

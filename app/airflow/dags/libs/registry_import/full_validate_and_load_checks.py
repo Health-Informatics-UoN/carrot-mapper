@@ -7,7 +7,8 @@ what is accepted is precisely what is loaded.
 Checks, each reported as an Issue (see parse.Issue):
 
 - metadata: the official SSSOM 1.0 JSON schema (vendored in libs/sssom_spec),
-  plus what the registry needs: mapping_set_id, mapping_set_version, license;
+  plus what the registry needs: mapping_set_id, mapping_set_version (SemVer or
+  an ISO date, see set_versions.py), license;
 - prefixes: built-in prefixes not redefined; reserved prefixes (carrot, OMOP...)
   not bound to another namespace; every CURIE's prefix declared, and not a name
   the registry already uses for another namespace;
@@ -51,6 +52,11 @@ from libs.registry_import.full_validate_and_load_parse import (
     WARNING,
     Issue,
     ParsedSSSOM,
+)
+from libs.registry_import.set_versions import (
+    FORMAT_HINT,
+    set_version_error,
+    version_key,
 )
 from libs.rules_export.sssom import (
     OMOP_CONCEPT_IRI,
@@ -777,6 +783,12 @@ def _check_set(
                 f"{MAX_LENGTHS[name]}",
                 column=name,
             )
+    if record.set_version and version_key(record.set_version) is None:
+        log.error(
+            "invalid_set_version",
+            f"mapping_set_version {record.set_version!r} must be {FORMAT_HINT}",
+            column="mapping_set_version",
+        )
 
     propagated = {
         slot: _jsonable(metadata[slot])
@@ -834,21 +846,23 @@ def _slot_errors(spec: Spec, slot: str, value: Any, cache: dict) -> tuple[str, .
     return cache[key]
 
 
-def check_set_version_is_new(plan: ImportPlan, conflicting_set_id: str | None) -> None:
+def check_set_version_is_newer(plan: ImportPlan, existing_versions: list[str]) -> None:
     """
-    Sets are immutable: corrections are a new mapping_set_version. An error if
-    another import already holds this set_uri + version (``conflicting_set_id``,
-    looked up by the caller).
+    Sets are immutable: corrections are a new mapping_set_version, higher than
+    every version of the set_uri from other imports (``existing_versions``,
+    looked up by the caller). A malformed version is reported by build_import.
     """
-    if conflicting_set_id is None:
-        return
     record = plan.mapping_set
-    plan.issues.error(
-        "set_version_exists",
-        f"Mapping set {record.set_uri} version {record.set_version} already "
-        "exists; publish corrections as a new mapping_set_version",
-        column="mapping_set_version",
-    )
+    if version_key(record.set_version) is None:
+        return
+    error = set_version_error(record.set_version, existing_versions)
+    if error:
+        code, message = error
+        plan.issues.error(
+            code,
+            f"Mapping set {record.set_uri}: {message}",
+            column="mapping_set_version",
+        )
 
 
 @dataclass(frozen=True)

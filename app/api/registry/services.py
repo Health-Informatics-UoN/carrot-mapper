@@ -18,6 +18,7 @@ from registry.models import (
     MappingSet,
     Origin,
 )
+from registry.versions import NotSemVer, ReleaseType, bump, latest_semver
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +47,40 @@ def scan_report_has_publishable_mappings(scan_report: ScanReport) -> bool:
     ).exists()
 
 
+def latest_set_version(scan_report: ScanReport) -> str | None:
+    """
+    The highest version of the scan report's mapping set, any status (a
+    withdrawn or draft version still holds its number). Raises
+    PublishConflict if a version isn't SemVer, as the next one can't be derived.
+    """
+    versions = MappingSet.objects.filter(
+        set_uri=scan_report_set_uri(scan_report)
+    ).values_list("set_version", flat=True)
+    try:
+        return latest_semver(versions)
+    except NotSemVer as e:
+        logger.exception(
+            "Non-SemVer mapping set version encountered while deriving next version."
+        )
+        raise PublishConflict(
+            {
+                "detail": "This mapping set has a non-SemVer version, so the next version can't be derived."
+            }
+        ) from e
+
+
+def next_versions(scan_report: ScanReport) -> dict[str, Any]:
+    """The latest version and the version each release type would publish."""
+    latest = latest_set_version(scan_report)
+    return {
+        "latest_version": latest,
+        "next_versions": {
+            release_type: bump(latest, release_type)
+            for release_type in ReleaseType.values
+        },
+    }
+
+
 def submit_direct_publish(
     scan_report: ScanReport,
     user: User,
@@ -55,27 +90,20 @@ def submit_direct_publish(
     """
     Queue a scan report's mappings for import into the registry.
 
+    The version is the next SemVer of ``metadata["release_type"]`` after the
+    set's highest version (1.0.0 for the first publish).
+
     Creates a PENDING ImportJob and triggers the registry import DAG, which
     builds the SSSOM file from the scan report and loads it. Returns
     ``(job, created)``; ``created`` is False when an identical publish is
     already in flight and that job is returned instead.
 
     Raises ValidationError (400) if there is nothing to publish,
-    PublishConflict (409) if the version is taken or a different publish of
-    it is in flight, and WorkerUnavailable (503) if the DAG cannot be
-    triggered (the job is then marked FAILED).
+    PublishConflict (409) if an existing version isn't SemVer or a different
+    publish of the scan report is in flight, and WorkerUnavailable (503) if
+    the DAG cannot be triggered (the job is then marked FAILED).
     """
     set_uri = scan_report_set_uri(scan_report)
-    set_version = metadata["set_version"]
-    overrides = {
-        "set_uri": set_uri,
-        "set_version": set_version,
-        "title": metadata["title"],
-        "description": metadata.get("description", ""),
-        "license": metadata["license"].pk,
-        "status": metadata["status"],
-        "include_author_orcid_ids": metadata.get("include_author_orcid_ids", False),
-    }
 
     with transaction.atomic():
         # Serialises concurrent publishes of the same scan report, so two
@@ -86,9 +114,10 @@ def submit_direct_publish(
             raise ValidationError(
                 {"detail": "This scan report has no concept mappings to publish."}
             )
-
         # The first version of a set_uri decides who may add versions to it
         # (the registry_import DAG checks this again when it loads the file).
+        # Checked before deriving the version: another publisher's set may
+        # use non-SemVer versions, which would otherwise mask this conflict.
         first_version = (
             MappingSet.objects.filter(set_uri=set_uri).order_by("created_at").first()
         )
@@ -103,6 +132,16 @@ def submit_direct_publish(
                 }
             )
 
+        set_version = bump(latest_set_version(scan_report), metadata["release_type"])
+        overrides = {
+            "set_uri": set_uri,
+            "set_version": set_version,
+            "title": metadata["title"],
+            "description": metadata.get("description", ""),
+            "license": metadata["license"].pk,
+            "status": metadata["status"],
+            "include_author_orcid_ids": metadata.get("include_author_orcid_ids", False),
+        }
         if MappingSet.objects.filter(set_uri=set_uri, set_version=set_version).exists():
             raise PublishConflict(
                 {
@@ -111,19 +150,21 @@ def submit_direct_publish(
                 }
             )
 
+        # One publish per scan report at a time: the next version is derived
+        # from the loaded ones, so a second publish would get the same number.
         in_flight = ImportJob.objects.filter(
             origin_id=Origin.CARROT_DIRECT_PUBLISH,
             status__in=[ImportJobStatus.PENDING, ImportJobStatus.RUNNING],
             params__scan_report_id=scan_report.pk,
-            params__overrides__set_version=set_version,
         ).first()
         if in_flight:
             if in_flight.params.get("overrides") == overrides:
                 return in_flight, False
+            in_flight_version = in_flight.params.get("overrides", {}).get("set_version")
             raise PublishConflict(
                 {
-                    "detail": f"Version '{set_version}' of this mapping set "
-                    "is already being published.",
+                    "detail": f"Version '{in_flight_version}' of this mapping set "
+                    "is already being published. Try again once it has finished.",
                     "import_job_id": str(in_flight.id),
                 }
             )
