@@ -324,7 +324,7 @@ class TestScanReportRegistryPublish(TestCase):
         response = self.client.post(self.url, self.body, format="json")
 
         self.assertEqual(response.status_code, 409)
-        self.assertIn("already exists", str(response.data["detail"]))
+        self.assertIn("non-SemVer", str(response.data["detail"]))
         mock_trigger.assert_not_called()
 
     def test_set_uri_is_the_scan_reports_uuid(self):
@@ -369,15 +369,13 @@ class TestScanReportRegistryPublish(TestCase):
         self._add_rule()
         MappingSet.objects.create(
             set_uri=scan_report_set_uri(self.scan_report),
-            set_version="1.0",
+            set_version="1.0.0",
             title="Existing",
             origin_id=Origin.CARROT_DIRECT_PUBLISH,
             source_scan_report=self.scan_report,
         )
 
-        response = self.client.post(
-            self.url, {**self.body, "set_version": "2.0"}, format="json"
-        )
+        response = self.client.post(self.url, self.body, format="json")
 
         self.assertEqual(response.status_code, 202)
 

@@ -114,18 +114,10 @@ def submit_direct_publish(
             raise ValidationError(
                 {"detail": "This scan report has no concept mappings to publish."}
             )
-        set_version = bump(latest_set_version(scan_report), metadata["release_type"])
-        overrides = {
-            "set_uri": set_uri,
-            "set_version": set_version,
-            "title": metadata["title"],
-            "description": metadata.get("description", ""),
-            "license": metadata["license"].pk,
-            "status": metadata["status"],
-            "include_author_orcid_ids": metadata.get("include_author_orcid_ids", False),
-        }
         # The first version of a set_uri decides who may add versions to it
         # (the registry_import DAG checks this again when it loads the file).
+        # Checked before deriving the version: another publisher's set may
+        # use non-SemVer versions, which would otherwise mask this conflict.
         first_version = (
             MappingSet.objects.filter(set_uri=set_uri).order_by("created_at").first()
         )
@@ -140,6 +132,16 @@ def submit_direct_publish(
                 }
             )
 
+        set_version = bump(latest_set_version(scan_report), metadata["release_type"])
+        overrides = {
+            "set_uri": set_uri,
+            "set_version": set_version,
+            "title": metadata["title"],
+            "description": metadata.get("description", ""),
+            "license": metadata["license"].pk,
+            "status": metadata["status"],
+            "include_author_orcid_ids": metadata.get("include_author_orcid_ids", False),
+        }
         if MappingSet.objects.filter(set_uri=set_uri, set_version=set_version).exists():
             raise PublishConflict(
                 {
