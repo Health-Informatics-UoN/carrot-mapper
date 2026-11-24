@@ -9,6 +9,7 @@ import {
   Network,
   Upload,
 } from "lucide-react";
+import { enableMappingsRegistryFeatures } from "@/constants";
 
 export interface SidebarItems {
   links: Array<{
@@ -23,6 +24,11 @@ export interface SidebarItems {
   }>;
 }
 
+const registryItems =
+  enableMappingsRegistryFeatures === "true"
+    ? [{ label: "Mapping Registry", href: "/registry/", icon: Network }]
+    : [];
+
 export const sidebarItems: SidebarItems = {
   links: [
     { label: "Projects", href: "/projects/", icon: Folders },
@@ -34,7 +40,7 @@ export const sidebarItems: SidebarItems = {
       icon: Upload,
     },
     { label: "Vocabularies", href: "/vocabularies/", icon: Library },
-    { label: "Mapping Registry", href: "/registry/", icon: Network },
+    ...registryItems,
     {
       href: "https://carrot.ac.uk/documentation",
       icon: BookMarked,
@@ -42,6 +48,7 @@ export const sidebarItems: SidebarItems = {
     },
   ],
   routes: [
+    ...registryItems,
     {
       label: "Documentation",
       href: "https://carrot.ac.uk/documentation",
