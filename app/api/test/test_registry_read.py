@@ -1,19 +1,23 @@
+import uuid
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.utils import timezone
 from registry.models import (
+    CARROT_MAPPING_SET_NAMESPACE,
     ImportJob,
     License,
     Mapping,
     MappingSet,
+    MappingSetSeries,
     Origin,
     Status,
     Term,
     TermKind,
     TermLevel,
 )
+from registry_test_helper import series_id_for
 from rest_framework.test import APIClient
 
 BASE = "/api/v2/registry/"
@@ -103,8 +107,11 @@ class RegistryReadTestBase(TestCase):
         self.m_draft = self.make_mapping(self.draft, self.subj_value, self.draft_only)
 
     def make_set(self, title, version, status, set_uri="https://x/diabetes", **kw):
+        series, _ = MappingSetSeries.objects.get_or_create(
+            set_uri=set_uri, defaults={"id": series_id_for(set_uri)}
+        )
         return MappingSet.objects.create(
-            set_uri=set_uri,
+            series=series,
             set_version=version,
             title=title,
             origin_id=Origin.SSSOM_UPLOAD,
@@ -208,7 +215,7 @@ class TestMappingSetList(RegistryReadTestBase):
 
 class TestMappingSetDetail(RegistryReadTestBase):
     def test_detail_has_counts_and_provenance(self):
-        r = self.get(f"mapping-sets/{self.v2.id}/")
+        r = self.get(f"mapping-sets/{self.v2.series_id}/versions/{self.v2.id}/")
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.data["mapping_count"], 2)
         self.assertEqual(r.data["subject_count"], 2)
@@ -216,25 +223,45 @@ class TestMappingSetDetail(RegistryReadTestBase):
         self.assertEqual(r.data["license"], "CC-BY-4.0")
 
     def test_withdrawn_resolvable_by_id(self):
-        r = self.get(f"mapping-sets/{self.withdrawn.id}/")
+        r = self.get(
+            f"mapping-sets/{self.withdrawn.series_id}/versions/{self.withdrawn.id}/"
+        )
         self.assertEqual(r.status_code, 200)
 
     def test_draft_404_for_others_200_for_owner(self):
-        self.assertEqual(self.get(f"mapping-sets/{self.draft.id}/").status_code, 404)
         self.assertEqual(
-            self.get(f"mapping-sets/{self.draft.id}/", user=self.other).status_code,
+            self.get(
+                f"mapping-sets/{self.draft.series_id}/versions/{self.draft.id}/"
+            ).status_code,
             404,
         )
-        r = self.get(f"mapping-sets/{self.draft.id}/", user=self.owner)
+        self.assertEqual(
+            self.get(
+                f"mapping-sets/{self.draft.series_id}/versions/{self.draft.id}/",
+                user=self.other,
+            ).status_code,
+            404,
+        )
+        r = self.get(
+            f"mapping-sets/{self.draft.series_id}/versions/{self.draft.id}/",
+            user=self.owner,
+        )
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.data["import_job"]["id"], str(self.job.id))
 
     def test_set_mappings(self):
-        r = self.get(f"mapping-sets/{self.v2.id}/mappings/")
+        r = self.get(
+            f"mapping-sets/{self.v2.series_id}/versions/{self.v2.id}/mappings/"
+        )
         self.assertCountEqual(self.ids(r), [self.m2.id, self.m3.id])
-        r = self.get(f"mapping-sets/{self.draft.id}/mappings/")
+        r = self.get(
+            f"mapping-sets/{self.draft.series_id}/versions/{self.draft.id}/mappings/"
+        )
         self.assertEqual(r.status_code, 404)
-        r = self.get(f"mapping-sets/{self.draft.id}/mappings/", user=self.owner)
+        r = self.get(
+            f"mapping-sets/{self.draft.series_id}/versions/{self.draft.id}/mappings/",
+            user=self.owner,
+        )
         self.assertEqual(self.ids(r), [self.m_draft.id])
 
 
@@ -317,6 +344,73 @@ GET_FILE = "registry.views.storage_service.get_file"
 SSSOM = b"# mapping_set_id: https://x/diabetes\nsubject_id\tpredicate_id\n"
 
 
+class TestMappingSetSeries(RegistryReadTestBase):
+    def test_series_lists_visible_versions_newest_first(self):
+        r = self.get(f"mapping-sets/{self.v1.series_id}/")
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.data["set_uri"], "https://x/diabetes")
+        self.assertEqual(
+            [v["set_version"] for v in r.data["versions"]], ["2.0.0", "1.0.0"]
+        )
+
+    def test_series_hides_versions_the_caller_cant_see(self):
+        self.make_set("Diabetes mappings", "3.0.0", Status.DRAFT, import_job=self.job)
+        r = self.get(f"mapping-sets/{self.v1.series_id}/")
+        self.assertEqual(
+            [v["set_version"] for v in r.data["versions"]], ["2.0.0", "1.0.0"]
+        )
+        r = self.get(f"mapping-sets/{self.v1.series_id}/", user=self.owner)
+        self.assertEqual(
+            [v["set_version"] for v in r.data["versions"]],
+            ["3.0.0", "2.0.0", "1.0.0"],
+        )
+
+    def test_series_with_only_hidden_versions_is_404(self):
+        path = f"mapping-sets/{self.draft.series_id}/"
+        self.assertEqual(self.get(path).status_code, 404)
+        self.assertEqual(self.get(path, user=self.other).status_code, 404)
+        self.assertEqual(self.get(path, user=self.owner).status_code, 200)
+
+    def test_version_under_another_series_is_404(self):
+        path = f"mapping-sets/{self.withdrawn.series_id}/versions/{self.v2.id}/"
+        self.assertEqual(self.get(path).status_code, 404)
+        self.assertEqual(self.get(path + "mappings/").status_code, 404)
+        self.assertEqual(self.get(path + "download/").status_code, 404)
+
+    def test_carrot_set_uri_resolves_to_its_series(self):
+        sr_uuid = uuid.uuid4()
+        ms = self.make_set(
+            "Carrot set",
+            "1.0.0",
+            Status.PUBLISHED,
+            set_uri=f"{CARROT_MAPPING_SET_NAMESPACE}{sr_uuid}",
+        )
+        self.assertEqual(ms.series_id, sr_uuid)
+        r = self.get(f"mapping-sets/{sr_uuid}/")
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.data["id"], str(sr_uuid))
+
+    def test_external_set_uri_gets_a_random_series_id(self):
+        self.assertNotEqual(
+            series_id_for("http://pretendurl.com"),
+            series_id_for("http://pretendurl.com"),
+        )
+        self.assertNotEqual(
+            series_id_for(f"{CARROT_MAPPING_SET_NAMESPACE}not-a-uuid"),
+            series_id_for(f"{CARROT_MAPPING_SET_NAMESPACE}not-a-uuid"),
+        )
+
+    def test_versions_carry_their_series(self):
+        r = self.get("mapping-sets/", set_uri="https://x/diabetes")
+        self.assertEqual(
+            {row["series"] for row in r.data["results"]}, {str(self.v1.series_id)}
+        )
+        r = self.get(
+            "mapping-sets/", series=str(self.withdrawn.series_id), status="WITHDRAWN"
+        )
+        self.assertEqual(self.ids(r), [str(self.withdrawn.id)])
+
+
 class TestMappingSetDownload(RegistryReadTestBase):
     def setUp(self):
         super().setUp()
@@ -326,7 +420,9 @@ class TestMappingSetDownload(RegistryReadTestBase):
 
     @patch(GET_FILE, return_value=SSSOM)
     def test_download_streams_stored_file(self, get_file):
-        r = self.get(f"mapping-sets/{self.v2.id}/download/")
+        r = self.get(
+            f"mapping-sets/{self.v2.series_id}/versions/{self.v2.id}/download/"
+        )
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.content, SSSOM)
         self.assertTrue(r["Content-Type"].startswith("text/tab-separated-values"))
@@ -338,23 +434,29 @@ class TestMappingSetDownload(RegistryReadTestBase):
 
     @patch(GET_FILE, return_value=SSSOM)
     def test_withdrawn_downloadable(self, get_file):
-        r = self.get(f"mapping-sets/{self.withdrawn.id}/download/")
+        r = self.get(
+            f"mapping-sets/{self.withdrawn.series_id}/versions/{self.withdrawn.id}/download/"
+        )
         self.assertEqual(r.status_code, 200)
 
     @patch(GET_FILE, return_value=SSSOM)
     def test_draft_only_for_submitter(self, get_file):
-        path = f"mapping-sets/{self.draft.id}/download/"
+        path = f"mapping-sets/{self.draft.series_id}/versions/{self.draft.id}/download/"
         self.assertEqual(self.get(path).status_code, 404)
         self.assertEqual(self.get(path, user=self.other).status_code, 404)
         self.assertEqual(self.get(path, user=self.owner).status_code, 200)
 
     @patch(GET_FILE)
     def test_no_file_key_is_404(self, get_file):
-        r = self.get(f"mapping-sets/{self.v1.id}/download/")
+        r = self.get(
+            f"mapping-sets/{self.v1.series_id}/versions/{self.v1.id}/download/"
+        )
         self.assertEqual(r.status_code, 404)
         get_file.assert_not_called()
 
     @patch(GET_FILE, side_effect=ValueError("boom"))
     def test_storage_error_is_503(self, get_file):
-        r = self.get(f"mapping-sets/{self.v2.id}/download/")
+        r = self.get(
+            f"mapping-sets/{self.v2.series_id}/versions/{self.v2.id}/download/"
+        )
         self.assertEqual(r.status_code, 503)
