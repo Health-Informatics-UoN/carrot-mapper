@@ -34,8 +34,10 @@ from libs.registry_import import (
 )
 from libs.registry_import.full_validate_and_load_checks import (
     CARROT_MAPPING_SET_NAMESPACE,
+    LicenseRow,
     Vocabulary,
     build_import,
+    match_license,
 )
 from libs.registry_import.full_validate_and_load_db import LoadError, load_plan
 from libs.registry_import.full_validate_and_load_parse import parse_sssom
@@ -281,10 +283,12 @@ def plan_for(conn, text: str):
         cursor.execute(queries.get_justifications_query)
         justifications = {r[0] for r in cursor.fetchall()}
     conn.rollback()
+    parsed = parse_sssom(text)
     return build_import(
-        parse_sssom(text),
+        parsed,
         Vocabulary(predicates, justifications),
         license_id="CC-BY-4.0",
+        file_license_id=file_license_id(conn, parsed),
     )
 
 
@@ -298,11 +302,25 @@ def registry_plan(conn, text: str):
         cursor.execute(queries.get_prefixes_query)
         prefixes = dict(cursor.fetchall())
     conn.rollback()
+    parsed = parse_sssom(text)
     return build_import(
-        parse_sssom(text),
+        parsed,
         Vocabulary(predicates, justifications, prefixes),
         license_id="CC-BY-4.0",
+        file_license_id=file_license_id(conn, parsed),
     )
+
+
+def file_license_id(conn, parsed):
+    """The License the file's license IRI stands for, as the DAG matches it."""
+    with conn.cursor() as cursor:
+        cursor.execute(queries.get_license_iris_query)
+        licenses = [
+            LicenseRow(id, iri, tuple(see_also or ()), deprecated)
+            for id, iri, see_also, deprecated in cursor.fetchall()
+        ]
+    conn.rollback()
+    return match_license(str(parsed.metadata.get("license") or ""), licenses)
 
 
 def fetch(conn, query, *params):
@@ -829,6 +847,76 @@ def test_dag_imports_an_upload(conn, cleanup, user, storage):
             f"/registry/mapping-sets/{series_id}/versions/{set_id}",
         )
     ]
+
+
+def test_dag_rejects_an_upload_whose_license_is_not_the_requests(
+    conn, cleanup, user, storage
+):
+    subject, obj = unique_prefixes(cleanup)
+    job = make_job(conn, cleanup, user)
+    key = helpers.file_key_for(job)
+    other = sssom(subject, obj).replace(CC_BY, "https://example.org/my-licence")
+    storage.blobs[("registry-sssom", key)] = other.encode()
+
+    with pytest.raises(AirflowFailException, match="failed validation"):
+        run_dag(
+            {
+                "import_job_id": job,
+                "origin": "SSSOM_UPLOAD",
+                "user_id": user,
+                "file_key": key,
+                "overrides": {"license": "CC-BY-4.0"},
+            }
+        )
+
+    row = job_row(conn, job)
+    assert row["status"] == "FAILED"
+    assert {i["code"] for i in row["issues"] if i["level"] == "error"} == {
+        "license_mismatch"
+    }
+    assert fetch(
+        conn, "SELECT count(*) FROM registry_mappingset WHERE import_job_id = %s", job
+    ) == [(0,)]
+
+
+def test_dag_rejects_an_upload_of_a_local_scan_reports_set(
+    conn, cleanup, user, storage
+):
+    # e.g. the scan report's own SSSOM export: it must come in by direct publish
+    scan_report_uuid = str(uuid.uuid4())
+    with conn.cursor() as cursor:
+        sr = insert(
+            cursor, "mapping_scanreport", name="SR", dataset="SR", uuid=scan_report_uuid
+        )
+    conn.commit()
+    cleanup.rows.append(("mapping_scanreport", sr))
+    subject, obj = unique_prefixes(cleanup)
+    job = make_job(conn, cleanup, user)
+    key = helpers.file_key_for(job)
+    set_uri = f"{CARROT_MAPPING_SET_NAMESPACE}{scan_report_uuid}"
+    storage.blobs[("registry-sssom", key)] = sssom(
+        subject, obj, set_uri=set_uri
+    ).encode()
+
+    with pytest.raises(AirflowFailException, match="failed validation"):
+        run_dag(
+            {
+                "import_job_id": job,
+                "origin": "SSSOM_UPLOAD",
+                "user_id": user,
+                "file_key": key,
+                "overrides": {"license": "CC-BY-4.0"},
+            }
+        )
+
+    row = job_row(conn, job)
+    assert row["status"] == "FAILED"
+    assert {i["code"] for i in row["issues"] if i["level"] == "error"} == {
+        "set_uri_reserved"
+    }
+    assert fetch(
+        conn, "SELECT count(*) FROM registry_mappingset WHERE import_job_id = %s", job
+    ) == [(0,)]
 
 
 def test_dag_records_validation_failure_once(conn, cleanup, user, storage):

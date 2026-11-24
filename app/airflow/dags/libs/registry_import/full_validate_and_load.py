@@ -21,12 +21,16 @@ from airflow.exceptions import AirflowFailException
 from libs.db import pg_hook
 from libs.registry_import import queries
 from libs.registry_import.full_validate_and_load_checks import (
+    CARROT_MAPPING_SET_NAMESPACE,
     ImportPlan,
     IssueLog,
+    LicenseRow,
     SetRecord,
     Vocabulary,
     build_import,
+    check_set_uri_not_reserved,
     check_set_version_is_newer,
+    match_license,
     set_uri_uuid,
 )
 from libs.registry_import.full_validate_and_load_db import LoadError, load_plan
@@ -43,6 +47,7 @@ def full_validate_and_load(**kwargs) -> None:
     file_key = job_file_key(import_job_id)
 
     plan = _read_and_check(params, file_key)
+    check_set_uri_not_reserved(plan, params["origin"], _local_scan_report_id(plan))
     check_set_version_is_newer(plan, _existing_versions(plan, import_job_id))
     pg_hook.run(
         queries.set_import_job_issues_query,
@@ -97,6 +102,7 @@ def _read_and_check(params: dict[str, Any], file_key: str) -> ImportPlan:
 
     parsed = parse_sssom(text)
     parsed.issues[:0] = decode_issues
+    file_iri = parsed.metadata.get("license")
     return build_import(
         parsed,
         vocab,
@@ -106,7 +112,23 @@ def _read_and_check(params: dict[str, Any], file_key: str) -> ImportPlan:
         max_issues=REGISTRY_IMPORT_MAX_ISSUES,
         # the set a request adds a version to (validate_params checked it)
         series_set_uri=params.get("series_set_uri"),
+        # the License the file's license IRI stands for, compared to the request's
+        file_license_id=(
+            match_license(str(file_iri), _licenses())
+            if file_iri not in (None, "")
+            else None
+        ),
     )
+
+
+def _licenses() -> list[LicenseRow]:
+    """The registry's Licenses (a few hundred, from the SPDX License List)."""
+    return [
+        LicenseRow(id, iri, tuple(see_also or ()), is_deprecated)
+        for id, iri, see_also, is_deprecated in pg_hook.get_records(
+            queries.get_license_iris_query
+        )
+    ]
 
 
 def _existing_versions(plan: ImportPlan, import_job_id: str) -> list[str]:
@@ -122,8 +144,15 @@ def _existing_versions(plan: ImportPlan, import_job_id: str) -> list[str]:
 
 
 def _local_scan_report_id(plan: ImportPlan) -> int | None:
-    """The scan report on this instance whose set id the file uses, if any."""
-    scan_report_uuid = set_uri_uuid(plan.mapping_set.set_uri)
+    """
+    The scan report on this instance whose set id the file uses, if any. Only
+    Carrot set ids ({namespace}{ScanReport.uuid}) are looked up: another
+    namespace's id may end in a UUID too.
+    """
+    set_uri = plan.mapping_set.set_uri
+    if not set_uri.startswith(CARROT_MAPPING_SET_NAMESPACE):
+        return None
+    scan_report_uuid = set_uri_uuid(set_uri)
     if scan_report_uuid is None:
         return None
     row = pg_hook.get_first(

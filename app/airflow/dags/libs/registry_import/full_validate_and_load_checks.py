@@ -622,6 +622,112 @@ def resolve_set_uri(
     return set_uri
 
 
+_LICENSE_IRI_SUFFIX = re.compile(r"(/legalcode(\.[a-z-]+)?|\.html|\.json|\.txt)$")
+
+
+def license_iri_key(iri: str) -> str:
+    """
+    A license IRI as compared with the registry's: case, scheme, ``www.``, a
+    trailing slash and the page suffixes (``/legalcode``, ``.html``...) are
+    ignored, so https://creativecommons.org/licenses/by/4.0/ is
+    http://creativecommons.org/licenses/by/4.0/legalcode.
+    """
+    key = iri.strip().lower()
+    key = re.sub(r"^https?://(www\.)?", "", key).rstrip("/")
+    return _LICENSE_IRI_SUFFIX.sub("", key).rstrip("/")
+
+
+@dataclass(frozen=True)
+class LicenseRow:
+    """A registry_license row: its id and the IRIs it is known by."""
+
+    id: str
+    license_iri: str
+    see_also: tuple[str, ...] = ()
+    is_deprecated: bool = False
+
+
+def match_license(iri: str, licenses: list[LicenseRow]) -> str | None:
+    """
+    The License a file's license IRI stands for: one whose license_iri or a
+    see_also IRI is that IRI, preferring an exact license_iri, then an exact
+    see_also, then the same IRI up to license_iri_key, and a License SPDX
+    hasn't deprecated; None if there is none.
+    """
+    if not iri:
+        return None
+    key = license_iri_key(iri)
+    best: tuple | None = None
+    for row in licenses:
+        if row.license_iri == iri:
+            rank = 0
+        elif iri in row.see_also:
+            rank = 1
+        elif license_iri_key(row.license_iri) == key:
+            rank = 2
+        elif any(license_iri_key(alias) == key for alias in row.see_also):
+            rank = 3
+        else:
+            continue
+        candidate = (rank, row.is_deprecated, row.id)
+        if best is None or candidate < best:
+            best = candidate
+    return best[2] if best else None
+
+
+def resolve_license(
+    file_iri: str,
+    file_license_id: str | None,
+    license_id: str | None,
+    license_iri: str | None,
+    log: IssueLog,
+) -> tuple[str | None, str]:
+    """
+    The License the set is linked to and the license IRI it records, from the
+    file's license (``file_iri``, and the License it stands for,
+    ``file_license_id``) and the request's License (``license_id``, whose IRI is
+    ``license_iri``).
+
+    Licences are compared as License ids, so an alias IRI (a License's
+    see_also) matches. The file and the request may not disagree, since the
+    stored file is served as-is. A file without a license takes the request's,
+    so the raw file has none (warned); a license the registry doesn't know is
+    kept unlinked (warned), unless the request named one.
+    """
+    if not file_iri:
+        if license_id:
+            log.warning(
+                "license_not_in_file",
+                f"The file has no license; the set is linked to {license_id}, "
+                "the request's, but the downloadable file stays without one",
+                column="license",
+            )
+            return license_id, license_iri or ""
+        return None, ""  # missing_metadata_slot
+    if license_id and file_license_id != license_id:
+        found = (
+            f"which is {file_license_id}"
+            if file_license_id
+            else "which isn't a license the registry knows"
+        )
+        log.error(
+            "license_mismatch",
+            f"The file's license {file_iri!r} ({found}) is not the request's "
+            f"{license_id}; the file and the request must agree",
+            column="license",
+        )
+        return None, file_iri
+    if file_license_id is None:
+        log.warning(
+            "unknown_license",
+            f"The file's license {file_iri!r} isn't a license the registry "
+            "knows, so the set isn't linked to one; the IRI is kept in "
+            "extra_metadata",
+            column="license",
+        )
+    return file_license_id, file_iri
+
+
 def _check_set(
     parsed: ParsedSSSOM,
     override_slots: dict[str, str],
@@ -630,6 +736,7 @@ def _check_set(
     registered_prefixes: Mapping[str, str],
     log: IssueLog,
     series_set_uri: str | None = None,
+    file_license_id: str | None = None,
 ) -> tuple[SetRecord, dict[str, Any], set[str], _Curies] | None:
     """
     Check the metadata block (with the overrides applied). Returns the set's
@@ -646,6 +753,16 @@ def _check_set(
         series_set_uri,
         log,
     )
+    file_iri = metadata.pop("license", None)
+    linked_license_id, license_iri = resolve_license(
+        "" if file_iri is None else str(file_iri),
+        file_license_id,
+        license_id,
+        override_slots.pop("license", None),
+        log,
+    )
+    if license_iri:
+        metadata["license"] = license_iri
 
     for slot, value in override_slots.items():
         current = metadata.get(slot)
@@ -806,24 +923,13 @@ def _check_set(
     ):
         setattr(record, slot, str(metadata.get(slot) or ""))
 
-    # The license was checked before the DAG read the file: the request names
-    # it by License id (validate_params checked it against registry_license),
-    # and the file's license is that License's license_iri.
-    license_iri = metadata.get("license")
-    record.license_id = license_id
-    if license_iri and license_id is None:
-        log.warning(
-            "unknown_license",
-            "The request named no License, so the set isn't linked to one; "
-            f"the file's license {license_iri!r} is kept in extra_metadata",
-            column="license",
-        )
-
+    # See resolve_license: an IRI not linked to a License is kept.
+    record.license_id = linked_license_id
     record.extra_metadata = {
         k: _jsonable(v) for k, v in metadata.items() if k not in PROMOTED_SET_SLOTS
     }
     if license_iri and record.license_id is None:
-        record.extra_metadata["license"] = str(license_iri)
+        record.extra_metadata["license"] = license_iri
 
     for name, value in (
         ("set_uri", record.set_uri),
@@ -1029,11 +1135,13 @@ def build_import(
     license_id: str | None = None,
     max_issues: int = 1000,
     series_set_uri: str | None = None,
+    file_license_id: str | None = None,
 ) -> ImportPlan:
     """
     Validate a parsed SSSOM file and normalise it for loading. ``overrides``
     are the request's metadata (license as an IRI, see helpers.file_overrides);
-    ``license_id`` is the request's License id, which the set is linked to;
+    ``license_id`` is the request's License id and ``file_license_id`` the
+    License the file's license IRI stands for (see resolve_license);
     ``series_set_uri`` is the set_uri of the existing set the request adds a
     version to (see resolve_set_uri).
     """
@@ -1054,6 +1162,7 @@ def build_import(
         vocab.prefixes,
         log,
         series_set_uri=series_set_uri,
+        file_license_id=file_license_id,
     )
     if checked is None:
         return plan

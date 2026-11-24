@@ -67,6 +67,12 @@ get_license_iri_query = """
     SELECT license_iri FROM registry_license WHERE id = %(license_id)s
 """
 
+# Every License with the IRIs it's known by, to match a file's license IRI
+# (full_validate_and_load_checks.match_license)
+get_license_iris_query = """
+    SELECT id, license_iri, see_also, is_deprecated FROM registry_license
+"""
+
 # A scan report on this instance, by the UUID its sets' ids end with
 # (full_validate_and_load_checks.set_uri_uuid).
 get_scan_report_by_uuid_query = """
