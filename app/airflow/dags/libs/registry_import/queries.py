@@ -73,22 +73,38 @@ get_scan_report_by_uuid_query = """
     SELECT id FROM mapping_scanreport WHERE uuid = %(uuid)s
 """
 
-# The first version of a set_uri from another import: it decides who may add
-# versions (see full_validate_and_load_checks.set_owner_error).
-get_set_first_version_query = """
-    SELECT source_scan_report_id, publisher_id FROM registry_mappingset
+# The existing set a request adds a version to (validate_params).
+get_series_set_uri_query = """
+    SELECT set_uri FROM registry_mappingsetseries WHERE id = %(series_id)s
+"""
+
+# A set by its set_uri, with its owner (see
+# full_validate_and_load_checks.set_owner_error).
+get_series_by_uri_query = """
+    SELECT id::text, source_scan_report_id, publisher_id
+    FROM registry_mappingsetseries
     WHERE set_uri = %(set_uri)s
-        AND import_job_id IS DISTINCT FROM %(import_job_id)s
-    ORDER BY created_at, id
-    LIMIT 1
+"""
+
+# A new set, owned by the import that creates it. Run under lock_set_uri_query,
+# so the conflict can only come from a set created outside the DAG.
+insert_series_query = """
+    INSERT INTO registry_mappingsetseries (
+        id, set_uri, publisher_id, source_scan_report_id, created_at
+    ) VALUES (
+        %(id)s, %(set_uri)s, %(publisher_id)s, %(source_scan_report_id)s, NOW()
+    )
+    ON CONFLICT (set_uri) DO NOTHING
 """
 
 # Versions of this set_uri from other imports, any status: a new version must
 # be higher than all of them (see set_versions.py).
 get_set_versions_query = """
-    SELECT set_version FROM registry_mappingset
-    WHERE set_uri = %(set_uri)s
-        AND import_job_id IS DISTINCT FROM %(import_job_id)s
+    SELECT ms.set_version
+    FROM registry_mappingset ms
+    JOIN registry_mappingsetseries series ON series.id = ms.series_id
+    WHERE series.set_uri = %(set_uri)s
+        AND ms.import_job_id IS DISTINCT FROM %(import_job_id)s
 """
 
 # --- Load (one transaction) ----------------------------------------------------
@@ -112,13 +128,13 @@ delete_job_mapping_sets_query = """
 
 insert_mapping_set_query = """
     INSERT INTO registry_mappingset (
-        id, set_uri, set_version, title, description, license_id, origin_id,
+        id, series_id, set_version, title, description, license_id, origin_id,
         status_id, import_job_id, publisher_id, source_scan_report_id, sssom_version,
         creator_ids, publication_date, subject_source, subject_source_version,
         object_source, object_source_version, curie_map, extra_metadata,
         file_key, created_at, published_at
     ) VALUES (
-        %(id)s, %(set_uri)s, %(set_version)s, %(title)s, %(description)s,
+        %(id)s, %(series_id)s, %(set_version)s, %(title)s, %(description)s,
         %(license_id)s, %(origin_id)s, 'DRAFT', %(import_job_id)s,
         %(publisher_id)s, %(source_scan_report_id)s, %(sssom_version)s, %(creator_ids)s::jsonb,
         %(publication_date)s, %(subject_source)s, %(subject_source_version)s,
@@ -240,5 +256,5 @@ publish_mapping_set_query = """
     SET status_id = %(status)s,
         published_at = CASE WHEN %(status)s = 'PUBLISHED' THEN NOW() ELSE NULL END
     WHERE import_job_id = %(import_job_id)s
-    RETURNING id::text, title
+    RETURNING id::text, series_id::text, title
 """
