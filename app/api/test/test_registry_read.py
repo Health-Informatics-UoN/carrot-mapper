@@ -52,23 +52,23 @@ class RegistryReadTestBase(TestCase):
         now = timezone.now()
         self.v1 = self.make_set(
             "Diabetes mappings",
-            "1.0",
+            "1.0.0",
             Status.PUBLISHED,
             published_at=now - timezone.timedelta(days=10),
             creator_ids=["orcid:0000-0001"],
         )
         self.v2 = self.make_set(
             "Diabetes mappings",
-            "2.0",
+            "2.0.0",
             Status.PUBLISHED,
             published_at=now,
         )
         self.withdrawn = self.make_set(
-            "Old asthma set", "1.0", Status.WITHDRAWN, set_uri="https://x/asthma"
+            "Old asthma set", "1.0.0", Status.WITHDRAWN, set_uri="https://x/asthma"
         )
         self.draft = self.make_set(
             "Draft gender set",
-            "0.1",
+            "0.1.0",
             Status.DRAFT,
             set_uri="https://x/draft",
             import_job=self.job,
@@ -156,6 +156,36 @@ class TestMappingSetList(RegistryReadTestBase):
         r = self.get("mapping-sets/", latest="true")
         self.assertEqual(self.ids(r), [str(self.v2.id)])
 
+    def test_latest_is_the_highest_version_not_the_last_published(self):
+        v10 = self.make_set(
+            "Diabetes mappings",
+            "10.0.0",
+            Status.PUBLISHED,
+            published_at=timezone.now() - timezone.timedelta(days=20),
+        )
+        self.make_set(
+            "Diabetes mappings",
+            "9.1.0",
+            Status.PUBLISHED,
+            published_at=timezone.now() + timezone.timedelta(days=1),
+        )
+        r = self.get("mapping-sets/", latest="true")
+        self.assertEqual(self.ids(r), [str(v10.id)])
+
+    def test_latest_orders_iso_date_versions(self):
+        dates = {
+            version: self.make_set(
+                "Dated set",
+                version,
+                Status.PUBLISHED,
+                set_uri="https://x/dated",
+                published_at=timezone.now() - timezone.timedelta(days=i),
+            )
+            for i, version in enumerate(["2026-01-05", "2026-11-04", "2025-12-31"])
+        }
+        r = self.get("mapping-sets/", latest="true", set_uri="https://x/dated")
+        self.assertEqual(self.ids(r), [str(dates["2026-11-04"].id)])
+
     def test_creator_id_filter(self):
         r = self.get("mapping-sets/", creator_id="orcid:0000-0001")
         self.assertEqual(self.ids(r), [str(self.v1.id)])
@@ -173,7 +203,7 @@ class TestMappingSetList(RegistryReadTestBase):
     def test_mapping_count(self):
         r = self.get("mapping-sets/", ordering="set_version")
         counts = {row["set_version"]: row["mapping_count"] for row in r.data["results"]}
-        self.assertEqual(counts, {"1.0": 1, "2.0": 2})
+        self.assertEqual(counts, {"1.0.0": 1, "2.0.0": 2})
 
 
 class TestMappingSetDetail(RegistryReadTestBase):
@@ -302,7 +332,7 @@ class TestMappingSetDownload(RegistryReadTestBase):
         self.assertTrue(r["Content-Type"].startswith("text/tab-separated-values"))
         self.assertEqual(
             r["Content-Disposition"],
-            'attachment; filename="diabetes-mappings-20.sssom.tsv"',
+            'attachment; filename="diabetes-mappings-2.0.0.sssom.tsv"',
         )
         get_file.assert_called_once_with(self.v2.file_key, "registry-sssom")
 

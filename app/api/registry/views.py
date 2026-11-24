@@ -40,10 +40,11 @@ from registry.serializers import (
     MappingSetListSerializer,
     PredicateSerializer,
     RegistryImportAcceptedSerializer,
+    RegistryPublishVersionsSerializer,
     ScanReportRegistryPublishSerializer,
     TermSerializer,
 )
-from registry.services import submit_direct_publish
+from registry.services import next_versions, submit_direct_publish
 
 logger = logging.getLogger(__name__)
 
@@ -58,13 +59,21 @@ class ScanReportRegistryPublishView(ScanReportPermissionMixin, GenericAPIView):
     """
     Publish a scan report's mappings to the Carrot Mappings Registry.
 
-    Requires edit or admin rights on the scan report. The import runs
+    GET returns the set's latest version and the version each release type
+    would publish. POST (edit or admin rights on the scan report) publishes
+    the next version of the chosen release type. The import runs
     asynchronously: the response carries the ImportJob id to poll.
     """
 
     queryset = ScanReport.objects.all()
     serializer_class = ScanReportRegistryPublishSerializer
-    http_method_names = ["post"]
+    http_method_names = ["get", "post"]
+
+    @extend_schema(responses={200: RegistryPublishVersionsSerializer})
+    def get(self, request, *args, **kwargs):
+        return Response(
+            RegistryPublishVersionsSerializer(next_versions(self.scan_report)).data
+        )
 
     @extend_schema(
         request=ScanReportRegistryPublishSerializer,
@@ -83,7 +92,11 @@ class ScanReportRegistryPublishView(ScanReportPermissionMixin, GenericAPIView):
 
         return Response(
             RegistryImportAcceptedSerializer(
-                {"import_job_id": job.id, "status": job.status}
+                {
+                    "import_job_id": job.id,
+                    "status": job.status,
+                    "set_version": job.params["overrides"]["set_version"],
+                }
             ).data,
             status=status.HTTP_202_ACCEPTED,
         )

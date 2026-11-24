@@ -21,7 +21,7 @@ from libs.registry_import.full_validate_and_load_checks import (
     carrot_term_parts,
     check_set_owner,
     check_set_uri_not_reserved,
-    check_set_version_is_new,
+    check_set_version_is_newer,
     set_owner_error,
     set_uri_uuid,
 )
@@ -50,7 +50,7 @@ HEADER = """\
 #  HP: http://purl.obolibrary.org/obo/HP_
 #  MP: http://purl.obolibrary.org/obo/MP_
 #mapping_set_id: https://example.org/sets/hp-mp
-#mapping_set_version: "1.0"
+#mapping_set_version: "1.0.0"
 #mapping_set_title: HP to MP
 #license: https://creativecommons.org/licenses/by/4.0/
 """
@@ -85,7 +85,7 @@ def row(plan, index=0) -> dict:
 def test_parse_splits_metadata_and_rows_with_line_numbers():
     parsed = parse_sssom(HEADER + COLUMNS + ROW + ROW.replace("0.9", "0.8"))
     assert parsed.issues == []
-    assert parsed.metadata["mapping_set_version"] == "1.0"
+    assert parsed.metadata["mapping_set_version"] == "1.0.0"
     assert parsed.header[0] == "subject_id"
     assert [line for line, _ in parsed.rows] == [9, 10]
 
@@ -130,7 +130,7 @@ def test_valid_file_normalises_set_and_rows():
     assert plan.ok, plan.issues.as_dicts()
     record = plan.mapping_set
     assert record.set_uri == "https://example.org/sets/hp-mp"
-    assert record.set_version == "1.0"
+    assert record.set_version == "1.0.0"
     assert record.title == "HP to MP"
     assert record.license_id == "CC-BY-4.0"
     assert record.curie_map["HP"] == "http://purl.obolibrary.org/obo/HP_"
@@ -150,14 +150,14 @@ def test_valid_file_normalises_set_and_rows():
     "path", sorted((SPEC_DIR / "examples").glob("*.sssom.tsv")), ids=lambda p: p.name
 )
 def test_official_examples_are_valid_given_a_version(path):
-    plan = plan_for(path.read_text(encoding="utf-8"), {"set_version": "1"})
+    plan = plan_for(path.read_text(encoding="utf-8"), {"set_version": "1.0.0"})
     assert plan.ok, plan.issues.as_dicts()
     assert plan.rows
 
 
 def test_extension_slots_and_unknown_columns_go_to_extra_metadata():
     path = SPEC_DIR / "examples" / "schema" / "extension-slots.sssom.tsv"
-    plan = plan_for(path.read_text(encoding="utf-8"), {"set_version": "1"})
+    plan = plan_for(path.read_text(encoding="utf-8"), {"set_version": "1.0.0"})
     assert plan.ok
     assert set(codes(plan, "warning")) >= {"unknown_column", "unknown_metadata_key"}
     extra = json.loads(row(plan)["extra_metadata"])
@@ -256,13 +256,15 @@ def test_carrot_term_parts(local, parts):
 
 
 def test_overrides_fill_gaps_and_win_with_a_warning():
-    text = HEADER.replace('#mapping_set_version: "1.0"\n', "") + COLUMNS + ROW
+    text = HEADER.replace('#mapping_set_version: "1.0.0"\n', "") + COLUMNS + ROW
     plan = plan_for(text)
     assert "missing_metadata_slot" in codes(plan, "error")
 
-    plan = plan_for(text, {"set_version": "2.0", "title": "New title", "status": DRAFT})
+    plan = plan_for(
+        text, {"set_version": "2.0.0", "title": "New title", "status": DRAFT}
+    )
     assert plan.ok
-    assert plan.mapping_set.set_version == "2.0"
+    assert plan.mapping_set.set_version == "2.0.0"
     assert plan.mapping_set.title == "New title"
     assert plan.status == DRAFT
     assert codes(plan) == ["metadata_overridden"]  # the title differed
@@ -275,10 +277,40 @@ def test_unknown_override_and_bad_status():
 
 
 def test_yaml_float_version_is_read_as_text_with_warning():
-    plan = plan_for(HEADER.replace('"1.0"', "1.0") + COLUMNS + ROW)
-    assert plan.ok
+    plan = plan_for(HEADER.replace('"1.0.0"', "1.0") + COLUMNS + ROW)
     assert plan.mapping_set.set_version == "1.0"
     assert "coerced_value" in codes(plan, "warning")
+    # ...and then isn't a valid version
+    assert codes(plan, "error") == ["invalid_set_version"]
+
+
+def test_yaml_date_version_is_an_iso_date_version():
+    plan = plan_for(HEADER.replace('"1.0.0"', "2026-11-04") + COLUMNS + ROW)
+    assert plan.ok, plan.issues.as_dicts()
+    assert plan.mapping_set.set_version == "2026-11-04"
+
+
+@pytest.mark.parametrize(
+    "version",
+    [
+        "1.0",
+        "1",
+        "v1.0.0",
+        "01.0.0",
+        "1.0.0-rc.1",
+        "2026-13-01",
+        "2026-1-4",
+        # a trailing newline would slip past a "$"-anchored match
+        "1.0.0\n",
+        "2026-11-04\n",
+        # parts over 9 digits don't fit the API's version ordering
+        "1000000000.0.0",
+        "99999999999.0.0",
+    ],
+)
+def test_set_version_must_be_semver_or_iso_date(version):
+    plan = plan_for(HEADER + COLUMNS + ROW, {"set_version": version})
+    assert codes(plan, "error") == ["invalid_set_version"]
 
 
 def test_set_is_linked_to_the_requests_license():
@@ -535,7 +567,7 @@ def test_missing_required_column():
 
 def test_literal_mappings_are_rejected():
     path = SPEC_DIR / "examples" / "schema" / "literals.sssom.tsv"
-    plan = plan_for(path.read_text(encoding="utf-8"), {"set_version": "1"})
+    plan = plan_for(path.read_text(encoding="utf-8"), {"set_version": "1.0.0"})
     assert not plan.ok
     assert "missing_column" in codes(plan, "error")
 
@@ -624,11 +656,43 @@ def test_empty_table_is_an_error():
     assert "no_mappings" in codes(plan_for(HEADER + COLUMNS), "error")
 
 
-def test_set_version_must_be_new():
-    plan = plan_for(HEADER + COLUMNS + ROW)
-    check_set_version_is_new(plan, None)
-    assert plan.ok
+@pytest.mark.parametrize(
+    "version, existing",
+    [
+        ("1.0.0", []),
+        ("1.0.1", ["1.0.0"]),
+        ("1.10.0", ["1.9.3", "1.2.0"]),
+        ("2.0.0", ["1.9.9"]),
+        ("2026-11-04", ["2026-11-03", "2025-12-31"]),
+    ],
+)
+def test_set_version_higher_than_existing_is_accepted(version, existing):
+    plan = plan_for(HEADER + COLUMNS + ROW, {"set_version": version})
+    check_set_version_is_newer(plan, existing)
+    assert plan.ok, plan.issues.as_dicts()
 
-    check_set_version_is_new(plan, "a-set-from-another-import")
-    assert codes(plan, "error") == ["set_version_exists"]
-    assert "https://example.org/sets/hp-mp version 1.0" in plan.issues.items[-1].message
+
+@pytest.mark.parametrize(
+    "version, existing, code",
+    [
+        ("1.0.0", ["1.0.0"], "set_version_exists"),
+        ("1.9.0", ["1.10.0"], "set_version_not_newer"),
+        ("1.0.1", ["2.0.0", "1.0.0"], "set_version_not_newer"),
+        ("2026-11-03", ["2026-11-04"], "set_version_not_newer"),
+        ("2026-11-04", ["1.0.0"], "set_version_scheme_mismatch"),
+        ("2.0.0", ["2026-11-04"], "set_version_scheme_mismatch"),
+    ],
+)
+def test_set_version_not_higher_than_existing_is_an_error(version, existing, code):
+    plan = plan_for(HEADER + COLUMNS + ROW, {"set_version": version})
+    check_set_version_is_newer(plan, existing)
+    assert codes(plan, "error") == [code]
+    assert plan.issues.items[-1].message.startswith(
+        "Mapping set https://example.org/sets/hp-mp: "
+    )
+
+
+def test_malformed_set_version_is_only_reported_once():
+    plan = plan_for(HEADER + COLUMNS + ROW, {"set_version": "1.0"})
+    check_set_version_is_newer(plan, ["1.0"])
+    assert codes(plan, "error") == ["invalid_set_version"]

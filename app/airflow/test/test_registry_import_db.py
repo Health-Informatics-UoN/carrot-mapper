@@ -233,7 +233,7 @@ def unique_prefixes(cleanup) -> tuple[str, str]:
 
 
 def sssom(
-    subject: str, obj: str, version: str = "1.0", rows: int = 3, set_uri=None
+    subject: str, obj: str, version: str = "1.0.0", rows: int = 3, set_uri=None
 ) -> str:
     set_uri = set_uri or f"https://example.org/sets/{subject.lower()}"
     lines = [
@@ -366,14 +366,14 @@ def test_new_version_reuses_terms(conn, cleanup, user):
     first, second = make_job(conn, cleanup, user), make_job(conn, cleanup, user)
     load_plan(
         conn,
-        plan_for(conn, sssom(subject, obj, "1.0")),
+        plan_for(conn, sssom(subject, obj, "1.0.0")),
         import_job_id=first,
         origin="SSSOM_UPLOAD",
         file_key="a",
     )
     stats = load_plan(
         conn,
-        plan_for(conn, sssom(subject, obj, "2.0")),
+        plan_for(conn, sssom(subject, obj, "2.0.0")),
         import_job_id=second,
         origin="SSSOM_UPLOAD",
         file_key="b",
@@ -393,6 +393,26 @@ def test_existing_set_version_is_refused(conn, cleanup, user):
         "SELECT count(*) FROM registry_mappingset WHERE import_job_id = %s",
         second,
     ) == [(0,)]
+
+
+def test_lower_set_version_is_refused(conn, cleanup, user):
+    subject, obj = unique_prefixes(cleanup)
+    first, second = make_job(conn, cleanup, user), make_job(conn, cleanup, user)
+    load_plan(
+        conn,
+        plan_for(conn, sssom(subject, obj, "2.0.0")),
+        import_job_id=first,
+        origin="SSSOM_UPLOAD",
+        file_key="a",
+    )
+    with pytest.raises(LoadError, match="not higher than the latest version 2.0.0"):
+        load_plan(
+            conn,
+            plan_for(conn, sssom(subject, obj, "1.1.0")),
+            import_job_id=second,
+            origin="SSSOM_UPLOAD",
+            file_key="b",
+        )
 
 
 def test_failure_mid_load_leaves_nothing_behind(conn, cleanup, user, monkeypatch):
@@ -820,7 +840,7 @@ def test_dag_refuses_an_existing_set_version(conn, cleanup, user, storage):
                 "scan_report_id": 1,
                 "overrides": {
                     "set_uri": "https://x.org/s",
-                    "set_version": "1",
+                    "set_version": "1.0.0",
                     "title": "T",
                     "license": "NOT-A-LICENSE",
                     "include_author_orcid_ids": "yes",
@@ -1019,7 +1039,7 @@ def test_dag_publishes_a_scan_report(conn, cleanup, user, storage, scan_report):
             # the shape registry.services.submit_direct_publish sends (#1552)
             "overrides": {
                 "set_uri": set_uri,
-                "set_version": "1",
+                "set_version": "1.0.0",
                 "title": "Demo mapping set",
                 "description": "",
                 "license": "CC-BY-4.0",
@@ -1037,7 +1057,7 @@ def test_dag_publishes_a_scan_report(conn, cleanup, user, storage, scan_report):
 
     # The stored file is the exporter's, with the set identity from the request
     text = storage.blobs[("registry-sssom", row["file_key"])].decode()
-    assert text.startswith(f"#mapping_set_id: {set_uri}\n#mapping_set_version: '1'\n")
+    assert text.startswith(f"#mapping_set_id: {set_uri}\n#mapping_set_version: 1.0.0\n")
     # SPDX's IRI once license_sync has run; a database upgraded from before
     # #1551 keeps the old seeded creativecommons.org IRI until then
     [(license_iri,)] = fetch(
@@ -1115,7 +1135,7 @@ def test_dag_publishes_creator_orcid_and_authors_only_when_opted_in(
             "scan_report_id": scan_report.id,
             "overrides": {
                 "set_uri": f"https://carrot.ac.uk/registry/mapping-sets/{uuid.uuid4().hex}",
-                "set_version": "1",
+                "set_version": "1.0.0",
                 "title": "With ORCID",
                 "license": "CC-BY-4.0",
                 "include_author_orcid_ids": include_author_orcid_ids,
@@ -1177,7 +1197,7 @@ def test_dag_fails_cleanly_for_a_scan_report_without_mappings(
                 "scan_report_id": sr,
                 "overrides": {
                     "set_uri": "https://x.org/s",
-                    "set_version": "1",
+                    "set_version": "1.0.0",
                     "title": "Empty",
                     "license": "CC-BY-4.0",
                     "include_author_orcid_ids": False,
