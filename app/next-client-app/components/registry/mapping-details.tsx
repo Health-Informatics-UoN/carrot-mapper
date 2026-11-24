@@ -76,7 +76,9 @@ export function MappingDetails({ mapping, parentSet }: { mapping: Mapping; paren
             <Detail label="License" value={mapping.license} />
           </dl>
           <Button asChild variant="outline" className="mt-4">
-            <Link href={`/registry/mapping-sets/${mapping.mappingSetId}?fromMapping=${encodeURIComponent(mapping.id)}`}>
+            <Link href={parentSet
+              ? `/registry/mapping-sets/${mapping.mappingSetId}`
+              : `/registry/mapping-sets/${mapping.mappingSetId}?fromMapping=${encodeURIComponent(mapping.id)}`}>
               <Layers className="size-4" /> View mapping set
             </Link>
           </Button>

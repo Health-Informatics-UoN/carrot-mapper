@@ -71,14 +71,14 @@ export function RegistryResults({
         </div>
       </div>
 
-      <div className="flex gap-2 border-b pb-2" role="tablist" aria-label="Registry results type">
+      <nav className="flex gap-2 border-b pb-2" aria-label="Registry results type">
         <Button asChild size="sm" variant={isMappings ? "secondary" : "ghost"}>
           <Link href="/registry/mappings" aria-current={isMappings ? "page" : undefined}>Mappings</Link>
         </Button>
         <Button asChild size="sm" variant={!isMappings ? "secondary" : "ghost"}>
           <Link href="/registry/mapping-sets" aria-current={!isMappings ? "page" : undefined}>Mapping Sets</Link>
         </Button>
-      </div>
+      </nav>
 
       {isLoading ? (
         <RegistryResultsLoading />
