@@ -1,13 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { lookupConcept } from "@/api/concepts";
 import { Input } from "@/components/ui/input";
 
 // A concept id input that shows the concept's name once an id is entered,
-// so people can check they typed the concept they meant.
+// so people can check they typed the concept they meant. Give it a label
+// (`id` for a <Label htmlFor>, or `ariaLabel`) naming the field it fills.
 export function ConceptIdInput({
   id,
+  ariaLabel,
   value,
   onChange,
   initialName,
@@ -15,6 +17,7 @@ export function ConceptIdInput({
   placeholder = "Concept ID",
 }: {
   id?: string;
+  ariaLabel?: string;
   value: string;
   onChange: (value: string) => void;
   initialName?: string | null;
@@ -23,8 +26,12 @@ export function ConceptIdInput({
 }) {
   const [name, setName] = useState<string | null>(initialName ?? null);
   const [status, setStatus] = useState<"idle" | "loading" | "unknown">("idle");
+  // Each lookup's number: a reply is only shown if no edit or newer lookup
+  // came after it, so a slow reply can't name a different id than the one shown
+  const latest = useRef(0);
 
   const check = async (text: string) => {
+    const request = ++latest.current;
     if (!/^\d+$/.test(text)) {
       setName(null);
       setStatus(text ? "unknown" : "idle");
@@ -32,6 +39,9 @@ export function ConceptIdInput({
     }
     setStatus("loading");
     const concept = await lookupConcept(Number(text));
+    if (request !== latest.current) {
+      return;
+    }
     setName(concept?.concept_name ?? null);
     setStatus(concept ? "idle" : "unknown");
   };
@@ -40,12 +50,14 @@ export function ConceptIdInput({
     <div className="flex flex-col gap-1">
       <Input
         id={id}
+        aria-label={ariaLabel}
         inputMode="numeric"
         className="max-w-48"
         value={value}
         placeholder={placeholder}
         disabled={disabled}
         onChange={(event) => {
+          latest.current++;
           setName(null);
           setStatus("idle");
           onChange(event.target.value.trim());

@@ -1,6 +1,7 @@
 "use server";
 
 import request from "@/lib/api/request";
+import { fetchAllPages } from "@/lib/api/utils";
 
 const fetchKeys = {
   list: (filter?: string) =>
@@ -8,12 +9,22 @@ const fetchKeys = {
 };
 
 export async function getVocabulariesList(
-  filter?: string | undefined
+  filter?: string | undefined,
 ): Promise<PaginatedResponse<Vocabulary>> {
   try {
     return await request<Vocabulary>(fetchKeys.list(filter));
   } catch (error) {
     console.warn("Failed to fetch data.");
     return { count: 0, next: null, previous: null, results: [] };
+  }
+}
+
+// Every vocabulary loaded in Mapper: the list is paginated (at most 50 a page)
+export async function getAllVocabularies(): Promise<Vocabulary[]> {
+  try {
+    return await fetchAllPages<Vocabulary>(fetchKeys.list("page_size=50"));
+  } catch (error) {
+    console.warn("Failed to fetch vocabularies.");
+    return [];
   }
 }

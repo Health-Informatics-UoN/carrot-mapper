@@ -475,6 +475,29 @@ WHERE temp_table.concept_id = omop_concept.concept_id
 AND omop_concept.domain_id NOT IN (
     'Condition', 'Drug', 'Procedure', 'Specimen', 'Device',
     'Measurement', 'Observation', 'Gender', 'Race', 'Ethnicity', 'Spec Anatomic Site'
+)
+-- Keep concepts of other domains where they're used without a domain table, as
+-- vocabulary auto-mapping does: on a note_nlp table (each concept gives a
+-- note_nlp record), and on the values of a column filling one field of a note /
+-- note_nlp record (e.g. note_type -> note_class_concept_id). Never keep
+-- "No matching concept" (0), which only marks a value as reviewed.
+AND (
+    temp_table.concept_id = 0
+    OR NOT (
+        (SELECT table_role FROM mapping_scanreporttable WHERE id = %(table_id)s) = 'note_nlp'
+        OR EXISTS (
+            SELECT 1
+            FROM mapping_scanreportvalue AS sr_value
+            JOIN mapping_scanreporttablefieldmapping AS field_mapping
+                ON field_mapping.source_field_id = sr_value.scan_report_field_id
+                AND field_mapping.map_values
+            WHERE sr_value.id = temp_table.object_id
+            AND temp_table.content_type_id = (
+                SELECT id FROM django_content_type
+                WHERE app_label = 'mapping' AND model = 'scanreportvalue'
+            )
+        )
+    )
 );
 
 -- Delete concepts that have no object_id
@@ -664,6 +687,10 @@ create_note_nlp_rules_query = """
         %(scan_report_id)s,
         TRUE
     FROM temp_existing_concepts_%(table_id)s AS temp_table
+    -- Not "No matching concept" (0), which only marks a value as reviewed
+    JOIN mapping_scanreportconcept AS sr_concept
+        ON sr_concept.id = temp_table.sr_concept_id
+        AND sr_concept.concept_id <> 0
     JOIN mapping_omopfield AS omop_field
         ON omop_field.field IN ('nlp_datetime', 'note_nlp_concept_id', 'note_nlp_source_concept_id')
     JOIN mapping_omoptable AS omop_table

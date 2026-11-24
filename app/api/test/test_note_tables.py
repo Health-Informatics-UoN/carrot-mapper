@@ -620,6 +620,39 @@ class TestNoteTableExportStatus(NoteTablesTestBase):
                 response = self.client.put(url, base + [item], format="json")
                 self.assertEqual(response.status_code, 400, response.content)
 
+    def test_value_mapping_changes_wait_for_a_running_job(self):
+        from jobs.models import Job, StageStatus
+
+        Job.objects.create(
+            scan_report_table=self.notes,
+            status=StageStatus.objects.filter(value="IN_PROGRESS").first(),
+        )
+        url = f"/api/v2/scanreports/{self.scan_report.id}/tables/{self.notes.id}/field-mappings/"
+        columns = [
+            {"omop_field": "note_id", "source_field": self.notes_ref.id},
+            {"omop_field": "note_text", "source_field": self.notes_text.id},
+        ]
+        # Columns and fixed values don't touch rules, so they can still be saved
+        response = self.client.put(url, columns, format="json")
+        self.assertEqual(response.status_code, 200, response.content)
+
+        # Mapping a column's values rebuilds its concepts' rules: that waits
+        response = self.client.put(
+            url,
+            columns
+            + [
+                {
+                    "omop_field": "note_class_concept_id",
+                    "source_field": self.notes_text.id,
+                    "map_values": True,
+                }
+            ],
+            format="json",
+        )
+        self.assertEqual(response.status_code, 400, response.content)
+        self.assertIn("Auto-mapping is running", response.json()["detail"])
+        self.assertFalse(self.notes.field_mappings.filter(map_values=True).exists())
+
     def test_note_tables_endpoint(self):
         self._map_notes()
         ScanReportTable.objects.create(scan_report=self.scan_report, name="other.csv")

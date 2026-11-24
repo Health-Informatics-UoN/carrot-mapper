@@ -954,11 +954,28 @@ class ScanReportTableFieldMappingsV2(ScanReportPermissionMixin, GenericAPIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        old_value_fields = {
+            mapping.source_field
+            for mapping in table.field_mappings.filter(map_values=True)
+        }
+        # Changing which columns fill a field from their values rebuilds the rules
+        # of their concepts, which auto-mapping also writes while it runs, so that
+        # waits for it as table updates do. Other changes don't touch rules.
+        if (
+            old_value_fields != set(value_fields)
+            and Job.objects.filter(
+                scan_report_table=table, status__value="IN_PROGRESS"
+            ).exists()
+        ):
+            return Response(
+                {
+                    "detail": "Auto-mapping is running for this table. Please wait until it "
+                    "completes before changing which columns' values are mapped to concepts."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         with transaction.atomic():
-            old_value_fields = {
-                mapping.source_field
-                for mapping in table.field_mappings.filter(map_values=True)
-            }
             table.field_mappings.all().delete()
             ScanReportTableFieldMapping.objects.bulk_create(
                 ScanReportTableFieldMapping(scan_report_table=table, **item)

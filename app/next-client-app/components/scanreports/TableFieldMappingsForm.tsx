@@ -349,6 +349,7 @@ export function TableFieldMappingsForm({
                   (spec.concept ? (
                     <ConceptIdInput
                       key={`${spec.omop_field}-${row.conceptName}`}
+                      ariaLabel={`Concept for ${spec.omop_field}`}
                       value={row.constant}
                       initialName={row.conceptName}
                       onChange={(constant) =>

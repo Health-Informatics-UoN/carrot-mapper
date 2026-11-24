@@ -346,6 +346,8 @@ NOTE_KEY_FIELD = "note_id"
 NOTE_NLP_TABLE = "note_nlp"
 # The note_nlp field holding each term's concept
 TERM_CONCEPT_FIELD = "note_nlp_concept_id"
+# The note_nlp field holding each term's text, required like note_id
+NOTE_NLP_TERM_TEXT_FIELD = "lexical_variant"
 
 # The vocabulary domain of each OMOP table records can be derived into from NLP
 # output, for fact_relationship's domain_concept_ids (looked up in omop.domain).
@@ -485,13 +487,27 @@ def add_table_level_mappings(
                 )
         elif (
             role == "note_nlp"
-            and code_lookup
-            and not (table["person_field"] and table["date_field"])
-        ):
-            logging.warning(
-                f"Note NLP table {source_table} needs a person ID and a date event; "
-                "its vocabulary lookup is left out of the rules"
+            and (code_lookup or source_table in result.get(NOTE_NLP_TABLE, {}))
+            and not (
+                note_key
+                and NOTE_NLP_TERM_TEXT_FIELD in copies | constants
+                and table["person_field"]
+                and table["date_field"]
             )
+        ):
+            # As for notes: without these its note_nlp records can't be written
+            # (or linked to their notes), and its derived records would lose
+            # their exclusions, so the table is left out until it's set up
+            logging.warning(
+                f"Note NLP table {source_table} needs a person ID, a date event and "
+                f"{NOTE_KEY_FIELD} and {NOTE_NLP_TERM_TEXT_FIELD} field mappings; it is "
+                "left out of the rules"
+            )
+            for blocks in result.values():
+                blocks.pop(source_table, None)
+            for dest_table in [name for name, blocks in result.items() if not blocks]:
+                del result[dest_table]
+            continue
         elif role == "note_nlp" and (
             code_lookup or source_table in result.get("note_nlp", {})
         ):

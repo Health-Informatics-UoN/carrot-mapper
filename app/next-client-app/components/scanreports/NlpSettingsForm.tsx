@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Save, Trash2 } from "lucide-react";
+import { Plus, Save, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { updateTableNlpSettings } from "@/api/scanreports";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -49,14 +50,17 @@ const LINK_FIELDS: { name: LinkField; label: string; help: string }[] = [
 interface ExclusionRow {
   key: number;
   sourceField: string;
-  values: string; // comma separated, as typed
+  // Kept as a list rather than comma-separated text, so a value may hold commas
+  values: string[];
+  draft: string; // a value being typed, not yet added
 }
 
 function toRows(settings: NlpSettings): ExclusionRow[] {
   return settings.exclusions.map((exclusion, index) => ({
     key: index,
     sourceField: exclusion.source_field.toString(),
-    values: exclusion.excluded_values.join(", "),
+    values: [...exclusion.excluded_values],
+    draft: "",
   }));
 }
 
@@ -92,6 +96,11 @@ export function NlpSettingsForm({
 
   const linkCount = Object.values(links).filter(Boolean).length;
 
+  const updateRow = (key: number, change: Partial<ExclusionRow>) =>
+    setExclusions((rows) =>
+      rows.map((r) => (r.key === key ? { ...r, ...change } : r)),
+    );
+
   const save = async () => {
     if (linkCount > 0 && linkCount < LINK_FIELDS.length) {
       toast.error(
@@ -99,9 +108,23 @@ export function NlpSettingsForm({
       );
       return;
     }
-    const filled = exclusions.filter((row) => row.sourceField || row.values);
+    const notANumber = LINK_FIELDS.find(
+      (field) => links[field.name] && !/^\d+$/.test(links[field.name]),
+    );
+    if (notANumber) {
+      toast.error(
+        `${notANumber.label}: a concept ID is a whole number, e.g. 5085.`,
+      );
+      return;
+    }
+    // A value still being typed counts, so it isn't lost on save
+    const rows = exclusions.map((row) => ({
+      ...row,
+      values: withValue(row.values, row.draft),
+    }));
+    const filled = rows.filter((row) => row.sourceField || row.values.length);
     const incomplete = filled.find(
-      (row) => !row.sourceField || !row.values.trim(),
+      (row) => !row.sourceField || !row.values.length,
     );
     if (incomplete) {
       toast.error("Each exclusion needs a column and at least one value.");
@@ -121,10 +144,7 @@ export function NlpSettingsForm({
         : null,
       exclusions: filled.map((row) => ({
         source_field: Number(row.sourceField),
-        excluded_values: row.values
-          .split(",")
-          .map((value) => value.trim())
-          .filter(Boolean),
+        excluded_values: row.values,
       })),
     });
     setSaving(false);
@@ -160,13 +180,13 @@ export function NlpSettingsForm({
             <p className="text-sm text-muted-foreground">
               Rows whose column holds one of the values (ignoring case) keep
               their note_nlp record but give no derived records, e.g. negated or
-              family-history terms. Separate values with commas.
+              family-history terms. Add each value on its own.
             </p>
           </div>
           {exclusions.map((row) => (
             <div
               key={row.key}
-              className="grid gap-2 md:grid-cols-[16rem_1fr_auto] md:items-center"
+              className="grid gap-2 md:grid-cols-[16rem_1fr_auto] md:items-start"
             >
               <Select
                 value={row.sourceField || undefined}
@@ -190,19 +210,9 @@ export function NlpSettingsForm({
                   ))}
                 </SelectContent>
               </Select>
-              <Input
-                aria-label="Excluded values"
-                placeholder="e.g. true, 1, yes"
-                value={row.values}
-                onChange={(event) =>
-                  setExclusions((rows) =>
-                    rows.map((r) =>
-                      r.key === row.key
-                        ? { ...r, values: event.target.value }
-                        : r,
-                    ),
-                  )
-                }
+              <ExcludedValues
+                row={row}
+                onChange={(change) => updateRow(row.key, change)}
                 disabled={!canUpdate}
               />
               <Button
@@ -224,7 +234,7 @@ export function NlpSettingsForm({
               onClick={() => {
                 setExclusions((rows) => [
                   ...rows,
-                  { key: nextKey, sourceField: "", values: "" },
+                  { key: nextKey, sourceField: "", values: [], draft: "" },
                 ]);
                 setNextKey((key) => key + 1);
               }}
@@ -284,5 +294,73 @@ export function NlpSettingsForm({
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+// Adds a typed value to a list, trimmed, unless it's empty or already there
+function withValue(values: string[], draft: string): string[] {
+  const value = draft.trim();
+  return value && !values.includes(value) ? [...values, value] : values;
+}
+
+// One exclusion's values: each a removable tag, and a box to add another
+function ExcludedValues({
+  row,
+  onChange,
+  disabled,
+}: {
+  row: ExclusionRow;
+  onChange: (change: Partial<ExclusionRow>) => void;
+  disabled: boolean;
+}) {
+  const add = () =>
+    onChange({ values: withValue(row.values, row.draft), draft: "" });
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex gap-2">
+        <Input
+          aria-label="Excluded value to add"
+          placeholder="e.g. true, then press Enter"
+          value={row.draft}
+          onChange={(event) => onChange({ draft: event.target.value })}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              add();
+            }
+          }}
+          disabled={disabled}
+        />
+        <Button
+          variant="outline"
+          onClick={add}
+          disabled={disabled || !row.draft.trim()}
+        >
+          Add
+        </Button>
+      </div>
+      {row.values.length > 0 && (
+        <ul className="flex flex-wrap gap-1" aria-label="Excluded values">
+          {row.values.map((value) => (
+            <li key={value}>
+              <Badge variant="secondary" className="gap-1 font-mono">
+                {value}
+                <button
+                  type="button"
+                  aria-label={`Remove ${value}`}
+                  className="rounded-sm hover:text-destructive disabled:pointer-events-none"
+                  onClick={() =>
+                    onChange({ values: row.values.filter((v) => v !== value) })
+                  }
+                  disabled={disabled}
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </Badge>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }

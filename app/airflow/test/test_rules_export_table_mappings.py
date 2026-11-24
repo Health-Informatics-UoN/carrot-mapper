@@ -159,7 +159,7 @@ def test_json_v2_keeps_note_nlp_concepts_without_source_value():
             rules,
             METADATA,
             [table("nlp.csv", "note_nlp")],
-            [field_mapping("nlp.csv", "note_id", source_field="note_ref")],
+            NLP_REQUIRED,
             TYPE_FIELDS,
         )
     )["cdm"]
@@ -197,6 +197,12 @@ def nlp_table(**link):
     }
 
 
+# What a Note NLP table needs mapped to be exported
+NLP_REQUIRED = [
+    field_mapping("nlp.csv", "note_id", source_field="note_ref"),
+    field_mapping("nlp.csv", "lexical_variant", source_field="term"),
+]
+
 LINK = {
     "source_domain_concept_id": 905085,
     "relationship_concept_id": 900101,
@@ -219,7 +225,7 @@ def nlp_result():
 def test_derived_blocks_are_gated_on_note_nlp():
     result = nlp_result()
 
-    add_table_level_mappings(result, [nlp_table()], [], TYPE_FIELDS)
+    add_table_level_mappings(result, [nlp_table()], NLP_REQUIRED, TYPE_FIELDS)
 
     assert result["condition_occurrence"]["nlp.csv"]["derived_from"] == {
         "table": "note_nlp"
@@ -235,7 +241,7 @@ def test_derived_blocks_get_exclusions_and_links():
     add_table_level_mappings(
         result,
         [nlp_table(**LINK)],
-        [],
+        NLP_REQUIRED,
         TYPE_FIELDS,
         nlp_exclusions=[
             {
@@ -284,7 +290,7 @@ def test_json_v2_passes_nlp_settings_through():
             rules,
             METADATA,
             [nlp_table(**LINK)],
-            [],
+            NLP_REQUIRED,
             TYPE_FIELDS,
             [
                 {
@@ -355,7 +361,7 @@ def test_note_concept_field_from_values_becomes_value_mappings():
 
 def test_note_nlp_section_from_values_keeps_term_concepts_separate():
     nlp_fields = [
-        field_mapping("nlp.csv", "note_id", source_field="note_ref"),
+        *NLP_REQUIRED,
         {
             **field_mapping("nlp.csv", "section_concept_id", source_field="section"),
             "map_values": True,
@@ -453,7 +459,11 @@ def test_code_lookup_keeps_hand_mapped_term_concepts():
 
     output = json.loads(
         rules_to_json_v2(
-            rules, METADATA, [nlp_table()], [vocabulary_mapping()], TYPE_FIELDS
+            rules,
+            METADATA,
+            [nlp_table()],
+            [vocabulary_mapping(), *NLP_REQUIRED],
+            TYPE_FIELDS,
         )
     )["cdm"]
 
@@ -476,7 +486,9 @@ def test_term_column_from_values_keeps_its_usual_rules():
     }
 
     output = json.loads(
-        rules_to_json_v2(rules, METADATA, [nlp_table()], [mapping], TYPE_FIELDS)
+        rules_to_json_v2(
+            rules, METADATA, [nlp_table()], [mapping, *NLP_REQUIRED], TYPE_FIELDS
+        )
     )["cdm"]
 
     block = output["note_nlp"]["nlp.csv"]
@@ -493,3 +505,39 @@ def test_code_lookup_needs_person_and_date():
         result, [{**nlp_table(), "person_field": None}], [vocabulary_mapping()], {}
     )
     assert result == {}
+
+
+def test_note_nlp_table_without_required_mappings_is_left_out():
+    # Concepts are mapped, but the table's note_id / lexical_variant columns
+    # aren't: its note_nlp records couldn't be written or linked, and its
+    # derived records would lose their exclusions, so none of it is exported
+    rules = [
+        rule("note_nlp", "note_nlp_concept_id", 1),
+        rule("condition_occurrence", "condition_concept_id", 1),
+    ]
+    for mappings in (
+        [],
+        [field_mapping("nlp.csv", "note_id", source_field="note_ref")],
+        [field_mapping("nlp.csv", "lexical_variant", source_field="term")],
+    ):
+        output = json.loads(
+            rules_to_json_v2(rules, METADATA, [nlp_table()], mappings, TYPE_FIELDS)
+        )["cdm"]
+        assert output == {}, mappings
+
+
+def test_note_nlp_table_left_out_keeps_other_tables():
+    rules = [
+        rule("note_nlp", "note_nlp_concept_id", 1),
+        rule("condition_occurrence", "condition_concept_id", 1),
+        {
+            **rule("condition_occurrence", "condition_concept_id", 2),
+            "sr_concept_id": 2,
+            "source_table": "gp.csv",
+        },
+    ]
+    output = json.loads(
+        rules_to_json_v2(rules, METADATA, [nlp_table()], [], TYPE_FIELDS)
+    )["cdm"]
+    assert list(output) == ["condition_occurrence"]
+    assert list(output["condition_occurrence"]) == ["gp.csv"]
