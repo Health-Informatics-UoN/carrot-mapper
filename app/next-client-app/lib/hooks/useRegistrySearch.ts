@@ -42,9 +42,9 @@ export function useRegistrySearch(view: View = "mappings") {
       ? urlField
       : ((view === "mappings" ? "sourceTerm" : "mappingSet") as SearchField);
 
-  const rawPage = Number(searchParams.get("page"));
+  const rawPage = Number(searchParams.get("p"));
   const page = Number.isInteger(rawPage) && rawPage >= 1 ? rawPage : 1;
-  const rawPageSize = Number(searchParams.get("pageSize"));
+  const rawPageSize = Number(searchParams.get("page_size"));
   const pageSize = PAGE_SIZE_OPTIONS.includes(rawPageSize)
     ? rawPageSize
     : DEFAULT_PAGE_SIZE;
@@ -94,8 +94,8 @@ export function useRegistrySearch(view: View = "mappings") {
         if (
           value === null ||
           value === "" ||
-          (key === "page" && value === 1) ||
-          (key === "pageSize" && value === DEFAULT_PAGE_SIZE)
+          (key === "p" && value === 1) ||
+          (key === "page_size" && value === DEFAULT_PAGE_SIZE)
         ) {
           params.delete(key);
         } else {
@@ -115,7 +115,7 @@ export function useRegistrySearch(view: View = "mappings") {
     const timer = setTimeout(() => {
       const nextQuery = inputQuery.trim();
       lastWrittenQueryRef.current = nextQuery;
-      pushUrl({ q: nextQuery || null, page: 1 }, "replace");
+      pushUrl({ q: nextQuery || null, p: 1 }, "replace");
     }, SEARCH_DEBOUNCE_MS);
     return () => clearTimeout(timer);
   }, [inputQuery, rawQuery, pushUrl]);
@@ -165,22 +165,16 @@ export function useRegistrySearch(view: View = "mappings") {
         nextField === (view === "mappings" ? "sourceTerm" : "mappingSet")
           ? null
           : nextField,
-      page: 1,
+      p: 1,
     });
   }
   function changeQuery(nextQuery: string) {
     setInputQuery(nextQuery);
   }
-  function changePageSize(size: number) {
-    pushUrl({ pageSize: size, page: 1 });
-  }
-  function setPage(nextPage: number) {
-    pushUrl({ page: nextPage });
-  }
   function setSort(nextSort: Sort) {
     pushUrl({
       sort: nextSort ? `${nextSort.key}.${nextSort.direction}` : null,
-      page: 1,
+      p: 1,
     });
   }
 
@@ -198,8 +192,6 @@ export function useRegistrySearch(view: View = "mappings") {
     stats,
     changeField,
     changeQuery,
-    changePageSize,
-    setPage,
     setSort,
     setForMapping,
   };

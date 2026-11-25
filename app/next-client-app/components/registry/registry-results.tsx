@@ -7,7 +7,6 @@ import type { Mapping, MappingSet, Sort, View } from "@/types/mapping-registry";
 import { getMappingColumns } from "./mapping-columns";
 import { getMappingSetColumns } from "./mapping-set-columns";
 import { RegistryResultsLoading } from "./registry-results-loading";
-import { RegistryTablePagination } from "./registry-table-pagination";
 
 type RegistryResultsProps = {
   view: View;
@@ -19,12 +18,8 @@ type RegistryResultsProps = {
   mappingSets: MappingSet[];
   /** Total matching records across all pages, for the active view. */
   total: number;
-  page: number;
-  pageSize: number;
   sort: Sort;
   onSortChange: (sort: Sort) => void;
-  onPageChange: (page: number) => void;
-  onPageSizeChange: (size: number) => void;
   onBrowse: (view: View) => void;
 };
 
@@ -35,12 +30,8 @@ export function RegistryResults({
   mappings,
   mappingSets,
   total,
-  page,
-  pageSize,
   sort,
   onSortChange,
-  onPageChange,
-  onPageSizeChange,
   onBrowse,
 }: RegistryResultsProps) {
   const mappingColumns = useMemo(
@@ -105,7 +96,7 @@ export function RegistryResults({
               columns={mappingColumns}
               data={mappings}
               count={total}
-              paginated={false}
+              paginated
             />
           ) : (
             <DataTable
@@ -113,16 +104,9 @@ export function RegistryResults({
               columns={mappingSetColumns}
               data={mappingSets}
               count={total}
-              paginated={false}
+              paginated
             />
           )}
-          <RegistryTablePagination
-            page={page}
-            pageSize={pageSize}
-            count={total}
-            onPageChange={onPageChange}
-            onPageSizeChange={onPageSizeChange}
-          />
         </>
       ) : (
         <div className="rounded-lg border border-dashed px-6 py-12 text-center">
