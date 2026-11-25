@@ -5,6 +5,7 @@ from django_filters import rest_framework as filters
 from rest_framework.filters import OrderingFilter
 
 from registry.models import (
+    ImportJob,
     Mapping,
     MappingSet,
     PredicateModifier,
@@ -22,6 +23,17 @@ class CharInFilter(filters.BaseInFilter, filters.CharFilter):
 
 class UUIDInFilter(filters.BaseInFilter, filters.UUIDFilter):
     pass
+
+
+class ImportJobFilter(filters.FilterSet):
+    status = CharInFilter(
+        field_name="status", help_text="Comma-separated job statuses."
+    )
+    origin = CharInFilter(field_name="origin_id")
+
+    class Meta:
+        model = ImportJob
+        fields: list[str] = []
 
 
 class MappingSetFilter(filters.FilterSet):

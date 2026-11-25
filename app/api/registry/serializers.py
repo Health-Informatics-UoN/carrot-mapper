@@ -1,3 +1,4 @@
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from registry.models import (
@@ -52,6 +53,55 @@ class ScanReportRegistryPublishSerializer(serializers.Serializer):
             "always included when their profile has one."
         ),
     )
+
+
+UPLOAD_STATUS_CHOICES = [Status.DRAFT, Status.PUBLISHED]
+
+
+class RegistryUploadSerializer(serializers.Serializer):
+    """
+    An SSSOM upload. The file must carry its own metadata: fields here are the
+    only request options, and anything else is refused rather than ignored.
+    """
+
+    file = serializers.FileField(allow_empty_file=True)
+    status = serializers.ChoiceField(
+        choices=UPLOAD_STATUS_CHOICES,
+        default=Status.PUBLISHED,
+        help_text="The set's status once the import succeeds.",
+    )
+
+    def validate(self, attrs):
+        unsupported = set(self.initial_data) - set(self.fields)
+        if unsupported:
+            raise serializers.ValidationError(
+                {name: "This option is not supported." for name in unsupported}
+            )
+        return attrs
+
+
+class ValidationIssueSerializer(serializers.Serializer):
+    level = serializers.ChoiceField(choices=["error", "warning"])
+    code = serializers.CharField()
+    message = serializers.CharField()
+    line = serializers.IntegerField(required=False)
+    column = serializers.CharField(required=False)
+
+
+class RegistryUploadValidationSerializer(serializers.Serializer):
+    valid = serializers.BooleanField()
+    issues = ValidationIssueSerializer(many=True)
+    set_uri = serializers.CharField()
+    set_version = serializers.CharField()
+    title = serializers.CharField()
+    license = serializers.CharField(allow_null=True)
+    rows_checked = serializers.IntegerField()
+
+
+class RegistryUploadAcceptedSerializer(serializers.Serializer):
+    import_job_id = serializers.UUIDField()
+    status = serializers.ChoiceField(choices=ImportJobStatus.choices)
+    issues = ValidationIssueSerializer(many=True)
 
 
 class RegistryImportAcceptedSerializer(serializers.Serializer):
@@ -136,6 +186,38 @@ class MappingSetSeriesSerializer(serializers.ModelSerializer):
     def get_versions(self, obj) -> list[dict]:
         # Set by the view: only the versions the caller may see.
         return MappingSetBriefSerializer(obj.visible_versions, many=True).data
+
+
+class ImportJobSerializer(serializers.ModelSerializer):
+    """A registry import's progress, for its submitter to poll."""
+
+    origin = serializers.CharField(source="origin_id")
+    mapping_set = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ImportJob
+        fields = [
+            "id",
+            "status",
+            "origin",
+            "validation_issues",
+            "error_message",
+            "stats",
+            "mapping_set",
+            "created_at",
+            "started_at",
+            "finished_at",
+        ]
+
+    @extend_schema_field(MappingSetBriefSerializer(allow_null=True))
+    def get_mapping_set(self, job):
+        # Until the job succeeds, any set it has loaded is not finished.
+        if job.status != ImportJobStatus.SUCCEEDED:
+            return None
+        mapping_sets = job.mapping_sets.all()
+        if not mapping_sets:
+            return None
+        return MappingSetBriefSerializer(mapping_sets[0]).data
 
 
 class MappingSetListSerializer(serializers.ModelSerializer):

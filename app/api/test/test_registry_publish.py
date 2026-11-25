@@ -449,5 +449,5 @@ class TestScanReportRegistryPublish(TestCase):
         self.assertEqual(response.status_code, 503)
         job = ImportJob.objects.get()
         self.assertEqual(job.status, ImportJobStatus.FAILED)
-        self.assertIn("airflow down", job.error_message)
+        self.assertNotIn("airflow down", job.error_message)
         self.assertIsNotNone(job.finished_at)

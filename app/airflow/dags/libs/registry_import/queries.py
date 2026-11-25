@@ -39,6 +39,8 @@ mark_import_job_failed_query = """
     UPDATE registry_importjob
     SET status = 'FAILED',
         error_message = %(error_message)s,
+        -- the load's stats describe a set the failure callback removes
+        stats = '{}'::jsonb,
         finished_at = NOW()
     WHERE id = %(import_job_id)s AND status NOT IN ('FAILED', 'SUCCEEDED')
     RETURNING id
@@ -130,6 +132,26 @@ delete_job_mappings_query = """
 """
 delete_job_mapping_sets_query = """
     DELETE FROM registry_mappingset WHERE import_job_id = %(import_job_id)s
+"""
+
+# The failure callback's version of delete_job_mapping_sets_query: also returns
+# each deleted set's series, which may be left with no versions.
+delete_failed_job_mapping_sets_query = """
+    DELETE FROM registry_mappingset ms
+    USING registry_mappingsetseries series
+    WHERE ms.import_job_id = %(import_job_id)s AND series.id = ms.series_id
+    RETURNING series.id::text, series.set_uri
+"""
+
+# A series the failed import created and left without versions: it would
+# otherwise own its set_uri with nothing in it. Run under lock_set_uri_query,
+# so an import loading a version into it can't be between its checks and commit.
+delete_empty_series_query = """
+    DELETE FROM registry_mappingsetseries series
+    WHERE series.id = %(series_id)s
+        AND NOT EXISTS (
+            SELECT 1 FROM registry_mappingset ms WHERE ms.series_id = series.id
+        )
 """
 
 insert_mapping_set_query = """
