@@ -4,8 +4,9 @@ ONE transaction, so a failed run never leaves a half-imported set behind:
 
 1. lock the set_uri, so concurrent imports of it take turns;
 2. delete any MappingSet this job created before (makes retries idempotent);
-3. check the version is new and the set_uri is this import's to add to;
-4. insert the MappingSet (status DRAFT; finalize publishes it);
+3. check the version is new, create the set's series if it is new (owned by
+   this import), and check the series is this import's to add to;
+4. insert the MappingSet (status DRAFT; finalize publishes it) in that series;
 5. register the prefixes the terms use, checking none changed since validation;
 6. COPY the rows into a temp staging table;
 7. insert the new subject and object Terms (existing ones are reused);
@@ -31,6 +32,7 @@ from libs.registry_import.full_validate_and_load_checks import (
     STAGING_COLUMNS,
     ImportPlan,
     SetOwner,
+    series_id_for,
     set_owner_error,
 )
 from libs.registry_import.set_versions import set_version_error
@@ -89,27 +91,19 @@ def load_plan(
             if version_error:
                 raise LoadError(f"Mapping set {record.set_uri}: {version_error[1]}")
 
-            cursor.execute(
-                queries.get_set_first_version_query,
-                {"set_uri": record.set_uri, "import_job_id": import_job_id},
-            )
-            first = cursor.fetchone()
-            owner_error = set_owner_error(
-                SetOwner(*first) if first else None,
+            series_id = _owned_series(
+                cursor,
+                record.set_uri,
                 origin=origin,
                 scan_report_id=scan_report_id,
-                user_id=publisher_id,
+                publisher_id=publisher_id,
             )
-            if owner_error:
-                raise LoadError(
-                    f"Mapping set {record.set_uri} already exists and {owner_error}"
-                )
 
             cursor.execute(
                 queries.insert_mapping_set_query,
                 {
                     "id": mapping_set_id,
-                    "set_uri": record.set_uri,
+                    "series_id": series_id,
                     "set_version": record.set_version,
                     "title": record.title,
                     "description": record.description,
@@ -176,6 +170,45 @@ def load_plan(
 
     logging.info(f"Loaded import job {import_job_id}: {stats}")
     return stats
+
+
+def _owned_series(
+    cursor,
+    set_uri: str,
+    *,
+    origin: str,
+    scan_report_id: int | None,
+    publisher_id: int | None,
+) -> str:
+    """
+    The id of ``set_uri``'s series, created (owned by this import) if it is
+    new. Raises LoadError if another publisher owns it. The caller holds
+    lock_set_uri_query.
+    """
+    cursor.execute(queries.get_series_by_uri_query, {"set_uri": set_uri})
+    row = cursor.fetchone()
+    if row is None:
+        cursor.execute(
+            queries.insert_series_query,
+            {
+                "id": series_id_for(set_uri),
+                "set_uri": set_uri,
+                "publisher_id": publisher_id,
+                "source_scan_report_id": scan_report_id,
+            },
+        )
+        cursor.execute(queries.get_series_by_uri_query, {"set_uri": set_uri})
+        row = cursor.fetchone()
+    series_id, *owner = row
+    owner_error = set_owner_error(
+        SetOwner(*owner),
+        origin=origin,
+        scan_report_id=scan_report_id,
+        user_id=publisher_id,
+    )
+    if owner_error:
+        raise LoadError(f"Mapping set {set_uri} already exists and {owner_error}")
+    return series_id
 
 
 def _register_prefixes(cursor, prefixes: dict[str, str]) -> None:

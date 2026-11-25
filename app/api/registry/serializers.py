@@ -7,6 +7,7 @@ from registry.models import (
     Mapping,
     MappingJustification,
     MappingSet,
+    MappingSetSeries,
     Predicate,
     Status,
     Term,
@@ -114,14 +115,33 @@ class TermSerializer(serializers.ModelSerializer):
 
 class MappingSetBriefSerializer(serializers.ModelSerializer):
     status = serializers.CharField(source="status_id")
+    series = serializers.UUIDField(source="series_id", read_only=True)
+    set_uri = serializers.CharField(source="series.set_uri", read_only=True)
 
     class Meta:
         model = MappingSet
-        fields = ["id", "set_uri", "set_version", "title", "status"]
+        fields = ["id", "series", "set_uri", "set_version", "title", "status"]
+
+
+class MappingSetSeriesSerializer(serializers.ModelSerializer):
+    """A mapping set and the versions of it the caller may see, newest first."""
+
+    source_scan_report = serializers.PrimaryKeyRelatedField(read_only=True)
+    versions = serializers.SerializerMethodField()
+
+    class Meta:
+        model = MappingSetSeries
+        fields = ["id", "set_uri", "source_scan_report", "created_at", "versions"]
+
+    def get_versions(self, obj) -> list[dict]:
+        # Set by the view: only the versions the caller may see.
+        return MappingSetBriefSerializer(obj.visible_versions, many=True).data
 
 
 class MappingSetListSerializer(serializers.ModelSerializer):
     status = serializers.CharField(source="status_id")
+    series = serializers.UUIDField(source="series_id", read_only=True)
+    set_uri = serializers.CharField(source="series.set_uri", read_only=True)
     origin = serializers.CharField(source="origin_id")
     license = serializers.CharField(source="license_id")
     mapping_count = serializers.IntegerField(read_only=True)
@@ -130,6 +150,7 @@ class MappingSetListSerializer(serializers.ModelSerializer):
         model = MappingSet
         fields = [
             "id",
+            "series",
             "set_uri",
             "set_version",
             "title",

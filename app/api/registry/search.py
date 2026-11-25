@@ -67,7 +67,7 @@ def search_mapping_sets(
     if not q:
         return qs
 
-    exact = Q(set_uri__iexact=q)
+    exact = Q(series__set_uri__iexact=q)
     prefix = Q(title__istartswith=q)
     fuzzy = Q(title__trigram_word_similar=q) | Q(description__trigram_word_similar=q)
 

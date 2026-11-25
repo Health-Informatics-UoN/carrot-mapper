@@ -12,9 +12,11 @@ from pathlib import Path
 
 import pytest
 from libs.registry_import.full_validate_and_load_checks import (
+    CARROT_MAPPING_SET_NAMESPACE,
     DRAFT,
     PUBLISHED,
     STAGING_COLUMNS,
+    LicenseRow,
     SetOwner,
     Vocabulary,
     build_import,
@@ -22,6 +24,8 @@ from libs.registry_import.full_validate_and_load_checks import (
     check_set_owner,
     check_set_uri_not_reserved,
     check_set_version_is_newer,
+    match_license,
+    series_id_for,
     set_owner_error,
     set_uri_uuid,
 )
@@ -58,14 +62,26 @@ COLUMNS = "subject_id\tsubject_label\tpredicate_id\tobject_id\tobject_label\tmap
 ROW = "HP:0000175\tCleft palate\tskos:exactMatch\tMP:0000111\tcleft palate\tsemapv:LexicalMatching\t0.9\n"
 
 
-def plan_for(text: str, overrides=None, max_issues=1000, license_id="CC-BY-4.0"):
-    """build_import, with the License id the request names (checked earlier)."""
+def plan_for(
+    text: str,
+    overrides=None,
+    max_issues=1000,
+    license_id="CC-BY-4.0",
+    series_set_uri=None,
+    file_license_id="CC-BY-4.0",
+):
+    """
+    build_import, with the License id the request names (checked earlier) and
+    the License the file's license IRI stands for (looked up earlier).
+    """
     return build_import(
         parse_sssom(text),
         VOCAB,
         overrides,
         license_id=license_id,
         max_issues=max_issues,
+        series_set_uri=series_set_uri,
+        file_license_id=file_license_id,
     )
 
 
@@ -270,6 +286,87 @@ def test_overrides_fill_gaps_and_win_with_a_warning():
     assert codes(plan) == ["metadata_overridden"]  # the title differed
 
 
+FILE_ID = "https://example.org/sets/hp-mp"
+NO_ID = HEADER.replace(f"#mapping_set_id: {FILE_ID}\n", "") + COLUMNS + ROW
+
+
+@pytest.mark.parametrize(
+    "text, request_id, series_set_uri, set_uri, code",
+    [
+        # file id, no request: the file's
+        (HEADER + COLUMNS + ROW, None, None, FILE_ID, None),
+        # the request agrees with the file
+        (HEADER + COLUMNS + ROW, FILE_ID, None, FILE_ID, None),
+        (HEADER + COLUMNS + ROW, None, FILE_ID, FILE_ID, None),
+        # the request disagrees with the file
+        (
+            HEADER + COLUMNS + ROW,
+            "https://x/other",
+            None,
+            FILE_ID,
+            "mapping_set_id_mismatch",
+        ),
+        (
+            HEADER + COLUMNS + ROW,
+            None,
+            "https://x/other",
+            FILE_ID,
+            "mapping_set_id_mismatch",
+        ),
+        # no file id: the request's, with a warning
+        (
+            NO_ID,
+            None,
+            "https://x/series",
+            "https://x/series",
+            "mapping_set_id_not_in_file",
+        ),
+        (NO_ID, "https://x/req", None, "https://x/req", "mapping_set_id_not_in_file"),
+        # the set_uri override and the series disagree
+        (
+            NO_ID,
+            "https://x/req",
+            "https://x/series",
+            "https://x/series",
+            "mapping_set_id_mismatch",
+        ),
+    ],
+)
+def test_mapping_set_id_resolution(text, request_id, series_set_uri, set_uri, code):
+    overrides = {"set_uri": request_id} if request_id else None
+    plan = plan_for(text, overrides, series_set_uri=series_set_uri)
+    assert plan.mapping_set.set_uri == set_uri
+    assert "metadata_overridden" not in codes(plan)
+    if code is None:
+        assert plan.ok and codes(plan) == []
+    else:
+        assert code in codes(plan)
+        assert plan.ok == (code == "mapping_set_id_not_in_file")
+
+
+def test_file_without_mapping_set_id_gets_a_new_carrot_id():
+    plan = plan_for(NO_ID)
+    assert plan.ok
+    assert codes(plan) == ["mapping_set_id_not_in_file"]
+    set_uri = plan.mapping_set.set_uri
+    assert set_uri.startswith(CARROT_MAPPING_SET_NAMESPACE)
+    # so its series id is the uuid in it, and the set_uri opens the set page
+    assert series_id_for(set_uri) == set_uri_uuid(set_uri)
+    assert plan_for(NO_ID).mapping_set.set_uri != set_uri
+
+
+def test_series_id_for():
+    sr = "0b7b3c1e-7a39-4a0a-9f3c-5a3e0c2f6a11"
+    assert series_id_for(f"{CARROT_MAPPING_SET_NAMESPACE}{sr}") == sr
+    # anything else gets a new random id
+    for set_uri in (
+        "http://pretendurl.com",
+        f"{CARROT_MAPPING_SET_NAMESPACE}not-a-uuid",
+        f"https://example.org/{sr}",
+    ):
+        assert series_id_for(set_uri) != series_id_for(set_uri)
+
+
 def test_unknown_override_and_bad_status():
     plan = plan_for(HEADER + COLUMNS + ROW, {"colour": "red", "status": "LIVE"})
     assert "unknown_override" in codes(plan, "warning")
@@ -313,21 +410,118 @@ def test_set_version_must_be_semver_or_iso_date(version):
     assert codes(plan, "error") == ["invalid_set_version"]
 
 
-def test_set_is_linked_to_the_requests_license():
-    plan = plan_for(HEADER + COLUMNS + ROW, license_id="CC0-1.0")
-    assert plan.ok and codes(plan) == []
-    assert plan.mapping_set.license_id == "CC0-1.0"
-    assert "license" not in plan.mapping_set.extra_metadata
+CC_BY_IRI = "https://creativecommons.org/licenses/by/4.0/"
+CC0_IRI = "https://spdx.org/licenses/CC0-1.0.html"
+NO_LICENSE = HEADER.replace(f"#license: {CC_BY_IRI}\n", "") + COLUMNS + ROW
 
 
-def test_without_a_license_id_the_files_license_is_kept_with_a_warning():
-    plan = plan_for(HEADER + COLUMNS + ROW, license_id=None)
+@pytest.mark.parametrize(
+    "text, file_license_id, license_id, linked, error, warning",
+    [
+        # the file's IRI is the request's License (here via a see_also alias)
+        (HEADER + COLUMNS + ROW, "CC-BY-4.0", "CC-BY-4.0", "CC-BY-4.0", None, None),
+        # the file's IRI is another License
+        (
+            HEADER + COLUMNS + ROW,
+            "CC-BY-4.0",
+            "CC0-1.0",
+            None,
+            "license_mismatch",
+            None,
+        ),
+        # the file's IRI is no License, but the request names one
+        (HEADER + COLUMNS + ROW, None, "CC0-1.0", None, "license_mismatch", None),
+        # no request License: the file's is linked
+        (HEADER + COLUMNS + ROW, "CC-BY-4.0", None, "CC-BY-4.0", None, None),
+        # no request License and an unknown IRI: kept unlinked
+        (HEADER + COLUMNS + ROW, None, None, None, None, "unknown_license"),
+        # no license in the file: the request's, with a warning
+        (NO_LICENSE, None, "CC0-1.0", "CC0-1.0", None, "license_not_in_file"),
+        # no license anywhere
+        (NO_LICENSE, None, None, None, "missing_metadata_slot", None),
+    ],
+)
+def test_license_resolution(text, file_license_id, license_id, linked, error, warning):
+    overrides = {"license": CC0_IRI} if license_id == "CC0-1.0" else None
+    plan = plan_for(
+        text, overrides, license_id=license_id, file_license_id=file_license_id
+    )
+    # (the SSSOM schema also requires a license: schema_violation)
+    errors = [c for c in codes(plan, "error") if c != "schema_violation"]
+    assert errors == ([error] if error else [])
+    assert codes(plan, "warning") == ([warning] if warning else [])
+    assert "metadata_overridden" not in codes(plan)
+    assert plan.mapping_set.license_id == linked
+
+
+def test_unknown_license_iri_is_kept_in_extra_metadata():
+    plan = plan_for(HEADER + COLUMNS + ROW, license_id=None, file_license_id=None)
     assert plan.ok
     assert plan.mapping_set.license_id is None
-    assert plan.mapping_set.extra_metadata["license"] == (
-        "https://creativecommons.org/licenses/by/4.0/"
-    )
-    assert codes(plan) == ["unknown_license"]
+    assert plan.mapping_set.extra_metadata["license"] == CC_BY_IRI
+
+
+def test_linked_license_is_not_in_extra_metadata():
+    for text, file_license_id in (
+        (HEADER + COLUMNS + ROW, "CC-BY-4.0"),
+        (NO_LICENSE, None),
+    ):
+        plan = plan_for(
+            text,
+            {"license": "https://spdx.org/licenses/CC-BY-4.0.html"},
+            file_license_id=file_license_id,
+        )
+        assert plan.ok and plan.mapping_set.license_id == "CC-BY-4.0"
+        assert "license" not in plan.mapping_set.extra_metadata
+
+
+SPDX_ROWS = [
+    LicenseRow(
+        "CC-BY-4.0",
+        "https://spdx.org/licenses/CC-BY-4.0.html",
+        ("https://creativecommons.org/licenses/by/4.0/legalcode",),
+    ),
+    LicenseRow(
+        "CC0-1.0",
+        "https://spdx.org/licenses/CC0-1.0.html",
+        ("https://creativecommons.org/publicdomain/zero/1.0/legalcode",),
+    ),
+    LicenseRow("GPL-2.0", "https://spdx.org/licenses/GPL-2.0.html", (), True),
+    LicenseRow("GPL-2.0-only", "https://spdx.org/licenses/GPL-2.0-only.html"),
+]
+
+
+@pytest.mark.parametrize(
+    "iri, license_id",
+    [
+        ("https://spdx.org/licenses/CC-BY-4.0.html", "CC-BY-4.0"),
+        ("https://spdx.org/licenses/CC-BY-4.0", "CC-BY-4.0"),
+        ("https://creativecommons.org/licenses/by/4.0/legalcode", "CC-BY-4.0"),
+        # what SSSOM files usually cite: the deed, not the legal code
+        ("https://creativecommons.org/licenses/by/4.0/", "CC-BY-4.0"),
+        ("http://creativecommons.org/licenses/by/4.0", "CC-BY-4.0"),
+        ("https://www.creativecommons.org/licenses/by/4.0/legalcode.en", "CC-BY-4.0"),
+        ("https://creativecommons.org/publicdomain/zero/1.0/", "CC0-1.0"),
+        # an exact license_iri wins over a deprecated one
+        ("https://spdx.org/licenses/GPL-2.0.html", "GPL-2.0"),
+        ("https://creativecommons.org/licenses/by-sa/4.0/", None),
+        ("https://example.org/my-licence", None),
+        ("", None),
+    ],
+)
+def test_match_license(iri, license_id):
+    assert match_license(iri, SPDX_ROWS) == license_id
+
+
+def test_match_license_prefers_exact_then_not_deprecated():
+    rows = [
+        LicenseRow("OLD", "https://example.org/l/", (), True),
+        LicenseRow("NEW", "https://example.org/l.html"),
+        LicenseRow("EXACT", "https://example.org/l"),
+    ]
+    assert match_license("https://example.org/l", rows) == "EXACT"
+    # no exact match: the one SPDX hasn't deprecated
+    assert match_license("http://example.org/l/legalcode", rows[:2]) == "NEW"
 
 
 def test_include_author_orcid_ids_is_a_known_override():
@@ -390,7 +584,10 @@ def test_registry_namespace_under_another_name_is_canonicalised():
 def plan_with_prefixes(text: str, prefixes: dict[str, str]):
     """build_import against a registry that already has ``prefixes``."""
     return build_import(
-        parse_sssom(text), replace(VOCAB, prefixes=prefixes), license_id="CC-BY-4.0"
+        parse_sssom(text),
+        replace(VOCAB, prefixes=prefixes),
+        license_id="CC-BY-4.0",
+        file_license_id="CC-BY-4.0",
     )
 
 
