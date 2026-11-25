@@ -23,7 +23,7 @@ from mapping.models import ScanReport
 from rest_framework import status
 from rest_framework.exceptions import NotFound
 from rest_framework.generics import GenericAPIView, ListAPIView, RetrieveAPIView
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from services.storage_service import StorageService
 
@@ -43,6 +43,7 @@ from registry.models import (
     Predicate,
 )
 from registry.permissions import (
+    CanManageMappingSetVersion,
     published_mappings,
     published_terms,
     visible_mapping_sets,
@@ -55,13 +56,19 @@ from registry.serializers import (
     MappingSetDetailSerializer,
     MappingSetListSerializer,
     MappingSetSeriesSerializer,
+    MappingSetWithdrawSerializer,
     PredicateSerializer,
     RegistryImportAcceptedSerializer,
     RegistryPublishVersionsSerializer,
     ScanReportRegistryPublishSerializer,
     TermSerializer,
 )
-from registry.services import next_versions, submit_direct_publish
+from registry.services import (
+    next_versions,
+    publish_mapping_set,
+    submit_direct_publish,
+    withdraw_mapping_set,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -117,6 +124,71 @@ class ScanReportRegistryPublishView(ScanReportPermissionMixin, GenericAPIView):
             ).data,
             status=status.HTTP_202_ACCEPTED,
         )
+
+
+class MappingSetStatusView(GenericAPIView):
+    """
+    Base for the endpoints that move a version of a mapping set through its
+    lifecycle. 404 if the caller may not see the version, or it isn't in the
+    URL's set.
+    """
+
+    serializer_class = MappingSetDetailSerializer
+    permission_classes = [IsAuthenticated, CanManageMappingSetVersion]
+    http_method_names = ["post"]
+
+    def get_queryset(self):
+        return version_detail_queryset(self)
+
+    def updated_response(self) -> Response:
+        return Response(
+            self.get_serializer(self.get_queryset().get(pk=self.kwargs["pk"])).data
+        )
+
+
+class MappingSetPublishView(MappingSetStatusView):
+    """Publish a draft mapping set. For its publisher and registry admins."""
+
+    @extend_schema(
+        request=None,
+        responses={
+            200: MappingSetDetailSerializer,
+            409: OpenApiResponse(
+                description="Not a draft, or its import has not finished."
+            ),
+        },
+    )
+    def post(self, request, *args, **kwargs):
+        mapping_set = self.get_object()
+        publish_mapping_set(mapping_set.pk, request.user)
+        return self.updated_response()
+
+
+class MappingSetWithdrawView(MappingSetStatusView):
+    """
+    Withdraw a published mapping set. For its publisher and registry admins.
+
+    The set stays available by id and for download, with the reason given, but
+    leaves default listings and search. Sets are never deleted.
+    """
+
+    @extend_schema(
+        request=MappingSetWithdrawSerializer,
+        responses={
+            200: MappingSetDetailSerializer,
+            409: OpenApiResponse(
+                description="Not published, or its import has not finished."
+            ),
+        },
+    )
+    def post(self, request, *args, **kwargs):
+        mapping_set = self.get_object()
+        serializer = MappingSetWithdrawSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        withdraw_mapping_set(
+            mapping_set.pk, request.user, serializer.validated_data["reason"]
+        )
+        return self.updated_response()
 
 
 # ---------------------------------------------------------------------------
@@ -205,21 +277,26 @@ class MappingSetSeriesDetailView(PublicReadMixin, RetrieveAPIView):
         )
 
 
+def version_detail_queryset(view) -> QuerySet[MappingSet]:
+    """The versions of the URL's series ``view``'s user may see, with counts."""
+    return (
+        visible_versions_of_series(view)
+        .select_related("import_job", "series")
+        .annotate(
+            mapping_count=_count_mappings(),
+            subject_count=_count_mappings("subject", distinct=True),
+            object_count=_count_mappings("object", distinct=True),
+        )
+    )
+
+
 class MappingSetDetailView(PublicReadMixin, RetrieveAPIView):
     """One version of a mapping set: metadata, curie_map, counts and provenance."""
 
     serializer_class = MappingSetDetailSerializer
 
     def get_queryset(self):
-        return (
-            visible_versions_of_series(self)
-            .select_related("import_job", "series")
-            .annotate(
-                mapping_count=_count_mappings(),
-                subject_count=_count_mappings("subject", distinct=True),
-                object_count=_count_mappings("object", distinct=True),
-            )
-        )
+        return version_detail_queryset(self)
 
 
 class MappingSetDownloadView(PublicReadMixin, GenericAPIView):

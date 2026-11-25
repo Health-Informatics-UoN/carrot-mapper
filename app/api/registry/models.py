@@ -287,6 +287,16 @@ class MappingSet(models.Model):
     file_key = models.CharField(max_length=500, blank=True, default="")
     created_at = models.DateTimeField(auto_now_add=True)
     published_at = models.DateTimeField(null=True, blank=True)
+    withdrawn_at = models.DateTimeField(null=True, blank=True)
+    withdrawn_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+    )
+    # A database default too: the registry_import DAG inserts sets with raw SQL.
+    withdrawal_reason = models.TextField(blank=True, default="", db_default="")
 
     class Meta:
         ordering = ["-created_at"]

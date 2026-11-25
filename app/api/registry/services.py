@@ -18,6 +18,7 @@ from registry.models import (
     MappingSet,
     MappingSetSeries,
     Origin,
+    Status,
 )
 from registry.versions import NotSemVer, ReleaseType, bump, latest_semver
 
@@ -208,3 +209,67 @@ def submit_direct_publish(
     )
 
     return job, True
+
+
+def _lock_finished_mapping_set(mapping_set_id) -> MappingSet:
+    """
+    Lock a set whose import has finished, for a status change. Call in a
+    transaction.
+
+    The registry_import DAG writes the set's status while the job runs, so a
+    set is only ours to change once the job has SUCCEEDED. finalize updates the
+    set and the job in one transaction, so the job is read after taking the
+    lock, to see the result of a finalize that held it.
+    """
+    mapping_set = MappingSet.objects.select_for_update().get(pk=mapping_set_id)
+    if mapping_set.import_job_id:
+        job_status = (
+            ImportJob.objects.filter(pk=mapping_set.import_job_id)
+            .values_list("status", flat=True)
+            .first()
+        )
+        if job_status != ImportJobStatus.SUCCEEDED:
+            raise PublishConflict(
+                {"detail": "This mapping set's import has not finished."}
+            )
+    return mapping_set
+
+
+def publish_mapping_set(mapping_set_id, user: User) -> None:
+    """DRAFT -> PUBLISHED. Raises PublishConflict (409) from any other state."""
+    with transaction.atomic():
+        mapping_set = _lock_finished_mapping_set(mapping_set_id)
+        if mapping_set.status_id != Status.DRAFT:
+            raise PublishConflict(
+                {"detail": "Only a draft mapping set can be published."}
+            )
+        mapping_set.status_id = Status.PUBLISHED
+        mapping_set.published_at = timezone.now()
+        mapping_set.save(update_fields=["status", "published_at"])
+    logger.info("User %s published mapping set %s", user.pk, mapping_set_id)
+
+
+def withdraw_mapping_set(mapping_set_id, user: User, reason: str) -> None:
+    """
+    PUBLISHED -> WITHDRAWN. The set stays resolvable by id but leaves search.
+    Raises PublishConflict (409) from any other state.
+    """
+    with transaction.atomic():
+        mapping_set = _lock_finished_mapping_set(mapping_set_id)
+        if mapping_set.status_id != Status.PUBLISHED:
+            raise PublishConflict(
+                {"detail": "Only a published mapping set can be withdrawn."}
+            )
+        mapping_set.status_id = Status.WITHDRAWN
+        mapping_set.withdrawn_at = timezone.now()
+        mapping_set.withdrawn_by = user
+        mapping_set.withdrawal_reason = reason
+        mapping_set.save(
+            update_fields=[
+                "status",
+                "withdrawn_at",
+                "withdrawn_by",
+                "withdrawal_reason",
+            ]
+        )
+    logger.info("User %s withdrew mapping set %s", user.pk, mapping_set_id)

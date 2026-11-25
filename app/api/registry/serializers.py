@@ -54,6 +54,13 @@ class ScanReportRegistryPublishSerializer(serializers.Serializer):
     )
 
 
+class MappingSetWithdrawSerializer(serializers.Serializer):
+    reason = serializers.CharField(
+        max_length=2000,
+        help_text="Why the set is withdrawn; shown with the set.",
+    )
+
+
 class RegistryImportAcceptedSerializer(serializers.Serializer):
     import_job_id = serializers.UUIDField()
     status = serializers.ChoiceField(choices=ImportJobStatus.choices)
@@ -188,6 +195,8 @@ class MappingSetDetailSerializer(MappingSetListSerializer):
             "sssom_version",
             "curie_map",
             "extra_metadata",
+            "withdrawn_at",
+            "withdrawal_reason",
             "import_job",
             "source_scan_report",
             "subject_count",

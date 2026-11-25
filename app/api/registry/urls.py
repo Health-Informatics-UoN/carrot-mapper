@@ -54,6 +54,16 @@ urlpatterns = [
     ),
     # Write
     path(
+        "mapping-sets/<uuid:series_pk>/versions/<uuid:pk>/publish/",
+        views.MappingSetPublishView.as_view(),
+        name="registry-mapping-set-publish",
+    ),
+    path(
+        "mapping-sets/<uuid:series_pk>/versions/<uuid:pk>/withdraw/",
+        views.MappingSetWithdrawView.as_view(),
+        name="registry-mapping-set-withdraw",
+    ),
+    path(
         "scanreports/<int:pk>/registry-publish/",
         views.ScanReportRegistryPublishView.as_view(),
         name="registry-scan-report-publish",
