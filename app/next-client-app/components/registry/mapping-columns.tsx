@@ -3,7 +3,9 @@ import type { ColumnDef, HeaderContext } from "@tanstack/react-table";
 import { ChevronRight } from "lucide-react";
 import { DataTableColumnHeader } from "@/components/data-table/DataTableColumnHeader";
 import { Button } from "@/components/ui/button";
+import { RESULTS_URL_KEYS } from "@/constants/mapping-registry";
 import type { Mapping } from "@/types/mapping-registry";
+import { rememberResultsUrl } from "./back-to-results-link";
 
 export function getMappingColumns(): ColumnDef<Mapping>[] {
   const sortableHeader = (
@@ -75,14 +77,7 @@ export function getMappingColumns(): ColumnDef<Mapping>[] {
           <Button asChild size="sm" variant="outline">
             <Link
               href={`/registry/mappings/${row.original.id}`}
-              onClick={() => {
-                try {
-                  sessionStorage.setItem(
-                    "registry:lastMappingsUrl",
-                    window.location.pathname + window.location.search,
-                  );
-                } catch {}
-              }}
+              onClick={() => rememberResultsUrl(RESULTS_URL_KEYS.mappings)}
               aria-label={`View details for ${row.original.sourceTerm}, ${row.original.publisher}`}
             >
               View <ChevronRight className="size-4" />

@@ -1,8 +1,28 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+
+// The results page writes the URL before the detail page mounts.
+const subscribe = () => () => {};
+
+function readSavedResultsUrl(key: string) {
+  try {
+    return sessionStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+export function rememberResultsUrl(key: string) {
+  try {
+    sessionStorage.setItem(
+      key,
+      window.location.pathname + window.location.search,
+    );
+  } catch {}
+}
 
 interface BackToResultsLinkProps {
   fallbackHref: string;
@@ -13,17 +33,11 @@ export function BackToResultsLink({
   fallbackHref,
   sessionKey,
 }: BackToResultsLinkProps) {
-  const [href, setHref] = useState(fallbackHref);
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => {
-      try {
-        const saved = sessionStorage.getItem(sessionKey);
-        if (saved) setHref(saved);
-      } catch {}
-    }, 0);
-    return () => window.clearTimeout(timer);
-  }, [sessionKey]);
+  const href = useSyncExternalStore(
+    subscribe,
+    () => readSavedResultsUrl(sessionKey) || fallbackHref,
+    () => fallbackHref,
+  );
 
   return (
     <Link

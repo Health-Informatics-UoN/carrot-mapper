@@ -39,6 +39,11 @@ export const PAGE_SIZE_OPTIONS = [10, 20, 30, 40, 50];
 export const DEFAULT_PAGE_SIZE = 10;
 export const SEARCH_DEBOUNCE_MS = 350;
 
+export const RESULTS_URL_KEYS = {
+  mappings: "registry:lastMappingsUrl",
+  mappingSets: "registry:lastMappingSetsUrl",
+} as const;
+
 // Keeps the dialogs fading/zooming in place instead of sliding in from the top-left.
 export const STATIC_DIALOG_STYLE = {
   "--tw-enter-translate-x": "0px",

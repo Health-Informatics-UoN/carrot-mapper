@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft, ChevronRight, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { RESULTS_URL_KEYS } from "@/constants/mapping-registry";
 import type { Mapping, MappingSet } from "@/types/mapping-registry";
 import { Detail } from "./detail";
 import { RegistryBreadcrumbs } from "./registry-breadcrumbs";
@@ -44,7 +45,7 @@ export function MappingSetDetails({
       ) : (
         <BackToResultsLink
           fallbackHref="/registry/mapping-sets"
-          sessionKey="registry:lastMappingSetsUrl"
+          sessionKey={RESULTS_URL_KEYS.mappingSets}
         />
       )}
 
