@@ -955,6 +955,8 @@ def test_failed_finalize_removes_the_set_and_allows_a_resubmit(
     subject, obj = unique_prefixes(cleanup)
     first, second = make_job(conn, cleanup, user), make_job(conn, cleanup, user)
 
+    set_uri = f"https://example.org/sets/{subject.lower()}"
+
     def conf(job):
         key = helpers.file_key_for(job)
         storage.blobs[("registry-sssom", key)] = sssom(subject, obj).encode()
@@ -979,9 +981,47 @@ def test_failed_finalize_removes_the_set_and_allows_a_resubmit(
     assert fetch(
         conn, "SELECT count(*) FROM registry_mappingset WHERE import_job_id = %s", first
     ) == [(0,)]
+    # the series it created would otherwise own the set_uri with no versions
+    assert fetch(
+        conn,
+        "SELECT count(*) FROM registry_mappingsetseries WHERE set_uri = %s",
+        set_uri,
+    ) == [(0,)]
 
     run_dag(conf(second))
     assert job_row(conn, second)["status"] == "SUCCEEDED"
+
+
+def test_failed_finalize_keeps_a_series_with_other_versions(
+    conn, cleanup, user, storage, monkeypatch
+):
+    subject, obj = unique_prefixes(cleanup)
+    set_uri = f"https://example.org/sets/{subject.lower()}"
+    first, second = make_job(conn, cleanup, user), make_job(conn, cleanup, user)
+
+    def conf(job, version):
+        key = helpers.file_key_for(job)
+        storage.blobs[("registry-sssom", key)] = sssom(subject, obj, version).encode()
+        return {
+            "import_job_id": job,
+            "origin": "SSSOM_UPLOAD",
+            "user_id": user,
+            "file_key": key,
+            "overrides": {"license": "CC-BY-4.0"},
+        }
+
+    run_dag(conf(first, "1.0.0"))
+    with monkeypatch.context() as patch:
+        patch.setattr(queries, "publish_mapping_set_query", "SELECT 1 / 0")
+        with pytest.raises(Exception, match="division by zero"):
+            run_dag(conf(second, "1.1.0"))
+
+    assert fetch(
+        conn,
+        "SELECT ms.set_version FROM registry_mappingset ms "
+        "JOIN registry_mappingsetseries s ON s.id = ms.series_id WHERE s.set_uri = %s",
+        set_uri,
+    ) == [("1.0.0",)]
 
 
 def test_failure_after_success_keeps_the_set(conn, cleanup, user, storage):

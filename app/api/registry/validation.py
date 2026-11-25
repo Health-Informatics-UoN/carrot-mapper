@@ -20,8 +20,6 @@ import sys
 import uuid
 from dataclasses import dataclass, field
 from datetime import date
-from functools import reduce
-from operator import or_
 from typing import Any
 from urllib.parse import urlsplit
 
@@ -32,11 +30,13 @@ from django.db.models import Q
 from mapping.models import ScanReport
 
 from registry.models import (
+    CARROT_MAPPING_SET_NAMESPACE,
     ImportJob,
     ImportJobStatus,
     License,
     MappingJustification,
     MappingSet,
+    MappingSetSeries,
     Predicate,
     Prefix,
 )
@@ -94,7 +94,9 @@ NCNAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_.\-]*$")
 CURIE = re.compile(r"^(?P<prefix>[A-Za-z_][A-Za-z0-9_.\-]*):(?P<local>.*)$")
 
 REQUIRED_COLUMNS = ("subject_id", "predicate_id", "object_id", "mapping_justification")
-REQUIRED_SET_SLOTS = ("mapping_set_id", "mapping_set_version", "license")
+# mapping_set_id may be absent: the DAG then stores the set under a new Carrot
+# set id (resolve_set_uri), with a warning.
+REQUIRED_SET_SLOTS = ("mapping_set_version", "license")
 CURIE_COLUMNS = ("subject_id", "predicate_id", "object_id", "mapping_justification")
 # The Mapping slots of the SSSOM 1.0 schema: other columns get a warning.
 SSSOM_MAPPING_SLOTS = frozenset(
@@ -318,20 +320,44 @@ class Curies:
         return f"{canonical}:{match['local']}", canonical, ""
 
 
-def find_license(iri: str) -> License | None:
-    """The License an SSSOM file's license IRI refers to, if the registry has it."""
-    base = iri.strip().rstrip("/").removesuffix(".html")
-    rest = base.partition("://")[2]
-    if not rest:
+# As the DAG's full_validate_and_load_checks.license_iri_key and match_license.
+_LICENSE_IRI_SUFFIX = re.compile(r"(/legalcode(\.[a-z-]+)?|\.html|\.json|\.txt)$")
+
+
+def license_iri_key(iri: str) -> str:
+    """A license IRI ignoring case, scheme, ``www.``, a trailing slash and page suffixes."""
+    key = iri.strip().lower()
+    key = re.sub(r"^https?://(www\.)?", "", key).rstrip("/")
+    return _LICENSE_IRI_SUFFIX.sub("", key).rstrip("/")
+
+
+def find_license(iri: str) -> str | None:
+    """
+    The id of the License a file's license IRI stands for, as the DAG decides
+    it: an exact license_iri, then an exact see_also, then the same IRI up to
+    license_iri_key, preferring a License SPDX hasn't deprecated.
+    """
+    if not iri:
         return None
-    stems = [f"{scheme}://{rest}" for scheme in ("https", "http")]
-    variants = [v for s in stems for v in (s, f"{s}/", f"{s}.html")]
-    ordering = ("is_deprecated", "id")
-    match = License.objects.filter(license_iri__in=variants).order_by(*ordering).first()
-    if match:
-        return match
-    see_also = reduce(or_, (Q(see_also__contains=[v]) for v in variants))
-    return License.objects.filter(see_also).order_by(*ordering).first()
+    key = license_iri_key(iri)
+    best: tuple | None = None
+    rows = License.objects.values_list("id", "license_iri", "see_also", "is_deprecated")
+    for license_id, license_iri, see_also, is_deprecated in rows:
+        see_also = see_also or ()
+        if license_iri == iri:
+            rank = 0
+        elif iri in see_also:
+            rank = 1
+        elif license_iri_key(license_iri) == key:
+            rank = 2
+        elif any(license_iri_key(alias) == key for alias in see_also):
+            rank = 3
+        else:
+            continue
+        candidate = (rank, is_deprecated, license_id)
+        if best is None or candidate < best:
+            best = candidate
+    return best[2] if best else None
 
 
 def _read_metadata(text: str, report: ValidationReport) -> tuple[dict | None, str, int]:
@@ -465,6 +491,14 @@ def _check_set(metadata: dict[str, Any], report: ValidationReport) -> None:
                 column=slot,
             )
     report.set_uri = _slot_text(metadata, "mapping_set_id", report)
+    if not report.set_uri:
+        report.warning(
+            "mapping_set_id_not_in_file",
+            "The file has no mapping_set_id, so it is stored as a new mapping "
+            "set under a new Carrot set id; the downloadable file stays without "
+            "one. Add a mapping_set_id to publish later versions of this set.",
+            column="mapping_set_id",
+        )
     report.set_version = _slot_text(metadata, "mapping_set_version", report)
     report.title = _slot_text(metadata, "mapping_set_title", report) or report.set_uri
     if report.set_version and version_key(report.set_version) is None:
@@ -488,14 +522,12 @@ def _check_set(metadata: dict[str, Any], report: ValidationReport) -> None:
 
     license_iri = metadata.get("license")
     if license_iri not in (None, ""):
-        match = find_license(str(license_iri))
-        if match:
-            report.license_id = match.pk
-        else:
+        report.license_id = find_license(str(license_iri))
+        if report.license_id is None:
             report.warning(
                 "unknown_license",
                 f"License {license_iri!r} is not in the registry, so the set "
-                "won't be linked to a License",
+                "won't be linked to a License; the IRI is kept in extra_metadata",
                 column="license",
             )
 
@@ -758,13 +790,14 @@ def in_flight_import(set_uri: str, set_version: str) -> ImportJob | None:
     )
 
 
-def _local_scan_report_exists(set_uri: str) -> bool:
-    last = set_uri.rstrip("/").rsplit("/", 1)[-1]
+def carrot_set_uuid(set_uri: str) -> uuid.UUID | None:
+    """The uuid of a Carrot set id ({CARROT_MAPPING_SET_NAMESPACE}{uuid})."""
+    if not set_uri.startswith(CARROT_MAPPING_SET_NAMESPACE):
+        return None
     try:
-        scan_report_uuid = uuid.UUID(last)
+        return uuid.UUID(set_uri[len(CARROT_MAPPING_SET_NAMESPACE) :].strip("/"))
     except ValueError:
-        return False
-    return ScanReport.objects.filter(uuid=scan_report_uuid).exists()
+        return None
 
 
 def check_set_identity(report: ValidationReport, user) -> None:
@@ -772,17 +805,32 @@ def check_set_identity(report: ValidationReport, user) -> None:
     set_uri, set_version = report.set_uri, report.set_version
     if not set_uri or not set_version:
         return
-    if _local_scan_report_exists(set_uri):
+    set_uuid = carrot_set_uuid(set_uri)
+    if set_uuid and ScanReport.objects.filter(uuid=set_uuid).exists():
         report.error(
             "set_uri_reserved",
             f"Mapping set {set_uri} belongs to a scan report on this Carrot "
             "instance; publish it from the scan report instead of uploading it",
             column="mapping_set_id",
         )
-    first_version = (
-        MappingSet.objects.filter(set_uri=set_uri).order_by("created_at", "id").first()
-    )
-    if first_version is not None and first_version.publisher_id != user.pk:
+    elif (
+        set_uuid
+        and MappingSetSeries.objects.filter(pk=set_uuid)
+        .exclude(set_uri=set_uri)
+        .exists()
+    ):
+        # A Carrot set id's series takes its uuid as its id, so it can't reuse
+        # the id another set already has.
+        report.error(
+            "set_uri_reserved",
+            f"Mapping set {set_uri} uses the id of another mapping set; use "
+            "another mapping_set_id",
+            column="mapping_set_id",
+        )
+    series = MappingSetSeries.objects.filter(set_uri=set_uri).first()
+    if series is not None and (
+        series.publisher_id is None or series.publisher_id != user.pk
+    ):
         report.error(
             "set_uri_not_owned",
             f"Mapping set {set_uri} already exists and was published by another "
@@ -790,7 +838,9 @@ def check_set_identity(report: ValidationReport, user) -> None:
             column="mapping_set_id",
         )
     existing = list(
-        MappingSet.objects.filter(set_uri=set_uri).values_list("set_version", flat=True)
+        MappingSet.objects.filter(series__set_uri=set_uri).values_list(
+            "set_version", flat=True
+        )
     )
     error = set_version_error(set_version, existing)
     if error:

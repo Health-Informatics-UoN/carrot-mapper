@@ -39,6 +39,7 @@ from registry.filters import (
     version_order,
 )
 from registry.models import (
+    ImportJob,
     License,
     Mapping,
     MappingJustification,

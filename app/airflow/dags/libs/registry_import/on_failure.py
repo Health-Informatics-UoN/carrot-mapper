@@ -54,8 +54,9 @@ def update_import_job_on_failure(context) -> None:
 
     The load commits before finalize runs, so a job can fail with its set still
     in the tables. That set was never finished: it is deleted, in the same
-    transaction, so it doesn't hold the set_version or decide the set_uri's owner
-    and the import can be submitted again. finalize marks a job SUCCEEDED in the
+    transaction, so it doesn't hold the set_version and the import can be
+    submitted again. So is its series if this leaves it with no versions, so it
+    doesn't keep owning the set_uri. finalize marks a job SUCCEEDED in the
     transaction that sets the final status, so a finished set is never removed.
     """
     try:
@@ -76,7 +77,12 @@ def update_import_job_on_failure(context) -> None:
                 if updated:
                     params = {"import_job_id": import_job_id}
                     cursor.execute(queries.delete_job_mappings_query, params)
-                    cursor.execute(queries.delete_job_mapping_sets_query, params)
+                    cursor.execute(queries.delete_failed_job_mapping_sets_query, params)
+                    for series_id, set_uri in cursor.fetchall():
+                        cursor.execute(queries.lock_set_uri_query, {"set_uri": set_uri})
+                        cursor.execute(
+                            queries.delete_empty_series_query, {"series_id": series_id}
+                        )
             conn.commit()
 
         if updated:

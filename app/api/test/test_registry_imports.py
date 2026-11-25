@@ -3,7 +3,14 @@ from datetime import timedelta
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.utils import timezone
-from registry.models import ImportJob, ImportJobStatus, MappingSet, Origin, Status
+from registry.models import (
+    ImportJob,
+    ImportJobStatus,
+    MappingSet,
+    MappingSetSeries,
+    Origin,
+    Status,
+)
 from rest_framework.test import APIClient
 
 BASE = "/api/v2/registry/imports/"
@@ -25,9 +32,12 @@ class TestImportJobs(TestCase):
         )
 
     def add_set(self, job):
+        series, _ = MappingSetSeries.objects.get_or_create(
+            set_uri="https://x/set", defaults={"publisher": job.submitted_by}
+        )
         return MappingSet.objects.create(
-            set_uri="https://x/set",
-            set_version="1",
+            series=series,
+            set_version="1.0.0",
             title="A set",
             origin_id=Origin.SSSOM_UPLOAD,
             status_id=Status.DRAFT,

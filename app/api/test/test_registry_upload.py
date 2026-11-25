@@ -11,6 +11,7 @@ from registry.models import (
     ImportJobStatus,
     License,
     MappingSet,
+    MappingSetSeries,
     Origin,
     Prefix,
     Status,
@@ -76,8 +77,11 @@ class UploadTestBase(TestCase):
         self.addCleanup(worker.stop)
 
     def make_set(self, publisher=None, version="1.0.0", **kwargs):
+        series, _ = MappingSetSeries.objects.get_or_create(
+            set_uri="https://example.org/sets/a", defaults={"publisher": publisher}
+        )
         return MappingSet.objects.create(
-            set_uri="https://example.org/sets/a",
+            series=series,
             set_version=version,
             title="Existing",
             origin_id=Origin.SSSOM_UPLOAD,
@@ -149,7 +153,6 @@ class TestValidate(UploadTestBase):
     def test_metadata_problems(self):
         self.assert_rejected(b"#a: [\nsubject_id\n", "invalid_metadata")
         self.assert_rejected(b"#- a\nsubject_id\n", "invalid_metadata")
-        self.assert_rejected(sssom(set_uri=None), "missing_metadata_slot")
         self.assert_rejected(sssom(version=None), "missing_metadata_slot")
         self.assert_rejected(sssom(license_iri=None), "missing_metadata_slot")
         self.assert_rejected(sssom(set_uri="https://x/" + "a" * 500), "value_too_long")
@@ -333,7 +336,7 @@ class TestUpload(UploadTestBase):
                 "origin": Origin.SSSOM_UPLOAD,
                 "user_id": self.user.pk,
                 "file_key": job.file_key,
-                "overrides": {"status": Status.PUBLISHED, "license": "CC-BY-4.0"},
+                "overrides": {"status": Status.PUBLISHED},
             }
         )
 
@@ -355,7 +358,38 @@ class TestUpload(UploadTestBase):
                 self.assertIn(field, r.data)
         self.assertFalse(ImportJob.objects.exists())
 
-    def test_unknown_license_is_not_sent_to_the_dag(self):
+    def test_missing_set_id_is_a_warning(self):
+        r = self.validate(sssom(set_uri=None))
+        self.assertTrue(r.data["valid"], r.data["issues"])
+        self.assertEqual(r.data["set_uri"], "")
+        self.assertIn("mapping_set_id_not_in_file", self.codes(r, "warning"))
+
+    def test_uploads_without_a_set_id_are_separate_sets(self):
+        first = self.upload(sssom(set_uri=None))
+        self.assertEqual(first.status_code, 202, first.data)
+        repeat = self.upload(sssom(set_uri=None))
+        self.assertEqual(repeat.data["import_job_id"], first.data["import_job_id"])
+        other = self.upload(sssom(set_uri=None, version='"2.0.0"'))
+        self.assertEqual(other.status_code, 202)
+        self.assertNotEqual(other.data["import_job_id"], first.data["import_job_id"])
+        self.client.force_authenticate(self.other)
+        self.assertEqual(self.upload(sssom(set_uri=None)).status_code, 202)
+        self.assertEqual(ImportJob.objects.count(), 3)
+
+    def test_set_without_a_publisher_is_not_owned(self):
+        self.make_set(publisher=None, version="0.9.0")
+        r = self.upload()
+        self.assertEqual(r.status_code, 409)
+        self.assertIn("set_uri_not_owned", self.codes(r))
+
+    def test_carrot_set_id_cannot_take_another_sets_id(self):
+        series = MappingSetSeries.objects.create(set_uri="https://example.org/sets/x")
+        uri = f"https://carrot.ac.uk/registry/mapping-sets/{series.pk}"
+        r = self.upload(sssom(set_uri=uri))
+        self.assertEqual(r.status_code, 409)
+        self.assertIn("set_uri_reserved", self.codes(r))
+
+    def test_license_is_left_to_the_dag(self):
         r = self.upload(sssom(license_iri="https://example.org/my-licence"))
         self.assertEqual(r.status_code, 202)
         self.assertIn("unknown_license", self.codes(r, "warning"))

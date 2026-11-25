@@ -267,10 +267,32 @@ def _add_in_flight_conflict(report: ValidationReport, job: ImportJob) -> None:
     )
 
 
+def _in_flight_upload_of(report: ValidationReport, user) -> ImportJob | None:
+    """The user's unfinished upload of this exact file, if any."""
+    return (
+        ImportJob.objects.filter(
+            submitted_by=user,
+            origin_id=Origin.SSSOM_UPLOAD,
+            params__sha256=report.sha256,
+            status__in=[ImportJobStatus.PENDING, ImportJobStatus.RUNNING],
+        )
+        .order_by("created_at")
+        .first()
+    )
+
+
 def dry_run_upload(upload: UploadedFile, user: User) -> ValidationReport:
     """Every check POST imports/ makes, without storing or starting anything."""
     report = validate_upload(upload)
-    if report.has_content_errors or not report.set_uri or not report.set_version:
+    if report.has_content_errors or not report.set_version:
+        return report
+    if not report.set_uri:
+        in_flight = _in_flight_upload_of(report, user)
+        if in_flight is not None:
+            report.warning(
+                "import_in_progress",
+                f"This file is already being imported (job {in_flight.id})",
+            )
         return report
     in_flight = in_flight_import(report.set_uri, report.set_version)
     if in_flight is None:
@@ -328,11 +350,9 @@ def submit_upload(
 
     job_id = uuid.uuid4()
     file_key = f"imports/{job_id}/original.sssom.tsv"
-    # The License is worked out from the file's own license IRI: the DAG can
-    # only link a set to a License named in its run conf.
+    # Only the status: the DAG takes everything else, the License included,
+    # from the file, which must agree with any request override.
     overrides: dict[str, Any] = {"status": requested_status}
-    if report.license_id:
-        overrides["license"] = report.license_id
     conf = {
         "origin": Origin.SSSOM_UPLOAD,
         "user_id": user.pk,
@@ -341,13 +361,20 @@ def submit_upload(
     }
 
     with transaction.atomic():
-        _lock_set_identity(report.set_uri)
-        in_flight = in_flight_import(report.set_uri, report.set_version)
+        if report.set_uri:
+            _lock_set_identity(report.set_uri)
+            in_flight = in_flight_import(report.set_uri, report.set_version)
+        else:
+            # Without a mapping_set_id each upload is a new set, so only a
+            # repeat of this file is the same import.
+            _lock_set_identity(f"file:{user.pk}:{report.sha256}")
+            in_flight = _in_flight_upload_of(report, user)
         if in_flight is not None:
             if _is_same_upload(in_flight, report, user, requested_status):
                 return in_flight, report, False
-            _add_in_flight_conflict(report, in_flight)
-            raise UploadRejected(report, status.HTTP_409_CONFLICT)
+            if report.set_uri:
+                _add_in_flight_conflict(report, in_flight)
+                raise UploadRejected(report, status.HTTP_409_CONFLICT)
         check_set_identity(report, user)
         if not report.valid:
             raise UploadRejected(report, status.HTTP_409_CONFLICT)
