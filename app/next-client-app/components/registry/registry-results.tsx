@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Search } from "lucide-react";
 import { DataTable } from "@/components/data-table";
 import { Button } from "@/components/ui/button";
-import type { Mapping, MappingSet, Sort, View } from "@/types/mapping-registry";
+import type { Mapping, MappingSet, View } from "@/types/mapping-registry";
 import { getMappingColumns } from "./mapping-columns";
 import { getMappingSetColumns } from "./mapping-set-columns";
 import { RegistryResultsLoading } from "./registry-results-loading";
@@ -18,8 +18,6 @@ type RegistryResultsProps = {
   mappingSets: MappingSet[];
   /** Total matching records across all pages, for the active view. */
   total: number;
-  sort: Sort;
-  onSortChange: (sort: Sort) => void;
   onBrowse: (view: View) => void;
 };
 
@@ -30,18 +28,10 @@ export function RegistryResults({
   mappings,
   mappingSets,
   total,
-  sort,
-  onSortChange,
   onBrowse,
 }: RegistryResultsProps) {
-  const mappingColumns = useMemo(
-    () => getMappingColumns({ sort, onSort: onSortChange }),
-    [sort, onSortChange],
-  );
-  const mappingSetColumns = useMemo(
-    () => getMappingSetColumns({ sort, onSort: onSortChange }),
-    [sort, onSortChange],
-  );
+  const mappingColumns = useMemo(() => getMappingColumns(), []);
+  const mappingSetColumns = useMemo(() => getMappingSetColumns(), []);
 
   const trimmedQuery = query.trim();
   const isMappings = view === "mappings";

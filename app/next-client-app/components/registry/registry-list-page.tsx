@@ -43,8 +43,6 @@ export function RegistryListPage({ view }: { view: View }) {
         mappings={registry.mappings}
         mappingSets={registry.mappingSets}
         total={registry.total}
-        sort={registry.sort}
-        onSortChange={registry.setSort}
         onBrowse={(nextView) => {
           router.push(
             nextView === "mappings"

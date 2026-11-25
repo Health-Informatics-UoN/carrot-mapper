@@ -49,7 +49,7 @@ export function useRegistrySearch(view: View = "mappings") {
     ? rawPageSize
     : DEFAULT_PAGE_SIZE;
 
-  const rawSort = searchParams.get("sort");
+  const rawSort = searchParams.get("ordering");
   const sortKeys =
     view === "mappings"
       ? new Set([
@@ -69,9 +69,9 @@ export function useRegistrySearch(view: View = "mappings") {
       : new Set(["title", "publisher", "version", "license", "publishedAt"]);
   let sort: Sort = null;
   if (rawSort) {
-    const match = rawSort.match(/^(.+)\.(asc|desc)$/);
-    if (match && sortKeys.has(match[1]))
-      sort = { key: match[1], direction: match[2] as "asc" | "desc" };
+    const direction = rawSort.startsWith("-") ? "desc" : "asc";
+    const key = direction === "desc" ? rawSort.slice(1) : rawSort;
+    if (sortKeys.has(key)) sort = { key, direction };
   }
 
   const [inputQuery, setInputQuery] = useState(rawQuery);
@@ -171,20 +171,12 @@ export function useRegistrySearch(view: View = "mappings") {
   function changeQuery(nextQuery: string) {
     setInputQuery(nextQuery);
   }
-  function setSort(nextSort: Sort) {
-    pushUrl({
-      sort: nextSort ? `${nextSort.key}.${nextSort.direction}` : null,
-      p: 1,
-    });
-  }
-
   return {
     view,
     field,
     query: inputQuery,
     page,
     pageSize,
-    sort,
     isLoading,
     mappings,
     mappingSets,
@@ -192,7 +184,6 @@ export function useRegistrySearch(view: View = "mappings") {
     stats,
     changeField,
     changeQuery,
-    setSort,
     setForMapping,
   };
 }

@@ -1,31 +1,21 @@
 import Link from "next/link";
 import type { ColumnDef, HeaderContext } from "@tanstack/react-table";
 import { ChevronRight } from "lucide-react";
+import { DataTableColumnHeader } from "@/components/data-table/DataTableColumnHeader";
 import { Button } from "@/components/ui/button";
-import type { MappingSet, Sort } from "@/types/mapping-registry";
-import { RegistrySortHeader } from "./registry-sort-header";
+import type { MappingSet } from "@/types/mapping-registry";
 
-type MappingSetColumnsOptions = {
-  sort: Sort;
-  onSort: (sort: Sort) => void;
-};
-
-export function getMappingSetColumns({
-  sort,
-  onSort,
-}: MappingSetColumnsOptions): ColumnDef<MappingSet>[] {
+export function getMappingSetColumns(): ColumnDef<MappingSet>[] {
   const sortableHeader = (
     title: string,
-    sortKey: keyof MappingSet,
+    sortName: string,
   ): ColumnDef<MappingSet>["header"] =>
     function SortableHeader({ column }: HeaderContext<MappingSet, unknown>) {
       return (
-        <RegistrySortHeader
+        <DataTableColumnHeader
           column={column}
           title={title}
-          sortKey={sortKey}
-          sort={sort}
-          onSort={onSort}
+          sortName={sortName}
         />
       );
     };
@@ -66,10 +56,12 @@ export function getMappingSetColumns({
     },
     {
       id: "details",
-      header: () => (
-        <div className="text-right text-sm font-semibold sm:text-base">
-          Details
-        </div>
+      header: ({ column }) => (
+        <DataTableColumnHeader
+          column={column}
+          title="Details"
+          className="flex h-8 items-center justify-end text-sm font-medium"
+        />
       ),
       enableHiding: false,
       enableSorting: false,
