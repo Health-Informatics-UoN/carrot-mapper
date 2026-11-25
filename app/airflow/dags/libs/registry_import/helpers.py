@@ -21,7 +21,7 @@ CARROT_DIRECT_PUBLISH = "CARROT_DIRECT_PUBLISH"
 SSSOM_UPLOAD = "SSSOM_UPLOAD"
 
 # Where notifications link to in the client app.
-MAPPING_SET_URL = "/registry/mapping-sets/{mapping_set_id}"
+MAPPING_SET_URL = "/registry/mapping-sets/{series_id}/versions/{mapping_set_id}"
 IMPORT_JOB_URL = "/registry/imports/{import_job_id}"
 
 

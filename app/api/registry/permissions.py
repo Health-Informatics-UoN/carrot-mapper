@@ -14,7 +14,7 @@ sets, so search results never point at withdrawn or draft content.
 
 from django.db.models import Exists, OuterRef, Q, QuerySet
 
-from registry.models import ImportJob, Mapping, MappingSet, Status, Term
+from registry.models import Mapping, MappingSet, MappingSetSeries, Status, Term
 
 
 def is_registry_admin(user) -> bool:
@@ -33,14 +33,11 @@ def visible_mapping_sets(user) -> QuerySet[MappingSet]:
     return qs.filter(visible)
 
 
-def visible_import_jobs(user) -> QuerySet[ImportJob]:
-    """The import jobs ``user`` may read: their own, or any for registry admins."""
-    qs = ImportJob.objects.all()
-    if is_registry_admin(user):
-        return qs
-    if user and user.is_authenticated:
-        return qs.filter(submitted_by=user)
-    return qs.none()
+def visible_series(user) -> QuerySet[MappingSetSeries]:
+    """Every series with at least one version ``user`` may see."""
+    return MappingSetSeries.objects.filter(
+        Exists(visible_mapping_sets(user).filter(series=OuterRef("pk")))
+    )
 
 
 def published_mappings() -> QuerySet[Mapping]:

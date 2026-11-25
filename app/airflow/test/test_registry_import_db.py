@@ -32,7 +32,13 @@ from libs.registry_import import (
     queries,
     validate_params,
 )
-from libs.registry_import.full_validate_and_load_checks import Vocabulary, build_import
+from libs.registry_import.full_validate_and_load_checks import (
+    CARROT_MAPPING_SET_NAMESPACE,
+    LicenseRow,
+    Vocabulary,
+    build_import,
+    match_license,
+)
 from libs.registry_import.full_validate_and_load_db import LoadError, load_plan
 from libs.registry_import.full_validate_and_load_parse import parse_sssom
 
@@ -132,6 +138,20 @@ class Cleanup:
                     queries.delete_job_mapping_sets_query, {"import_job_id": job}
                 )
                 cursor.execute("DELETE FROM registry_importjob WHERE id = %s", (job,))
+            # The series the tests' users and scan reports created, now empty
+            cursor.execute(
+                """
+                DELETE FROM registry_mappingsetseries s
+                WHERE (s.publisher_id = ANY(%s) OR s.source_scan_report_id = ANY(%s))
+                    AND NOT EXISTS (
+                        SELECT 1 FROM registry_mappingset ms WHERE ms.series_id = s.id
+                    )
+                """,
+                (
+                    self.users,
+                    [i for t, i in self.rows if t == "mapping_scanreport"],
+                ),
+            )
             cursor.execute(
                 "DELETE FROM registry_term WHERE canonical_iri = ANY(%s)",
                 (list(self.terms),),
@@ -263,10 +283,12 @@ def plan_for(conn, text: str):
         cursor.execute(queries.get_justifications_query)
         justifications = {r[0] for r in cursor.fetchall()}
     conn.rollback()
+    parsed = parse_sssom(text)
     return build_import(
-        parse_sssom(text),
+        parsed,
         Vocabulary(predicates, justifications),
         license_id="CC-BY-4.0",
+        file_license_id=file_license_id(conn, parsed),
     )
 
 
@@ -280,11 +302,25 @@ def registry_plan(conn, text: str):
         cursor.execute(queries.get_prefixes_query)
         prefixes = dict(cursor.fetchall())
     conn.rollback()
+    parsed = parse_sssom(text)
     return build_import(
-        parse_sssom(text),
+        parsed,
         Vocabulary(predicates, justifications, prefixes),
         license_id="CC-BY-4.0",
+        file_license_id=file_license_id(conn, parsed),
     )
+
+
+def file_license_id(conn, parsed):
+    """The License the file's license IRI stands for, as the DAG matches it."""
+    with conn.cursor() as cursor:
+        cursor.execute(queries.get_license_iris_query)
+        licenses = [
+            LicenseRow(id, iri, tuple(see_also or ()), deprecated)
+            for id, iri, see_also, deprecated in cursor.fetchall()
+        ]
+    conn.rollback()
+    return match_license(str(parsed.metadata.get("license") or ""), licenses)
 
 
 def fetch(conn, query, *params):
@@ -561,7 +597,7 @@ def test_another_users_upload_cannot_add_a_version(conn, cleanup, user):
     subject, obj = unique_prefixes(cleanup)
     load_plan(
         conn,
-        plan_for(conn, sssom(subject, obj, "1.0")),
+        plan_for(conn, sssom(subject, obj, "1.0.0")),
         import_job_id=make_job(conn, cleanup, user),
         origin="SSSOM_UPLOAD",
         file_key="a",
@@ -575,7 +611,7 @@ def test_another_users_upload_cannot_add_a_version(conn, cleanup, user):
     with pytest.raises(LoadError, match="published by another user"):
         load_plan(
             conn,
-            plan_for(conn, sssom(subject, obj, "2.0")),
+            plan_for(conn, sssom(subject, obj, "2.0.0")),
             import_job_id=job,
             origin="SSSOM_UPLOAD",
             file_key="b",
@@ -590,7 +626,7 @@ def test_direct_publish_cannot_add_to_another_scan_reports_set(conn, cleanup, us
     )
     load_plan(
         conn,
-        plan_for(conn, sssom(subject, obj, "1.0")),
+        plan_for(conn, sssom(subject, obj, "1.0.0")),
         import_job_id=make_job(conn, cleanup, user, origin="CARROT_DIRECT_PUBLISH"),
         origin="CARROT_DIRECT_PUBLISH",
         file_key="a",
@@ -600,7 +636,7 @@ def test_direct_publish_cannot_add_to_another_scan_reports_set(conn, cleanup, us
     with pytest.raises(LoadError, match="not published from this scan report"):
         load_plan(
             conn,
-            plan_for(conn, sssom(subject, obj, "2.0")),
+            plan_for(conn, sssom(subject, obj, "2.0.0")),
             import_job_id=make_job(conn, cleanup, user, origin="CARROT_DIRECT_PUBLISH"),
             origin="CARROT_DIRECT_PUBLISH",
             file_key="b",
@@ -609,12 +645,86 @@ def test_direct_publish_cannot_add_to_another_scan_reports_set(conn, cleanup, us
     # The same scan report may
     load_plan(
         conn,
-        plan_for(conn, sssom(subject, obj, "2.0")),
+        plan_for(conn, sssom(subject, obj, "2.0.0")),
         import_job_id=make_job(conn, cleanup, user, origin="CARROT_DIRECT_PUBLISH"),
         origin="CARROT_DIRECT_PUBLISH",
         file_key="c",
         scan_report_id=first_sr,
     )
+
+
+def test_versions_share_one_series_owned_by_the_first_import(conn, cleanup, user):
+    subject, obj = unique_prefixes(cleanup)
+    set_uri = f"{CARROT_MAPPING_SET_NAMESPACE}{uuid.uuid4()}"
+    jobs = []
+    for version in ("1.0.0", "1.1.0"):
+        jobs.append(make_job(conn, cleanup, user))
+        load_plan(
+            conn,
+            plan_for(conn, sssom(subject, obj, version, set_uri=set_uri)),
+            import_job_id=jobs[-1],
+            origin="SSSOM_UPLOAD",
+            file_key=version,
+        )
+    # A Carrot set id: the series id is its uuid, so the set_uri is its page.
+    assert fetch(
+        conn,
+        "SELECT id::text, publisher_id, source_scan_report_id "
+        "FROM registry_mappingsetseries WHERE set_uri = %s",
+        set_uri,
+    ) == [(set_uri.rsplit("/", 1)[-1], user, None)]
+    assert fetch(
+        conn,
+        "SELECT count(DISTINCT series_id), count(*) FROM registry_mappingset "
+        "WHERE import_job_id = ANY(%s)",
+        jobs,
+    ) == [(1, 2)]
+
+
+def test_reloading_a_job_keeps_its_series(conn, cleanup, user):
+    subject, obj = unique_prefixes(cleanup)
+    job = make_job(conn, cleanup, user)
+    for _ in range(2):
+        load_plan(
+            conn,
+            plan_for(conn, sssom(subject, obj)),
+            import_job_id=job,
+            origin="SSSOM_UPLOAD",
+            file_key="k",
+        )
+    assert fetch(
+        conn,
+        "SELECT count(*) FROM registry_mappingsetseries WHERE set_uri = %s",
+        f"https://example.org/sets/{subject.lower()}",
+    ) == [(1,)]
+
+
+def test_a_failed_load_leaves_no_series(conn, cleanup, user):
+    subject, obj = unique_prefixes(cleanup)
+    set_uri = f"https://example.org/sets/{subject.lower()}"
+    plan = plan_for(conn, sssom(subject, obj, set_uri=set_uri))
+    # fails after the series insert, in the same transaction
+    plan.prefixes[subject] = "http://example.org/changed/"
+    with conn.cursor() as cursor:
+        cursor.execute(
+            "INSERT INTO registry_prefix (prefix, namespace, created_at) "
+            "VALUES (%s, %s, NOW())",
+            (subject, f"http://example.org/{subject}/"),
+        )
+    conn.commit()
+    with pytest.raises(LoadError):
+        load_plan(
+            conn,
+            plan,
+            import_job_id=make_job(conn, cleanup, user),
+            origin="SSSOM_UPLOAD",
+            file_key="k",
+        )
+    assert fetch(
+        conn,
+        "SELECT count(*) FROM registry_mappingsetseries WHERE set_uri = %s",
+        set_uri,
+    ) == [(0,)]
 
 
 # ---------------------------------------------------------------------------
@@ -723,10 +833,10 @@ def test_dag_imports_an_upload(conn, cleanup, user, storage):
     ) == [("CC-BY-4.0",)]
     assert row["file_key"] == key and row["dag_run_id"].startswith("manual__")
     assert row["stats"]["mappings_created"] == 3
-    [(set_id, status, published)] = fetch(
+    [(set_id, series_id, status, published)] = fetch(
         conn,
-        "SELECT id::text, status_id, published_at IS NOT NULL FROM registry_mappingset "
-        "WHERE import_job_id = %s",
+        "SELECT id::text, series_id::text, status_id, published_at IS NOT NULL "
+        "FROM registry_mappingset WHERE import_job_id = %s",
         job,
     )
     assert (status, published) == ("PUBLISHED", True)
@@ -734,9 +844,79 @@ def test_dag_imports_an_upload(conn, cleanup, user, storage):
         (
             "registry.import_complete",
             "'Test set' was published to the mappings registry",
-            f"/registry/mapping-sets/{set_id}",
+            f"/registry/mapping-sets/{series_id}/versions/{set_id}",
         )
     ]
+
+
+def test_dag_rejects_an_upload_whose_license_is_not_the_requests(
+    conn, cleanup, user, storage
+):
+    subject, obj = unique_prefixes(cleanup)
+    job = make_job(conn, cleanup, user)
+    key = helpers.file_key_for(job)
+    other = sssom(subject, obj).replace(CC_BY, "https://example.org/my-licence")
+    storage.blobs[("registry-sssom", key)] = other.encode()
+
+    with pytest.raises(AirflowFailException, match="failed validation"):
+        run_dag(
+            {
+                "import_job_id": job,
+                "origin": "SSSOM_UPLOAD",
+                "user_id": user,
+                "file_key": key,
+                "overrides": {"license": "CC-BY-4.0"},
+            }
+        )
+
+    row = job_row(conn, job)
+    assert row["status"] == "FAILED"
+    assert {i["code"] for i in row["issues"] if i["level"] == "error"} == {
+        "license_mismatch"
+    }
+    assert fetch(
+        conn, "SELECT count(*) FROM registry_mappingset WHERE import_job_id = %s", job
+    ) == [(0,)]
+
+
+def test_dag_rejects_an_upload_of_a_local_scan_reports_set(
+    conn, cleanup, user, storage
+):
+    # e.g. the scan report's own SSSOM export: it must come in by direct publish
+    scan_report_uuid = str(uuid.uuid4())
+    with conn.cursor() as cursor:
+        sr = insert(
+            cursor, "mapping_scanreport", name="SR", dataset="SR", uuid=scan_report_uuid
+        )
+    conn.commit()
+    cleanup.rows.append(("mapping_scanreport", sr))
+    subject, obj = unique_prefixes(cleanup)
+    job = make_job(conn, cleanup, user)
+    key = helpers.file_key_for(job)
+    set_uri = f"{CARROT_MAPPING_SET_NAMESPACE}{scan_report_uuid}"
+    storage.blobs[("registry-sssom", key)] = sssom(
+        subject, obj, set_uri=set_uri
+    ).encode()
+
+    with pytest.raises(AirflowFailException, match="failed validation"):
+        run_dag(
+            {
+                "import_job_id": job,
+                "origin": "SSSOM_UPLOAD",
+                "user_id": user,
+                "file_key": key,
+                "overrides": {"license": "CC-BY-4.0"},
+            }
+        )
+
+    row = job_row(conn, job)
+    assert row["status"] == "FAILED"
+    assert {i["code"] for i in row["issues"] if i["level"] == "error"} == {
+        "set_uri_reserved"
+    }
+    assert fetch(
+        conn, "SELECT count(*) FROM registry_mappingset WHERE import_job_id = %s", job
+    ) == [(0,)]
 
 
 def test_dag_records_validation_failure_once(conn, cleanup, user, storage):

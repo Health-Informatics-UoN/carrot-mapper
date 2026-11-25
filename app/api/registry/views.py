@@ -4,7 +4,15 @@ from importlib.metadata import version
 from api.mixins import ScanReportPermissionMixin
 from api.paginations import CustomPagination
 from django.conf import settings
-from django.db.models import Count, IntegerField, OuterRef, Q, Subquery
+from django.db.models import (
+    Count,
+    IntegerField,
+    OuterRef,
+    Prefetch,
+    Q,
+    QuerySet,
+    Subquery,
+)
 from django.db.models.functions import Coalesce
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
@@ -28,12 +36,13 @@ from registry.filters import (
     MappingSetFilter,
     RelevanceOrderingFilter,
     TermFilter,
+    version_order,
 )
 from registry.models import (
-    ImportJob,
     License,
     Mapping,
     MappingJustification,
+    MappingSet,
     Predicate,
 )
 from registry.permissions import (
@@ -41,6 +50,7 @@ from registry.permissions import (
     published_terms,
     visible_import_jobs,
     visible_mapping_sets,
+    visible_series,
 )
 from registry.serializers import (
     ImportJobSerializer,
@@ -49,6 +59,7 @@ from registry.serializers import (
     MappingSerializer,
     MappingSetDetailSerializer,
     MappingSetListSerializer,
+    MappingSetSeriesSerializer,
     PredicateSerializer,
     RegistryImportAcceptedSerializer,
     RegistryPublishVersionsSerializer,
@@ -285,20 +296,53 @@ class MappingSetListView(PublicReadMixin, ListAPIView):
     ordering = ["-published_at", "-created_at"]
 
     def get_queryset(self):
-        return visible_mapping_sets(self.request.user).annotate(
-            mapping_count=_count_mappings()
+        return (
+            visible_mapping_sets(self.request.user)
+            .select_related("series")
+            .annotate(mapping_count=_count_mappings())
+        )
+
+
+def visible_versions_of_series(view) -> QuerySet[MappingSet]:
+    """The versions ``view``'s user may see of the series in its URL."""
+    if getattr(view, "swagger_fake_view", False):
+        return MappingSet.objects.none()
+    return visible_mapping_sets(view.request.user).filter(
+        series_id=view.kwargs["series_pk"]
+    )
+
+
+class MappingSetSeriesDetailView(PublicReadMixin, RetrieveAPIView):
+    """
+    A mapping set: its set_uri and the versions the caller may see, highest
+    version first. 404 if the caller may see none of its versions.
+    """
+
+    serializer_class = MappingSetSeriesSerializer
+    lookup_url_kwarg = "series_pk"
+
+    def get_queryset(self):
+        user = self.request.user
+        return visible_series(user).prefetch_related(
+            Prefetch(
+                "versions",
+                queryset=visible_mapping_sets(user)
+                .select_related("series")
+                .order_by(version_order().desc(), "-created_at", "-pk"),
+                to_attr="visible_versions",
+            )
         )
 
 
 class MappingSetDetailView(PublicReadMixin, RetrieveAPIView):
-    """Mapping set metadata, curie_map, counts and import provenance."""
+    """One version of a mapping set: metadata, curie_map, counts and provenance."""
 
     serializer_class = MappingSetDetailSerializer
 
     def get_queryset(self):
         return (
-            visible_mapping_sets(self.request.user)
-            .select_related("import_job")
+            visible_versions_of_series(self)
+            .select_related("import_job", "series")
             .annotate(
                 mapping_count=_count_mappings(),
                 subject_count=_count_mappings("subject", distinct=True),
@@ -318,7 +362,7 @@ class MappingSetDownloadView(PublicReadMixin, GenericAPIView):
     """
 
     def get_queryset(self):
-        return visible_mapping_sets(self.request.user)
+        return visible_versions_of_series(self)
 
     @extend_schema(
         responses={
@@ -365,7 +409,9 @@ class MappingQuerysetMixin:
 
     @staticmethod
     def with_related(qs):
-        return qs.select_related("subject", "object", "mapping_set")
+        return qs.select_related(
+            "subject", "object", "mapping_set", "mapping_set__series"
+        )
 
 
 class MappingListView(PublicReadMixin, MappingQuerysetMixin, ListAPIView):
@@ -388,7 +434,8 @@ class MappingSetMappingsView(PublicReadMixin, MappingQuerysetMixin, ListAPIView)
         if getattr(self, "swagger_fake_view", False):
             return Mapping.objects.none()
         mapping_set = get_object_or_404(
-            visible_mapping_sets(self.request.user), pk=self.kwargs["pk"]
+            visible_versions_of_series(self),
+            pk=self.kwargs["pk"],
         )
         return self.with_related(Mapping.objects.filter(mapping_set=mapping_set))
 

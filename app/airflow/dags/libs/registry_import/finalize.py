@@ -42,11 +42,11 @@ def finalize(**kwargs) -> None:
         except Exception:
             conn.rollback()
             raise
-    mapping_set_id, title = row
+    mapping_set_id, series_id, title = row
     done = "published to" if status == PUBLISHED else "saved as a draft in"
     create_import_job_notification(
         import_job_id,
         NotificationType.REGISTRY_IMPORT_COMPLETE,
         f"'{title}' was {done} the mappings registry",
-        MAPPING_SET_URL.format(mapping_set_id=mapping_set_id),
+        MAPPING_SET_URL.format(series_id=series_id, mapping_set_id=mapping_set_id),
     )
