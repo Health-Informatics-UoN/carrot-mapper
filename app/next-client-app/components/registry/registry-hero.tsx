@@ -17,7 +17,7 @@ export function RegistryHero({ compact }: RegistryHeroProps) {
       </h1>
       {!compact && (
         <p className="mt-2 text-sm text-muted-foreground sm:text-base">
-          Explore how researchers map source terms to OMOP concepts.
+          Explore and reuse published mappings from source terms to OMOP concepts.
         </p>
       )}
     </div>
