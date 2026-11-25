@@ -23,10 +23,12 @@ from libs.registry_import import queries
 from libs.registry_import.full_validate_and_load_checks import (
     ImportPlan,
     IssueLog,
+    SetOwner,
     SetRecord,
     Vocabulary,
     build_import,
-    check_set_version_is_new,
+    check_set_version_is_newer,
+    set_uri_uuid,
 )
 from libs.registry_import.full_validate_and_load_db import LoadError, load_plan
 from libs.registry_import.full_validate_and_load_parse import decode, parse_sssom
@@ -42,7 +44,7 @@ def full_validate_and_load(**kwargs) -> None:
     file_key = job_file_key(import_job_id)
 
     plan = _read_and_check(params, file_key)
-    check_set_version_is_new(plan, _conflicting_set_id(plan, import_job_id))
+    check_set_version_is_newer(plan, _existing_versions(plan, import_job_id))
     pg_hook.run(
         queries.set_import_job_issues_query,
         parameters={
@@ -78,6 +80,7 @@ def _read_and_check(params: dict[str, Any], file_key: str) -> ImportPlan:
         justifications={
             r[0] for r in pg_hook.get_records(queries.get_justifications_query)
         },
+        prefixes=dict(pg_hook.get_records(queries.get_prefixes_query)),
     )
 
     local_path: Path = download_blob_to_tmp(REGISTRY_SSSOM_CONTAINER, file_key)
@@ -105,17 +108,37 @@ def _read_and_check(params: dict[str, Any], file_key: str) -> ImportPlan:
     )
 
 
-def _conflicting_set_id(plan: ImportPlan, import_job_id: str) -> str | None:
-    """A set from another import with this file's set_uri + version, if any."""
+def _existing_versions(plan: ImportPlan, import_job_id: str) -> list[str]:
+    """Versions of this file's set_uri from other imports."""
     record = plan.mapping_set
-    if not (record.set_uri and record.set_version):
+    if not record.set_uri:
+        return []
+    rows = pg_hook.get_records(
+        queries.get_set_versions_query,
+        parameters={"set_uri": record.set_uri, "import_job_id": import_job_id},
+    )
+    return [row[0] for row in rows]
+
+
+def _local_scan_report_id(plan: ImportPlan) -> int | None:
+    """The scan report on this instance whose set id the file uses, if any."""
+    scan_report_uuid = set_uri_uuid(plan.mapping_set.set_uri)
+    if scan_report_uuid is None:
         return None
     row = pg_hook.get_first(
-        queries.get_conflicting_set_query,
+        queries.get_scan_report_by_uuid_query,
+        parameters={"uuid": scan_report_uuid},
+    )
+    return row[0] if row else None
+
+
+def _first_version(plan: ImportPlan, import_job_id: str) -> SetOwner | None:
+    """The first version of the file's set_uri from another import, if any."""
+    row = pg_hook.get_first(
+        queries.get_set_first_version_query,
         parameters={
-            "set_uri": record.set_uri,
-            "set_version": record.set_version,
+            "set_uri": plan.mapping_set.set_uri,
             "import_job_id": import_job_id,
         },
     )
-    return row[0] if row else None
+    return SetOwner(*row) if row else None

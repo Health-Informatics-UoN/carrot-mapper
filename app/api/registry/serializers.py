@@ -11,6 +11,7 @@ from registry.models import (
     Status,
     Term,
 )
+from registry.versions import ReleaseType
 
 
 class LicenseSerializer(serializers.ModelSerializer):
@@ -28,7 +29,13 @@ class ScanReportRegistryPublishSerializer(serializers.Serializer):
     """Set-level metadata for publishing a scan report's mappings to the registry."""
 
     title = serializers.CharField(max_length=500)
-    set_version = serializers.CharField(max_length=100)
+    release_type = serializers.ChoiceField(
+        choices=ReleaseType.choices,
+        help_text=(
+            "Kind of release; the version is the next SemVer of this kind after "
+            "the set's highest version (1.0.0 for the first publish)."
+        ),
+    )
     license = serializers.PrimaryKeyRelatedField(queryset=License.objects.all())
     description = serializers.CharField(required=False, allow_blank=True, default="")
     status = serializers.ChoiceField(
@@ -49,6 +56,20 @@ class ScanReportRegistryPublishSerializer(serializers.Serializer):
 class RegistryImportAcceptedSerializer(serializers.Serializer):
     import_job_id = serializers.UUIDField()
     status = serializers.ChoiceField(choices=ImportJobStatus.choices)
+    set_version = serializers.CharField()
+
+
+class NextVersionsSerializer(serializers.Serializer):
+    major = serializers.CharField()
+    minor = serializers.CharField()
+    patch = serializers.CharField()
+
+
+class RegistryPublishVersionsSerializer(serializers.Serializer):
+    """The scan report's highest version and the next one per release type."""
+
+    latest_version = serializers.CharField(allow_null=True)
+    next_versions = NextVersionsSerializer()
 
 
 # ---------------------------------------------------------------------------

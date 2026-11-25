@@ -6,6 +6,7 @@ Pure functions: no database or storage.
 from __future__ import annotations
 
 import json
+from dataclasses import replace
 from datetime import UTC, date, datetime
 from pathlib import Path
 
@@ -14,10 +15,15 @@ from libs.registry_import.full_validate_and_load_checks import (
     DRAFT,
     PUBLISHED,
     STAGING_COLUMNS,
+    SetOwner,
     Vocabulary,
     build_import,
     carrot_term_parts,
-    check_set_version_is_new,
+    check_set_owner,
+    check_set_uri_not_reserved,
+    check_set_version_is_newer,
+    set_owner_error,
+    set_uri_uuid,
 )
 from libs.registry_import.full_validate_and_load_parse import decode, parse_sssom
 from libs.rules_export.sssom import write_sssom_tsv
@@ -44,7 +50,7 @@ HEADER = """\
 #  HP: http://purl.obolibrary.org/obo/HP_
 #  MP: http://purl.obolibrary.org/obo/MP_
 #mapping_set_id: https://example.org/sets/hp-mp
-#mapping_set_version: "1.0"
+#mapping_set_version: "1.0.0"
 #mapping_set_title: HP to MP
 #license: https://creativecommons.org/licenses/by/4.0/
 """
@@ -79,7 +85,7 @@ def row(plan, index=0) -> dict:
 def test_parse_splits_metadata_and_rows_with_line_numbers():
     parsed = parse_sssom(HEADER + COLUMNS + ROW + ROW.replace("0.9", "0.8"))
     assert parsed.issues == []
-    assert parsed.metadata["mapping_set_version"] == "1.0"
+    assert parsed.metadata["mapping_set_version"] == "1.0.0"
     assert parsed.header[0] == "subject_id"
     assert [line for line, _ in parsed.rows] == [9, 10]
 
@@ -124,7 +130,7 @@ def test_valid_file_normalises_set_and_rows():
     assert plan.ok, plan.issues.as_dicts()
     record = plan.mapping_set
     assert record.set_uri == "https://example.org/sets/hp-mp"
-    assert record.set_version == "1.0"
+    assert record.set_version == "1.0.0"
     assert record.title == "HP to MP"
     assert record.license_id == "CC-BY-4.0"
     assert record.curie_map["HP"] == "http://purl.obolibrary.org/obo/HP_"
@@ -144,14 +150,14 @@ def test_valid_file_normalises_set_and_rows():
     "path", sorted((SPEC_DIR / "examples").glob("*.sssom.tsv")), ids=lambda p: p.name
 )
 def test_official_examples_are_valid_given_a_version(path):
-    plan = plan_for(path.read_text(encoding="utf-8"), {"set_version": "1"})
+    plan = plan_for(path.read_text(encoding="utf-8"), {"set_version": "1.0.0"})
     assert plan.ok, plan.issues.as_dicts()
     assert plan.rows
 
 
 def test_extension_slots_and_unknown_columns_go_to_extra_metadata():
     path = SPEC_DIR / "examples" / "schema" / "extension-slots.sssom.tsv"
-    plan = plan_for(path.read_text(encoding="utf-8"), {"set_version": "1"})
+    plan = plan_for(path.read_text(encoding="utf-8"), {"set_version": "1.0.0"})
     assert plan.ok
     assert set(codes(plan, "warning")) >= {"unknown_column", "unknown_metadata_key"}
     extra = json.loads(row(plan)["extra_metadata"])
@@ -250,13 +256,15 @@ def test_carrot_term_parts(local, parts):
 
 
 def test_overrides_fill_gaps_and_win_with_a_warning():
-    text = HEADER.replace('#mapping_set_version: "1.0"\n', "") + COLUMNS + ROW
+    text = HEADER.replace('#mapping_set_version: "1.0.0"\n', "") + COLUMNS + ROW
     plan = plan_for(text)
     assert "missing_metadata_slot" in codes(plan, "error")
 
-    plan = plan_for(text, {"set_version": "2.0", "title": "New title", "status": DRAFT})
+    plan = plan_for(
+        text, {"set_version": "2.0.0", "title": "New title", "status": DRAFT}
+    )
     assert plan.ok
-    assert plan.mapping_set.set_version == "2.0"
+    assert plan.mapping_set.set_version == "2.0.0"
     assert plan.mapping_set.title == "New title"
     assert plan.status == DRAFT
     assert codes(plan) == ["metadata_overridden"]  # the title differed
@@ -269,10 +277,40 @@ def test_unknown_override_and_bad_status():
 
 
 def test_yaml_float_version_is_read_as_text_with_warning():
-    plan = plan_for(HEADER.replace('"1.0"', "1.0") + COLUMNS + ROW)
-    assert plan.ok
+    plan = plan_for(HEADER.replace('"1.0.0"', "1.0") + COLUMNS + ROW)
     assert plan.mapping_set.set_version == "1.0"
     assert "coerced_value" in codes(plan, "warning")
+    # ...and then isn't a valid version
+    assert codes(plan, "error") == ["invalid_set_version"]
+
+
+def test_yaml_date_version_is_an_iso_date_version():
+    plan = plan_for(HEADER.replace('"1.0.0"', "2026-11-04") + COLUMNS + ROW)
+    assert plan.ok, plan.issues.as_dicts()
+    assert plan.mapping_set.set_version == "2026-11-04"
+
+
+@pytest.mark.parametrize(
+    "version",
+    [
+        "1.0",
+        "1",
+        "v1.0.0",
+        "01.0.0",
+        "1.0.0-rc.1",
+        "2026-13-01",
+        "2026-1-4",
+        # a trailing newline would slip past a "$"-anchored match
+        "1.0.0\n",
+        "2026-11-04\n",
+        # parts over 9 digits don't fit the API's version ordering
+        "1000000000.0.0",
+        "99999999999.0.0",
+    ],
+)
+def test_set_version_must_be_semver_or_iso_date(version):
+    plan = plan_for(HEADER + COLUMNS + ROW, {"set_version": version})
+    assert codes(plan, "error") == ["invalid_set_version"]
 
 
 def test_set_is_linked_to_the_requests_license():
@@ -330,6 +368,14 @@ def test_registry_prefix_cannot_point_elsewhere():
     assert "prefix_conflict" in codes(plan_for(text + COLUMNS + ROW), "error")
 
 
+def test_too_long_namespace_is_an_error():
+    namespace = "http://example.org/" + "x" * 1000
+    text = HEADER.replace("#curie_map:\n", f"#curie_map:\n#  long: {namespace}\n")
+    plan = plan_for(text + COLUMNS + ROW)
+    assert not plan.ok
+    assert "value_too_long" in codes(plan, "error")
+
+
 def test_registry_namespace_under_another_name_is_canonicalised():
     text = HEADER.replace(
         "#curie_map:\n",
@@ -339,6 +385,158 @@ def test_registry_namespace_under_another_name_is_canonicalised():
     assert plan.ok, plan.issues.as_dicts()
     assert row(plan)["object_iri"] == "OMOP:8507"
     assert row(plan)["object_prefix"] == "OMOP"
+
+
+def plan_with_prefixes(text: str, prefixes: dict[str, str]):
+    """build_import against a registry that already has ``prefixes``."""
+    return build_import(
+        parse_sssom(text), replace(VOCAB, prefixes=prefixes), license_id="CC-BY-4.0"
+    )
+
+
+def test_terms_prefixes_are_listed_for_registration():
+    plan = plan_for(HEADER + COLUMNS + ROW)
+    assert plan.prefixes == {
+        "HP": "http://purl.obolibrary.org/obo/HP_",
+        "MP": "http://purl.obolibrary.org/obo/MP_",
+    }
+
+
+def test_registered_namespace_under_another_name_is_canonicalised():
+    plan = plan_with_prefixes(
+        HEADER + COLUMNS + ROW, {"mp": "http://purl.obolibrary.org/obo/MP_"}
+    )
+    assert plan.ok, plan.issues.as_dicts()
+    assert row(plan)["object_iri"] == "mp:0000111"
+    assert plan.prefixes["mp"] == "http://purl.obolibrary.org/obo/MP_"
+    # The stored curie_map can expand the stored CURIE, and keeps the file's name
+    assert plan.mapping_set.curie_map["mp"] == "http://purl.obolibrary.org/obo/MP_"
+    assert plan.mapping_set.curie_map["MP"] == "http://purl.obolibrary.org/obo/MP_"
+
+
+def test_registry_binding_wins_over_an_unused_file_prefix_of_the_same_name():
+    # The file's "mp" is never used; its MP_ terms are stored as mp: (the
+    # registry's name), so the stored curie_map must bind mp as the registry does.
+    text = HEADER.replace(
+        "#curie_map:\n", "#curie_map:\n#  mp: http://example.org/other/\n"
+    )
+    plan = plan_with_prefixes(
+        text + COLUMNS + ROW, {"mp": "http://purl.obolibrary.org/obo/MP_"}
+    )
+    assert plan.ok, plan.issues.as_dicts()
+    assert row(plan)["object_iri"] == "mp:0000111"
+    assert plan.mapping_set.curie_map["mp"] == "http://purl.obolibrary.org/obo/MP_"
+
+
+@pytest.mark.parametrize(
+    "namespace",
+    [
+        "banana",
+        "urn:example:",
+        "ftp://example.org/x/",
+        "http:///no-host/",
+        "http://example.org/with space/",
+    ],
+)
+def test_namespace_must_be_an_absolute_http_iri(namespace):
+    text = HEADER.replace("#curie_map:\n", f"#curie_map:\n#  X: '{namespace}'\n")
+    plan = plan_for(text + COLUMNS + ROW)
+    assert not plan.ok
+    assert "invalid_namespace" in codes(plan, "error")
+
+
+def test_registered_name_for_another_namespace_is_an_error_where_used():
+    registry = {"MP": "http://example.org/another-tre/"}
+    plan = plan_with_prefixes(HEADER + COLUMNS + ROW, registry)
+    assert codes(plan, "error") == ["prefix_conflict"]
+    assert "give that namespace another prefix name" in plan.issues.items[0].message
+
+    # Declared but unused: nothing is stored under it, so no error
+    unused = HEADER.replace(
+        "#mapping_set_id", "#  extra: http://example.org/x/\n#mapping_set_id"
+    )
+    plan = plan_with_prefixes(
+        unused + COLUMNS + ROW, {"extra": "http://example.org/another-tre/"}
+    )
+    assert plan.ok, plan.issues.as_dicts()
+
+
+def test_two_names_for_a_new_namespace_become_one():
+    text = HEADER.replace(
+        "#  MP: http://purl.obolibrary.org/obo/MP_\n",
+        "#  MP: http://purl.obolibrary.org/obo/MP_\n#  MPalias: http://purl.obolibrary.org/obo/MP_\n",
+    )
+    plan = plan_for(
+        text
+        + COLUMNS
+        + ROW
+        + ROW.replace("MP:0000111", "MPalias:0000111").replace("0.9", "0.8")
+    )
+    assert "duplicate_mapping" in codes(plan, "error")
+
+
+@pytest.mark.parametrize(
+    "owner, origin, scan_report_id, user_id, allowed",
+    [
+        (None, "SSSOM_UPLOAD", None, 1, True),
+        (SetOwner(None, 1), "SSSOM_UPLOAD", None, 1, True),
+        (SetOwner(None, 1), "SSSOM_UPLOAD", None, 2, False),
+        (SetOwner(None, None), "SSSOM_UPLOAD", None, None, False),
+        (SetOwner(7, 1), "CARROT_DIRECT_PUBLISH", 7, 2, True),
+        (SetOwner(7, 1), "CARROT_DIRECT_PUBLISH", 8, 1, False),
+        (SetOwner(None, 1), "CARROT_DIRECT_PUBLISH", 7, 1, False),
+    ],
+)
+def test_set_owner_error(owner, origin, scan_report_id, user_id, allowed):
+    error = set_owner_error(
+        owner, origin=origin, scan_report_id=scan_report_id, user_id=user_id
+    )
+    assert (error is None) == allowed
+
+
+def test_set_owner_check_adds_an_error():
+    plan = plan_for(HEADER + COLUMNS + ROW)
+    check_set_owner(plan, None)
+    assert plan.ok
+    check_set_owner(plan, "it was published by another user")
+    assert codes(plan, "error") == ["set_uri_not_owned"]
+
+
+SR_UUID = "0b9f6c1e-3a4d-4c55-9a51-2f6d8e7b1c20"
+
+
+@pytest.mark.parametrize(
+    "set_uri, expected",
+    [
+        (f"https://carrot.ac.uk/registry/mapping-sets/{SR_UUID}", SR_UUID),
+        (f"https://carrot.ac.uk/registry/mapping-sets/{SR_UUID.upper()}/", SR_UUID),
+        ("https://carrot.ac.uk/registry/mapping-sets/7", None),
+        ("https://example.org/sets/hp-mp", None),
+        ("", None),
+    ],
+)
+def test_set_uri_uuid(set_uri, expected):
+    assert set_uri_uuid(set_uri) == expected
+
+
+@pytest.mark.parametrize(
+    "origin, local_scan_report_id, allowed",
+    [
+        # a scan report on this instance: direct publish only
+        ("SSSOM_UPLOAD", 7, False),
+        ("CARROT_DIRECT_PUBLISH", 7, True),
+        # another instance's scan report (a TRE's export), or not Carrot's
+        ("SSSOM_UPLOAD", None, True),
+    ],
+)
+def test_local_scan_report_sets_are_reserved_for_direct_publish(
+    origin, local_scan_report_id, allowed
+):
+    plan = plan_for(HEADER + COLUMNS + ROW)
+    check_set_uri_not_reserved(plan, origin, local_scan_report_id)
+    assert plan.ok == allowed
+    if not allowed:
+        assert codes(plan, "error") == ["set_uri_reserved"]
 
 
 def test_undeclared_prefix_and_non_curie():
@@ -369,7 +567,7 @@ def test_missing_required_column():
 
 def test_literal_mappings_are_rejected():
     path = SPEC_DIR / "examples" / "schema" / "literals.sssom.tsv"
-    plan = plan_for(path.read_text(encoding="utf-8"), {"set_version": "1"})
+    plan = plan_for(path.read_text(encoding="utf-8"), {"set_version": "1.0.0"})
     assert not plan.ok
     assert "missing_column" in codes(plan, "error")
 
@@ -458,11 +656,43 @@ def test_empty_table_is_an_error():
     assert "no_mappings" in codes(plan_for(HEADER + COLUMNS), "error")
 
 
-def test_set_version_must_be_new():
-    plan = plan_for(HEADER + COLUMNS + ROW)
-    check_set_version_is_new(plan, None)
-    assert plan.ok
+@pytest.mark.parametrize(
+    "version, existing",
+    [
+        ("1.0.0", []),
+        ("1.0.1", ["1.0.0"]),
+        ("1.10.0", ["1.9.3", "1.2.0"]),
+        ("2.0.0", ["1.9.9"]),
+        ("2026-11-04", ["2026-11-03", "2025-12-31"]),
+    ],
+)
+def test_set_version_higher_than_existing_is_accepted(version, existing):
+    plan = plan_for(HEADER + COLUMNS + ROW, {"set_version": version})
+    check_set_version_is_newer(plan, existing)
+    assert plan.ok, plan.issues.as_dicts()
 
-    check_set_version_is_new(plan, "a-set-from-another-import")
-    assert codes(plan, "error") == ["set_version_exists"]
-    assert "https://example.org/sets/hp-mp version 1.0" in plan.issues.items[-1].message
+
+@pytest.mark.parametrize(
+    "version, existing, code",
+    [
+        ("1.0.0", ["1.0.0"], "set_version_exists"),
+        ("1.9.0", ["1.10.0"], "set_version_not_newer"),
+        ("1.0.1", ["2.0.0", "1.0.0"], "set_version_not_newer"),
+        ("2026-11-03", ["2026-11-04"], "set_version_not_newer"),
+        ("2026-11-04", ["1.0.0"], "set_version_scheme_mismatch"),
+        ("2.0.0", ["2026-11-04"], "set_version_scheme_mismatch"),
+    ],
+)
+def test_set_version_not_higher_than_existing_is_an_error(version, existing, code):
+    plan = plan_for(HEADER + COLUMNS + ROW, {"set_version": version})
+    check_set_version_is_newer(plan, existing)
+    assert codes(plan, "error") == [code]
+    assert plan.issues.items[-1].message.startswith(
+        "Mapping set https://example.org/sets/hp-mp: "
+    )
+
+
+def test_malformed_set_version_is_only_reported_once():
+    plan = plan_for(HEADER + COLUMNS + ROW, {"set_version": "1.0"})
+    check_set_version_is_newer(plan, ["1.0"])
+    assert codes(plan, "error") == ["invalid_set_version"]

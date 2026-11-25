@@ -78,6 +78,8 @@ def _dummy(data_type: str):
         return False
     if data_type in ("integer", "bigint", "smallint"):
         return 0
+    if data_type == "uuid":
+        return uuid.uuid4()
     return "x"
 
 
@@ -139,6 +141,10 @@ class Cleanup:
                     "DELETE FROM registry_term WHERE canonical_iri LIKE %s",
                     (f"{prefix}:%",),
                 )
+            cursor.execute(
+                "DELETE FROM registry_prefix WHERE prefix = ANY(%s)",
+                (self.prefixes,),
+            )
             for table, row_id in reversed(self.rows):
                 cursor.execute(f"DELETE FROM {table} WHERE id = %s", (row_id,))
             for user in self.users:
@@ -227,7 +233,7 @@ def unique_prefixes(cleanup) -> tuple[str, str]:
 
 
 def sssom(
-    subject: str, obj: str, version: str = "1.0", rows: int = 3, set_uri=None
+    subject: str, obj: str, version: str = "1.0.0", rows: int = 3, set_uri=None
 ) -> str:
     set_uri = set_uri or f"https://example.org/sets/{subject.lower()}"
     lines = [
@@ -260,6 +266,23 @@ def plan_for(conn, text: str):
     return build_import(
         parse_sssom(text),
         Vocabulary(predicates, justifications),
+        license_id="CC-BY-4.0",
+    )
+
+
+def registry_plan(conn, text: str):
+    """plan_for, also with the database's registered prefixes."""
+    with conn.cursor() as cursor:
+        cursor.execute(queries.get_predicates_query)
+        predicates = {r[0] for r in cursor.fetchall()}
+        cursor.execute(queries.get_justifications_query)
+        justifications = {r[0] for r in cursor.fetchall()}
+        cursor.execute(queries.get_prefixes_query)
+        prefixes = dict(cursor.fetchall())
+    conn.rollback()
+    return build_import(
+        parse_sssom(text),
+        Vocabulary(predicates, justifications, prefixes),
         license_id="CC-BY-4.0",
     )
 
@@ -343,14 +366,14 @@ def test_new_version_reuses_terms(conn, cleanup, user):
     first, second = make_job(conn, cleanup, user), make_job(conn, cleanup, user)
     load_plan(
         conn,
-        plan_for(conn, sssom(subject, obj, "1.0")),
+        plan_for(conn, sssom(subject, obj, "1.0.0")),
         import_job_id=first,
         origin="SSSOM_UPLOAD",
         file_key="a",
     )
     stats = load_plan(
         conn,
-        plan_for(conn, sssom(subject, obj, "2.0")),
+        plan_for(conn, sssom(subject, obj, "2.0.0")),
         import_job_id=second,
         origin="SSSOM_UPLOAD",
         file_key="b",
@@ -370,6 +393,26 @@ def test_existing_set_version_is_refused(conn, cleanup, user):
         "SELECT count(*) FROM registry_mappingset WHERE import_job_id = %s",
         second,
     ) == [(0,)]
+
+
+def test_lower_set_version_is_refused(conn, cleanup, user):
+    subject, obj = unique_prefixes(cleanup)
+    first, second = make_job(conn, cleanup, user), make_job(conn, cleanup, user)
+    load_plan(
+        conn,
+        plan_for(conn, sssom(subject, obj, "2.0.0")),
+        import_job_id=first,
+        origin="SSSOM_UPLOAD",
+        file_key="a",
+    )
+    with pytest.raises(LoadError, match="not higher than the latest version 2.0.0"):
+        load_plan(
+            conn,
+            plan_for(conn, sssom(subject, obj, "1.1.0")),
+            import_job_id=second,
+            origin="SSSOM_UPLOAD",
+            file_key="b",
+        )
 
 
 def test_failure_mid_load_leaves_nothing_behind(conn, cleanup, user, monkeypatch):
@@ -407,6 +450,171 @@ def test_invalid_plan_is_never_loaded(conn, cleanup, user):
             origin="SSSOM_UPLOAD",
             file_key="k",
         )
+
+
+def bare_scan_report(conn, cleanup) -> int:
+    """A scan report row with no tables or mappings."""
+    with conn.cursor() as cursor:
+        sr = insert(cursor, "mapping_scanreport", name="SR", dataset="SR")
+    conn.commit()
+    cleanup.rows.append(("mapping_scanreport", sr))
+    return sr
+
+
+def test_load_registers_the_terms_prefixes(conn, cleanup, user):
+    subject, obj = unique_prefixes(cleanup)
+    job = make_job(conn, cleanup, user)
+    load_plan(
+        conn,
+        plan_for(conn, sssom(subject, obj)),
+        import_job_id=job,
+        origin="SSSOM_UPLOAD",
+        file_key="k",
+    )
+
+    assert sorted(
+        fetch(
+            conn,
+            "SELECT prefix, namespace FROM registry_prefix WHERE prefix = ANY(%s)",
+            [subject, obj],
+        )
+    ) == sorted(
+        [
+            (subject, f"http://example.org/{subject}/"),
+            (obj, f"http://example.org/{obj}/"),
+        ]
+    )
+
+
+def test_registered_prefix_is_reused_and_cannot_be_rebound(conn, cleanup, user):
+    subject, obj = unique_prefixes(cleanup)
+    load_plan(
+        conn,
+        plan_for(conn, sssom(subject, obj)),
+        import_job_id=make_job(conn, cleanup, user),
+        origin="SSSOM_UPLOAD",
+        file_key="a",
+    )
+
+    # Another file (say, another TRE's) uses the same name for its own namespace
+    other_tre = sssom(subject, obj, set_uri="https://example.org/sets/other").replace(
+        f"{subject}: http://example.org/{subject}/",
+        f"{subject}: http://example.org/other-tre/",
+    )
+    plan = registry_plan(conn, other_tre)
+    assert "prefix_conflict" in [i.code for i in plan.issues.items]
+
+    # The same namespace under another name is stored with the registry's name
+    renamed = sssom(subject, obj, set_uri="https://example.org/sets/renamed").replace(
+        f"{subject}:", f"{subject}x:"
+    )
+    plan = registry_plan(conn, renamed)
+    assert plan.ok, plan.issues.as_dicts()
+    stats = load_plan(
+        conn,
+        plan,
+        import_job_id=make_job(conn, cleanup, user),
+        origin="SSSOM_UPLOAD",
+        file_key="b",
+    )
+    assert stats["subject_terms_created"] == 0
+
+
+def test_prefix_registered_during_the_import_fails_the_load(conn, cleanup, user):
+    subject, obj = unique_prefixes(cleanup)
+    plan = plan_for(conn, sssom(subject, obj))
+    # Registered by another import after this file was validated
+    with conn.cursor() as cursor:
+        cursor.execute(
+            "INSERT INTO registry_prefix (prefix, namespace, created_at) "
+            "VALUES (%s, 'http://example.org/someone-else/', NOW())",
+            (subject,),
+        )
+    conn.commit()
+
+    job = make_job(conn, cleanup, user)
+    with pytest.raises(LoadError, match="registered for other namespaces"):
+        load_plan(conn, plan, import_job_id=job, origin="SSSOM_UPLOAD", file_key="k")
+    assert fetch(
+        conn, "SELECT count(*) FROM registry_mappingset WHERE import_job_id = %s", job
+    ) == [(0,)]
+
+
+def test_load_records_the_publisher(conn, cleanup, user):
+    subject, obj = unique_prefixes(cleanup)
+    job = make_job(conn, cleanup, user)
+    load_plan(
+        conn,
+        plan_for(conn, sssom(subject, obj)),
+        import_job_id=job,
+        origin="SSSOM_UPLOAD",
+        file_key="k",
+    )
+    assert fetch(
+        conn,
+        "SELECT publisher_id FROM registry_mappingset WHERE import_job_id = %s",
+        job,
+    ) == [(user,)]
+
+
+def test_another_users_upload_cannot_add_a_version(conn, cleanup, user):
+    subject, obj = unique_prefixes(cleanup)
+    load_plan(
+        conn,
+        plan_for(conn, sssom(subject, obj, "1.0")),
+        import_job_id=make_job(conn, cleanup, user),
+        origin="SSSOM_UPLOAD",
+        file_key="a",
+    )
+    with conn.cursor() as cursor:
+        intruder = insert(cursor, "auth_user", username=f"x_{uuid.uuid4().hex[:6]}")
+    conn.commit()
+    cleanup.users.append(intruder)
+
+    job = make_job(conn, cleanup, intruder)
+    with pytest.raises(LoadError, match="published by another user"):
+        load_plan(
+            conn,
+            plan_for(conn, sssom(subject, obj, "2.0")),
+            import_job_id=job,
+            origin="SSSOM_UPLOAD",
+            file_key="b",
+        )
+
+
+def test_direct_publish_cannot_add_to_another_scan_reports_set(conn, cleanup, user):
+    subject, obj = unique_prefixes(cleanup)
+    first_sr, second_sr = (
+        bare_scan_report(conn, cleanup),
+        bare_scan_report(conn, cleanup),
+    )
+    load_plan(
+        conn,
+        plan_for(conn, sssom(subject, obj, "1.0")),
+        import_job_id=make_job(conn, cleanup, user, origin="CARROT_DIRECT_PUBLISH"),
+        origin="CARROT_DIRECT_PUBLISH",
+        file_key="a",
+        scan_report_id=first_sr,
+    )
+
+    with pytest.raises(LoadError, match="not published from this scan report"):
+        load_plan(
+            conn,
+            plan_for(conn, sssom(subject, obj, "2.0")),
+            import_job_id=make_job(conn, cleanup, user, origin="CARROT_DIRECT_PUBLISH"),
+            origin="CARROT_DIRECT_PUBLISH",
+            file_key="b",
+            scan_report_id=second_sr,
+        )
+    # The same scan report may
+    load_plan(
+        conn,
+        plan_for(conn, sssom(subject, obj, "2.0")),
+        import_job_id=make_job(conn, cleanup, user, origin="CARROT_DIRECT_PUBLISH"),
+        origin="CARROT_DIRECT_PUBLISH",
+        file_key="c",
+        scan_report_id=first_sr,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -632,7 +840,7 @@ def test_dag_refuses_an_existing_set_version(conn, cleanup, user, storage):
                 "scan_report_id": 1,
                 "overrides": {
                     "set_uri": "https://x.org/s",
-                    "set_version": "1",
+                    "set_version": "1.0.0",
                     "title": "T",
                     "license": "NOT-A-LICENSE",
                     "include_author_orcid_ids": "yes",
@@ -831,7 +1039,7 @@ def test_dag_publishes_a_scan_report(conn, cleanup, user, storage, scan_report):
             # the shape registry.services.submit_direct_publish sends (#1552)
             "overrides": {
                 "set_uri": set_uri,
-                "set_version": "1",
+                "set_version": "1.0.0",
                 "title": "Demo mapping set",
                 "description": "",
                 "license": "CC-BY-4.0",
@@ -849,7 +1057,7 @@ def test_dag_publishes_a_scan_report(conn, cleanup, user, storage, scan_report):
 
     # The stored file is the exporter's, with the set identity from the request
     text = storage.blobs[("registry-sssom", row["file_key"])].decode()
-    assert text.startswith(f"#mapping_set_id: {set_uri}\n#mapping_set_version: '1'\n")
+    assert text.startswith(f"#mapping_set_id: {set_uri}\n#mapping_set_version: 1.0.0\n")
     # SPDX's IRI once license_sync has run; a database upgraded from before
     # #1551 keeps the old seeded creativecommons.org IRI until then
     [(license_iri,)] = fetch(
@@ -927,7 +1135,7 @@ def test_dag_publishes_creator_orcid_and_authors_only_when_opted_in(
             "scan_report_id": scan_report.id,
             "overrides": {
                 "set_uri": f"https://carrot.ac.uk/registry/mapping-sets/{uuid.uuid4().hex}",
-                "set_version": "1",
+                "set_version": "1.0.0",
                 "title": "With ORCID",
                 "license": "CC-BY-4.0",
                 "include_author_orcid_ids": include_author_orcid_ids,
@@ -989,7 +1197,7 @@ def test_dag_fails_cleanly_for_a_scan_report_without_mappings(
                 "scan_report_id": sr,
                 "overrides": {
                     "set_uri": "https://x.org/s",
-                    "set_version": "1",
+                    "set_version": "1.0.0",
                     "title": "Empty",
                     "license": "CC-BY-4.0",
                     "include_author_orcid_ids": False,

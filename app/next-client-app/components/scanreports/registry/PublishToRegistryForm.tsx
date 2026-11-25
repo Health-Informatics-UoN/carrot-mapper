@@ -1,14 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Formik } from "formik";
 import * as Yup from "yup";
-import { AlertCircle, CloudUpload, InfoIcon } from "lucide-react";
-import { Portal as TooltipPortal } from "@radix-ui/react-tooltip";
+import { AlertCircle, CloudUpload } from "lucide-react";
 import { toast } from "sonner";
 import {
+  getRegistryPublishVersions,
   publishScanReportToRegistry,
   type PublishToRegistryPayload,
+  type RegistryPublishVersions,
+  type ReleaseType,
 } from "@/api/registry";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -17,21 +19,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RequiredIndicator } from "@/components/ui/required-indicator";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { RegistryOrcidFields } from "./RegistryOrcidFields";
 import { RegistryLicenseField } from "./RegistryLicenseField";
+import { RegistryVersionField } from "./RegistryVersionField";
 
 /* ---- Interfaces & Constants ---- */
 
 // Props required to associate the publication with a Scan Report.
 interface Props {
   scanReportId: string;
-  lastPublishedVersion?: string | null;
   onCancel: () => void;
 }
 
@@ -39,23 +35,24 @@ interface Props {
 interface FormValues {
   title: string;
   description: string;
-  version: string;
+  releaseType: ReleaseType | "";
   includeAuthorOrcidIds: boolean;
   license: string;
 }
 
 // Yup schema for validating required fields and input length.
-const validationSchema = Yup.object({
-  title: Yup.string()
-    .trim()
-    .max(500, "Title must be 500 characters or fewer.")
-    .required("Title is required."),
-  version: Yup.string()
-    .trim()
-    .max(100, "Mapping set version must be 100 characters or fewer.")
-    .required("Mapping set version is required."),
-  license: Yup.string().required("License is required."),
-});
+// The first publish is always 1.0.0, so a release type is only needed after it.
+const buildValidationSchema = (requireReleaseType: boolean) =>
+  Yup.object({
+    title: Yup.string()
+      .trim()
+      .max(500, "Title must be 500 characters or fewer.")
+      .required("Title is required."),
+    releaseType: requireReleaseType
+      ? Yup.string().required("Choose the kind of release.")
+      : Yup.string(),
+    license: Yup.string().required("License is required."),
+  });
 
 /**
  * Form for publishing a Scan Report's mapping set to the Registry.
@@ -65,19 +62,45 @@ const validationSchema = Yup.object({
  */
 export function PublishToRegistryForm({
   scanReportId,
-  lastPublishedVersion,
   onCancel,
 }: Props) {
   // Stores API errors returned during publication.
   const [submitError, setSubmitError] = useState("");
+
+  // The set's latest version and the version each release type would publish.
+  const [versions, setVersions] = useState<RegistryPublishVersions | null>(null);
+  const [versionsLoading, setVersionsLoading] = useState(true);
+  const [versionsError, setVersionsError] = useState("");
+  const isFirstPublish = versions?.latest_version === null;
+
+  // Fetch the versions when the form mounts.
+  // Ignore responses after unmounting to avoid stale state updates.
+  useEffect(() => {
+    let active = true;
+    getRegistryPublishVersions(scanReportId)
+      .then((result) => {
+        if (!active) return;
+        if (result.ok) setVersions(result.versions);
+        else setVersionsError(result.message);
+      })
+      .catch(() => {
+        if (active) setVersionsError("Could not load the mapping set's versions.");
+      })
+      .finally(() => {
+        if (active) setVersionsLoading(false);
+      });
+    return () => { active = false; };
+  }, [scanReportId]);
+
   const handleSubmit = async (values: FormValues) => {
     setSubmitError("");
 
     // Map form values to the backend's expected request structure.
+    // Any release type gives 1.0.0 for the first publish.
     const payload: PublishToRegistryPayload = {
       title: values.title.trim(),
       description: values.description.trim(),
-      set_version: values.version.trim(),
+      release_type: values.releaseType || "major",
       include_author_orcid_ids: values.includeAuthorOrcidIds,
       license: values.license,
     };
@@ -95,7 +118,7 @@ export function PublishToRegistryForm({
       }
 
       // Confirm that the publication job has been queued.
-      toast.success("Publication queued.", {
+      toast.success(`Publication of version ${result.job.set_version} queued.`, {
         description: `Import job: ${result.job.import_job_id}`,
       });
 
@@ -112,11 +135,11 @@ export function PublishToRegistryForm({
       initialValues={{
         title: "",
         description: "",
-        version: "",
+        releaseType: "",
         includeAuthorOrcidIds: false,
         license: "",
       }}
-      validationSchema={validationSchema}
+      validationSchema={buildValidationSchema(!isFirstPublish)}
       onSubmit={handleSubmit}
     >
       {({
@@ -131,11 +154,11 @@ export function PublishToRegistryForm({
       }) => (
         <form onSubmit={submitForm} className="space-y-6">
 
-          {/* Display publication errors returned by the backend. */}
-          {submitError && (
+          {/* Display version loading and publication errors returned by the backend. */}
+          {(versionsError || submitError) && (
             <Alert variant="destructive">
               <AlertCircle />
-              <AlertDescription>{submitError}</AlertDescription>
+              <AlertDescription>{submitError || versionsError}</AlertDescription>
             </Alert>
           )}
 
@@ -194,90 +217,36 @@ export function PublishToRegistryForm({
 
           {/* Mapping set version, licence selection and ORCID preferences. */}
           <section className="-mt-2 space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
 
-              {/* Mapping set version with uniqueness guidance. */}
-              <div className="min-w-0 space-y-2">
-                <div className="flex items-center gap-1">
-                  <Label htmlFor="registry-version">
-                    Mapping Set Version <RequiredIndicator />
-                  </Label>
+            {/*
+              SemVer release type selector.
+              The backend derives the version from the set's highest version.
+            */}
+            <RegistryVersionField
+              versions={versions}
+              loading={versionsLoading}
+              releaseType={values.releaseType}
+              validationError={
+                touched.releaseType ? errors.releaseType : undefined
+              }
+              onChange={(value) => {
+                setFieldValue("releaseType", value);
+              }}
+            />
 
-                  {/* Explain version uniqueness through a tooltip. */}
-                  <TooltipProvider delayDuration={100}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button
-                          type="button"
-                          aria-label="Mapping set version information"
-                          className="ml-1 text-muted-foreground"
-                        >
-                          <InfoIcon className="h-4 w-4" />
-                        </button>
-                      </TooltipTrigger>
-
-                      <TooltipPortal>
-                        <TooltipContent
-                          collisionPadding={8}
-                          className="max-w-[min(24rem,calc(100vw-2rem))] text-center whitespace-pre-wrap"
-                        >
-                          The mapping set version must be unique for
-                          this mapping set. A previously published
-                          version cannot be reused.
-                        </TooltipContent>
-                      </TooltipPortal>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
-
-                <Input
-                  id="registry-version"
-                  name="version"
-                  value={values.version}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  aria-required="true"
-                  aria-invalid={!!(touched.version && errors.version)}
-                  aria-describedby={
-                    touched.version && errors.version
-                      ? "registry-version-error"
-                      : undefined
-                  }
-                  placeholder="e.g. 1.0.0"
-                />
-
-                {/* Display version validation errors. */}
-                {touched.version && errors.version && (
-                  <p
-                    id="registry-version-error"
-                    className="text-xs text-destructive"
-                  >
-                    {errors.version}
-                  </p>
-                )}
-
-                {/* Show the last published version when available. */}
-                {lastPublishedVersion && (
-                  <p className="text-xs text-muted-foreground">
-                    Last published version: {lastPublishedVersion}
-                  </p>
-                )}
-              </div>
-
-              {/*
-                Reusable licence selector.
-                Synchronises the selected SPDX ID with Formik state.
-              */}
-              <RegistryLicenseField
-                license={values.license}
-                validationError={
-                  touched.license ? errors.license : undefined
-                }
-                onChange={(value) => {
-                  setFieldValue("license", value);
-                }}
-              />
-            </div>
+            {/*
+              Reusable licence selector.
+              Synchronises the selected SPDX ID with Formik state.
+            */}
+            <RegistryLicenseField
+              license={values.license}
+              validationError={
+                touched.license ? errors.license : undefined
+              }
+              onChange={(value) => {
+                setFieldValue("license", value);
+              }}
+            />
 
             {/*
               Reusable ORCID component.
@@ -302,8 +271,8 @@ export function PublishToRegistryForm({
               Cancel
             </Button>
 
-            {/* Prevent duplicate submissions while publishing. */}
-            <Button type="submit" disabled={isSubmitting}>
+            {/* Prevent duplicate submissions, and publishing before the versions are known. */}
+            <Button type="submit" disabled={isSubmitting || !versions}>
               <CloudUpload className="size-4" />
               {isSubmitting ? "Publishing..." : "Publish"}
             </Button>
