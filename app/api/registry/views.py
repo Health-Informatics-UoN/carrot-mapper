@@ -10,29 +10,40 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import OpenApiResponse, extend_schema
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from mapping.models import ScanReport
 from rest_framework import status
-from rest_framework.exceptions import NotFound
+from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.generics import GenericAPIView, ListAPIView, RetrieveAPIView
-from rest_framework.permissions import AllowAny
+from rest_framework.parsers import MultiPartParser
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.reverse import reverse
 from services.storage_service import StorageService
 
 from registry.download_helpers import StorageUnavailable, sssom_download_filename
 from registry.filters import (
+    ImportJobFilter,
     MappingFilter,
     MappingSetFilter,
     RelevanceOrderingFilter,
     TermFilter,
 )
-from registry.models import License, Mapping, MappingJustification, Predicate
+from registry.models import (
+    ImportJob,
+    License,
+    Mapping,
+    MappingJustification,
+    Predicate,
+)
 from registry.permissions import (
     published_mappings,
     published_terms,
+    visible_import_jobs,
     visible_mapping_sets,
 )
 from registry.serializers import (
+    ImportJobSerializer,
     LicenseSerializer,
     MappingJustificationSerializer,
     MappingSerializer,
@@ -41,10 +52,19 @@ from registry.serializers import (
     PredicateSerializer,
     RegistryImportAcceptedSerializer,
     RegistryPublishVersionsSerializer,
+    RegistryUploadAcceptedSerializer,
+    RegistryUploadSerializer,
+    RegistryUploadValidationSerializer,
     ScanReportRegistryPublishSerializer,
     TermSerializer,
 )
-from registry.services import next_versions, submit_direct_publish
+from registry.services import (
+    UploadRejected,
+    dry_run_upload,
+    next_versions,
+    submit_direct_publish,
+    submit_upload,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -53,6 +73,9 @@ storage_service = StorageService()
 # ---------------------------------------------------------------------------
 # Write
 # ---------------------------------------------------------------------------
+
+
+MAX_IDEMPOTENCY_KEY_LENGTH = 255
 
 
 class ScanReportRegistryPublishView(ScanReportPermissionMixin, GenericAPIView):
@@ -100,6 +123,118 @@ class ScanReportRegistryPublishView(ScanReportPermissionMixin, GenericAPIView):
             ).data,
             status=status.HTTP_202_ACCEPTED,
         )
+
+
+class ImportValidateView(GenericAPIView):
+    """
+    Check an SSSOM file without importing it.
+
+    Runs the same quick checks as `POST imports/`: the metadata and the first
+    rows. Nothing is stored. The full file is checked during the import.
+    """
+
+    serializer_class = RegistryUploadSerializer
+    permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser]
+    http_method_names = ["post"]
+
+    @extend_schema(
+        request={"multipart/form-data": RegistryUploadSerializer},
+        responses={200: RegistryUploadValidationSerializer},
+    )
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        report = dry_run_upload(serializer.validated_data["file"], request.user)
+        return Response(RegistryUploadValidationSerializer(report.as_dict()).data)
+
+
+class ImportJobListView(ListAPIView):
+    """
+    The caller's own registry imports, newest first (GET), or submit an SSSOM
+    file for import (POST).
+
+    A POST checks the file's metadata and first rows, stores it and starts the
+    import, returning the job to poll. Repeating an upload that is still being
+    imported returns the same job, as does repeating an `Idempotency-Key`.
+    """
+
+    serializer_class = ImportJobSerializer
+    permission_classes = [IsAuthenticated]
+    pagination_class = CustomPagination
+    parser_classes = [MultiPartParser]
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = ImportJobFilter
+
+    def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return ImportJob.objects.none()
+        return ImportJob.objects.filter(
+            submitted_by=self.request.user
+        ).prefetch_related("mapping_sets")
+
+    @extend_schema(
+        request={"multipart/form-data": RegistryUploadSerializer},
+        parameters=[
+            OpenApiParameter(
+                "Idempotency-Key",
+                str,
+                OpenApiParameter.HEADER,
+                description="Makes retrying this upload safe.",
+            )
+        ],
+        responses={
+            202: RegistryUploadAcceptedSerializer,
+            400: RegistryUploadValidationSerializer,
+            409: RegistryUploadValidationSerializer,
+            503: OpenApiResponse(description="The import could not be started."),
+        },
+    )
+    def post(self, request, *args, **kwargs):
+        serializer = RegistryUploadSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        idempotency_key = request.headers.get("Idempotency-Key", "").strip()
+        if len(idempotency_key) > MAX_IDEMPOTENCY_KEY_LENGTH:
+            raise ValidationError({"Idempotency-Key": "This header is too long."})
+        try:
+            job, report, _ = submit_upload(
+                serializer.validated_data["file"],
+                request.user,
+                serializer.validated_data["status"],
+                idempotency_key,
+            )
+        except UploadRejected as rejected:
+            return Response(
+                RegistryUploadValidationSerializer(rejected.report.as_dict()).data,
+                status=rejected.status_code,
+            )
+        location = reverse("registry-import-detail", kwargs={"pk": job.pk})
+        return Response(
+            RegistryUploadAcceptedSerializer(
+                {
+                    "import_job_id": job.id,
+                    "status": job.status,
+                    "issues": report.as_dict()["issues"],
+                }
+            ).data,
+            status=status.HTTP_202_ACCEPTED,
+            headers={"Location": location},
+        )
+
+
+class ImportJobDetailView(RetrieveAPIView):
+    """
+    One registry import, for polling after a publish.
+
+    Visible to its submitter and to registry admins. `mapping_set` is set once
+    the import has succeeded.
+    """
+
+    serializer_class = ImportJobSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return visible_import_jobs(self.request.user).prefetch_related("mapping_sets")
 
 
 # ---------------------------------------------------------------------------

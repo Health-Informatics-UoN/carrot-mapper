@@ -34,6 +34,7 @@ dependencies = [
     "django-allauth==65.21.0",
     "psycopg2-binary==2.9.13",
     "boto3==1.43.121",
+    "pyyaml>=6.0",
 ]
 
 [dependency-groups]

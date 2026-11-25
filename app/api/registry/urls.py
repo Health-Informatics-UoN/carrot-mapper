@@ -46,6 +46,17 @@ urlpatterns = [
         name="registry-justification-list",
     ),
     # Write
+    path("imports/", views.ImportJobListView.as_view(), name="registry-import-list"),
+    path(
+        "imports/validate/",
+        views.ImportValidateView.as_view(),
+        name="registry-import-validate",
+    ),
+    path(
+        "imports/<uuid:pk>/",
+        views.ImportJobDetailView.as_view(),
+        name="registry-import-detail",
+    ),
     path(
         "scanreports/<int:pk>/registry-publish/",
         views.ScanReportRegistryPublishView.as_view(),
