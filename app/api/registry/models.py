@@ -180,11 +180,50 @@ class ImportJob(models.Model):
 # ---------------------------------------------------------------------------
 
 
-class MappingSet(models.Model):
-    """An SSSOM mapping set: one versioned, publishable collection of mappings."""
+class MappingSetSeries(models.Model):
+    """
+    A mapping set: every version (MappingSet) sharing one SSSOM mapping_set_id
+    (``set_uri``). Its id is the set's page URL, so a Carrot set_uri
+    ({CARROT_MAPPING_SET_NAMESPACE}{uuid}) uses that uuid (series_id_for) and
+    resolves as a link; any other set_uri gets a random one.
+
+    The owner is whoever created the series: only they may add versions
+    (registry_import's set_owner_error, services.submit_direct_publish).
+    """
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    set_uri = models.CharField(max_length=500)
+    set_uri = models.CharField(max_length=500, unique=True)
+    publisher = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="registry_mapping_set_series",
+    )
+    # Only populated for sets published from a scan report.
+    source_scan_report = models.ForeignKey(
+        ScanReport,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="registry_mapping_set_series",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return self.set_uri
+
+
+class MappingSet(models.Model):
+    """One version of a mapping set (MappingSetSeries) and its mappings."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    series = models.ForeignKey(
+        MappingSetSeries, on_delete=models.PROTECT, related_name="versions"
+    )
     set_version = models.CharField(max_length=100)
     title = models.CharField(max_length=500)
     description = models.TextField(blank=True, default="")
@@ -211,9 +250,8 @@ class MappingSet(models.Model):
         blank=True,
         related_name="mapping_sets",
     )
-    # The user who submitted the import (ImportJob.submitted_by, copied so it
-    # outlives the job). The first version of a set_uri decides who may add
-    # versions to it; see registry_import's check_set_owner.
+    # The user who submitted the import (ImportJob.submitted_by, copied so it outlives the job).
+    # Kept for provenance.
     publisher = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
@@ -254,13 +292,13 @@ class MappingSet(models.Model):
         ordering = ["-created_at"]
         constraints = [
             models.UniqueConstraint(
-                fields=["set_uri", "set_version"],
-                name="registry_mappingset_uri_version_uniq",
+                fields=["series", "set_version"],
+                name="registry_mappingset_series_version_uniq",
             ),
         ]
         indexes = [
             models.Index(fields=["status", "-published_at"]),
-            models.Index(fields=["set_uri", "created_at"]),
+            models.Index(fields=["series", "created_at"]),
             # Trigram indexes for fuzzy search (registry/search.py).
             GinIndex(
                 fields=["title"],
@@ -292,7 +330,8 @@ class TermLevel(models.TextChoices):
 # {namespace}{ScanReport.uuid} (registry.services.scan_report_set_uri, which
 # also gives the DAGs the mapping_set_id of SSSOM exports). Every version from
 # the same scan report shares one set_uri, and the uuid keeps it unique across
-# Carrot instances.
+# Carrot instances. The series of such a set has that uuid as its id
+# (series_id_for), so the set_uri is also the set's page URL.
 CARROT_MAPPING_SET_NAMESPACE = "https://carrot.ac.uk/registry/mapping-sets/"
 
 

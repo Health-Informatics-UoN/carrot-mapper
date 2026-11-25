@@ -16,6 +16,7 @@ from registry.models import (
     ImportJob,
     ImportJobStatus,
     MappingSet,
+    MappingSetSeries,
     Origin,
 )
 from registry.versions import NotSemVer, ReleaseType, bump, latest_semver
@@ -54,7 +55,7 @@ def latest_set_version(scan_report: ScanReport) -> str | None:
     PublishConflict if a version isn't SemVer, as the next one can't be derived.
     """
     versions = MappingSet.objects.filter(
-        set_uri=scan_report_set_uri(scan_report)
+        series__set_uri=scan_report_set_uri(scan_report)
     ).values_list("set_version", flat=True)
     try:
         return latest_semver(versions)
@@ -114,17 +115,12 @@ def submit_direct_publish(
             raise ValidationError(
                 {"detail": "This scan report has no concept mappings to publish."}
             )
-        # The first version of a set_uri decides who may add versions to it
-        # (the registry_import DAG checks this again when it loads the file).
+        # The set's owner decides who may add versions to it (the
+        # registry_import DAG checks this again when it loads the file).
         # Checked before deriving the version: another publisher's set may
         # use non-SemVer versions, which would otherwise mask this conflict.
-        first_version = (
-            MappingSet.objects.filter(set_uri=set_uri).order_by("created_at").first()
-        )
-        if (
-            first_version is not None
-            and first_version.source_scan_report_id != scan_report.pk
-        ):
+        series = MappingSetSeries.objects.filter(set_uri=set_uri).first()
+        if series is not None and series.source_scan_report_id != scan_report.pk:
             raise PublishConflict(
                 {
                     "detail": "This mapping set's identifier is already used by "
@@ -142,7 +138,9 @@ def submit_direct_publish(
             "status": metadata["status"],
             "include_author_orcid_ids": metadata.get("include_author_orcid_ids", False),
         }
-        if MappingSet.objects.filter(set_uri=set_uri, set_version=set_version).exists():
+        if MappingSet.objects.filter(
+            series__set_uri=set_uri, set_version=set_version
+        ).exists():
             raise PublishConflict(
                 {
                     "detail": f"Version '{set_version}' of this mapping set "

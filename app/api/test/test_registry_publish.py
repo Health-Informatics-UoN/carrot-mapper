@@ -23,11 +23,14 @@ from registry.models import (
     ImportJobStatus,
     License,
     MappingSet,
+    MappingSetSeries,
     Origin,
     Status,
 )
 from registry.services import scan_report_set_uri
 from rest_framework.test import APIClient
+
+from test.registry_test_helper import series_id_for
 
 TRIGGER = "registry.services.worker_service.trigger_registry_import"
 
@@ -268,9 +271,17 @@ class TestScanReportRegistryPublish(TestCase):
         self.assertIn("license", response.data)
         mock_trigger.assert_not_called()
 
+    def _series(self, **owner):
+        """This scan report's series, created with ``owner`` if it's new."""
+        set_uri = scan_report_set_uri(self.scan_report)
+        series, _ = MappingSetSeries.objects.get_or_create(
+            set_uri=set_uri, defaults={"id": series_id_for(set_uri), **owner}
+        )
+        return series
+
     def _add_version(self, version, status=Status.PUBLISHED):
         MappingSet.objects.create(
-            set_uri=scan_report_set_uri(self.scan_report),
+            series=self._series(source_scan_report=self.scan_report),
             set_version=version,
             title="Existing",
             origin_id=Origin.CARROT_DIRECT_PUBLISH,
@@ -368,7 +379,7 @@ class TestScanReportRegistryPublish(TestCase):
     def test_new_version_of_own_set_is_accepted(self, mock_trigger):
         self._add_rule()
         MappingSet.objects.create(
-            set_uri=scan_report_set_uri(self.scan_report),
+            series=self._series(source_scan_report=self.scan_report),
             set_version="1.0.0",
             title="Existing",
             origin_id=Origin.CARROT_DIRECT_PUBLISH,
@@ -384,7 +395,7 @@ class TestScanReportRegistryPublish(TestCase):
         self._add_rule()
         # e.g. an SSSOM upload that claimed this scan report's set_uri first
         MappingSet.objects.create(
-            set_uri=scan_report_set_uri(self.scan_report),
+            series=self._series(publisher=self.viewer),
             set_version="0.1",
             title="Someone else's",
             origin_id=Origin.SSSOM_UPLOAD,

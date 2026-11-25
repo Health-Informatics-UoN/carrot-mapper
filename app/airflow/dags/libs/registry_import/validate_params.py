@@ -46,11 +46,17 @@ def validate_params_registry_import(**context) -> dict[str, Any]:
                          iD of each mapping's author as its author_id).
                          CARROT_DIRECT_PUBLISH needs set_uri, set_version,
                          title, license and include_author_orcid_ids; for
-                         SSSOM_UPLOAD they're optional and override the file.
+                         SSSOM_UPLOAD they're optional and override the file,
+                         except set_uri, which must match the file's
+                         mapping_set_id (or fill it when the file has none).
         mapper_version   optional, CARROT_DIRECT_PUBLISH only
+        series_id        optional: the existing mapping set (MappingSetSeries
+                         id) to add a version to; the file's mapping_set_id
+                         must be its set_uri, or absent
 
     Returns the validated parameters (the other steps' XCom input), with
-    ``license_iri`` added when a license was given.
+    ``license_iri`` added when a license was given and ``series_set_uri``
+    when a series_id was.
     """
     conf = context["dag_run"].conf or {}
     try:
@@ -77,6 +83,24 @@ def validate_params_registry_import(**context) -> dict[str, Any]:
     params["mapper_version"] = conf.get("mapper_version")
     params["scan_report_id"] = None
     params["license_iri"] = None
+    params["series_id"] = None
+    params["series_set_uri"] = None
+
+    series_id = conf.get("series_id")
+    if series_id not in (None, ""):
+        try:
+            params["series_id"] = str(uuid.UUID(str(series_id)))
+        except ValueError:
+            errors.append(f"Invalid series_id: {series_id}")
+        else:
+            row = pg_hook.get_first(
+                queries.get_series_set_uri_query,
+                parameters={"series_id": params["series_id"]},
+            )
+            if row is None:
+                errors.append(f"Unknown series_id: {series_id}")
+            else:
+                params["series_set_uri"] = row[0]
 
     if params["origin"] == CARROT_DIRECT_PUBLISH:
         try:

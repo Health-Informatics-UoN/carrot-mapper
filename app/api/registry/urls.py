@@ -10,18 +10,25 @@ urlpatterns = [
         views.MappingSetListView.as_view(),
         name="registry-mapping-set-list",
     ),
+    # A mapping set (series) and its versions. The series id is the uuid of a
+    # Carrot set_uri, so {CARROT_MAPPING_SET_NAMESPACE}{uuid} resolves here.
     path(
-        "mapping-sets/<uuid:pk>/",
+        "mapping-sets/<uuid:series_pk>/",
+        views.MappingSetSeriesDetailView.as_view(),
+        name="registry-mapping-set-series-detail",
+    ),
+    path(
+        "mapping-sets/<uuid:series_pk>/versions/<uuid:pk>/",
         views.MappingSetDetailView.as_view(),
         name="registry-mapping-set-detail",
     ),
     path(
-        "mapping-sets/<uuid:pk>/download/",
+        "mapping-sets/<uuid:series_pk>/versions/<uuid:pk>/download/",
         views.MappingSetDownloadView.as_view(),
         name="registry-mapping-set-download",
     ),
     path(
-        "mapping-sets/<uuid:pk>/mappings/",
+        "mapping-sets/<uuid:series_pk>/versions/<uuid:pk>/mappings/",
         views.MappingSetMappingsView.as_view(),
         name="registry-mapping-set-mappings",
     ),
