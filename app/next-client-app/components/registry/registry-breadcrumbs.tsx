@@ -1,4 +1,13 @@
+import { Fragment } from "react";
 import Link from "next/link";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 
 export type RegistryBreadcrumbItem = {
   label: string;
@@ -11,27 +20,25 @@ export function RegistryBreadcrumbs({
   items: RegistryBreadcrumbItem[];
 }) {
   return (
-    <nav
-      aria-label="Breadcrumb"
-      className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground"
-    >
-      {items.map((item, index) => (
-        <span
-          key={`${item.label}-${index}`}
-          className="flex items-center gap-2"
-        >
-          {index > 0 && <span aria-hidden="true">/</span>}
-          {item.href ? (
-            <Link className="hover:text-foreground" href={item.href}>
-              {item.label}
-            </Link>
-          ) : (
-            <span aria-current="page" className="font-medium text-foreground">
-              {item.label}
-            </span>
-          )}
-        </span>
-      ))}
-    </nav>
+    <Breadcrumb aria-label="Breadcrumb">
+      <BreadcrumbList className="gap-2 sm:gap-2">
+        {items.map((item, index) => (
+          <Fragment key={`${item.label}-${index}`}>
+            {index > 0 && <BreadcrumbSeparator>/</BreadcrumbSeparator>}
+            <BreadcrumbItem>
+              {item.href ? (
+                <BreadcrumbLink asChild>
+                  <Link href={item.href}>{item.label}</Link>
+                </BreadcrumbLink>
+              ) : (
+                <BreadcrumbPage className="font-medium">
+                  {item.label}
+                </BreadcrumbPage>
+              )}
+            </BreadcrumbItem>
+          </Fragment>
+        ))}
+      </BreadcrumbList>
+    </Breadcrumb>
   );
 }
