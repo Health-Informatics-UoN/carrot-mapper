@@ -82,7 +82,7 @@ export function RegistrySearchBar({
               size="icon"
               aria-label="Clear search text"
               onClick={() => onQueryChange("")}
-              className="absolute right-2 top-1/2 size-6 -translate-y-1/2 text-muted-foreground"
+              className="absolute right-2 top-1/2 size-6 -translate-y-1/2"
             >
               <X className="size-4" />
             </Button>
