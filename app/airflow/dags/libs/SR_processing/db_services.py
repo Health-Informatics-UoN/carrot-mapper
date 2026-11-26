@@ -154,9 +154,11 @@ def create_temp_field_values_table(
         None
     """
 
+    # The table is created even when there are no values (e.g. a scan report
+    # table WhiteRabbit couldn't read), because creating the scan report values
+    # selects from it for every table.
     if not field_values_dict:
-        logging.info("No field-values available, skipping field values table creation")
-        return
+        logging.info("No field-values available, creating an empty field values table")
 
     try:
         # Create temp table to store field value frequencies
