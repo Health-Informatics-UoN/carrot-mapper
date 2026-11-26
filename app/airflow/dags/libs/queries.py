@@ -139,11 +139,11 @@ LEFT JOIN mapping_omoptable AS omop_table ON
 -- Because concepts may or may not have the standard_concept_id, in general. And we prefer to use the standard_concept_id, if it exists.
 WHERE target_concept.concept_id = COALESCE(temp_existing_concepts.standard_concept_id, temp_existing_concepts.source_concept_id);
 
--- If the scan report table has the "death_table" flag set to TRUE, set the destination table to OMOP's "death" table.
+-- If the scan report table has the "death" role, set the destination table to OMOP's "death" table.
 -- This ensures that mapping rules will use "death" as the destination table and, for example, will select "cause_concept_id" as the mapped field.
 UPDATE temp_existing_concepts_%(table_id)s temp_existing_concepts
 SET dest_table_id = (SELECT id FROM mapping_omoptable WHERE "table" = 'death' LIMIT 1)
-WHERE (SELECT death_table FROM mapping_scanreporttable WHERE id = %(table_id)s) = TRUE;
+WHERE (SELECT table_role FROM mapping_scanreporttable WHERE id = %(table_id)s) = 'death';
 
 -- Update person field ID
 UPDATE temp_existing_concepts_%(table_id)s temp_existing_concepts
@@ -306,7 +306,7 @@ WITH
             AND scan_report.id != %(scan_report_id)s
     ),
     -- Find values in eligible scan reports that have M-type concepts tied.
-    -- Only reuse from tables with the same death_table flag (death tables get death concepts only; non-death never get death concepts).
+    -- Only reuse from tables with the same role (e.g. death tables get death concepts only; other tables never get death concepts).
     values_with_m_concepts AS (
         SELECT
             sr_value.value AS matching_value_name,
@@ -319,7 +319,7 @@ WITH
         FROM eligible_reports AS eligible_report
         JOIN mapping_scanreporttable AS sr_table ON sr_table.scan_report_id = eligible_report.id
             AND sr_table.name = %(current_table_name)s
-            AND (SELECT death_table FROM mapping_scanreporttable WHERE id = %(table_id)s) IS NOT DISTINCT FROM sr_table.death_table
+            AND (SELECT table_role FROM mapping_scanreporttable WHERE id = %(table_id)s) = sr_table.table_role
         JOIN mapping_scanreportfield AS sr_field ON sr_field.scan_report_table_id = sr_table.id
         JOIN mapping_scanreportvalue AS sr_value ON sr_value.scan_report_field_id = sr_field.id
         JOIN mapping_scanreportconcept AS sr_concept ON sr_concept.object_id = sr_value.id
@@ -360,7 +360,7 @@ WITH
             AND scan_report.id != %(scan_report_id)s
     ),
     -- Find fields in eligible scan reports that have M-type concepts tied.
-    -- Match only tables with an identical death_table setting to ensure concepts from death tables are reused only with other death tables, and non-death tables only with non-death.
+    -- Match only tables with the same role, so e.g. concepts from death tables are reused only with other death tables, and non-death tables only with non-death.
     fields_with_m_concepts AS (
         SELECT
             sr_field.name AS matching_field_name,
@@ -371,7 +371,7 @@ WITH
         FROM eligible_reports AS eligible_report
         JOIN mapping_scanreporttable AS sr_table ON sr_table.scan_report_id = eligible_report.id
             AND sr_table.name = %(current_table_name)s
-            AND (SELECT death_table FROM mapping_scanreporttable WHERE id = %(table_id)s) IS NOT DISTINCT FROM sr_table.death_table
+            AND (SELECT table_role FROM mapping_scanreporttable WHERE id = %(table_id)s) = sr_table.table_role
         JOIN mapping_scanreportfield AS sr_field ON sr_field.scan_report_table_id = sr_table.id
         JOIN mapping_scanreportconcept AS sr_concept ON sr_concept.object_id = sr_field.id
             AND sr_concept.content_type_id = (SELECT id FROM field_content_type)
@@ -388,7 +388,7 @@ SELECT
 FROM fields_with_m_concepts;
 """
 
-# Only set object_id if the death_table flag for the current table matches the source table (identified by source_scanreport_id and matching_table_name).
+# Only set object_id if the role of the current table matches the source table (identified by source_scanreport_id and matching_table_name).
 find_object_id_query = """
     UPDATE temp_reuse_concepts_%(table_id)s AS temp_table
         SET object_id =
@@ -423,13 +423,12 @@ find_object_id_query = """
                     LIMIT 1)
                 ELSE NULL
             END
-    -- We only want to reuse concepts between tables where the "death_table" status matches.
-    -- To do this, we're checking if the "death_table" flag is the same for:
+    -- We only want to reuse concepts between tables with the same role (standard, death).
+    -- To do this, we're checking the role is the same for:
     --   1. The current scan report table (id = %(table_id)s)
     --   2. The source scan report table we're trying to reuse from (using name and source_scanreport_id)
-    -- The "IS NOT DISTINCT FROM" comparison treats NULL values as equivalent, so if both tables have "death_table" as NULL, that's also accepted as a match.
-    WHERE (SELECT death_table FROM mapping_scanreporttable WHERE id = %(table_id)s) IS NOT DISTINCT FROM (
-        SELECT sr_table.death_table
+    WHERE (SELECT table_role FROM mapping_scanreporttable WHERE id = %(table_id)s) = (
+        SELECT sr_table.table_role
         FROM mapping_scanreporttable AS sr_table
         WHERE sr_table.scan_report_id = temp_table.source_scanreport_id
           AND sr_table.name = temp_table.matching_table_name

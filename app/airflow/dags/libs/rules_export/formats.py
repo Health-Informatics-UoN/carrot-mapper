@@ -139,10 +139,18 @@ def _sorted_groups(rows: Iterable[Row], key: str) -> list[tuple[Hashable, list[R
     return sorted(groups.items(), key=lambda item: item[0])
 
 
-def rules_to_json_v2(rules: Iterable[Row], metadata: Mapping[str, Any]) -> str:
+def rules_to_json_v2(
+    rules: Iterable[Row],
+    metadata: Mapping[str, Any],
+    tables: Iterable[Row] = (),
+    type_fields: Mapping[str, str] | None = None,
+) -> str:
     """
     Rules grouped by OMOP table, then by source table, with each source table's
     person_id mapping, date mapping and concept mappings (per source field).
+
+    ``tables`` and ``type_fields`` add the scan report tables' type concepts;
+    see ``add_table_level_mappings``.
     """
     result: dict[str, Any] = {}
 
@@ -290,4 +298,38 @@ def rules_to_json_v2(rules: Iterable[Row], metadata: Mapping[str, Any]) -> str:
                     concept_mappings
                 )
 
+    add_table_level_mappings(result, tables, type_fields or {})
+
     return json.dumps({"metadata": dict(metadata), "cdm": result}, indent=2)
+
+
+def _clean(name: Any) -> str:
+    return str(name).replace("\ufeff", "")
+
+
+def add_table_level_mappings(
+    result: dict[str, Any],
+    tables: Iterable[Row],
+    type_fields: Mapping[str, str],
+) -> None:
+    """
+    Add each Scan Report Table's type concept to the v2 rules in ``result``: a
+    constant for the <table>_type_concept_id field of every block built from
+    the table.
+
+    Args:
+        - tables: rows of source_table, table_role, type_concept_id,
+          person_field and date_field (field names, or None)
+        - type_fields: OMOP table -> its *_type_concept_id field
+    """
+    for table in tables:
+        source_table = _clean(table["source_table"])
+
+        # The table's type concept goes on every record built from it
+        if table["type_concept_id"] is not None:
+            for dest_table, blocks in result.items():
+                type_field = type_fields.get(dest_table)
+                if type_field and source_table in blocks:
+                    blocks[source_table].setdefault("constant_mappings", {})[
+                        type_field
+                    ] = int(table["type_concept_id"])

@@ -30,7 +30,15 @@ interface ScanReportTable {
   permissions: Permission[];
   jobs: Job[];
   trigger_reuse: boolean;
-  death_table?: boolean;
+  table_role: TableRole;
+  type_concept: number | null;
+}
+
+type TableRole = "standard" | "death";
+
+interface ConceptSummary {
+  concept_id: number;
+  concept_name: string | null;
 }
 
 interface ScanReportField {
