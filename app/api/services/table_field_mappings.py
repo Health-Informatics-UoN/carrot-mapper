@@ -83,3 +83,79 @@ NOTE_KEY_FIELD = "note_id"
 
 def allowed_fields(role: str) -> dict[str, FieldSpec]:
     return ROLE_FIELDS.get(role, {})
+
+
+def export_problems(table) -> list[dict[str, str]]:
+    """
+    Why a note or note_nlp Scan Report Table would be left out of the exported
+    rules (or exported without its note link), for the person mapping it. Empty
+    when the table is exported in full, or has no note role.
+
+    Each problem is {"message", "where"}, where says where it is fixed:
+    "table" (Person ID / Date Event in the table settings), "fields" (the
+    table's note / note_nlp fields) or "values" (concepts on a column's values).
+
+    Mirrors the rules export: a note table needs its Person ID, Date Event and
+    note_id column; a note_nlp table's record is built from the concepts mapped
+    on it, so it needs at least one.
+    """
+    from mapping.models import MappingRule
+
+    if table.table_role not in ROLE_OMOP_TABLE:
+        return []
+    is_nlp = table.table_role == TableRole.NOTE_NLP
+    fields_name = "Note NLP fields" if is_nlp else "Note fields"
+    problems = []
+    for setting, value in (
+        ("Person ID", table.person_id_id),
+        ("Date Event", table.date_event_id),
+    ):
+        if value is None:
+            problems.append(
+                {
+                    "message": f"{setting} isn't set. Choose its column at the top "
+                    "of the table settings.",
+                    "where": "table",
+                }
+            )
+    mapped = set(table.field_mappings.values_list("omop_field__field", flat=True))
+    if not mapped:
+        problems.append(
+            {
+                "message": f"The {fields_name} haven't been saved. Choose how each "
+                "is filled, then click Save fields.",
+                "where": "fields",
+            }
+        )
+    elif NOTE_KEY_FIELD not in mapped:
+        key = (
+            "the key of the note each term was found in"
+            if is_nlp
+            else "each note's key"
+        )
+        problems.append(
+            {
+                "message": f"{NOTE_KEY_FIELD} isn't set. In the {fields_name}, choose "
+                f"the column holding {key}.",
+                "where": "fields",
+            }
+        )
+    if (
+        is_nlp
+        and not MappingRule.objects.filter(
+            source_field__scan_report_table=table,
+            omop_field__table__table="note_nlp",
+            omop_field__field="note_nlp_concept_id",
+        ).exists()
+    ):
+        problems.append(
+            {
+                "message": "No term concepts are mapped yet. This isn't one of "
+                f"the {fields_name}: open the column holding each term's code "
+                "(e.g. snomed_code) and map its values to concepts. Each term's "
+                "note_nlp record, and any condition or other record derived from "
+                "it, comes from the concept mapped to its code.",
+                "where": "values",
+            }
+        )
+    return problems

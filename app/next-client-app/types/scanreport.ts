@@ -54,11 +54,11 @@ interface TableFieldSpec {
 interface TableFieldMapping {
   omop_field: string;
   source_field: number | null;
+  source_field_name: string | null;
   constant_value: string | null;
   concept_name: string | null;
   map_values: boolean;
   // With map_values: how many of the column's values have a concept
-  source_field_name?: string;
   values_total?: number;
   values_mapped?: number;
 }
@@ -66,6 +66,25 @@ interface TableFieldMapping {
 interface TableFieldMappings {
   fields: TableFieldSpec[];
   mappings: TableFieldMapping[];
+  // Why the table would be left out of the exported rules (empty if it isn't)
+  export_problems: NoteTableExportProblem[];
+}
+
+// Something to set before a note / note_nlp table is fully exported, and where
+// it's set: the table settings, the table's note fields, or a column's values
+interface NoteTableExportProblem {
+  message: string;
+  where: "table" | "fields" | "values";
+}
+
+// A note / note_nlp table as listed on the rules page
+interface NoteTableSummary {
+  id: number;
+  name: string;
+  table_role: "note" | "note_nlp";
+  type_concept_id: number | null;
+  mappings: TableFieldMapping[];
+  export_problems: NoteTableExportProblem[];
 }
 
 type TableFieldMappingInput =

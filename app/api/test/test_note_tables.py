@@ -353,6 +353,7 @@ class TestTableFieldMappingsApi(NoteTablesTestBase):
                 {
                     "omop_field": "note_class_concept_id",
                     "source_field": None,
+                    "source_field_name": None,
                     "constant_value": str(self.class_concept.concept_id),
                     "concept_name": "Clinic letter",
                     "map_values": False,
@@ -360,6 +361,7 @@ class TestTableFieldMappingsApi(NoteTablesTestBase):
                 {
                     "omop_field": "note_id",
                     "source_field": self.notes_ref.id,
+                    "source_field_name": "note_ref",
                     "constant_value": None,
                     "concept_name": None,
                     "map_values": False,
@@ -367,6 +369,7 @@ class TestTableFieldMappingsApi(NoteTablesTestBase):
                 {
                     "omop_field": "note_text",
                     "source_field": self.notes_text.id,
+                    "source_field_name": "text",
                     "constant_value": None,
                     "concept_name": None,
                     "map_values": False,
@@ -507,7 +510,68 @@ class TestTableFieldMappingsApi(NoteTablesTestBase):
         self.assertEqual(self.notes.field_mappings.count(), 0)
 
 
-class TestValueMappingWhileAutoMapping(NoteTablesTestBase):
+class TestNoteTableExportStatus(NoteTablesTestBase):
+    """
+    Note tables are built from field mappings rather than mapping rules, so the
+    API says why one would be left out of the exported rules.
+    """
+
+    def _field_mappings(self, table):
+        return self.client.get(
+            f"/api/v2/scanreports/{self.scan_report.id}/tables/{table.id}/field-mappings/"
+        ).json()
+
+    def _note_tables(self):
+        response = self.client.get(
+            f"/api/v2/scanreports/{self.scan_report.id}/note-tables/"
+        )
+        self.assertEqual(response.status_code, 200, response.content)
+        return {table["name"]: table for table in response.json()}
+
+    def _map_notes(self):
+        self.client.put(
+            f"/api/v2/scanreports/{self.scan_report.id}/tables/{self.notes.id}/field-mappings/",
+            [
+                {"omop_field": "note_id", "source_field": self.notes_ref.id},
+                {"omop_field": "note_text", "source_field": self.notes_text.id},
+            ],
+            format="json",
+        )
+
+    def test_note_table_lists_what_is_missing(self):
+        problems = self._field_mappings(self.notes)["export_problems"]
+        self.assertEqual(
+            [problem["where"] for problem in problems], ["table", "table", "fields"]
+        )
+        self.assertIn("Person ID", problems[0]["message"])
+        self.assertIn("Date Event", problems[1]["message"])
+        self.assertIn("Save fields", problems[2]["message"])
+
+    def test_note_table_ready(self):
+        self._map_notes()
+        self.notes.person_id = _field(self.notes, "person_id", "INT")
+        self.notes.date_event = _field(self.notes, "note_date")
+        self.notes.save()
+        self.assertEqual(self._field_mappings(self.notes)["export_problems"], [])
+
+    def test_nlp_table_needs_term_concepts(self):
+        problems = self._field_mappings(self.nlp)["export_problems"]
+        self.assertIn("values", [problem["where"] for problem in problems])
+        self.assertIn("Note NLP fields", problems[-1]["message"])
+
+        value = ScanReportValue.objects.create(
+            scan_report_field=self.nlp_code, value="22298006", frequency=1
+        )
+        save_mapping_rules(
+            ScanReportConcept.objects.create(
+                concept=self.condition,
+                content_type=ContentType.objects.get_for_model(ScanReportValue),
+                object_id=value.id,
+            )
+        )
+        problems = self._field_mappings(self.nlp)["export_problems"]
+        self.assertNotIn("values", [problem["where"] for problem in problems])
+
     def test_value_mapping_changes_wait_for_a_running_job(self):
         from jobs.models import Job, StageStatus
 
@@ -540,6 +604,19 @@ class TestValueMappingWhileAutoMapping(NoteTablesTestBase):
         self.assertEqual(response.status_code, 400, response.content)
         self.assertIn("Auto-mapping is running", response.json()["detail"])
         self.assertFalse(self.notes.field_mappings.filter(map_values=True).exists())
+
+    def test_note_tables_endpoint(self):
+        self._map_notes()
+        ScanReportTable.objects.create(scan_report=self.scan_report, name="other.csv")
+        tables = self._note_tables()
+        self.assertEqual(sorted(tables), ["nlp.csv", "notes.csv"])
+        notes = tables["notes.csv"]
+        self.assertEqual(notes["table_role"], TableRole.NOTE)
+        self.assertEqual(
+            [(m["omop_field"], m["source_field_name"]) for m in notes["mappings"]],
+            [("note_id", "note_ref"), ("note_text", "text")],
+        )
+        self.assertIn("Person ID", notes["export_problems"][0]["message"])
 
 
 class TestNlpSettingsApi(NoteTablesTestBase):

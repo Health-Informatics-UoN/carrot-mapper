@@ -76,7 +76,7 @@ from services.scan_report_build import (
     bulk_create_values,
 )
 from services.storage_service import StorageService
-from services.table_field_mappings import allowed_fields
+from services.table_field_mappings import allowed_fields, export_problems
 from services.worker_service import get_worker_service
 from users.models import Profile
 from users.serializers import ProfileEditSerializer, UserProfileSerializer
@@ -845,7 +845,8 @@ class ScanReportTableFieldMappingsV2(ScanReportPermissionMixin, GenericAPIView):
     (e.g. note_text, lexical_variant, nlp_system).
 
     - GET: {"fields": the OMOP fields the table's role can map, "mappings":
-      the table's field mappings}.
+      the table's field mappings, "export_problems": why the table would be
+      left out of the exported rules (empty if it isn't)}.
     - PUT: replace all the mappings. Body: a list of
       {"omop_field": <name>, "source_field": <field id>},
       {"omop_field": <name>, "constant_value": <value>}, or, for a concept field,
@@ -880,6 +881,7 @@ class ScanReportTableFieldMappingsV2(ScanReportPermissionMixin, GenericAPIView):
             {
                 "fields": fields,
                 "mappings": self.get_serializer(mappings, many=True).data,
+                "export_problems": export_problems(table),
             }
         )
 
@@ -980,6 +982,44 @@ class ScanReportTableFieldMappingsV2(ScanReportPermissionMixin, GenericAPIView):
             for field in old_value_fields | set(value_fields):
                 refresh_field_rules(field)
         return self._response(table)
+
+
+class ScanReportNoteTablesV2(ScanReportPermissionMixin, GenericAPIView):
+    """
+    The note and note_nlp tables of a Scan Report, for the rules page: their
+    records are built from table-level field mappings rather than from mapping
+    rules, so they're listed separately.
+
+    - GET: [{"id", "name", "table_role", "type_concept_id", "mappings" (as the
+      field-mappings endpoint gives them), "export_problems"}], in table order.
+    """
+
+    serializer_class = ScanReportTableFieldMappingSerializer
+    http_method_names = ["get"]
+
+    def get(self, request, *args, **kwargs):
+        tables = ScanReportTable.objects.filter(
+            scan_report=self.scan_report,
+            table_role__in=[TableRole.NOTE, TableRole.NOTE_NLP],
+        ).order_by("id")
+        return Response(
+            [
+                {
+                    "id": table.id,
+                    "name": table.name,
+                    "table_role": table.table_role,
+                    "type_concept_id": table.type_concept_id,
+                    "mappings": self.get_serializer(
+                        table.field_mappings.select_related(
+                            "omop_field", "source_field"
+                        ).order_by("omop_field__field"),
+                        many=True,
+                    ).data,
+                    "export_problems": export_problems(table),
+                }
+                for table in tables
+            ]
+        )
 
 
 class ScanReportTableNlpSettingsV2(ScanReportPermissionMixin, GenericAPIView):

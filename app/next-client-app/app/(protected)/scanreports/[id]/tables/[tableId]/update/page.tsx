@@ -8,6 +8,7 @@ import {
 } from "@/api/scanreports";
 import { lookupConcept } from "@/api/concepts";
 import { TableFieldMappingsForm } from "@/components/scanreports/TableFieldMappingsForm";
+import { NoteTableExportStatus } from "@/components/scanreports/NoteTableExportStatus";
 import { NlpSettingsForm } from "@/components/scanreports/NlpSettingsForm";
 import { objToQuery } from "@/lib/client-utils";
 import { AlertCircleIcon } from "lucide-react";
@@ -127,6 +128,12 @@ export default async function UpdateTable(props: UpdateTableProps) {
       </div>
       {isNoteTable && fieldMappings && (
         <div className="mt-8">
+          <NoteTableExportStatus
+            problems={fieldMappings.export_problems}
+            scanReportId={table.scan_report}
+            tableId={table.id}
+            className="max-w-2xl mb-5"
+          />
           <TableFieldMappingsForm
             scanReportId={table.scan_report}
             tableId={table.id}

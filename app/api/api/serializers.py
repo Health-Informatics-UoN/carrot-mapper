@@ -890,6 +890,9 @@ class ScanReportTableFieldMappingSerializer(serializers.Serializer):
         representation = {
             "omop_field": name,
             "source_field": instance.source_field_id,
+            "source_field_name": instance.source_field.name
+            if instance.source_field_id
+            else None,
             "constant_value": instance.constant_value,
             "concept_name": concept_name,
             "map_values": instance.map_values,
