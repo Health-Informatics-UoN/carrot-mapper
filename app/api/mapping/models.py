@@ -121,6 +121,19 @@ class ScanReportConcept(BaseModel):
     """
 
     concept = models.ForeignKey(Concept, on_delete=models.DO_NOTHING)
+    # The concept in the source vocabulary that `concept` was derived from, e.g.
+    # the SNOMED/ICD10 concept a value's code was looked up as before following
+    # "Maps to" to the standard `concept`. Rules for `<domain>_source_concept_id`
+    # use this when set, and fall back to `concept` when it is null (manual
+    # mappings, and concepts created before this field existed).
+    source_concept = models.ForeignKey(
+        Concept,
+        on_delete=models.DO_NOTHING,
+        null=True,
+        blank=True,
+        related_name="+",
+        help_text="Source vocabulary concept that `concept` was mapped from",
+    )
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     object_id = models.PositiveIntegerField()
     content_object = GenericForeignKey()

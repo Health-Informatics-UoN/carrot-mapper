@@ -276,10 +276,11 @@ CREATE TABLE temp_reuse_concepts_%(table_id)s (
     matching_value_description TEXT,
     matching_field_name TEXT,
     matching_table_name TEXT,
-    -- TODO: when we can distinguish the source concept id/ concept_id for the model SCANREPORTCONCEPT/ M concepts, we need to work more here
     source_scanreport_id INTEGER,
     content_type_id INTEGER,
-    concept_id INTEGER
+    concept_id INTEGER,
+    -- Source vocabulary concept of the reused SR concept, if it recorded one (#1006)
+    source_concept_id INTEGER
 );
 """
 
@@ -315,6 +316,7 @@ WITH
             sr_table.name AS matching_table_name,
             value_content_type.id AS content_type_id,
             sr_concept.concept_id AS concept_id,
+            sr_concept.source_concept_id AS source_concept_id,
             eligible_report.id AS source_scanreport_id
         FROM eligible_reports AS eligible_report
         JOIN mapping_scanreporttable AS sr_table ON sr_table.scan_report_id = eligible_report.id
@@ -329,11 +331,11 @@ WITH
     )
 INSERT INTO temp_reuse_concepts_%(table_id)s (
     matching_value_name, matching_value_description, matching_field_name, matching_table_name,
-    content_type_id, concept_id, source_scanreport_id
+    content_type_id, concept_id, source_concept_id, source_scanreport_id
 )
 SELECT
     matching_value_name, matching_value_description, matching_field_name, matching_table_name,
-    content_type_id, concept_id, source_scanreport_id
+    content_type_id, concept_id, source_concept_id, source_scanreport_id
 FROM values_with_m_concepts;
 """
 
@@ -367,6 +369,7 @@ WITH
             sr_table.name AS matching_table_name,
             field_content_type.id AS content_type_id,
             sr_concept.concept_id AS concept_id,
+            sr_concept.source_concept_id AS source_concept_id,
             eligible_report.id AS source_scanreport_id
         FROM eligible_reports AS eligible_report
         JOIN mapping_scanreporttable AS sr_table ON sr_table.scan_report_id = eligible_report.id
@@ -380,11 +383,11 @@ WITH
     )
 INSERT INTO temp_reuse_concepts_%(table_id)s (
     matching_field_name, matching_table_name,
-    content_type_id, concept_id, source_scanreport_id
+    content_type_id, concept_id, source_concept_id, source_scanreport_id
 )
 SELECT
     matching_field_name, matching_table_name,
-    content_type_id, concept_id, source_scanreport_id
+    content_type_id, concept_id, source_concept_id, source_scanreport_id
 FROM fields_with_m_concepts;
 """
 
@@ -481,7 +484,6 @@ WHERE object_id IS NULL;
 """
 
 
-# TODO: when source_concept_id is added to the model SCANREPORTCONCEPT, we need to update the query belowto solve the issue #1006
 create_reuse_concept_query = """
     -- Insert standard concepts for field values (only if they don't already exist)
     INSERT INTO mapping_scanreportconcept (
@@ -489,8 +491,8 @@ create_reuse_concept_query = """
         updated_at,
         object_id,
         creation_type,
-        -- TODO: Will have the standard_concept_id (nullable) here
         concept_id,
+        source_concept_id,
         content_type_id
     )
     SELECT
@@ -498,9 +500,8 @@ create_reuse_concept_query = """
         NOW(),
         temp_reuse_concepts.object_id,
         'R',       -- Creation type: Reused
-        -- TODO: if standard_concept_id is null then we need to use the source_concept_id
-        -- TODO: add standard_concept_id here for the newly creted SR concepts
         temp_reuse_concepts.concept_id,
+        temp_reuse_concepts.source_concept_id,
         temp_reuse_concepts.content_type_id -- content_type_id for scanreportvalue/scanreportfield
     FROM temp_reuse_concepts_%(table_id)s AS temp_reuse_concepts;
     """
@@ -599,8 +600,15 @@ create_update_temp_rules_table_query = """
         )
         SELECT
             mapping_rule.concept_id AS sr_concept_id,
+            -- Always the mapped concept's name, so all rules for one SR concept share a key in the JSON
             omop_concept.concept_name,
-            sr_concept.concept_id,
+            -- <domain>_source_concept_id gets the source vocabulary concept when one was
+            -- recorded (#1006), falling back to the mapped concept otherwise
+            CASE
+                WHEN RIGHT(omop_field.field, 18) = '_source_concept_id'
+                THEN COALESCE(sr_concept.source_concept_id, sr_concept.concept_id)
+                ELSE sr_concept.concept_id
+            END AS concept_id,
             omop_field.field AS dest_field,
             omop_table.table AS dest_table,
             sr_field.name AS source_field,
