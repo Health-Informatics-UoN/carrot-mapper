@@ -12,6 +12,7 @@ from __future__ import annotations
 import csv
 import io
 import json
+import logging
 from collections.abc import Hashable, Iterable, Mapping
 from datetime import date
 from typing import Any
@@ -139,10 +140,20 @@ def _sorted_groups(rows: Iterable[Row], key: str) -> list[tuple[Hashable, list[R
     return sorted(groups.items(), key=lambda item: item[0])
 
 
-def rules_to_json_v2(rules: Iterable[Row], metadata: Mapping[str, Any]) -> str:
+def rules_to_json_v2(
+    rules: Iterable[Row],
+    metadata: Mapping[str, Any],
+    tables: Iterable[Row] = (),
+    field_mappings: Iterable[Row] = (),
+    type_fields: Mapping[str, str] | None = None,
+) -> str:
     """
     Rules grouped by OMOP table, then by source table, with each source table's
     person_id mapping, date mapping and concept mappings (per source field).
+
+    ``tables``, ``field_mappings`` and ``type_fields`` add the scan report
+    tables' roles, field mappings and type concepts; see
+    ``add_table_level_mappings``.
     """
     result: dict[str, Any] = {}
 
@@ -290,4 +301,96 @@ def rules_to_json_v2(rules: Iterable[Row], metadata: Mapping[str, Any]) -> str:
                     concept_mappings
                 )
 
+    add_table_level_mappings(result, tables, field_mappings, type_fields or {})
+
     return json.dumps({"metadata": dict(metadata), "cdm": result}, indent=2)
+
+
+# The note table, and the OMOP field naming a note's key (see the API's
+# services/table_field_mappings.py).
+NOTE_TABLE = "note"
+NOTE_KEY_FIELD = "note_id"
+
+
+def _clean(name: Any) -> str:
+    return str(name).replace("\ufeff", "")
+
+
+def _constant(omop_field: str, value: str) -> int | str:
+    """Concept id fields are exported as numbers, everything else as text"""
+    return int(value) if omop_field.endswith("_concept_id") else value
+
+
+def add_table_level_mappings(
+    result: dict[str, Any],
+    tables: Iterable[Row],
+    field_mappings: Iterable[Row],
+    type_fields: Mapping[str, str],
+) -> None:
+    """
+    Add each Scan Report Table's role, type concept and field mappings to the v2
+    rules in ``result``, as the record-level keys Carrot Transform understands
+    (see https://carrot.ac.uk/transform/rules_v2_notes_nlp):
+
+    - type concept: a constant for the <table>_type_concept_id field of every
+      block built from the table.
+    - note tables: a note block, one record per row, keyed by the note_id
+      mapping and filled from the other field mappings.
+
+    Args:
+        - tables: rows of source_table, table_role, type_concept_id,
+          person_field and date_field (field names, or None)
+        - field_mappings: rows of source_table, omop_field, source_field (a
+          field name, or None) and constant_value
+        - type_fields: OMOP table -> its *_type_concept_id field
+    """
+    mappings_by_table: dict[Any, list[Row]] = {}
+    for mapping in field_mappings:
+        mappings_by_table.setdefault(mapping["source_table"], []).append(mapping)
+
+    for table in tables:
+        source_table = _clean(table["source_table"])
+        role = table["table_role"]
+
+        copies: dict[str, str] = {}
+        constants: dict[str, int | str] = {}
+        note_key = None
+        for mapping in mappings_by_table.get(table["source_table"], []):
+            omop_field = mapping["omop_field"]
+            if omop_field == NOTE_KEY_FIELD:
+                note_key = _clean(mapping["source_field"])
+            elif mapping["source_field"] is not None:
+                copies[omop_field] = _clean(mapping["source_field"])
+            else:
+                constants[omop_field] = _constant(omop_field, mapping["constant_value"])
+
+        if role == "note":
+            if not (note_key and table["person_field"] and table["date_field"]):
+                # The caller logs nothing per table, so say why the notes are missing
+                logging.warning(
+                    f"Note table {source_table} needs a person ID, a date event and a "
+                    "note_id field mapping; it is left out of the rules"
+                )
+                continue
+            result.setdefault(NOTE_TABLE, {})[source_table] = {
+                "person_id_mapping": {
+                    "source_field": _clean(table["person_field"]),
+                    "dest_field": "person_id",
+                },
+                "date_mapping": {
+                    "source_field": _clean(table["date_field"]),
+                    "dest_field": ["note_datetime"],
+                },
+                "record_key": {"source_field": note_key},
+                "field_mappings": copies,
+                "constant_mappings": constants,
+            }
+
+        # The table's type concept goes on every record built from it
+        if table["type_concept_id"] is not None:
+            for dest_table, blocks in result.items():
+                type_field = type_fields.get(dest_table)
+                if type_field and source_table in blocks:
+                    blocks[source_table].setdefault("constant_mappings", {})[
+                        type_field
+                    ] = int(table["type_concept_id"])

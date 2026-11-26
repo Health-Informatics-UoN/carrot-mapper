@@ -22,6 +22,20 @@ class CreationType(models.TextChoices):
     Matched = "X", "Matched"
 
 
+class TableRole(models.TextChoices):
+    """
+    What a Scan Report Table's rows become in the OMOP CDM.
+
+    - STANDARD: records in the table each mapped concept's domain points to.
+    - DEATH: mapped concepts go to the death table (cause of death).
+    - NOTE: one note record per row, built from the table's field mappings.
+    """
+
+    STANDARD = "standard", "Standard"
+    DEATH = "death", "Death"
+    NOTE = "note", "Note"
+
+
 class VisibilityChoices(models.TextChoices):
     PUBLIC = "PUBLIC", "Public"
     RESTRICTED = "RESTRICTED", "Restricted"
@@ -277,7 +291,25 @@ class ScanReportTable(BaseModel):
 
     scan_report = models.ForeignKey(ScanReport, on_delete=models.CASCADE)
     name = models.CharField(max_length=256, db_index=True)
-    death_table = models.BooleanField(default=False, null=True)
+    table_role = models.CharField(
+        max_length=16,
+        choices=TableRole.choices,
+        default=TableRole.STANDARD,
+        # Also a database default: tables are created with raw SQL when a scan
+        # report is processed (Airflow), which doesn't set the role
+        db_default=TableRole.STANDARD,
+        help_text="What this table's rows become in the OMOP CDM",
+    )
+    # Written to the <table>_type_concept_id field of every record built from
+    # this table, e.g. 32817 (EHR).
+    type_concept = models.ForeignKey(
+        Concept,
+        on_delete=models.DO_NOTHING,
+        null=True,
+        blank=True,
+        related_name="+",
+        help_text="Type concept for every record built from this table",
+    )
 
     # Quick notes:
     # - "ScanReportField", instead of ScanReportField,
@@ -306,6 +338,11 @@ class ScanReportTable(BaseModel):
 
     def __str__(self):
         return str(self.id)
+
+    @property
+    def death_table(self) -> bool:
+        """Deprecated: whether the table has the death role. Use table_role."""
+        return self.table_role == TableRole.DEATH
 
 
 class MappingRecommendation(BaseModel):
@@ -356,6 +393,43 @@ class ScanReportField(BaseModel):
 
     class Meta:
         app_label = "mapping"
+
+    def __str__(self):
+        return str(self.id)
+
+
+class ScanReportTableFieldMapping(BaseModel):
+    """
+    A table-level mapping from a source column, or a constant, to an OMOP field.
+
+    Used for fields that aren't driven by concept mapping, such as note_text,
+    and for fixed values such as note_class_concept_id. Exactly one of
+    `source_field` and `constant_value` is set.
+
+    `note.note_id` is mapped to the source column holding each note's key.
+    """
+
+    scan_report_table = models.ForeignKey(
+        ScanReportTable, on_delete=models.CASCADE, related_name="field_mappings"
+    )
+    omop_field = models.ForeignKey(OmopField, on_delete=models.CASCADE)
+    source_field = models.ForeignKey(
+        ScanReportField,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="+",
+    )
+    constant_value = models.CharField(max_length=255, null=True, blank=True)
+
+    class Meta:
+        app_label = "mapping"
+        constraints = [
+            UniqueConstraint(
+                fields=["scan_report_table", "omop_field"],
+                name="sr_table_field_mapping_unique",
+            )
+        ]
 
     def __str__(self):
         return str(self.id)

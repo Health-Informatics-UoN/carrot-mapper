@@ -12,11 +12,14 @@ from mapping.models import (
     Dataset,
     MappingRecommendation,
     MappingStatus,
+    OmopField,
     ScanReport,
     ScanReportConcept,
     ScanReportField,
     ScanReportTable,
+    ScanReportTableFieldMapping,
     ScanReportValue,
+    TableRole,
     UploadStatus,
     VisibilityChoices,
 )
@@ -25,6 +28,7 @@ from openpyxl.workbook.workbook import Workbook  # type: ignore
 from rest_framework import serializers
 from rest_framework.exceptions import NotFound, ParseError, PermissionDenied
 from services.rules_export import analyse_concepts
+from services.table_field_mappings import ROLE_OMOP_TABLE, allowed_fields
 from users.serializers import UserSerializer
 
 from api.logger import logger
@@ -774,7 +778,40 @@ class ScanReportFieldListSerializerV2(DynamicFieldsMixin, serializers.ModelSeria
         fields = "__all__"
 
 
-class ScanReportTableListSerializerV2(DynamicFieldsMixin, serializers.ModelSerializer):
+class DeathTableAliasMixin(serializers.Serializer):
+    """
+    Keeps the deprecated `death_table` flag working for API clients written
+    before table roles. It reads as whether the table has the death role, and
+    setting it on its own sets the role: true gives the death role, false
+    turns a death table back into a standard one.
+    """
+
+    death_table = serializers.BooleanField(
+        required=False, help_text="Deprecated: use table_role."
+    )
+
+    def validate(self, data):
+        death_table = data.pop("death_table", None)
+        if death_table is not None:
+            instance = (
+                self.instance if isinstance(self.instance, ScanReportTable) else None
+            )
+            current = instance.table_role if instance else TableRole.STANDARD
+            role = data.get("table_role", current)
+            if "table_role" in data and death_table != (role == TableRole.DEATH):
+                raise serializers.ValidationError(
+                    {"death_table": "Doesn't match table_role; send table_role only."}
+                )
+            if death_table:
+                data["table_role"] = TableRole.DEATH
+            elif role == TableRole.DEATH:
+                data["table_role"] = TableRole.STANDARD
+        return super().validate(data)
+
+
+class ScanReportTableListSerializerV2(
+    DeathTableAliasMixin, DynamicFieldsMixin, serializers.ModelSerializer
+):
     date_event = ScanReportFieldListSerializerV2()
     person_id = ScanReportFieldListSerializerV2()
 
@@ -802,10 +839,102 @@ class ScanReportTableListSerializerV2(DynamicFieldsMixin, serializers.ModelSeria
         return super().validate(data)
 
 
-class ScanReportTableEditSerializer(DynamicFieldsMixin, serializers.ModelSerializer):
+class ScanReportTableEditSerializer(
+    DeathTableAliasMixin, DynamicFieldsMixin, serializers.ModelSerializer
+):
     class Meta:
         model = ScanReportTable
         fields = "__all__"
+
+    def update(self, instance, validated_data):
+        old_role = instance.table_role
+        instance = super().update(instance, validated_data)
+        if instance.table_role != old_role:
+            # Field mappings belong to the old role's OMOP table
+            instance.field_mappings.all().delete()
+        return instance
+
+
+class ScanReportTableFieldMappingSerializer(serializers.Serializer):
+    """
+    One table-level field mapping. `omop_field` is the field's name in the OMOP
+    table for the table's role (note); exactly one of
+    `source_field` (a field of this Scan Report Table) and `constant_value` is
+    given. Expects the ScanReportTable as context["table"].
+    """
+
+    omop_field = serializers.CharField()
+    source_field = serializers.PrimaryKeyRelatedField(
+        queryset=ScanReportField.objects.all(), required=False, allow_null=True
+    )
+    constant_value = serializers.CharField(
+        required=False, allow_null=True, max_length=255
+    )
+
+    def to_representation(self, instance: ScanReportTableFieldMapping):
+        name = instance.omop_field.field
+        concept_name = None
+        if name.endswith("_concept_id") and (instance.constant_value or "").isdigit():
+            concept = Concept.objects.filter(
+                concept_id=int(instance.constant_value)
+            ).first()
+            concept_name = concept.concept_name if concept else None
+        return {
+            "omop_field": name,
+            "source_field": instance.source_field_id,
+            "constant_value": instance.constant_value,
+            "concept_name": concept_name,
+        }
+
+    def validate(self, data):
+        table: ScanReportTable = self.context["table"]
+        fields = allowed_fields(table.table_role)
+        name = data["omop_field"]
+        spec = fields.get(name)
+        if spec is None:
+            raise serializers.ValidationError(
+                {
+                    "omop_field": f"'{name}' can't be mapped on a table with role "
+                    f"'{table.table_role}'. Allowed: {sorted(fields) or 'none'}."
+                }
+            )
+
+        source_field = data.get("source_field")
+        constant = data.get("constant_value")
+        if (source_field is None) == (constant is None):
+            raise serializers.ValidationError(
+                f"'{name}' needs exactly one of source_field and constant_value."
+            )
+        if source_field is not None:
+            if not spec.source:
+                raise serializers.ValidationError(
+                    {"source_field": f"'{name}' can't take a source field."}
+                )
+            if source_field.scan_report_table_id != table.id:
+                raise serializers.ValidationError(
+                    {
+                        "source_field": f"'{name}': the source field must belong to this table."
+                    }
+                )
+        if constant is not None:
+            if not spec.constant:
+                raise serializers.ValidationError(
+                    {"constant_value": f"'{name}' can't take a constant value."}
+                )
+            if spec.concept and not (
+                constant.isdigit()
+                and Concept.objects.filter(concept_id=int(constant)).exists()
+            ):
+                raise serializers.ValidationError(
+                    {
+                        "constant_value": f"'{name}': '{constant}' is not a known concept id."
+                    }
+                )
+
+        data["omop_field"] = OmopField.objects.get(
+            table__table=ROLE_OMOP_TABLE[table.table_role], field=name
+        )
+        return data
 
 
 class ScanReportFieldEditSerializer(DynamicFieldsMixin, serializers.ModelSerializer):
@@ -934,3 +1063,28 @@ class GetRulesAnalysis(DynamicFieldsMixin, serializers.ModelSerializer):
 
     def to_representation(self, scan_report):
         return analyse_concepts(scan_report.id)
+
+
+def validation_error_detail(errors) -> str:
+    """Flatten DRF validation errors into one readable message"""
+    messages: list[str] = []
+
+    def walk(value, prefix: str = ""):
+        if isinstance(value, dict):
+            for key, inner in value.items():
+                # list items' errors are keyed by index; their messages say what
+                # they're about, so only name real fields
+                label = (
+                    ""
+                    if key == "non_field_errors" or isinstance(key, int)
+                    else f"{key}: "
+                )
+                walk(inner, f"{prefix}{label}")
+        elif isinstance(value, list):
+            for item in value:
+                walk(item, prefix)
+        elif value:
+            messages.append(f"{prefix}{value}")
+
+    walk(errors)
+    return " ".join(messages) or "Invalid data."

@@ -18,13 +18,45 @@ import { FormikSelect } from "../form-components/FormikSelect";
 import { useRouter } from "next/navigation";
 import { Checkbox } from "../ui/checkbox";
 import { enableReuseTriggerOption } from "@/constants";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { ConceptIdInput } from "./ConceptIdInput";
 
 interface FormData {
   personId: number | null;
   dateEvent: number | null;
   triggerReuse: boolean;
-  death_table: boolean;
+  tableRole: TableRole;
+  typeConcept: string;
 }
+
+const TABLE_ROLES: { value: TableRole; label: string; description: string }[] =
+  [
+    {
+      value: "standard",
+      label: "Standard",
+      description:
+        "Concepts are mapped to the OMOP table their domain points to, e.g. Condition concepts to condition_occurrence.",
+    },
+    {
+      value: "death",
+      label: "Death",
+      description:
+        "Mapping rules for this table will have Destination table as Death, concepts will be recognised as Cause of Death, and the Date Event will map to the Death date field in OMOP CDM.",
+    },
+    {
+      value: "note",
+      label: "Note",
+      description:
+        "Each row is a clinical note and becomes a record in the note table. After saving, choose which columns hold the note's key, text and other fields.",
+    },
+  ];
 
 export function ScanReportTableUpdateForm({
   scanreportFields,
@@ -32,12 +64,14 @@ export function ScanReportTableUpdateForm({
   permissions,
   personId,
   dateEvent,
+  typeConceptName,
 }: {
   scanreportFields: ScanReportField[];
   scanreportTable: ScanReportTable;
   permissions: Permission[];
   personId: ScanReportField;
   dateEvent: ScanReportField;
+  typeConceptName: string | null;
 }) {
   const router = useRouter();
   const canUpdate =
@@ -53,8 +87,13 @@ export function ScanReportTableUpdateForm({
       person_id: data.personId !== 0 ? data.personId : null,
       date_event: data.dateEvent !== 0 ? data.dateEvent : null,
       trigger_reuse: data.triggerReuse,
-      death_table: data.death_table,
+      table_role: data.tableRole,
+      type_concept: data.typeConcept ? Number(data.typeConcept) : null,
     };
+    if (data.typeConcept && !/^\d+$/.test(data.typeConcept)) {
+      toast.error("The type concept must be a concept ID (a number).");
+      return;
+    }
 
     const response = await updateScanReportTable(
       scanreportTable.scan_report,
@@ -77,7 +116,8 @@ export function ScanReportTableUpdateForm({
         dateEvent: initialDateEvent[0].value,
         personId: initialPersonId[0].value,
         triggerReuse: scanreportTable.trigger_reuse,
-        death_table: Boolean(scanreportTable.death_table),
+        tableRole: scanreportTable.table_role,
+        typeConcept: scanreportTable.type_concept?.toString() ?? "",
       }}
       onSubmit={(data) => {
         handleSubmit(data);
@@ -119,30 +159,61 @@ export function ScanReportTableUpdateForm({
             </FormItem>
 
             <FormItem>
-              <div className="flex gap-2 items-center">
-                <FormLabel className="mb-0">
-                  Does this table contain death data for the OMOP CDM Death
-                  table?
-                </FormLabel>
-                <FormControl>
-                  <Checkbox
-                    checked={values.death_table}
-                    onCheckedChange={(checked) => {
-                      setFieldValue("death_table", checked);
-                    }}
-                    disabled={!canUpdate}
-                    className="size-5"
-                  />
-                </FormControl>
-                <span className="text-sm">
-                  {values.death_table === true ? "Yes" : "No"}
-                </span>
-              </div>
+              <FormLabel htmlFor="tableRole">Table role</FormLabel>
               <FormDescription>
-                Mapping rules for this table will have Destination table as
-                Death, concepts will be recognised as Cause of Death, and the
-                Date Event will map to the Death date field in OMOP CDM.
+                What this table&apos;s rows become in the OMOP CDM.
               </FormDescription>
+              <FormControl>
+                <Select
+                  value={values.tableRole}
+                  onValueChange={(role) => setFieldValue("tableRole", role)}
+                  disabled={!canUpdate}
+                >
+                  <SelectTrigger id="tableRole" className="max-w-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {TABLE_ROLES.map((role) => (
+                      <SelectItem key={role.value} value={role.value}>
+                        {role.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </FormControl>
+              <FormDescription>
+                {
+                  TABLE_ROLES.find((role) => role.value === values.tableRole)
+                    ?.description
+                }
+              </FormDescription>
+              {values.tableRole !== scanreportTable.table_role &&
+                scanreportTable.table_role === "note" && (
+                  <Alert className="mt-2">
+                    <AlertDescription>
+                      Changing the role clears this table&apos;s note field
+                      mappings.
+                    </AlertDescription>
+                  </Alert>
+                )}
+            </FormItem>
+
+            <FormItem>
+              <FormLabel htmlFor="typeConcept">Type concept</FormLabel>
+              <FormDescription>
+                Optional. Records the provenance of every record built from this
+                table in its *_type_concept_id field, e.g. 32817 (EHR). Check
+                the ID in your vocabulary.
+              </FormDescription>
+              <FormControl>
+                <ConceptIdInput
+                  id="typeConcept"
+                  value={values.typeConcept}
+                  initialName={typeConceptName}
+                  onChange={(value) => setFieldValue("typeConcept", value)}
+                  disabled={!canUpdate}
+                />
+              </FormControl>
             </FormItem>
 
             {enableReuseTriggerOption === "true" && (

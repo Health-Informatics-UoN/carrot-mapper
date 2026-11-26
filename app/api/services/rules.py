@@ -12,6 +12,7 @@ from mapping.models import (
     ScanReportField,
     ScanReportTable,
     ScanReportValue,
+    TableRole,
 )
 
 # OMOP's standard concept_id for "No matching concept". Its domain (Metadata)
@@ -37,6 +38,7 @@ m_allowed_tables = [
     "device_exposure",
     "specimen",
     "death",
+    "note",
 ]
 
 # look up of date-events in all the allowed (destination) tables
@@ -53,6 +55,7 @@ m_date_field_mapper = {
     ],
     "specimen": ["specimen_datetime"],
     "death": ["death_datetime"],
+    "note": ["note_datetime"],
 }
 
 
@@ -331,7 +334,7 @@ def _find_destination_table(
     # get the omop field for the source_concept_id for this domain
 
     # For death tables (not gender, race, ethnicity) use cause_source_concept_id
-    if table.death_table and domain not in PERSON_DOMAINS:
+    if table.table_role == TableRole.DEATH and domain not in PERSON_DOMAINS:
         omop_field = _get_omop_field("cause_source_concept_id", "death")
     elif domain == "meas value":
         omop_field = _get_omop_field("value_as_concept_id", "measurement")
@@ -409,6 +412,7 @@ def save_mapping_rules(
         return []
 
     rules = []
+
     person_id_rule = _get_person_id_rule(
         scan_report, scan_report_concept, source_table, destination_table
     )
@@ -420,7 +424,7 @@ def save_mapping_rules(
     rules += date_rules
 
     # Convert domain of concepts added to Death table to "CAUSE", in order to facilitate the get OMOP field process
-    if source_table.death_table and domain not in PERSON_DOMAINS:
+    if source_table.table_role == TableRole.DEATH and domain not in PERSON_DOMAINS:
         domain = "cause"
 
     # In case of domain = "meas value", this rule will not be generated.
