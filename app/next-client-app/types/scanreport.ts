@@ -30,7 +30,86 @@ interface ScanReportTable {
   permissions: Permission[];
   jobs: Job[];
   trigger_reuse: boolean;
-  death_table?: boolean;
+  table_role: TableRole;
+  type_concept: number | null;
+}
+
+type TableRole = "standard" | "death" | "note" | "note_nlp";
+
+interface ConceptSummary {
+  concept_id: number;
+  concept_name: string | null;
+}
+
+// An OMOP field a note / note_nlp table can map at table level
+interface TableFieldSpec {
+  omop_field: string;
+  required: boolean;
+  source: boolean; // can take a source field
+  constant: boolean; // can take a constant value
+  concept: boolean; // the constant must be a concept id
+  values: boolean; // can take the concepts mapped to a column's values
+}
+
+interface TableFieldMapping {
+  omop_field: string;
+  source_field: number | null;
+  source_field_name: string | null;
+  constant_value: string | null;
+  concept_name: string | null;
+  map_values: boolean;
+  // With map_values: how many of the column's values have a concept
+  values_total?: number;
+  values_mapped?: number;
+}
+
+interface TableFieldMappings {
+  fields: TableFieldSpec[];
+  mappings: TableFieldMapping[];
+  // Why the table would be left out of the exported rules (empty if it isn't)
+  export_problems: NoteTableExportProblem[];
+}
+
+// Something to set before a note / note_nlp table is fully exported, and where
+// it's set: the table settings, the table's note fields, or a column's values
+interface NoteTableExportProblem {
+  message: string;
+  where: "table" | "fields" | "values";
+}
+
+// A note / note_nlp table as listed on the rules page
+interface NoteTableSummary {
+  id: number;
+  name: string;
+  table_role: "note" | "note_nlp";
+  type_concept_id: number | null;
+  mappings: TableFieldMapping[];
+  export_problems: NoteTableExportProblem[];
+}
+
+type TableFieldMappingInput =
+  | { omop_field: string; source_field: number }
+  | { omop_field: string; constant_value: string }
+  | { omop_field: string; source_field: number; map_values: true };
+
+interface NlpExclusion {
+  source_field: number;
+  source_field_name: string;
+  excluded_values: string[];
+}
+
+interface NlpSettings {
+  source_domain_concept: ConceptSummary | null;
+  relationship_concept: ConceptSummary | null;
+  reverse_relationship_concept: ConceptSummary | null;
+  exclusions: NlpExclusion[];
+}
+
+interface NlpSettingsInput {
+  source_domain_concept: number | null;
+  relationship_concept: number | null;
+  reverse_relationship_concept: number | null;
+  exclusions: { source_field: number; excluded_values: string[] }[];
 }
 
 interface ScanReportField {
