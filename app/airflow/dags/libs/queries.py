@@ -423,7 +423,7 @@ find_object_id_query = """
                     LIMIT 1)
                 ELSE NULL
             END
-    -- We only want to reuse concepts between tables with the same role (standard, death).
+    -- We only want to reuse concepts between tables with the same role (standard, death, note).
     -- To do this, we're checking the role is the same for:
     --   1. The current scan report table (id = %(table_id)s)
     --   2. The source scan report table we're trying to reuse from (using name and source_scanreport_id)

@@ -28,10 +28,12 @@ class TableRole(models.TextChoices):
 
     - STANDARD: records in the table each mapped concept's domain points to.
     - DEATH: mapped concepts go to the death table (cause of death).
+    - NOTE: one note record per row, built from the table's field mappings.
     """
 
     STANDARD = "standard", "Standard"
     DEATH = "death", "Death"
+    NOTE = "note", "Note"
 
 
 class VisibilityChoices(models.TextChoices):
@@ -391,6 +393,43 @@ class ScanReportField(BaseModel):
 
     class Meta:
         app_label = "mapping"
+
+    def __str__(self):
+        return str(self.id)
+
+
+class ScanReportTableFieldMapping(BaseModel):
+    """
+    A table-level mapping from a source column, or a constant, to an OMOP field.
+
+    Used for fields that aren't driven by concept mapping, such as note_text,
+    and for fixed values such as note_class_concept_id. Exactly one of
+    `source_field` and `constant_value` is set.
+
+    `note.note_id` is mapped to the source column holding each note's key.
+    """
+
+    scan_report_table = models.ForeignKey(
+        ScanReportTable, on_delete=models.CASCADE, related_name="field_mappings"
+    )
+    omop_field = models.ForeignKey(OmopField, on_delete=models.CASCADE)
+    source_field = models.ForeignKey(
+        ScanReportField,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="+",
+    )
+    constant_value = models.CharField(max_length=255, null=True, blank=True)
+
+    class Meta:
+        app_label = "mapping"
+        constraints = [
+            UniqueConstraint(
+                fields=["scan_report_table", "omop_field"],
+                name="sr_table_field_mapping_unique",
+            )
+        ]
 
     def __str__(self):
         return str(self.id)

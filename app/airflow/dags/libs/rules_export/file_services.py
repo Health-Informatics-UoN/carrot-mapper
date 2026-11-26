@@ -105,11 +105,11 @@ def build_rules_json(scan_report_name: str, scan_report_id: int) -> BytesIO:
 
 def _fetch_table_level_mappings(
     scan_report_id: int,
-) -> tuple[list[dict[str, Any]], dict[str, str]]:
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, str]]:
     """
-    A scan report's tables (role, type concept, person and date fields) and
-    each OMOP table's *_type_concept_id field, for the type concept part of the
-    JSON v2 rules.
+    A scan report's tables (role, type concept, person and date fields), their
+    table-level field mappings and each OMOP table's *_type_concept_id field,
+    for the note and type concept parts of the JSON v2 rules.
     """
     tables = _fetch_rows(
         """
@@ -127,6 +127,22 @@ def _fetch_table_level_mappings(
         """,
         scan_report_id,
     )
+    field_mappings = _fetch_rows(
+        """
+        SELECT
+            sr_table.name AS source_table,
+            omop_field.field AS omop_field,
+            sr_field.name AS source_field,
+            mapping.constant_value
+        FROM mapping_scanreporttablefieldmapping AS mapping
+        JOIN mapping_scanreporttable AS sr_table ON sr_table.id = mapping.scan_report_table_id
+        JOIN mapping_omopfield AS omop_field ON omop_field.id = mapping.omop_field_id
+        LEFT JOIN mapping_scanreportfield AS sr_field ON sr_field.id = mapping.source_field_id
+        WHERE sr_table.scan_report_id = %(scan_report_id)s
+        ORDER BY mapping.id;
+        """,
+        scan_report_id,
+    )
     type_fields = _fetch_rows(
         """
         SELECT omop_table.table AS dest_table, omop_field.field
@@ -136,7 +152,11 @@ def _fetch_table_level_mappings(
         """,
         scan_report_id,
     )
-    return tables, {row["dest_table"]: row["field"] for row in type_fields}
+    return (
+        tables,
+        field_mappings,
+        {row["dest_table"]: row["field"] for row in type_fields},
+    )
 
 
 def build_rules_json_v2(scan_report_name: str, scan_report_id: int) -> BytesIO:
@@ -159,8 +179,12 @@ def build_rules_json_v2(scan_report_name: str, scan_report_id: int) -> BytesIO:
             "SELECT * FROM temp_rules_export_%(scan_report_id)s_json ORDER BY dest_table, source_table, source_field;",
             scan_report_id,
         )
-        tables, type_fields = _fetch_table_level_mappings(scan_report_id)
-        return _to_bytes(rules_to_json_v2(rules, metadata, tables, type_fields))
+        tables, field_mappings, type_fields = _fetch_table_level_mappings(
+            scan_report_id
+        )
+        return _to_bytes(
+            rules_to_json_v2(rules, metadata, tables, field_mappings, type_fields)
+        )
     except Exception as e:
         logging.error(f"Error building rules JSON v2: {e!s}")
         update_job_status(

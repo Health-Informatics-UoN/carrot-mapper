@@ -1,6 +1,6 @@
 """
-Table roles: death tables now being identified by role, the deprecated
-death_table API flag, and the role's database default.
+Table roles: note tables and their field mappings API, and death tables now
+being identified by role (with the deprecated death_table API flag).
 
 Uses setUpTestData for OmopTable/OmopField rows and clears the
 _get_omop_field cache around the class, for the reasons given on
@@ -25,11 +25,12 @@ from mapping.models import (
     ScanReportConcept,
     ScanReportField,
     ScanReportTable,
+    ScanReportTableFieldMapping,
     TableRole,
     VisibilityChoices,
 )
 from rest_framework.authtoken.models import Token
-from rest_framework.test import APIClient
+from rest_framework.test import APIClient, APIRequestFactory
 from services.rules import _get_omop_field, save_mapping_rules
 
 OMOP_TABLES = {
@@ -48,6 +49,20 @@ OMOP_TABLES = {
         "cause_concept_id",
         "cause_source_concept_id",
         "cause_source_value",
+    ],
+    "note": [
+        "note_id",
+        "person_id",
+        "note_datetime",
+        "note_type_concept_id",
+        "note_class_concept_id",
+        "note_title",
+        "note_text",
+        "encoding_concept_id",
+        "language_concept_id",
+        "note_source_value",
+        "note_event_id",
+        "note_event_field_concept_id",
     ],
 }
 
@@ -111,7 +126,14 @@ class NoteTablesTestBase(TestCase):
             for name in fields:
                 OmopField.objects.create(table=omop_table, field=name)
 
+        cls.notes = ScanReportTable.objects.create(
+            scan_report=cls.scan_report, name="notes.csv", table_role=TableRole.NOTE
+        )
+        cls.notes_ref = _field(cls.notes, "note_ref")
+        cls.notes_text = _field(cls.notes, "text")
+
         cls.condition = _concept(920001, "Myocardial infarction", "Condition")
+        cls.class_concept = _concept(920003, "Clinic letter", "Note Type")
 
     def setUp(self):
         self.client = APIClient()
@@ -192,6 +214,174 @@ class TestDeathTableFlag(NoteTablesTestBase):
         # Agreeing values are fine
         self._edit(table, {"death_table": True, "table_role": "death"})
         self.assertEqual(table.table_role, TableRole.DEATH)
+
+
+class TestTableFieldMappingsApi(NoteTablesTestBase):
+    def _url(self, table):
+        return f"/api/v2/scanreports/{self.scan_report.id}/tables/{table.id}/field-mappings/"
+
+    def _put(self, table, body):
+        return self.client.put(self._url(table), body, format="json")
+
+    def test_put_and_get_note_mappings(self):
+        body = [
+            {"omop_field": "note_id", "source_field": self.notes_ref.id},
+            {"omop_field": "note_text", "source_field": self.notes_text.id},
+            {
+                "omop_field": "note_class_concept_id",
+                "constant_value": str(self.class_concept.concept_id),
+            },
+        ]
+        response = self._put(self.notes, body)
+        self.assertEqual(response.status_code, 200, response.content)
+
+        listed = self.client.get(self._url(self.notes)).json()
+        self.assertEqual(
+            listed["mappings"],
+            [
+                {
+                    "omop_field": "note_class_concept_id",
+                    "source_field": None,
+                    "constant_value": str(self.class_concept.concept_id),
+                    "concept_name": "Clinic letter",
+                },
+                {
+                    "omop_field": "note_id",
+                    "source_field": self.notes_ref.id,
+                    "constant_value": None,
+                    "concept_name": None,
+                },
+                {
+                    "omop_field": "note_text",
+                    "source_field": self.notes_text.id,
+                    "constant_value": None,
+                    "concept_name": None,
+                },
+            ],
+        )
+        # The fields the note role can map, for building the form
+        fields = {f["omop_field"]: f for f in listed["fields"]}
+        self.assertEqual(
+            fields["note_id"],
+            {
+                "omop_field": "note_id",
+                "required": True,
+                "source": True,
+                "constant": False,
+                "concept": False,
+            },
+        )
+        self.assertTrue(fields["language_concept_id"]["concept"])
+        self.assertNotIn("lexical_variant", fields)
+
+        # PUT replaces the whole set
+        body[2] = {"omop_field": "note_title", "constant_value": "Letter"}
+        self.assertEqual(self._put(self.notes, body).status_code, 200)
+        self.assertEqual(
+            sorted(
+                m["omop_field"]
+                for m in self.client.get(self._url(self.notes)).json()["mappings"]
+            ),
+            ["note_id", "note_text", "note_title"],
+        )
+
+    def test_validation_errors(self):
+        required = [
+            {"omop_field": "note_id", "source_field": self.notes_ref.id},
+            {"omop_field": "note_text", "source_field": self.notes_text.id},
+        ]
+        other = ScanReportTable.objects.create(
+            scan_report=self.scan_report, name="other.csv"
+        )
+        cases = {
+            "field not allowed for role": {
+                "omop_field": "lexical_variant",
+                "constant_value": "x",
+            },
+            "both source and constant": {
+                "omop_field": "note_title",
+                "source_field": self.notes_text.id,
+                "constant_value": "x",
+            },
+            "neither source nor constant": {"omop_field": "note_title"},
+            "unknown concept": {
+                "omop_field": "language_concept_id",
+                "constant_value": "123",
+            },
+            "concept field from source": {
+                "omop_field": "language_concept_id",
+                "source_field": self.notes_text.id,
+            },
+            "key field as constant": {
+                "omop_field": "note_event_id",
+                "constant_value": "1",
+            },
+            "source field of another table": {
+                "omop_field": "note_title",
+                "source_field": _field(other, "title").id,
+            },
+        }
+        for name, item in cases.items():
+            with self.subTest(name):
+                response = self._put(self.notes, required + [item])
+                self.assertEqual(response.status_code, 400, response.content)
+
+        missing = self._put(self.notes, required[:1])
+        self.assertEqual(
+            missing.json(),
+            {
+                "detail": "Required fields missing: note_text.",
+                "duplicated": [],
+                "missing_required": ["note_text"],
+            },
+        )
+        # Validation errors come back as one readable message for the client
+        unknown = self._put(
+            self.notes,
+            required + [{"omop_field": "language_concept_id", "constant_value": "123"}],
+        )
+        self.assertEqual(
+            unknown.json()["detail"],
+            "constant_value: 'language_concept_id': '123' is not a known concept id.",
+        )
+        self.assertFalse(ScanReportTableFieldMapping.objects.exists())
+
+    def test_standard_table_has_no_field_mappings(self):
+        standard = ScanReportTable.objects.create(
+            scan_report=self.scan_report, name="s.csv"
+        )
+        response = self._put(standard, [])
+        self.assertEqual(response.status_code, 400)
+
+    def test_changing_role_clears_field_mappings(self):
+        from api.serializers import ScanReportTableEditSerializer
+
+        self._put(
+            self.notes,
+            [
+                {"omop_field": "note_id", "source_field": self.notes_ref.id},
+                {"omop_field": "note_text", "source_field": self.notes_text.id},
+            ],
+        )
+        serializer = ScanReportTableEditSerializer(
+            self.notes,
+            data={"table_role": TableRole.NOTE},
+            partial=True,
+            context={"request": APIRequestFactory().patch("/")},
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        self.assertEqual(self.notes.field_mappings.count(), 2)
+
+        serializer = ScanReportTableEditSerializer(
+            self.notes,
+            data={"table_role": TableRole.STANDARD},
+            partial=True,
+            context={"request": APIRequestFactory().patch("/")},
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        self.assertEqual(self.notes.field_mappings.count(), 0)
 
 
 class TestTableRoleDatabaseDefault(TestCase):

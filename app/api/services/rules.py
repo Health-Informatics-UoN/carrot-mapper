@@ -38,6 +38,7 @@ m_allowed_tables = [
     "device_exposure",
     "specimen",
     "death",
+    "note",
 ]
 
 # look up of date-events in all the allowed (destination) tables
@@ -54,6 +55,7 @@ m_date_field_mapper = {
     ],
     "specimen": ["specimen_datetime"],
     "death": ["death_datetime"],
+    "note": ["note_datetime"],
 }
 
 

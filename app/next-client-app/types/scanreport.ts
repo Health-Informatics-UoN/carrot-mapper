@@ -34,12 +34,37 @@ interface ScanReportTable {
   type_concept: number | null;
 }
 
-type TableRole = "standard" | "death";
+type TableRole = "standard" | "death" | "note";
 
 interface ConceptSummary {
   concept_id: number;
   concept_name: string | null;
 }
+
+// An OMOP field a note table can map at table level
+interface TableFieldSpec {
+  omop_field: string;
+  required: boolean;
+  source: boolean; // can take a source field
+  constant: boolean; // can take a constant value
+  concept: boolean; // the constant must be a concept id
+}
+
+interface TableFieldMapping {
+  omop_field: string;
+  source_field: number | null;
+  constant_value: string | null;
+  concept_name: string | null;
+}
+
+interface TableFieldMappings {
+  fields: TableFieldSpec[];
+  mappings: TableFieldMapping[];
+}
+
+type TableFieldMappingInput =
+  | { omop_field: string; source_field: number }
+  | { omop_field: string; constant_value: string };
 
 interface ScanReportField {
   id: number;

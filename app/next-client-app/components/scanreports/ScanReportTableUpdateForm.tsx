@@ -25,6 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ConceptIdInput } from "./ConceptIdInput";
 
 interface FormData {
@@ -48,6 +49,12 @@ const TABLE_ROLES: { value: TableRole; label: string; description: string }[] =
       label: "Death",
       description:
         "Mapping rules for this table will have Destination table as Death, concepts will be recognised as Cause of Death, and the Date Event will map to the Death date field in OMOP CDM.",
+    },
+    {
+      value: "note",
+      label: "Note",
+      description:
+        "Each row is a clinical note and becomes a record in the note table. After saving, choose which columns hold the note's key, text and other fields.",
     },
   ];
 
@@ -180,6 +187,15 @@ export function ScanReportTableUpdateForm({
                     ?.description
                 }
               </FormDescription>
+              {values.tableRole !== scanreportTable.table_role &&
+                scanreportTable.table_role === "note" && (
+                  <Alert className="mt-2">
+                    <AlertDescription>
+                      Changing the role clears this table&apos;s note field
+                      mappings.
+                    </AlertDescription>
+                  </Alert>
+                )}
             </FormItem>
 
             <FormItem>
