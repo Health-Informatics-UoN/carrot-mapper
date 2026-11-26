@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Save } from "lucide-react";
+import Link from "next/link";
+import { ArrowRight, Save } from "lucide-react";
 import { toast } from "sonner";
 import { updateTableFieldMappings } from "@/api/scanreports";
 import { Badge } from "@/components/ui/badge";
@@ -23,13 +24,15 @@ import {
 } from "@/components/ui/select";
 import { ConceptIdInput } from "./ConceptIdInput";
 
-type Mode = "source" | "constant" | "none";
+type Mode = "source" | "values" | "constant" | "none";
 
 interface Row {
   mode: Mode;
   sourceField: string; // field id, as a string for the select
   constant: string;
   conceptName: string | null;
+  // As saved, for "values": the column and how many of its values are mapped
+  saved?: { sourceField: string; total: number; mapped: number };
 }
 
 // What each mappable OMOP field holds, in plain words
@@ -77,13 +80,23 @@ function initialRows(
       : "none";
     rows[spec.omop_field] = {
       mode: mapping
-        ? mapping.source_field !== null
-          ? "source"
-          : "constant"
+        ? mapping.map_values
+          ? "values"
+          : mapping.source_field !== null
+            ? "source"
+            : "constant"
         : defaultMode,
       sourceField: mapping?.source_field?.toString() ?? "",
       constant: mapping?.constant_value ?? "",
       conceptName: mapping?.concept_name ?? null,
+      saved:
+        mapping?.map_values && mapping.source_field !== null
+          ? {
+              sourceField: mapping.source_field.toString(),
+              total: mapping.values_total ?? 0,
+              mapped: mapping.values_mapped ?? 0,
+            }
+          : undefined,
     };
   }
   return rows;
@@ -121,7 +134,9 @@ export function TableFieldMappingsForm({
       .filter((spec) => spec.required)
       .filter((spec) => {
         const row = rows[spec.omop_field];
-        return row.mode === "source" ? !row.sourceField : !row.constant;
+        return row.mode === "source" || row.mode === "values"
+          ? !row.sourceField
+          : !row.constant;
       })
       .map((spec) => spec.omop_field);
     if (missing.length) {
@@ -132,7 +147,19 @@ export function TableFieldMappingsForm({
     const mappings: TableFieldMappingInput[] = [];
     for (const spec of specs) {
       const row = rows[spec.omop_field];
-      if (row.mode === "source" && row.sourceField) {
+      if (row.mode === "values") {
+        if (!row.sourceField) {
+          toast.error(
+            `Choose the column whose values give ${spec.omop_field}, or pick another option.`,
+          );
+          return;
+        }
+        mappings.push({
+          omop_field: spec.omop_field,
+          source_field: Number(row.sourceField),
+          map_values: true,
+        });
+      } else if (row.mode === "source" && row.sourceField) {
         mappings.push({
           omop_field: spec.omop_field,
           source_field: Number(row.sourceField),
@@ -170,8 +197,9 @@ export function TableFieldMappingsForm({
           {role === "note"
             ? "Each row of this table becomes a note. Choose the column or fixed value for each note field."
             : "Each term found by NLP becomes a note_nlp record, alongside the concepts mapped to it. Choose the column or fixed value for the other note_nlp fields."}{" "}
-          These only affect the exported rules, so saving doesn&apos;t re-run
-          auto-mapping.
+          For concept fields that vary from row to row, such as the kind of
+          note, choose &ldquo;Map column values&rdquo; and map the column&apos;s
+          values to concepts, as you would for any other field.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
@@ -180,6 +208,9 @@ export function TableFieldMappingsForm({
           const modes: { value: Mode; label: string }[] = [
             ...(spec.source
               ? [{ value: "source" as Mode, label: "From a column" }]
+              : []),
+            ...(spec.values
+              ? [{ value: "values" as Mode, label: "Map column values" }]
               : []),
             ...(spec.constant
               ? [
@@ -196,7 +227,7 @@ export function TableFieldMappingsForm({
           return (
             <div
               key={spec.omop_field}
-              className="grid gap-2 border-b border-border pb-4 last:border-b-0 md:grid-cols-[16rem_10rem_1fr] md:items-start"
+              className="grid gap-2 border-b border-border pb-4 last:border-b-0 md:grid-cols-[16rem_12rem_1fr] md:items-start"
             >
               <div className="flex flex-col gap-1">
                 <div className="flex flex-wrap items-center gap-2">
@@ -236,7 +267,7 @@ export function TableFieldMappingsForm({
               )}
 
               <div>
-                {row.mode === "source" && (
+                {(row.mode === "source" || row.mode === "values") && (
                   <Select
                     value={row.sourceField || undefined}
                     onValueChange={(sourceField) =>
@@ -258,6 +289,13 @@ export function TableFieldMappingsForm({
                       ))}
                     </SelectContent>
                   </Select>
+                )}
+                {row.mode === "values" && (
+                  <ValueMappingStatus
+                    row={row}
+                    scanReportId={scanReportId}
+                    tableId={tableId}
+                  />
                 )}
                 {row.mode === "constant" &&
                   (spec.concept ? (
@@ -297,5 +335,53 @@ export function TableFieldMappingsForm({
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+// Under a "Map column values" field: what to do next, and how far it's got
+function ValueMappingStatus({
+  row,
+  scanReportId,
+  tableId,
+}: {
+  row: Row;
+  scanReportId: number;
+  tableId: number;
+}) {
+  const saved = row.saved && row.saved.sourceField === row.sourceField;
+  if (!row.sourceField) {
+    return (
+      <p className="mt-2 text-sm text-muted-foreground">
+        Choose the column whose values say what this field should be, e.g. the
+        note type.
+      </p>
+    );
+  }
+  if (!saved) {
+    return (
+      <p className="mt-2 text-sm text-muted-foreground">
+        Save, then map each value of this column to a concept.
+      </p>
+    );
+  }
+  const { total, mapped } = row.saved!;
+  return (
+    <div className="mt-2 flex flex-wrap items-center gap-3">
+      <span className="text-sm">
+        {mapped} of {total} value{total === 1 ? "" : "s"} mapped to concepts
+      </span>
+      <Button asChild variant="outline" size="sm">
+        <Link
+          href={`/scanreports/${scanReportId}/tables/${tableId}/fields/${row.sourceField}`}
+        >
+          Map values
+          <ArrowRight className="h-4 w-4" />
+        </Link>
+      </Button>
+      <p className="w-full text-sm text-muted-foreground">
+        Each record gets the concept its value is mapped to. Values without a
+        concept give 0 (no matching concept).
+      </p>
+    </div>
   );
 }

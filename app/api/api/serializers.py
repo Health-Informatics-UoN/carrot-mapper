@@ -866,7 +866,8 @@ class ScanReportTableFieldMappingSerializer(serializers.Serializer):
     One table-level field mapping. `omop_field` is the field's name in the OMOP
     table for the table's role (note or note_nlp); exactly one of
     `source_field` (a field of this Scan Report Table) and `constant_value` is
-    given. Expects the ScanReportTable as context["table"].
+    given. With `map_values`, a *_concept_id field takes the concepts mapped to
+    `source_field`'s values. Expects the ScanReportTable as context["table"].
     """
 
     omop_field = serializers.CharField()
@@ -876,6 +877,7 @@ class ScanReportTableFieldMappingSerializer(serializers.Serializer):
     constant_value = serializers.CharField(
         required=False, allow_null=True, max_length=255
     )
+    map_values = serializers.BooleanField(required=False, default=False)
 
     def to_representation(self, instance: ScanReportTableFieldMapping):
         name = instance.omop_field.field
@@ -885,12 +887,16 @@ class ScanReportTableFieldMappingSerializer(serializers.Serializer):
                 concept_id=int(instance.constant_value)
             ).first()
             concept_name = concept.concept_name if concept else None
-        return {
+        representation = {
             "omop_field": name,
             "source_field": instance.source_field_id,
             "constant_value": instance.constant_value,
             "concept_name": concept_name,
+            "map_values": instance.map_values,
         }
+        if instance.map_values and instance.source_field_id:
+            representation.update(value_mapping_progress(instance.source_field))
+        return representation
 
     def validate(self, data):
         table: ScanReportTable = self.context["table"]
@@ -907,6 +913,27 @@ class ScanReportTableFieldMappingSerializer(serializers.Serializer):
 
         source_field = data.get("source_field")
         constant = data.get("constant_value")
+        if data.get("map_values"):
+            if not spec.values:
+                raise serializers.ValidationError(
+                    {
+                        "map_values": f"'{name}' can't take concepts from a column's values."
+                    }
+                )
+            if source_field is None or constant is not None:
+                raise serializers.ValidationError(
+                    f"'{name}': choose the column whose values are mapped to concepts."
+                )
+            if source_field.scan_report_table_id != table.id:
+                raise serializers.ValidationError(
+                    {
+                        "source_field": f"'{name}': the source field must belong to this table."
+                    }
+                )
+            data["omop_field"] = OmopField.objects.get(
+                table__table=ROLE_OMOP_TABLE[table.table_role], field=name
+            )
+            return data
         if (source_field is None) == (constant is None):
             raise serializers.ValidationError(
                 f"'{name}' needs exactly one of source_field and constant_value."
@@ -941,6 +968,31 @@ class ScanReportTableFieldMappingSerializer(serializers.Serializer):
             table__table=ROLE_OMOP_TABLE[table.table_role], field=name
         )
         return data
+
+
+def value_mapping_progress(source_field: ScanReportField) -> dict:
+    """How many of a field's values are mapped to concepts, for the UI"""
+    from django.contrib.contenttypes.models import ContentType
+
+    value_ids = ScanReportValue.objects.filter(scan_report_field=source_field).values(
+        "id"
+    )
+    mapped = (
+        ScanReportConcept.objects.filter(
+            content_type=ContentType.objects.get_for_model(ScanReportValue),
+            object_id__in=value_ids,
+        )
+        .values("object_id")
+        .distinct()
+        .count()
+    )
+    return {
+        "source_field_name": source_field.name,
+        "values_total": ScanReportValue.objects.filter(
+            scan_report_field=source_field
+        ).count(),
+        "values_mapped": mapped,
+    }
 
 
 class ScanReportFieldEditSerializer(DynamicFieldsMixin, serializers.ModelSerializer):

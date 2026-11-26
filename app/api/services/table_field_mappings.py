@@ -19,6 +19,8 @@ class FieldSpec:
     source: bool = True
     constant: bool = True
     required: bool = False
+    # True if the field may take concepts mapped from a source column's values
+    values: bool = False
 
     @property
     def concept(self) -> bool:
@@ -27,9 +29,13 @@ class FieldSpec:
 
 @dataclass(frozen=True)
 class ConceptFieldSpec(FieldSpec):
-    """A *_concept_id field: only a constant, which must be a concept id"""
+    """
+    A *_concept_id field: a fixed concept, or (if `values`) concepts mapped from
+    the values of a source column. Never a source column's raw values.
+    """
 
     source: bool = False
+    values: bool = True
 
     @property
     def concept(self) -> bool:
@@ -54,7 +60,8 @@ ROLE_FIELDS: dict[str, dict[str, FieldSpec]] = {
         "encoding_concept_id": ConceptFieldSpec(),
         "language_concept_id": ConceptFieldSpec(),
         "note_event_id": FieldSpec(constant=False),
-        "note_event_field_concept_id": ConceptFieldSpec(),
+        # Names the table note_event_id refers to: one fixed value per table
+        "note_event_field_concept_id": ConceptFieldSpec(values=False),
     },
     TableRole.NOTE_NLP: {
         "note_id": FieldSpec(constant=False, required=True),

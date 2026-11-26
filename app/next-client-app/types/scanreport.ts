@@ -48,6 +48,7 @@ interface TableFieldSpec {
   source: boolean; // can take a source field
   constant: boolean; // can take a constant value
   concept: boolean; // the constant must be a concept id
+  values: boolean; // can take the concepts mapped to a column's values
 }
 
 interface TableFieldMapping {
@@ -55,6 +56,11 @@ interface TableFieldMapping {
   source_field: number | null;
   constant_value: string | null;
   concept_name: string | null;
+  map_values: boolean;
+  // With map_values: how many of the column's values have a concept
+  source_field_name?: string;
+  values_total?: number;
+  values_mapped?: number;
 }
 
 interface TableFieldMappings {
@@ -64,7 +70,8 @@ interface TableFieldMappings {
 
 type TableFieldMappingInput =
   | { omop_field: string; source_field: number }
-  | { omop_field: string; constant_value: string };
+  | { omop_field: string; constant_value: string }
+  | { omop_field: string; source_field: number; map_values: true };
 
 interface NlpExclusion {
   source_field: number;

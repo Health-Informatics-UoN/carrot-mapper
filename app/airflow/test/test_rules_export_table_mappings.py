@@ -332,6 +332,90 @@ def test_json_v2_passes_nlp_settings_through():
     assert derived["fact_relationship"]["domain_concept_id"] == 900019
 
 
+def note_rule(dest_field, value, concept_id, sr_concept_id, source_field="note_type"):
+    """A rule for a value of a notes.csv column, as the rules export returns it."""
+    return {
+        "sr_concept_id": sr_concept_id,
+        "source_table": "notes.csv",
+        "source_field": source_field,
+        "term_mapping_value": value,
+        "dest_table": "note",
+        "dest_field": dest_field,
+        "concept_id": concept_id,
+        "concept_name": f"Concept {concept_id}",
+    }
+
+
+def test_note_concept_field_from_values_becomes_value_mappings():
+    note_fields = [
+        field_mapping("notes.csv", "note_id", source_field="note_ref"),
+        field_mapping("notes.csv", "note_text", source_field="text"),
+        {
+            **field_mapping(
+                "notes.csv", "note_class_concept_id", source_field="note_type"
+            ),
+            "map_values": True,
+        },
+    ]
+    rules = [
+        note_rule("note_class_concept_id", "Outpatient note", 706556, 11),
+        note_rule("note_class_concept_id", "Discharge summary", 706531, 12),
+        # A second concept on a value: the first one is kept
+        note_rule("note_class_concept_id", "Outpatient note", 999999, 13),
+    ]
+
+    cdm = json.loads(
+        rules_to_json_v2(
+            rules, METADATA, [table("notes.csv", "note")], note_fields, TYPE_FIELDS
+        )
+    )["cdm"]
+
+    note = cdm["note"]["notes.csv"]
+    assert note["value_mappings"] == {
+        "note_class_concept_id": {
+            "source_field": "note_type",
+            "values": {"Outpatient note": 706556, "Discharge summary": 706531},
+        }
+    }
+    # The column isn't copied, and its concepts don't make blocks of their own
+    assert note["field_mappings"] == {"note_text": "text"}
+    assert "concept_mappings" not in note
+    assert list(cdm) == ["note"]
+
+
+def test_note_nlp_section_from_values_keeps_term_concepts_separate():
+    nlp_fields = [
+        *NLP_REQUIRED,
+        {
+            **field_mapping("nlp.csv", "section_concept_id", source_field="section"),
+            "map_values": True,
+        },
+    ]
+    rules = [
+        rule("note_nlp", "note_nlp_concept_id", 4329847),
+        {
+            **rule(
+                "note_nlp",
+                "section_concept_id",
+                1234,
+                source_field="section",
+                value="History",
+            ),
+            "sr_concept_id": 2,
+        },
+    ]
+
+    cdm = json.loads(
+        rules_to_json_v2(rules, METADATA, [nlp_table()], nlp_fields, TYPE_FIELDS)
+    )["cdm"]
+
+    block = cdm["note_nlp"]["nlp.csv"]
+    assert block["value_mappings"] == {
+        "section_concept_id": {"source_field": "section", "values": {"History": 1234}}
+    }
+    assert list(block["concept_mappings"]) == ["snomed_code"]
+
+
 def test_note_nlp_table_without_required_mappings_is_left_out():
     # Concepts are mapped, but the table's note_id / lexical_variant columns
     # aren't: its note_nlp records couldn't be written or linked, and its

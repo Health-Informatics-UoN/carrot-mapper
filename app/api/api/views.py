@@ -61,7 +61,9 @@ from services.rules import (
     NO_MATCHING_CONCEPT_ID,
     PERSON_DOMAINS,
     _find_destination_table,
+    refresh_field_rules,
     save_mapping_rules,
+    value_mapped_field,
 )
 from services.rules_export import (
     get_mapping_rules_json,
@@ -845,8 +847,10 @@ class ScanReportTableFieldMappingsV2(ScanReportPermissionMixin, GenericAPIView):
     - GET: {"fields": the OMOP fields the table's role can map, "mappings":
       the table's field mappings}.
     - PUT: replace all the mappings. Body: a list of
-      {"omop_field": <name>, "source_field": <field id>} or
-      {"omop_field": <name>, "constant_value": <value>}.
+      {"omop_field": <name>, "source_field": <field id>},
+      {"omop_field": <name>, "constant_value": <value>}, or, for a concept field,
+      {"omop_field": <name>, "source_field": <field id>, "map_values": true}
+      to take its concepts from the concepts mapped to that field's values.
       Every required field for the table's role must be included.
     """
 
@@ -868,6 +872,7 @@ class ScanReportTableFieldMappingsV2(ScanReportPermissionMixin, GenericAPIView):
                 "source": spec.source,
                 "constant": spec.constant,
                 "concept": spec.concept,
+                "values": spec.values,
             }
             for name, spec in allowed_fields(table.table_role).items()
         ]
@@ -906,6 +911,22 @@ class ScanReportTableFieldMappingsV2(ScanReportPermissionMixin, GenericAPIView):
             )
 
         names = [item["omop_field"].field for item in serializer.validated_data]
+        value_fields = [
+            item["source_field"]
+            for item in serializer.validated_data
+            if item.get("map_values")
+        ]
+        reused = sorted(
+            {field.name for field in value_fields if value_fields.count(field) > 1}
+        )
+        if reused:
+            return Response(
+                {
+                    "detail": "A column's values can only be mapped to concepts for one field: "
+                    f"{', '.join(reused)} is used for more than one."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         duplicated = sorted({name for name in names if names.count(name) > 1})
         missing = sorted(
             name for name, spec in fields.items() if spec.required and name not in names
@@ -927,12 +948,37 @@ class ScanReportTableFieldMappingsV2(ScanReportPermissionMixin, GenericAPIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        old_value_fields = {
+            mapping.source_field
+            for mapping in table.field_mappings.filter(map_values=True)
+        }
+        # Changing which columns fill a field from their values rebuilds the rules
+        # of their concepts, which auto-mapping also writes while it runs, so that
+        # waits for it as table updates do. Other changes don't touch rules.
+        if (
+            old_value_fields != set(value_fields)
+            and Job.objects.filter(
+                scan_report_table=table, status__value="IN_PROGRESS"
+            ).exists()
+        ):
+            return Response(
+                {
+                    "detail": "Auto-mapping is running for this table. Please wait until it "
+                    "completes before changing which columns' values are mapped to concepts."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         with transaction.atomic():
             table.field_mappings.all().delete()
             ScanReportTableFieldMapping.objects.bulk_create(
                 ScanReportTableFieldMapping(scan_report_table=table, **item)
                 for item in serializer.validated_data
             )
+            # Concepts on columns that start or stop filling a field from their
+            # values now give different rules
+            for field in old_value_fields | set(value_fields):
+                refresh_field_rules(field)
         return self._response(table)
 
 
@@ -1698,17 +1744,45 @@ class ScanReportConceptListV2(
             ).scan_report_field
         field_datatype = source_field.type_column
 
+        # A column whose values fill one field of a note / note_nlp record (e.g.
+        # note_type -> note_class_concept_id): each value gets one concept, of
+        # any domain, which fills that field only.
+        value_field = value_mapped_field(source_field)
+        if value_field is not None:
+            target = value_field.omop_field.field
+            if content_type_str == "scanreportfield":
+                return Response(
+                    {
+                        "detail": f"The values of '{source_field.name}' fill {target}, so map a concept to each value rather than to the whole field."
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            if ScanReportConcept.objects.filter(
+                object_id=body["object_id"], content_type=content_type
+            ).exists():
+                return Response(
+                    {
+                        "detail": f"Each value of '{source_field.name}' fills {target}, so it can only have one concept. Remove the current one to change it."
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
         # Checking field's datatype for concept with domain Observation
-        if domain == "observation" and field_datatype.lower() not in [
-            "real",
-            "int",
-            "tinyint",
-            "smallint",
-            "bigint",
-            "varchar",
-            "nvarchar",
-            "float",
-        ]:
+        if (
+            value_field is None
+            and domain == "observation"
+            and field_datatype.lower()
+            not in [
+                "real",
+                "int",
+                "tinyint",
+                "smallint",
+                "bigint",
+                "varchar",
+                "nvarchar",
+                "float",
+            ]
+        ):
             return Response(
                 {
                     "detail": "Concept having 'Observation' domain should be only added to fields having REAL, INT, FLOAT, NVARCHAR or VARCHAR data type."
@@ -1722,7 +1796,7 @@ class ScanReportConceptListV2(
 
         # validate the destination_table
         destination_table = None
-        if not is_no_matching_concept:
+        if not is_no_matching_concept and value_field is None:
             destination_table = _find_destination_table(concept, table)
             # On a note_nlp table the concept still becomes a note_nlp record
             if destination_table is None and table.table_role != TableRole.NOTE_NLP:
@@ -1753,7 +1827,7 @@ class ScanReportConceptListV2(
         # merge into one Person record. But two concepts of the *same* Person
         # domain (e.g. two Gender concepts) would both target the same column,
         # producing multiple/ambiguous Person records for one person.
-        if domain in PERSON_DOMAINS:
+        if domain in PERSON_DOMAINS and value_field is None:
             existing_concepts_on_object = ScanReportConcept.objects.filter(
                 object_id=body["object_id"],
                 content_type=content_type,

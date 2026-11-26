@@ -11,6 +11,7 @@ from mapping.models import (
     ScanReportConcept,
     ScanReportField,
     ScanReportTable,
+    ScanReportTableFieldMapping,
     ScanReportValue,
     TableRole,
 )
@@ -324,6 +325,57 @@ def _get_date_rules(
     return date_rules
 
 
+def value_mapped_field(
+    source_field: ScanReportField,
+) -> Optional[ScanReportTableFieldMapping]:
+    """
+    The field mapping whose concepts come from this source field's values, if
+    any (e.g. a note table's note_type column filling note_class_concept_id).
+    """
+    return (
+        ScanReportTableFieldMapping.objects.filter(
+            source_field=source_field,
+            map_values=True,
+            scan_report_table__table_role__in=[TableRole.NOTE, TableRole.NOTE_NLP],
+        )
+        .select_related("omop_field")
+        .first()
+    )
+
+
+def concepts_on_field(source_field: ScanReportField):
+    """The ScanReportConcepts on a source field and on its values"""
+    from django.contrib.contenttypes.models import ContentType
+    from django.db.models import Q
+
+    value_ids = ScanReportValue.objects.filter(scan_report_field=source_field).values(
+        "id"
+    )
+    return ScanReportConcept.objects.filter(
+        Q(
+            content_type=ContentType.objects.get_for_model(ScanReportField),
+            object_id=source_field.id,
+        )
+        | Q(
+            content_type=ContentType.objects.get_for_model(ScanReportValue),
+            object_id__in=value_ids,
+        )
+    ).select_related("concept")
+
+
+def refresh_field_rules(source_field: ScanReportField) -> None:
+    """
+    Rebuild the mapping rules of every concept on a source field and its values,
+    e.g. after the field starts or stops filling a note field from its values,
+    which changes what rules its concepts give.
+    """
+    with transaction.atomic():
+        concepts = list(concepts_on_field(source_field))
+        MappingRule.objects.filter(concept__in=concepts).delete()
+        for scan_report_concept in concepts:
+            save_mapping_rules(scan_report_concept, source_field=source_field)
+
+
 def _get_note_nlp_rules(
     scan_report: ScanReport,
     scan_report_concept: ScanReportConcept,
@@ -432,6 +484,25 @@ def save_mapping_rules(
 
     if concept.concept_id == NO_MATCHING_CONCEPT_ID:
         return []
+
+    # Values of a column whose concepts fill one field of a note / note_nlp
+    # record (e.g. note_type -> note_class_concept_id) give a rule for that
+    # field only, not records in the concept's domain table.
+    value_field = value_mapped_field(source_field)
+    if value_field is not None:
+        from django.contrib.contenttypes.models import ContentType
+
+        value_type = ContentType.objects.get_for_model(ScanReportValue)
+        if scan_report_concept.content_type_id != value_type.id:
+            return []  # only its values are mapped
+        rule, _ = MappingRule.objects.update_or_create(
+            scan_report=scan_report,
+            omop_field=value_field.omop_field,
+            source_field=source_field,
+            concept=scan_report_concept,
+            approved=True,
+        )
+        return [rule]
 
     type_column = source_field.type_column.lower()
     domain = concept.domain_id.lower()

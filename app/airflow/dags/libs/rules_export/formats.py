@@ -156,8 +156,26 @@ def rules_to_json_v2(
     ``tables``, ``field_mappings``, ``type_fields``, ``nlp_exclusions`` and
     ``domain_concepts`` add the scan report tables' roles, field mappings, type
     concepts and NLP-derived record settings; see ``add_table_level_mappings``.
+    Rules for fields that take concepts from a column's values (field mappings
+    with ``map_values``) become that block's ``value_mappings``.
     """
     result: dict[str, Any] = {}
+    rules = list(rules)
+    field_mappings = list(field_mappings)
+    value_mapped = {
+        (mapping["source_table"], mapping["omop_field"])
+        for mapping in field_mappings
+        if mapping.get("map_values")
+    }
+    value_rules = [
+        rule
+        for rule in rules
+        if rule["dest_table"] in (NOTE_TABLE, NOTE_NLP_TABLE)
+        and (rule["source_table"], rule["dest_field"]) in value_mapped
+    ]
+    if value_rules:
+        value_rule_ids = {id(rule) for rule in value_rules}
+        rules = [rule for rule in rules if id(rule) not in value_rule_ids]
 
     for dest_table, dest_table_group in _sorted_groups(rules, "dest_table"):
         dest_table_str = str(dest_table)
@@ -314,6 +332,7 @@ def rules_to_json_v2(
         type_fields or {},
         nlp_exclusions,
         domain_concepts or {},
+        value_rules,
     )
 
     return json.dumps({"metadata": dict(metadata), "cdm": result}, indent=2)
@@ -356,6 +375,7 @@ def add_table_level_mappings(
     type_fields: Mapping[str, str],
     nlp_exclusions: Iterable[Row] = (),
     domain_concepts: Mapping[str, int] | None = None,
+    value_rules: Iterable[Row] = (),
 ) -> None:
     """
     Add each Scan Report Table's role, type concept and field mappings to the v2
@@ -384,10 +404,27 @@ def add_table_level_mappings(
         - nlp_exclusions: rows of source_table, source_field (a field name) and
           excluded_values (a list)
         - domain_concepts: OMOP table -> its domain's concept id
+        - value_rules: rules (rows of the rules export) for fields that take
+          their concept from a column's values; they become the block's
+          ``value_mappings``: field -> {"source_field", "values": {value:
+          concept id}}. A value with more than one concept keeps the first.
     """
     mappings_by_table: dict[Any, list[Row]] = {}
     for mapping in field_mappings:
         mappings_by_table.setdefault(mapping["source_table"], []).append(mapping)
+    value_mappings_by_table: dict[str, dict[str, dict[str, Any]]] = {}
+    for rule in sorted(value_rules, key=lambda r: r["sr_concept_id"]):
+        if rule["term_mapping_value"] is None or rule["concept_id"] is None:
+            continue
+        lookup = value_mappings_by_table.setdefault(
+            _clean(rule["source_table"]), {}
+        ).setdefault(
+            rule["dest_field"],
+            {"source_field": _clean(rule["source_field"]), "values": {}},
+        )
+        lookup["values"].setdefault(
+            str(rule["term_mapping_value"]), int(rule["concept_id"])
+        )
     exclusions_by_table: dict[Any, dict[str, list[str]]] = {}
     for exclusion in nlp_exclusions:
         exclusions_by_table.setdefault(exclusion["source_table"], {})[
@@ -403,6 +440,8 @@ def add_table_level_mappings(
         note_key = None
         for mapping in mappings_by_table.get(table["source_table"], []):
             omop_field = mapping["omop_field"]
+            if mapping.get("map_values"):
+                continue  # from value_rules
             if omop_field == NOTE_KEY_FIELD:
                 note_key = _clean(mapping["source_field"])
             elif mapping["source_field"] is not None:
@@ -431,6 +470,10 @@ def add_table_level_mappings(
                 "field_mappings": copies,
                 "constant_mappings": constants,
             }
+            if value_mappings_by_table.get(source_table):
+                result[NOTE_TABLE][source_table]["value_mappings"] = (
+                    value_mappings_by_table[source_table]
+                )
         elif (
             role == "note_nlp"
             and source_table in result.get(NOTE_NLP_TABLE, {})
@@ -462,6 +505,8 @@ def add_table_level_mappings(
                 }
             block["field_mappings"] = copies
             block["constant_mappings"] = constants
+            if value_mappings_by_table.get(source_table):
+                block["value_mappings"] = value_mappings_by_table[source_table]
             _add_derived_from(
                 result,
                 source_table,

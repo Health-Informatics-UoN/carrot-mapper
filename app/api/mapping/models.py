@@ -411,6 +411,10 @@ class ScanReportTableFieldMapping(BaseModel):
     note_class_concept_id or nlp_system. Exactly one of `source_field` and
     `constant_value` is set.
 
+    A *_concept_id field can instead take its concept from the values of
+    `source_field` (`map_values`): those values are mapped to concepts like any
+    other field's values, and the concepts fill this field only.
+
     The OMOP id fields linking notes are mapped to the source column holding the
     note's key: `note.note_id` names the key on a note table, and
     `note_nlp.note_id` the column on a note_nlp table that refers to it.
@@ -428,6 +432,10 @@ class ScanReportTableFieldMapping(BaseModel):
         related_name="+",
     )
     constant_value = models.CharField(max_length=255, null=True, blank=True)
+    # For a *_concept_id field: the values of `source_field` are mapped to
+    # concepts (as ScanReportConcepts on its values, like any other field), and
+    # each record gets the concept its value maps to.
+    map_values = models.BooleanField(default=False, db_default=False)
 
     class Meta:
         app_label = "mapping"
