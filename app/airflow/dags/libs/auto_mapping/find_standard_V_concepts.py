@@ -128,7 +128,9 @@ def find_standard_concepts(**kwargs) -> None:
                 UPPER(src_concept.vocabulary_id) = %(vocabulary_id)s
             JOIN omop.concept_relationship AS concept_relationship ON
                 concept_relationship.concept_id_1 = src_concept.concept_id AND
-                concept_relationship.relationship_id = 'Maps to'
+                concept_relationship.relationship_id = 'Maps to' AND
+                -- deprecated mappings stay in the table with invalid_reason 'D' or 'U'
+                concept_relationship.invalid_reason IS NULL
             JOIN omop.concept AS std_concept ON
                 std_concept.concept_id = concept_relationship.concept_id_2
                 AND std_concept.standard_concept = 'S'
