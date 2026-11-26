@@ -39,6 +39,7 @@ m_allowed_tables = [
     "specimen",
     "death",
     "note",
+    "note_nlp",
 ]
 
 # look up of date-events in all the allowed (destination) tables
@@ -56,7 +57,12 @@ m_date_field_mapper = {
     "specimen": ["specimen_datetime"],
     "death": ["death_datetime"],
     "note": ["note_datetime"],
+    "note_nlp": ["nlp_datetime"],
 }
+
+# Fields of a note_nlp record that come from each concept mapped on a note_nlp
+# table. The rest of the record comes from the table's field mappings.
+NOTE_NLP_CONCEPT_FIELDS = ["note_nlp_concept_id", "note_nlp_source_concept_id"]
 
 
 def delete_mapping_rules(table_id: int) -> None:
@@ -318,6 +324,40 @@ def _get_date_rules(
     return date_rules
 
 
+def _get_note_nlp_rules(
+    scan_report: ScanReport,
+    scan_report_concept: ScanReportConcept,
+    source_table: ScanReportTable,
+    source_field: ScanReportField,
+) -> List[MappingRule]:
+    """
+    Rules that make a note_nlp record for a concept on a note_nlp table: its
+    date from the table's date_event, and its concept fields from the field the
+    concept is mapped on. note_nlp has no person_id.
+    """
+    rules = []
+    for date_field in m_date_field_mapper["note_nlp"]:
+        rule, _ = MappingRule.objects.update_or_create(
+            scan_report=scan_report,
+            omop_field=_get_omop_field(date_field, "note_nlp"),
+            source_field=source_table.date_event,
+            concept=scan_report_concept,
+            approved=True,
+        )
+        rules.append(rule)
+
+    for concept_field in NOTE_NLP_CONCEPT_FIELDS:
+        rule, _ = MappingRule.objects.update_or_create(
+            scan_report=scan_report,
+            omop_field=_get_omop_field(concept_field, "note_nlp"),
+            source_field=source_field,
+            concept=scan_report_concept,
+            approved=True,
+        )
+        rules.append(rule)
+    return rules
+
+
 def _find_destination_table(
     concept: Concept, table: ScanReportTable
 ) -> Optional[OmopTable]:
@@ -400,18 +440,24 @@ def save_mapping_rules(
     if domain == "spec anatomic site":
         domain = "anatomic_site"
 
-    # start looking up what table we're looking at, unless the caller already did
-    if destination_table is None:
-        destination_table = _find_destination_table(concept, source_table)
-    if destination_table is None:
-        return []
-
     # check whether the person_id and date events for this table are valid
     # if not, we dont want to create any rules for this concept
     if not _validate_person_id_and_date(source_table):
         return []
 
+    # On a note_nlp table every concept also becomes a note_nlp record, whether
+    # or not its domain has a destination table of its own
     rules = []
+    if source_table.table_role == TableRole.NOTE_NLP:
+        rules += _get_note_nlp_rules(
+            scan_report, scan_report_concept, source_table, source_field
+        )
+
+    # start looking up what table we're looking at, unless the caller already did
+    if destination_table is None:
+        destination_table = _find_destination_table(concept, source_table)
+    if destination_table is None:
+        return rules
 
     person_id_rule = _get_person_id_rule(
         scan_report, scan_report_concept, source_table, destination_table

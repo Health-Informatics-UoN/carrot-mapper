@@ -423,7 +423,7 @@ find_object_id_query = """
                     LIMIT 1)
                 ELSE NULL
             END
-    -- We only want to reuse concepts between tables with the same role (standard, death, note).
+    -- We only want to reuse concepts between tables with the same role (standard, death, note, note_nlp).
     -- To do this, we're checking the role is the same for:
     --   1. The current scan report table (id = %(table_id)s)
     --   2. The source scan report table we're trying to reuse from (using name and source_scanreport_id)
@@ -472,6 +472,14 @@ WHERE temp_table.concept_id = omop_concept.concept_id
 AND omop_concept.domain_id NOT IN (
     'Condition', 'Drug', 'Procedure', 'Specimen', 'Device',
     'Measurement', 'Observation', 'Gender', 'Race', 'Ethnicity', 'Spec Anatomic Site'
+)
+-- Keep concepts of other domains where they're used without a domain table, as
+-- vocabulary auto-mapping does: on a note_nlp table, where each concept gives a
+-- note_nlp record. Never keep "No matching concept" (0), which only marks a
+-- value as reviewed.
+AND (
+    temp_table.concept_id = 0
+    OR (SELECT table_role FROM mapping_scanreporttable WHERE id = %(table_id)s) <> 'note_nlp'
 );
 
 -- Delete concepts that have no object_id
@@ -633,4 +641,38 @@ create_update_temp_rules_table_query = """
 create_file_entry_query = """
     INSERT INTO files_filedownload (name, file_url, user_id, file_type_id, scan_report_id, created_at, updated_at)
     VALUES (%(name)s, %(file_url)s, %(user_id)s, %(file_type_id)s, %(scan_report_id)s, %(created_at)s, %(updated_at)s)
+"""
+
+
+# On a note_nlp table, every concept also becomes a note_nlp record: rules for its
+# date (from the table's date event) and its concept fields (from the field the
+# concept is on). note_nlp has no person_id. Concepts whose domain has no
+# destination table of its own get these rules too.
+create_note_nlp_rules_query = """
+    INSERT INTO mapping_mappingrule (
+        created_at, updated_at, omop_field_id, source_field_id, concept_id, scan_report_id, approved
+    )
+    SELECT
+        NOW(),
+        NOW(),
+        omop_field.id,
+        CASE
+            WHEN omop_field.field = 'nlp_datetime' THEN %(date_field_id)s
+            ELSE temp_table.source_field_id
+        END,
+        temp_table.sr_concept_id,
+        %(scan_report_id)s,
+        TRUE
+    FROM temp_existing_concepts_%(table_id)s AS temp_table
+    -- Not "No matching concept" (0), which only marks a value as reviewed
+    JOIN mapping_scanreportconcept AS sr_concept
+        ON sr_concept.id = temp_table.sr_concept_id
+        AND sr_concept.concept_id <> 0
+    JOIN mapping_omopfield AS omop_field
+        ON omop_field.field IN ('nlp_datetime', 'note_nlp_concept_id', 'note_nlp_source_concept_id')
+    JOIN mapping_omoptable AS omop_table
+        ON omop_table.id = omop_field.table_id AND omop_table.table = 'note_nlp'
+    WHERE (SELECT table_role FROM mapping_scanreporttable WHERE id = %(table_id)s) = 'note_nlp'
+    AND temp_table.source_field_id IS NOT NULL
+    ORDER BY temp_table.object_id;
 """

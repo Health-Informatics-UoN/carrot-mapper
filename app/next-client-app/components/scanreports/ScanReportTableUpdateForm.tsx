@@ -56,6 +56,12 @@ const TABLE_ROLES: { value: TableRole; label: string; description: string }[] =
       description:
         "Each row is a clinical note and becomes a record in the note table. After saving, choose which columns hold the note's key, text and other fields.",
     },
+    {
+      value: "note_nlp",
+      label: "Note NLP",
+      description:
+        "Each row is a term an NLP system found in a note. Its mapped concepts become note_nlp records linked to their note, and records in their domain's table (e.g. conditions), marked as NLP-derived by the type concept.",
+    },
   ];
 
 export function ScanReportTableUpdateForm({
@@ -188,11 +194,15 @@ export function ScanReportTableUpdateForm({
                 }
               </FormDescription>
               {values.tableRole !== scanreportTable.table_role &&
-                scanreportTable.table_role === "note" && (
+                (scanreportTable.table_role === "note" ||
+                  scanreportTable.table_role === "note_nlp") && (
                   <Alert className="mt-2">
                     <AlertDescription>
                       Changing the role clears this table&apos;s note field
-                      mappings.
+                      mappings
+                      {scanreportTable.table_role === "note_nlp" &&
+                        " and NLP settings"}
+                      .
                     </AlertDescription>
                   </Alert>
                 )}
@@ -202,8 +212,8 @@ export function ScanReportTableUpdateForm({
               <FormLabel htmlFor="typeConcept">Type concept</FormLabel>
               <FormDescription>
                 Optional. Records the provenance of every record built from this
-                table in its *_type_concept_id field, e.g. 32817 (EHR). Check
-                the ID in your vocabulary.
+                table in its *_type_concept_id field, e.g. 32858 (NLP) for a
+                Note NLP table or 32817 (EHR). Check the ID in your vocabulary.
               </FormDescription>
               <FormControl>
                 <ConceptIdInput

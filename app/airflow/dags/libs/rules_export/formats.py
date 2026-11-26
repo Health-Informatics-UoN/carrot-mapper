@@ -146,14 +146,16 @@ def rules_to_json_v2(
     tables: Iterable[Row] = (),
     field_mappings: Iterable[Row] = (),
     type_fields: Mapping[str, str] | None = None,
+    nlp_exclusions: Iterable[Row] = (),
+    domain_concepts: Mapping[str, int] | None = None,
 ) -> str:
     """
     Rules grouped by OMOP table, then by source table, with each source table's
     person_id mapping, date mapping and concept mappings (per source field).
 
-    ``tables``, ``field_mappings`` and ``type_fields`` add the scan report
-    tables' roles, field mappings and type concepts; see
-    ``add_table_level_mappings``.
+    ``tables``, ``field_mappings``, ``type_fields``, ``nlp_exclusions`` and
+    ``domain_concepts`` add the scan report tables' roles, field mappings, type
+    concepts and NLP-derived record settings; see ``add_table_level_mappings``.
     """
     result: dict[str, Any] = {}
 
@@ -281,8 +283,12 @@ def rules_to_json_v2(
                 concept_mapping["original_value"] = list(set(original_values))
 
                 # for a mappings of a source field group to be appear in the result, it must have original_value
-                # (which should always have at least one _source_value field)
-                if concept_mapping and concept_mapping.get("original_value"):
+                # (which should always have at least one _source_value field). note_nlp has no
+                # *_source_value field, so its concept groups only need concept mappings.
+                if concept_mapping and (
+                    concept_mapping.get("original_value")
+                    or (dest_table_str == "note_nlp" and len(concept_mapping) > 1)
+                ):
                     concept_mappings[source_field_clean] = concept_mapping
 
             # Adding the person_id_mapping, date_mapping, concept_mapping to the result
@@ -301,15 +307,37 @@ def rules_to_json_v2(
                     concept_mappings
                 )
 
-    add_table_level_mappings(result, tables, field_mappings, type_fields or {})
+    add_table_level_mappings(
+        result,
+        tables,
+        field_mappings,
+        type_fields or {},
+        nlp_exclusions,
+        domain_concepts or {},
+    )
 
     return json.dumps({"metadata": dict(metadata), "cdm": result}, indent=2)
 
 
-# The note table, and the OMOP field naming a note's key (see the API's
-# services/table_field_mappings.py).
+# The table holding the notes that note_nlp records refer to, and the OMOP
+# field naming a note's key (see the API's services/table_field_mappings.py).
 NOTE_TABLE = "note"
 NOTE_KEY_FIELD = "note_id"
+NOTE_NLP_TABLE = "note_nlp"
+# The note_nlp field holding each term's text, required like note_id
+NOTE_NLP_TERM_TEXT_FIELD = "lexical_variant"
+
+# The vocabulary domain of each OMOP table records can be derived into from NLP
+# output, for fact_relationship's domain_concept_ids (looked up in omop.domain).
+DERIVED_TABLE_DOMAINS = {
+    "condition_occurrence": "Condition",
+    "drug_exposure": "Drug",
+    "procedure_occurrence": "Procedure",
+    "measurement": "Measurement",
+    "observation": "Observation",
+    "device_exposure": "Device",
+    "specimen": "Specimen",
+}
 
 
 def _clean(name: Any) -> str:
@@ -326,6 +354,8 @@ def add_table_level_mappings(
     tables: Iterable[Row],
     field_mappings: Iterable[Row],
     type_fields: Mapping[str, str],
+    nlp_exclusions: Iterable[Row] = (),
+    domain_concepts: Mapping[str, int] | None = None,
 ) -> None:
     """
     Add each Scan Report Table's role, type concept and field mappings to the v2
@@ -336,17 +366,33 @@ def add_table_level_mappings(
       block built from the table.
     - note tables: a note block, one record per row, keyed by the note_id
       mapping and filled from the other field mappings.
+    - note_nlp tables: field mappings and constants on the note_nlp block built
+      from the table's concepts, with note_id as a reference to the note table.
+      Every other block built from the table (e.g. condition_occurrence) gets
+      ``derived_from``: its records are only written for rows that give a
+      note_nlp record and match none of the table's exclusions, and are linked
+      to it in fact_relationship if the table's link concepts are set.
 
     Args:
         - tables: rows of source_table, table_role, type_concept_id,
-          person_field and date_field (field names, or None)
+          person_field and date_field (field names, or None), and for note_nlp
+          tables source_domain_concept_id, relationship_concept_id and
+          reverse_relationship_concept_id (or None)
         - field_mappings: rows of source_table, omop_field, source_field (a
           field name, or None) and constant_value
         - type_fields: OMOP table -> its *_type_concept_id field
+        - nlp_exclusions: rows of source_table, source_field (a field name) and
+          excluded_values (a list)
+        - domain_concepts: OMOP table -> its domain's concept id
     """
     mappings_by_table: dict[Any, list[Row]] = {}
     for mapping in field_mappings:
         mappings_by_table.setdefault(mapping["source_table"], []).append(mapping)
+    exclusions_by_table: dict[Any, dict[str, list[str]]] = {}
+    for exclusion in nlp_exclusions:
+        exclusions_by_table.setdefault(exclusion["source_table"], {})[
+            _clean(exclusion["source_field"])
+        ] = list(exclusion["excluded_values"])
 
     for table in tables:
         source_table = _clean(table["source_table"])
@@ -385,6 +431,44 @@ def add_table_level_mappings(
                 "field_mappings": copies,
                 "constant_mappings": constants,
             }
+        elif (
+            role == "note_nlp"
+            and source_table in result.get(NOTE_NLP_TABLE, {})
+            and not (
+                note_key
+                and NOTE_NLP_TERM_TEXT_FIELD in copies | constants
+                and table["person_field"]
+                and table["date_field"]
+            )
+        ):
+            # As for notes: without these its note_nlp records can't be written
+            # (or linked to their notes), and its derived records would lose
+            # their exclusions, so the table is left out until it's set up
+            logging.warning(
+                f"Note NLP table {source_table} needs a person ID, a date event and "
+                f"{NOTE_KEY_FIELD} and {NOTE_NLP_TERM_TEXT_FIELD} field mappings; it is "
+                "left out of the rules"
+            )
+            for blocks in result.values():
+                blocks.pop(source_table, None)
+            for dest_table in [name for name, blocks in result.items() if not blocks]:
+                del result[dest_table]
+            continue
+        elif role == "note_nlp" and source_table in result.get("note_nlp", {}):
+            block = result["note_nlp"][source_table]
+            if note_key:
+                block["references"] = {
+                    NOTE_KEY_FIELD: {"table": NOTE_TABLE, "source_field": note_key}
+                }
+            block["field_mappings"] = copies
+            block["constant_mappings"] = constants
+            _add_derived_from(
+                result,
+                source_table,
+                table,
+                exclusions_by_table.get(table["source_table"], {}),
+                domain_concepts or {},
+            )
 
         # The table's type concept goes on every record built from it
         if table["type_concept_id"] is not None:
@@ -394,3 +478,39 @@ def add_table_level_mappings(
                     blocks[source_table].setdefault("constant_mappings", {})[
                         type_field
                     ] = int(table["type_concept_id"])
+
+
+def _add_derived_from(
+    result: dict[str, Any],
+    source_table: str,
+    table: Row,
+    exclusions: dict[str, list[str]],
+    domain_concepts: Mapping[str, int],
+) -> None:
+    """Mark the blocks a note_nlp table feeds (other than note_nlp) as derived"""
+    link_ids = [
+        table.get("source_domain_concept_id"),
+        table.get("relationship_concept_id"),
+        table.get("reverse_relationship_concept_id"),
+    ]
+    for dest_table, blocks in result.items():
+        if dest_table in (NOTE_NLP_TABLE, NOTE_TABLE) or source_table not in blocks:
+            continue
+        derived_from: dict[str, Any] = {"table": NOTE_NLP_TABLE}
+        if exclusions:
+            derived_from["exclude_values"] = exclusions
+        if all(link_ids):
+            domain = domain_concepts.get(dest_table)
+            if domain is None:
+                logging.warning(
+                    f"No domain concept for {dest_table} in the vocabulary; "
+                    f"records derived from {source_table} won't be linked"
+                )
+            else:
+                derived_from["fact_relationship"] = {
+                    "domain_concept_id": int(domain),
+                    "source_domain_concept_id": int(link_ids[0]),
+                    "relationship_concept_id": int(link_ids[1]),
+                    "reverse_relationship_concept_id": int(link_ids[2]),
+                }
+        blocks[source_table]["derived_from"] = derived_from

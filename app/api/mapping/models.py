@@ -29,11 +29,15 @@ class TableRole(models.TextChoices):
     - STANDARD: records in the table each mapped concept's domain points to.
     - DEATH: mapped concepts go to the death table (cause of death).
     - NOTE: one note record per row, built from the table's field mappings.
+    - NOTE_NLP: one note_nlp record per mapped concept on a row (e.g. an NLP
+      system's SNOMED output), linked to its note, as well as the usual
+      domain records for the concept.
     """
 
     STANDARD = "standard", "Standard"
     DEATH = "death", "Death"
     NOTE = "note", "Note"
+    NOTE_NLP = "note_nlp", "Note NLP"
 
 
 class VisibilityChoices(models.TextChoices):
@@ -301,7 +305,7 @@ class ScanReportTable(BaseModel):
         help_text="What this table's rows become in the OMOP CDM",
     )
     # Written to the <table>_type_concept_id field of every record built from
-    # this table, e.g. 32817 (EHR).
+    # this table, e.g. 32858 (NLP) for a note_nlp table.
     type_concept = models.ForeignKey(
         Concept,
         on_delete=models.DO_NOTHING,
@@ -402,11 +406,14 @@ class ScanReportTableFieldMapping(BaseModel):
     """
     A table-level mapping from a source column, or a constant, to an OMOP field.
 
-    Used for fields that aren't driven by concept mapping, such as note_text,
-    and for fixed values such as note_class_concept_id. Exactly one of
-    `source_field` and `constant_value` is set.
+    Used for fields that aren't driven by concept mapping, such as note_text or
+    note_nlp.lexical_variant, and for fixed values such as
+    note_class_concept_id or nlp_system. Exactly one of `source_field` and
+    `constant_value` is set.
 
-    `note.note_id` is mapped to the source column holding each note's key.
+    The OMOP id fields linking notes are mapped to the source column holding the
+    note's key: `note.note_id` names the key on a note table, and
+    `note_nlp.note_id` the column on a note_nlp table that refers to it.
     """
 
     scan_report_table = models.ForeignKey(
@@ -428,6 +435,88 @@ class ScanReportTableFieldMapping(BaseModel):
             UniqueConstraint(
                 fields=["scan_report_table", "omop_field"],
                 name="sr_table_field_mapping_unique",
+            )
+        ]
+
+    def __str__(self):
+        return str(self.id)
+
+
+class NlpLinkSettings(BaseModel):
+    """
+    How the domain records derived from a note_nlp table's rows (e.g.
+    conditions) are linked to their note_nlp records in fact_relationship.
+
+    The derived records' own domain concepts come from the vocabulary's
+    domain table; the note_nlp records' domain and the relationships are set
+    here. Without them, derived records are still only written for rows that
+    give a note_nlp record, but aren't linked.
+    """
+
+    scan_report_table = models.OneToOneField(
+        ScanReportTable, on_delete=models.CASCADE, related_name="nlp_link"
+    )
+    source_domain_concept = models.ForeignKey(
+        Concept,
+        on_delete=models.DO_NOTHING,
+        null=True,
+        blank=True,
+        related_name="+",
+        help_text="Domain concept for note_nlp records in fact_relationship",
+    )
+    relationship_concept = models.ForeignKey(
+        Concept,
+        on_delete=models.DO_NOTHING,
+        null=True,
+        blank=True,
+        related_name="+",
+        help_text="Relationship from a note_nlp record to a record derived from it",
+    )
+    reverse_relationship_concept = models.ForeignKey(
+        Concept,
+        on_delete=models.DO_NOTHING,
+        null=True,
+        blank=True,
+        related_name="+",
+        help_text="Relationship from a derived record back to its note_nlp record",
+    )
+
+    class Meta:
+        app_label = "mapping"
+
+    def __str__(self):
+        return str(self.id)
+
+    @property
+    def is_complete(self) -> bool:
+        return bool(
+            self.source_domain_concept_id
+            and self.relationship_concept_id
+            and self.reverse_relationship_concept_id
+        )
+
+
+class NlpDerivedRecordExclusion(BaseModel):
+    """
+    On a note_nlp table: rows whose `source_field` holds one of
+    `excluded_values` (compared case-insensitively) give a note_nlp record but
+    no derived domain records, e.g. negated or family-history terms.
+    """
+
+    scan_report_table = models.ForeignKey(
+        ScanReportTable, on_delete=models.CASCADE, related_name="nlp_exclusions"
+    )
+    source_field = models.ForeignKey(
+        ScanReportField, on_delete=models.CASCADE, related_name="+"
+    )
+    excluded_values = models.JSONField(default=list)
+
+    class Meta:
+        app_label = "mapping"
+        constraints = [
+            UniqueConstraint(
+                fields=["scan_report_table", "source_field"],
+                name="nlp_exclusion_unique_field",
             )
         ]
 

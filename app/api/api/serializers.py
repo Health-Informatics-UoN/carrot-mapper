@@ -12,6 +12,8 @@ from mapping.models import (
     Dataset,
     MappingRecommendation,
     MappingStatus,
+    NlpDerivedRecordExclusion,
+    NlpLinkSettings,
     OmopField,
     ScanReport,
     ScanReportConcept,
@@ -850,15 +852,19 @@ class ScanReportTableEditSerializer(
         old_role = instance.table_role
         instance = super().update(instance, validated_data)
         if instance.table_role != old_role:
-            # Field mappings belong to the old role's OMOP table
+            # Field mappings belong to the old role's OMOP table, and the NLP
+            # link settings only apply to note_nlp tables
             instance.field_mappings.all().delete()
+            if instance.table_role != TableRole.NOTE_NLP:
+                NlpLinkSettings.objects.filter(scan_report_table=instance).delete()
+                instance.nlp_exclusions.all().delete()
         return instance
 
 
 class ScanReportTableFieldMappingSerializer(serializers.Serializer):
     """
     One table-level field mapping. `omop_field` is the field's name in the OMOP
-    table for the table's role (note); exactly one of
+    table for the table's role (note or note_nlp); exactly one of
     `source_field` (a field of this Scan Report Table) and `constant_value` is
     given. Expects the ScanReportTable as context["table"].
     """
@@ -1063,6 +1069,130 @@ class GetRulesAnalysis(DynamicFieldsMixin, serializers.ModelSerializer):
 
     def to_representation(self, scan_report):
         return analyse_concepts(scan_report.id)
+
+
+def concept_summary(concept_id: int | None) -> dict | None:
+    """{"concept_id", "concept_name"} for a concept id, or None"""
+    if concept_id is None:
+        return None
+    concept = Concept.objects.filter(concept_id=concept_id).first()
+    return {
+        "concept_id": concept_id,
+        "concept_name": concept.concept_name if concept else None,
+    }
+
+
+class NlpDerivedRecordExclusionSerializer(serializers.Serializer):
+    """
+    One exclusion on a note_nlp table: rows whose `source_field` (a field of the
+    table, in context["table"]) holds one of `excluded_values` give no derived
+    domain records.
+    """
+
+    source_field = serializers.PrimaryKeyRelatedField(
+        queryset=ScanReportField.objects.all()
+    )
+    excluded_values = serializers.ListField(
+        child=serializers.CharField(max_length=255), allow_empty=False
+    )
+
+    def validate_source_field(self, source_field: ScanReportField):
+        if source_field.scan_report_table_id != self.context["table"].id:
+            raise serializers.ValidationError("The field must belong to this table.")
+        return source_field
+
+    def validate_excluded_values(self, values: list[str]):
+        # Matching ignores case and surrounding spaces, so store them trimmed
+        values = list(dict.fromkeys(v.strip() for v in values if v.strip()))
+        if not values:
+            raise serializers.ValidationError("Give at least one value to exclude.")
+        return values
+
+
+class NlpSettingsSerializer(serializers.Serializer):
+    """
+    A note_nlp table's derived-record settings: the fact_relationship link
+    concepts (all three, or none) and the exclusions.
+    """
+
+    LINK_FIELDS = [
+        "source_domain_concept",
+        "relationship_concept",
+        "reverse_relationship_concept",
+    ]
+
+    source_domain_concept = serializers.IntegerField(required=False, allow_null=True)
+    relationship_concept = serializers.IntegerField(required=False, allow_null=True)
+    reverse_relationship_concept = serializers.IntegerField(
+        required=False, allow_null=True
+    )
+    exclusions = NlpDerivedRecordExclusionSerializer(many=True, required=False)
+
+    def validate(self, data):
+        link = [data.get(name) for name in self.LINK_FIELDS]
+        if any(link) and not all(link):
+            raise serializers.ValidationError(
+                "Set all three fact_relationship concepts, or none of them."
+            )
+        for name in self.LINK_FIELDS:
+            concept_id = data.get(name)
+            if (
+                concept_id
+                and not Concept.objects.filter(concept_id=concept_id).exists()
+            ):
+                raise serializers.ValidationError(
+                    {name: f"'{concept_id}' is not a known concept id."}
+                )
+        fields = [item["source_field"].id for item in data.get("exclusions", [])]
+        if len(fields) != len(set(fields)):
+            raise serializers.ValidationError(
+                "Each field can only have one exclusion; list all its values there."
+            )
+        return data
+
+    @staticmethod
+    def represent(table: ScanReportTable) -> dict:
+        link = NlpLinkSettings.objects.filter(scan_report_table=table).first()
+        exclusions = table.nlp_exclusions.select_related("source_field").order_by(
+            "source_field__name"
+        )
+        return {
+            "source_domain_concept": concept_summary(
+                link.source_domain_concept_id if link else None
+            ),
+            "relationship_concept": concept_summary(
+                link.relationship_concept_id if link else None
+            ),
+            "reverse_relationship_concept": concept_summary(
+                link.reverse_relationship_concept_id if link else None
+            ),
+            "exclusions": [
+                {
+                    "source_field": exclusion.source_field_id,
+                    "source_field_name": exclusion.source_field.name,
+                    "excluded_values": exclusion.excluded_values,
+                }
+                for exclusion in exclusions
+            ],
+        }
+
+    def save_to(self, table: ScanReportTable) -> None:
+        data = self.validated_data
+        NlpLinkSettings.objects.update_or_create(
+            scan_report_table=table,
+            defaults={
+                f"{name}_id": data.get(name) or None for name in self.LINK_FIELDS
+            },
+        )
+        table.nlp_exclusions.all().delete()
+        NlpDerivedRecordExclusion.objects.bulk_create(
+            NlpDerivedRecordExclusion(
+                scan_report_table=table,
+                source_field=item["source_field"],
+                excluded_values=item["excluded_values"],
+            )
+            for item in data.get("exclusions", [])
+        )
 
 
 def validation_error_detail(errors) -> str:

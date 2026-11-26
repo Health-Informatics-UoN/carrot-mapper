@@ -15,6 +15,8 @@ const fetchKeys = {
     scanReportId: string | number,
     tableId: string | number,
   ) => `v2/scanreports/${scanReportId}/tables/${tableId}/field-mappings/`,
+  tableNlpSettings: (scanReportId: string | number, tableId: string | number) =>
+    `v2/scanreports/${scanReportId}/tables/${tableId}/nlp-settings/`,
   tables: (scanReportId: string, filter?: string) =>
     `v2/scanreports/${scanReportId}/tables/?${filter}`,
   jobs: (scanReportId: string | number, stage?: string) =>
@@ -212,6 +214,41 @@ export async function updateTableFieldMappings(
         method: "PUT",
         headers: { "Content-type": "application/json" },
         body: JSON.stringify(mappings),
+      },
+    );
+    revalidatePath(`/scanreports/${scanReportId}/tables/${tableId}/update`);
+    return { data };
+  } catch (error: any) {
+    return { errorMessage: error.message };
+  }
+}
+
+export async function getTableNlpSettings(
+  scanReportId: string | number,
+  tableId: string | number,
+): Promise<NlpSettings | null> {
+  try {
+    return await request<NlpSettings>(
+      fetchKeys.tableNlpSettings(scanReportId, tableId),
+    );
+  } catch (error) {
+    console.warn("Failed to fetch table NLP settings.");
+    return null;
+  }
+}
+
+export async function updateTableNlpSettings(
+  scanReportId: string | number,
+  tableId: string | number,
+  settings: NlpSettingsInput,
+): Promise<{ data?: NlpSettings; errorMessage?: string }> {
+  try {
+    const data = await request<NlpSettings>(
+      fetchKeys.tableNlpSettings(scanReportId, tableId),
+      {
+        method: "PUT",
+        headers: { "Content-type": "application/json" },
+        body: JSON.stringify(settings),
       },
     );
     revalidatePath(`/scanreports/${scanReportId}/tables/${tableId}/update`);

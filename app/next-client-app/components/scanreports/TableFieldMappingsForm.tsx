@@ -35,7 +35,8 @@ interface Row {
 // What each mappable OMOP field holds, in plain words
 const FIELD_HELP: Record<TableRole, Record<string, string>> = {
   note: {
-    note_id: "The column that identifies each note.",
+    note_id:
+      "The column that identifies each note. NLP tables link their terms to notes by it.",
     note_text: "The text of the note.",
     note_title: "The title of the note.",
     note_source_value: "The note's identifier or type in the source data.",
@@ -45,6 +46,18 @@ const FIELD_HELP: Record<TableRole, Record<string, string>> = {
     note_event_id: "The record of the event the note is about (CDM v5.4).",
     note_event_field_concept_id:
       "The field that note_event_id refers to (CDM v5.4).",
+  },
+  note_nlp: {
+    note_id:
+      "The column holding the key of the note each term was found in (the note table's note_id column).",
+    lexical_variant: "The term as it appears in the note.",
+    snippet: "The text around the term.",
+    offset: "Where the term starts in the note.",
+    nlp_system: "The NLP system and version that found the term.",
+    section_concept_id: "The section of the note the term was found in.",
+    term_exists: "Whether the term is asserted (not negated, hypothetical…).",
+    term_temporal: "When the term applies, e.g. past or present.",
+    term_modifiers: "Other modifiers the NLP system found for the term.",
   },
   standard: {},
   death: {},
@@ -150,11 +163,15 @@ export function TableFieldMappingsForm({
   return (
     <Card className="max-w-4xl">
       <CardHeader>
-        <CardTitle className="text-xl">Note fields</CardTitle>
+        <CardTitle className="text-xl">
+          {role === "note" ? "Note fields" : "Note NLP fields"}
+        </CardTitle>
         <CardDescription>
-          Each row of this table becomes a note. Choose the column or fixed
-          value for each note field. These only affect the exported rules, so
-          saving doesn&apos;t re-run auto-mapping.
+          {role === "note"
+            ? "Each row of this table becomes a note. Choose the column or fixed value for each note field."
+            : "Each term found by NLP becomes a note_nlp record, alongside the concepts mapped to it. Choose the column or fixed value for the other note_nlp fields."}{" "}
+          These only affect the exported rules, so saving doesn&apos;t re-run
+          auto-mapping.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">

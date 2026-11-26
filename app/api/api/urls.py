@@ -103,6 +103,11 @@ urlpatterns = [
         name="scan-report-table-field-mappings",
     ),
     path(
+        "v2/scanreports/<int:pk>/tables/<int:table_pk>/nlp-settings/",
+        views.ScanReportTableNlpSettingsV2.as_view(),
+        name="scan-report-table-nlp-settings",
+    ),
+    path(
         "v2/scanreports/<int:pk>/tables/<int:table_pk>/fields/",
         views.ScanReportFieldIndexV2.as_view(),
         name="scan-report-fields",

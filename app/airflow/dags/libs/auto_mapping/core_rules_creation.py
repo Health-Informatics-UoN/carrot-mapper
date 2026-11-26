@@ -3,6 +3,7 @@ import logging
 from airflow.exceptions import AirflowException
 from libs.db import pg_hook
 from libs.notifications import NotificationType, create_notification
+from libs.queries import create_note_nlp_rules_query
 from libs.settings import AIRFLOW_DEBUG_MODE
 from libs.utils import (
     JobStageType,
@@ -65,15 +66,15 @@ def create_mapping_rules(**kwargs) -> None:
     """
 
     try:
-        pg_hook.run(
-            mapping_rule_query,
-            parameters={
-                "table_id": table_id,
-                "scan_report_id": scan_report_id,
-                "date_field_id": date_field_id,
-                "person_id_field": person_id_field,
-            },
-        )
+        parameters = {
+            "table_id": table_id,
+            "scan_report_id": scan_report_id,
+            "date_field_id": date_field_id,
+            "person_id_field": person_id_field,
+        }
+        pg_hook.run(mapping_rule_query, parameters=parameters)
+        # Only inserts anything for tables with the note_nlp role
+        pg_hook.run(create_note_nlp_rules_query, parameters=parameters)
         update_job_status(
             scan_report=scan_report_id,
             scan_report_table=table_id,
