@@ -11,6 +11,12 @@ const fetchKeys = {
   permissions: (id: string) => `v2/scanreports/${id}/permissions/`,
   table: (scanReportId: string | number, tableId: string | number) =>
     `v2/scanreports/${scanReportId}/tables/${tableId}/`,
+  tableFieldMappings: (
+    scanReportId: string | number,
+    tableId: string | number,
+  ) => `v2/scanreports/${scanReportId}/tables/${tableId}/field-mappings/`,
+  tableNlpSettings: (scanReportId: string | number, tableId: string | number) =>
+    `v2/scanreports/${scanReportId}/tables/${tableId}/nlp-settings/`,
   tables: (scanReportId: string, filter?: string) =>
     `v2/scanreports/${scanReportId}/tables/?${filter}`,
   jobs: (scanReportId: string | number, stage?: string) =>
@@ -145,7 +151,8 @@ export async function getScanReportTable(
       permissions: [],
       jobs: [],
       trigger_reuse: true,
-      death_table: false,
+      table_role: "standard",
+      type_concept: null,
     };
   }
 }
@@ -176,6 +183,76 @@ export async function updateScanReportTable(
       body: JSON.stringify(data),
     });
     revalidatePath(`/scanreports/${scanReportId}/`);
+  } catch (error: any) {
+    return { errorMessage: error.message };
+  }
+}
+
+export async function getTableFieldMappings(
+  scanReportId: string | number,
+  tableId: string | number,
+): Promise<TableFieldMappings | null> {
+  try {
+    return await request<TableFieldMappings>(
+      fetchKeys.tableFieldMappings(scanReportId, tableId),
+    );
+  } catch (error) {
+    console.warn("Failed to fetch table field mappings.");
+    return null;
+  }
+}
+
+export async function updateTableFieldMappings(
+  scanReportId: string | number,
+  tableId: string | number,
+  mappings: TableFieldMappingInput[],
+): Promise<{ data?: TableFieldMappings; errorMessage?: string }> {
+  try {
+    const data = await request<TableFieldMappings>(
+      fetchKeys.tableFieldMappings(scanReportId, tableId),
+      {
+        method: "PUT",
+        headers: { "Content-type": "application/json" },
+        body: JSON.stringify(mappings),
+      },
+    );
+    revalidatePath(`/scanreports/${scanReportId}/tables/${tableId}/update`);
+    return { data };
+  } catch (error: any) {
+    return { errorMessage: error.message };
+  }
+}
+
+export async function getTableNlpSettings(
+  scanReportId: string | number,
+  tableId: string | number,
+): Promise<NlpSettings | null> {
+  try {
+    return await request<NlpSettings>(
+      fetchKeys.tableNlpSettings(scanReportId, tableId),
+    );
+  } catch (error) {
+    console.warn("Failed to fetch table NLP settings.");
+    return null;
+  }
+}
+
+export async function updateTableNlpSettings(
+  scanReportId: string | number,
+  tableId: string | number,
+  settings: NlpSettingsInput,
+): Promise<{ data?: NlpSettings; errorMessage?: string }> {
+  try {
+    const data = await request<NlpSettings>(
+      fetchKeys.tableNlpSettings(scanReportId, tableId),
+      {
+        method: "PUT",
+        headers: { "Content-type": "application/json" },
+        body: JSON.stringify(settings),
+      },
+    );
+    revalidatePath(`/scanreports/${scanReportId}/tables/${tableId}/update`);
+    return { data };
   } catch (error: any) {
     return { errorMessage: error.message };
   }

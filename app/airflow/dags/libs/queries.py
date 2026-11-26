@@ -139,11 +139,11 @@ LEFT JOIN mapping_omoptable AS omop_table ON
 -- Because concepts may or may not have the standard_concept_id, in general. And we prefer to use the standard_concept_id, if it exists.
 WHERE target_concept.concept_id = COALESCE(temp_existing_concepts.standard_concept_id, temp_existing_concepts.source_concept_id);
 
--- If the scan report table has the "death_table" flag set to TRUE, set the destination table to OMOP's "death" table.
+-- If the scan report table has the "death" role, set the destination table to OMOP's "death" table.
 -- This ensures that mapping rules will use "death" as the destination table and, for example, will select "cause_concept_id" as the mapped field.
 UPDATE temp_existing_concepts_%(table_id)s temp_existing_concepts
 SET dest_table_id = (SELECT id FROM mapping_omoptable WHERE "table" = 'death' LIMIT 1)
-WHERE (SELECT death_table FROM mapping_scanreporttable WHERE id = %(table_id)s) = TRUE;
+WHERE (SELECT table_role FROM mapping_scanreporttable WHERE id = %(table_id)s) = 'death';
 
 -- Update person field ID
 UPDATE temp_existing_concepts_%(table_id)s temp_existing_concepts
@@ -306,7 +306,7 @@ WITH
             AND scan_report.id != %(scan_report_id)s
     ),
     -- Find values in eligible scan reports that have M-type concepts tied.
-    -- Only reuse from tables with the same death_table flag (death tables get death concepts only; non-death never get death concepts).
+    -- Only reuse from tables with the same role (e.g. death tables get death concepts only; other tables never get death concepts).
     values_with_m_concepts AS (
         SELECT
             sr_value.value AS matching_value_name,
@@ -319,7 +319,7 @@ WITH
         FROM eligible_reports AS eligible_report
         JOIN mapping_scanreporttable AS sr_table ON sr_table.scan_report_id = eligible_report.id
             AND sr_table.name = %(current_table_name)s
-            AND (SELECT death_table FROM mapping_scanreporttable WHERE id = %(table_id)s) IS NOT DISTINCT FROM sr_table.death_table
+            AND (SELECT table_role FROM mapping_scanreporttable WHERE id = %(table_id)s) = sr_table.table_role
         JOIN mapping_scanreportfield AS sr_field ON sr_field.scan_report_table_id = sr_table.id
         JOIN mapping_scanreportvalue AS sr_value ON sr_value.scan_report_field_id = sr_field.id
         JOIN mapping_scanreportconcept AS sr_concept ON sr_concept.object_id = sr_value.id
@@ -360,7 +360,7 @@ WITH
             AND scan_report.id != %(scan_report_id)s
     ),
     -- Find fields in eligible scan reports that have M-type concepts tied.
-    -- Match only tables with an identical death_table setting to ensure concepts from death tables are reused only with other death tables, and non-death tables only with non-death.
+    -- Match only tables with the same role, so e.g. concepts from death tables are reused only with other death tables, and non-death tables only with non-death.
     fields_with_m_concepts AS (
         SELECT
             sr_field.name AS matching_field_name,
@@ -371,7 +371,7 @@ WITH
         FROM eligible_reports AS eligible_report
         JOIN mapping_scanreporttable AS sr_table ON sr_table.scan_report_id = eligible_report.id
             AND sr_table.name = %(current_table_name)s
-            AND (SELECT death_table FROM mapping_scanreporttable WHERE id = %(table_id)s) IS NOT DISTINCT FROM sr_table.death_table
+            AND (SELECT table_role FROM mapping_scanreporttable WHERE id = %(table_id)s) = sr_table.table_role
         JOIN mapping_scanreportfield AS sr_field ON sr_field.scan_report_table_id = sr_table.id
         JOIN mapping_scanreportconcept AS sr_concept ON sr_concept.object_id = sr_field.id
             AND sr_concept.content_type_id = (SELECT id FROM field_content_type)
@@ -388,7 +388,7 @@ SELECT
 FROM fields_with_m_concepts;
 """
 
-# Only set object_id if the death_table flag for the current table matches the source table (identified by source_scanreport_id and matching_table_name).
+# Only set object_id if the role of the current table matches the source table (identified by source_scanreport_id and matching_table_name).
 find_object_id_query = """
     UPDATE temp_reuse_concepts_%(table_id)s AS temp_table
         SET object_id =
@@ -423,13 +423,12 @@ find_object_id_query = """
                     LIMIT 1)
                 ELSE NULL
             END
-    -- We only want to reuse concepts between tables where the "death_table" status matches.
-    -- To do this, we're checking if the "death_table" flag is the same for:
+    -- We only want to reuse concepts between tables with the same role (standard, death, note, note_nlp).
+    -- To do this, we're checking the role is the same for:
     --   1. The current scan report table (id = %(table_id)s)
     --   2. The source scan report table we're trying to reuse from (using name and source_scanreport_id)
-    -- The "IS NOT DISTINCT FROM" comparison treats NULL values as equivalent, so if both tables have "death_table" as NULL, that's also accepted as a match.
-    WHERE (SELECT death_table FROM mapping_scanreporttable WHERE id = %(table_id)s) IS NOT DISTINCT FROM (
-        SELECT sr_table.death_table
+    WHERE (SELECT table_role FROM mapping_scanreporttable WHERE id = %(table_id)s) = (
+        SELECT sr_table.table_role
         FROM mapping_scanreporttable AS sr_table
         WHERE sr_table.scan_report_id = temp_table.source_scanreport_id
           AND sr_table.name = temp_table.matching_table_name
@@ -473,6 +472,29 @@ WHERE temp_table.concept_id = omop_concept.concept_id
 AND omop_concept.domain_id NOT IN (
     'Condition', 'Drug', 'Procedure', 'Specimen', 'Device',
     'Measurement', 'Observation', 'Gender', 'Race', 'Ethnicity', 'Spec Anatomic Site'
+)
+-- Keep concepts of other domains where they're used without a domain table, as
+-- vocabulary auto-mapping does: on a note_nlp table (each concept gives a
+-- note_nlp record), and on the values of a column filling one field of a note /
+-- note_nlp record (e.g. note_type -> note_class_concept_id). Never keep
+-- "No matching concept" (0), which only marks a value as reviewed.
+AND (
+    temp_table.concept_id = 0
+    OR NOT (
+        (SELECT table_role FROM mapping_scanreporttable WHERE id = %(table_id)s) = 'note_nlp'
+        OR EXISTS (
+            SELECT 1
+            FROM mapping_scanreportvalue AS sr_value
+            JOIN mapping_scanreporttablefieldmapping AS field_mapping
+                ON field_mapping.source_field_id = sr_value.scan_report_field_id
+                AND field_mapping.map_values
+            WHERE sr_value.id = temp_table.object_id
+            AND temp_table.content_type_id = (
+                SELECT id FROM django_content_type
+                WHERE app_label = 'mapping' AND model = 'scanreportvalue'
+            )
+        )
+    )
 );
 
 -- Delete concepts that have no object_id
@@ -634,4 +656,75 @@ create_update_temp_rules_table_query = """
 create_file_entry_query = """
     INSERT INTO files_filedownload (name, file_url, user_id, file_type_id, scan_report_id, created_at, updated_at)
     VALUES (%(name)s, %(file_url)s, %(user_id)s, %(file_type_id)s, %(scan_report_id)s, %(created_at)s, %(updated_at)s)
+"""
+
+
+# On a note_nlp table, every concept also becomes a note_nlp record: rules for its
+# date (from the table's date event) and its concept fields (from the field the
+# concept is on). note_nlp has no person_id. Concepts whose domain has no
+# destination table of its own get these rules too.
+create_note_nlp_rules_query = """
+    INSERT INTO mapping_mappingrule (
+        created_at, updated_at, omop_field_id, source_field_id, concept_id, scan_report_id, approved
+    )
+    SELECT
+        NOW(),
+        NOW(),
+        omop_field.id,
+        CASE
+            WHEN omop_field.field = 'nlp_datetime' THEN %(date_field_id)s
+            ELSE temp_table.source_field_id
+        END,
+        temp_table.sr_concept_id,
+        %(scan_report_id)s,
+        TRUE
+    FROM temp_existing_concepts_%(table_id)s AS temp_table
+    -- Not "No matching concept" (0), which only marks a value as reviewed
+    JOIN mapping_scanreportconcept AS sr_concept
+        ON sr_concept.id = temp_table.sr_concept_id
+        AND sr_concept.concept_id <> 0
+    JOIN mapping_omopfield AS omop_field
+        ON omop_field.field IN ('nlp_datetime', 'note_nlp_concept_id', 'note_nlp_source_concept_id')
+    JOIN mapping_omoptable AS omop_table
+        ON omop_table.id = omop_field.table_id AND omop_table.table = 'note_nlp'
+    WHERE (SELECT table_role FROM mapping_scanreporttable WHERE id = %(table_id)s) = 'note_nlp'
+    AND temp_table.source_field_id IS NOT NULL
+    ORDER BY temp_table.object_id;
+"""
+
+
+# Concepts on the values of a column that fills one field of a note / note_nlp
+# record (a table field mapping with map_values, e.g. note_type ->
+# note_class_concept_id) give one rule, for that field, and are then removed from
+# the table's concepts so they don't also make records in their domain's table.
+create_value_mapped_field_rules_query = """
+    INSERT INTO mapping_mappingrule (
+        created_at, updated_at, omop_field_id, source_field_id, concept_id, scan_report_id, approved
+    )
+    SELECT
+        NOW(), NOW(), field_mapping.omop_field_id, temp_table.source_field_id,
+        temp_table.sr_concept_id, %(scan_report_id)s, TRUE
+    FROM temp_existing_concepts_%(table_id)s AS temp_table
+    JOIN mapping_scanreporttablefieldmapping AS field_mapping
+        ON field_mapping.source_field_id = temp_table.source_field_id
+        AND field_mapping.map_values
+    JOIN mapping_scanreporttable AS sr_table
+        ON sr_table.id = field_mapping.scan_report_table_id
+        AND sr_table.table_role IN ('note', 'note_nlp')
+    JOIN mapping_scanreportconcept AS sr_concept ON sr_concept.id = temp_table.sr_concept_id
+    WHERE temp_table.content_type_id = (
+        SELECT id FROM django_content_type
+        WHERE app_label = 'mapping' AND model = 'scanreportvalue'
+    )
+    -- "No matching concept" gives no rules, as everywhere else
+    AND sr_concept.concept_id <> 0
+    ORDER BY temp_table.object_id;
+
+    DELETE FROM temp_existing_concepts_%(table_id)s AS temp_table
+    USING mapping_scanreporttablefieldmapping AS field_mapping
+    JOIN mapping_scanreporttable AS sr_table
+        ON sr_table.id = field_mapping.scan_report_table_id
+        AND sr_table.table_role IN ('note', 'note_nlp')
+    WHERE field_mapping.source_field_id = temp_table.source_field_id
+    AND field_mapping.map_values;
 """

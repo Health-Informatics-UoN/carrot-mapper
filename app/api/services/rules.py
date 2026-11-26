@@ -11,7 +11,9 @@ from mapping.models import (
     ScanReportConcept,
     ScanReportField,
     ScanReportTable,
+    ScanReportTableFieldMapping,
     ScanReportValue,
+    TableRole,
 )
 
 # OMOP's standard concept_id for "No matching concept". Its domain (Metadata)
@@ -37,6 +39,8 @@ m_allowed_tables = [
     "device_exposure",
     "specimen",
     "death",
+    "note",
+    "note_nlp",
 ]
 
 # look up of date-events in all the allowed (destination) tables
@@ -53,7 +57,13 @@ m_date_field_mapper = {
     ],
     "specimen": ["specimen_datetime"],
     "death": ["death_datetime"],
+    "note": ["note_datetime"],
+    "note_nlp": ["nlp_datetime"],
 }
+
+# Fields of a note_nlp record that come from each concept mapped on a note_nlp
+# table. The rest of the record comes from the table's field mappings.
+NOTE_NLP_CONCEPT_FIELDS = ["note_nlp_concept_id", "note_nlp_source_concept_id"]
 
 
 def delete_mapping_rules(table_id: int) -> None:
@@ -315,6 +325,91 @@ def _get_date_rules(
     return date_rules
 
 
+def value_mapped_field(
+    source_field: ScanReportField,
+) -> Optional[ScanReportTableFieldMapping]:
+    """
+    The field mapping whose concepts come from this source field's values, if
+    any (e.g. a note table's note_type column filling note_class_concept_id).
+    """
+    return (
+        ScanReportTableFieldMapping.objects.filter(
+            source_field=source_field,
+            map_values=True,
+            scan_report_table__table_role__in=[TableRole.NOTE, TableRole.NOTE_NLP],
+        )
+        .select_related("omop_field")
+        .first()
+    )
+
+
+def concepts_on_field(source_field: ScanReportField):
+    """The ScanReportConcepts on a source field and on its values"""
+    from django.contrib.contenttypes.models import ContentType
+    from django.db.models import Q
+
+    value_ids = ScanReportValue.objects.filter(scan_report_field=source_field).values(
+        "id"
+    )
+    return ScanReportConcept.objects.filter(
+        Q(
+            content_type=ContentType.objects.get_for_model(ScanReportField),
+            object_id=source_field.id,
+        )
+        | Q(
+            content_type=ContentType.objects.get_for_model(ScanReportValue),
+            object_id__in=value_ids,
+        )
+    ).select_related("concept")
+
+
+def refresh_field_rules(source_field: ScanReportField) -> None:
+    """
+    Rebuild the mapping rules of every concept on a source field and its values,
+    e.g. after the field starts or stops filling a note field from its values,
+    which changes what rules its concepts give.
+    """
+    with transaction.atomic():
+        concepts = list(concepts_on_field(source_field))
+        MappingRule.objects.filter(concept__in=concepts).delete()
+        for scan_report_concept in concepts:
+            save_mapping_rules(scan_report_concept, source_field=source_field)
+
+
+def _get_note_nlp_rules(
+    scan_report: ScanReport,
+    scan_report_concept: ScanReportConcept,
+    source_table: ScanReportTable,
+    source_field: ScanReportField,
+) -> List[MappingRule]:
+    """
+    Rules that make a note_nlp record for a concept on a note_nlp table: its
+    date from the table's date_event, and its concept fields from the field the
+    concept is mapped on. note_nlp has no person_id.
+    """
+    rules = []
+    for date_field in m_date_field_mapper["note_nlp"]:
+        rule, _ = MappingRule.objects.update_or_create(
+            scan_report=scan_report,
+            omop_field=_get_omop_field(date_field, "note_nlp"),
+            source_field=source_table.date_event,
+            concept=scan_report_concept,
+            approved=True,
+        )
+        rules.append(rule)
+
+    for concept_field in NOTE_NLP_CONCEPT_FIELDS:
+        rule, _ = MappingRule.objects.update_or_create(
+            scan_report=scan_report,
+            omop_field=_get_omop_field(concept_field, "note_nlp"),
+            source_field=source_field,
+            concept=scan_report_concept,
+            approved=True,
+        )
+        rules.append(rule)
+    return rules
+
+
 def _find_destination_table(
     concept: Concept, table: ScanReportTable
 ) -> Optional[OmopTable]:
@@ -331,7 +426,7 @@ def _find_destination_table(
     # get the omop field for the source_concept_id for this domain
 
     # For death tables (not gender, race, ethnicity) use cause_source_concept_id
-    if table.death_table and domain not in PERSON_DOMAINS:
+    if table.table_role == TableRole.DEATH and domain not in PERSON_DOMAINS:
         omop_field = _get_omop_field("cause_source_concept_id", "death")
     elif domain == "meas value":
         omop_field = _get_omop_field("value_as_concept_id", "measurement")
@@ -390,6 +485,25 @@ def save_mapping_rules(
     if concept.concept_id == NO_MATCHING_CONCEPT_ID:
         return []
 
+    # Values of a column whose concepts fill one field of a note / note_nlp
+    # record (e.g. note_type -> note_class_concept_id) give a rule for that
+    # field only, not records in the concept's domain table.
+    value_field = value_mapped_field(source_field)
+    if value_field is not None:
+        from django.contrib.contenttypes.models import ContentType
+
+        value_type = ContentType.objects.get_for_model(ScanReportValue)
+        if scan_report_concept.content_type_id != value_type.id:
+            return []  # only its values are mapped
+        rule, _ = MappingRule.objects.update_or_create(
+            scan_report=scan_report,
+            omop_field=value_field.omop_field,
+            source_field=source_field,
+            concept=scan_report_concept,
+            approved=True,
+        )
+        return [rule]
+
     type_column = source_field.type_column.lower()
     domain = concept.domain_id.lower()
 
@@ -397,18 +511,25 @@ def save_mapping_rules(
     if domain == "spec anatomic site":
         domain = "anatomic_site"
 
-    # start looking up what table we're looking at, unless the caller already did
-    if destination_table is None:
-        destination_table = _find_destination_table(concept, source_table)
-    if destination_table is None:
-        return []
-
     # check whether the person_id and date events for this table are valid
     # if not, we dont want to create any rules for this concept
     if not _validate_person_id_and_date(source_table):
         return []
 
+    # On a note_nlp table every concept also becomes a note_nlp record, whether
+    # or not its domain has a destination table of its own
     rules = []
+    if source_table.table_role == TableRole.NOTE_NLP:
+        rules += _get_note_nlp_rules(
+            scan_report, scan_report_concept, source_table, source_field
+        )
+
+    # start looking up what table we're looking at, unless the caller already did
+    if destination_table is None:
+        destination_table = _find_destination_table(concept, source_table)
+    if destination_table is None:
+        return rules
+
     person_id_rule = _get_person_id_rule(
         scan_report, scan_report_concept, source_table, destination_table
     )
@@ -420,7 +541,7 @@ def save_mapping_rules(
     rules += date_rules
 
     # Convert domain of concepts added to Death table to "CAUSE", in order to facilitate the get OMOP field process
-    if source_table.death_table and domain not in PERSON_DOMAINS:
+    if source_table.table_role == TableRole.DEATH and domain not in PERSON_DOMAINS:
         domain = "cause"
 
     # In case of domain = "meas value", this rule will not be generated.

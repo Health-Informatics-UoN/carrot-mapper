@@ -1352,6 +1352,26 @@
   },
   {
     "model": "mapping.omopfield",
+    "pk": 856,
+    "fields": {
+      "created_at": "2026-10-30T00:00:00.000Z",
+      "updated_at": "2026-10-30T00:00:00.000Z",
+      "table": 1679,
+      "field": "note_event_id"
+    }
+  },
+  {
+    "model": "mapping.omopfield",
+    "pk": 857,
+    "fields": {
+      "created_at": "2026-10-30T00:00:00.000Z",
+      "updated_at": "2026-10-30T00:00:00.000Z",
+      "table": 1679,
+      "field": "note_event_field_concept_id"
+    }
+  },
+  {
+    "model": "mapping.omopfield",
     "pk": 549,
     "fields": {
       "created_at": "2021-04-09T15:08:59.104Z",

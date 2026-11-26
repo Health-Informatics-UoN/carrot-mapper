@@ -5,7 +5,14 @@ import { revalidatePath } from "next/cache";
 const fetchKeys = {
   addConcept: "v2/scanreports/concepts/",
   deleteConcept: (conceptId: number) => `v2/scanreports/concepts/${conceptId}/`,
-  scanreportConceptDetail: (scanReportId: string, tableId: string, fieldId: string, valueId: string, conceptId: string) => `v3/scanreports/${scanReportId}/tables/${tableId}/fields/${fieldId}/values/${valueId}/concepts/${conceptId}/`,
+  scanreportConceptDetail: (
+    scanReportId: string,
+    tableId: string,
+    fieldId: string,
+    valueId: string,
+    conceptId: string,
+  ) =>
+    `v3/scanreports/${scanReportId}/tables/${tableId}/fields/${fieldId}/values/${valueId}/concepts/${conceptId}/`,
 };
 
 export async function addConcept(data: {}) {
@@ -59,7 +66,15 @@ export async function getScanReportConceptDetail(
   valueId: string,
   conceptId: string,
 ): Promise<ScanReportConceptDetailV3> {
-  return await request(fetchKeys.scanreportConceptDetail(scanReportId, tableId, fieldId, valueId, conceptId));
+  return await request(
+    fetchKeys.scanreportConceptDetail(
+      scanReportId,
+      tableId,
+      fieldId,
+      valueId,
+      conceptId,
+    ),
+  );
 }
 
 export async function updateScanReportConceptDetail(
@@ -70,11 +85,38 @@ export async function updateScanReportConceptDetail(
   conceptId: string,
   data: {},
 ): Promise<ScanReportConceptDetailV3> {
-  return await request(fetchKeys.scanreportConceptDetail(scanReportId, tableId, fieldId, valueId, conceptId), {
-    method: "PATCH",
-    headers: {
-      "Content-type": "application/json",
+  return await request(
+    fetchKeys.scanreportConceptDetail(
+      scanReportId,
+      tableId,
+      fieldId,
+      valueId,
+      conceptId,
+    ),
+    {
+      method: "PATCH",
+      headers: {
+        "Content-type": "application/json",
+      },
+      body: JSON.stringify(data),
     },
-    body: JSON.stringify(data),
-  });
+  );
+}
+
+// Look up one OMOP concept by id, e.g. to show the name of a concept id
+// someone typed in. Returns null if there's no such concept.
+export async function lookupConcept(
+  conceptId: number,
+): Promise<ConceptSummary | null> {
+  try {
+    const page = await request<PaginatedResponse<ConceptSummary>>(
+      `v2/omop/conceptsfilter/?concept_id=${conceptId}`,
+    );
+    const concept = page.results[0];
+    return concept
+      ? { concept_id: concept.concept_id, concept_name: concept.concept_name }
+      : null;
+  } catch (error) {
+    return null;
+  }
 }
