@@ -133,7 +133,7 @@ def find_standard_concepts(**kwargs) -> None:
                 std_concept.concept_id = concept_relationship.concept_id_2
                 AND std_concept.standard_concept = 'S'
                 AND (
-                    %(skip_domains_check)s = true 
+                    %(skip_domains_check)s = true
                     OR std_concept.domain_id = ANY(%(allowed_domains)s)
                 );
             """
@@ -182,7 +182,8 @@ def create_standard_concepts(**kwargs) -> None:
         scan_report_id = validated_params["scan_report_id"]
         table_id = validated_params["table_id"]
 
-        # TODO: when source_concept_id is added to the model SCANREPORTCONCEPT, we need to update the query belowto solve the issue #1006
+        # source_concept_id keeps the concept the value's code was looked up as in the
+        # source vocabulary, so <domain>_source_concept_id rules can use it (#1006)
         create_concept_query = """
             -- Insert standard concepts for field values (only if they don't already exist)
             INSERT INTO mapping_scanreportconcept (
@@ -190,8 +191,7 @@ def create_standard_concepts(**kwargs) -> None:
                 updated_at,
                 object_id,
                 creation_type,
-                -- TODO: when we can distinguish between source and standard concepts, we can add value to this column
-                -- source_concept_id,
+                source_concept_id,
                 concept_id,
                 content_type_id
             )
@@ -200,8 +200,7 @@ def create_standard_concepts(**kwargs) -> None:
                 NOW(),
                 temp_std_concepts.sr_value_id,
                 'V',           -- Creation type: Built from Vocab dict
-                -- TODO: when we can distinguish between source and standard concepts, we can add value to this column
-                -- temp_std_concepts.source_concept_id,
+                temp_std_concepts.source_concept_id,
                 temp_std_concepts.standard_concept_id,
                 (SELECT id FROM django_content_type WHERE app_label = 'mapping' AND model = 'scanreportvalue')
             FROM temp_standard_concepts_%(table_id)s AS temp_std_concepts
@@ -211,9 +210,22 @@ def create_standard_concepts(**kwargs) -> None:
                 WHERE object_id = temp_std_concepts.sr_value_id
                 AND concept_id = temp_std_concepts.standard_concept_id
                 AND content_type_id = (
-                    SELECT id FROM django_content_type 
+                    SELECT id FROM django_content_type
                     WHERE app_label = 'mapping' AND model = 'scanreportvalue'
                 )
+            );
+
+            -- Backfill the source concept on Vocab concepts created before it was recorded
+            UPDATE mapping_scanreportconcept AS sr_concept
+            SET source_concept_id = temp_std_concepts.source_concept_id
+            FROM temp_standard_concepts_%(table_id)s AS temp_std_concepts
+            WHERE sr_concept.object_id = temp_std_concepts.sr_value_id
+            AND sr_concept.concept_id = temp_std_concepts.standard_concept_id
+            AND sr_concept.creation_type = 'V'
+            AND sr_concept.source_concept_id IS NULL
+            AND sr_concept.content_type_id = (
+                SELECT id FROM django_content_type
+                WHERE app_label = 'mapping' AND model = 'scanreportvalue'
             );
             """
         try:
