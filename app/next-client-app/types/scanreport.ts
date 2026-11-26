@@ -30,7 +30,60 @@ interface ScanReportTable {
   permissions: Permission[];
   jobs: Job[];
   trigger_reuse: boolean;
-  death_table?: boolean;
+  table_role: TableRole;
+  type_concept: number | null;
+}
+
+type TableRole = "standard" | "death" | "note" | "note_nlp";
+
+interface ConceptSummary {
+  concept_id: number;
+  concept_name: string | null;
+}
+
+// An OMOP field a note / note_nlp table can map at table level
+interface TableFieldSpec {
+  omop_field: string;
+  required: boolean;
+  source: boolean; // can take a source field
+  constant: boolean; // can take a constant value
+  concept: boolean; // the constant must be a concept id
+}
+
+interface TableFieldMapping {
+  omop_field: string;
+  source_field: number | null;
+  constant_value: string | null;
+  concept_name: string | null;
+}
+
+interface TableFieldMappings {
+  fields: TableFieldSpec[];
+  mappings: TableFieldMapping[];
+}
+
+type TableFieldMappingInput =
+  | { omop_field: string; source_field: number }
+  | { omop_field: string; constant_value: string };
+
+interface NlpExclusion {
+  source_field: number;
+  source_field_name: string;
+  excluded_values: string[];
+}
+
+interface NlpSettings {
+  source_domain_concept: ConceptSummary | null;
+  relationship_concept: ConceptSummary | null;
+  reverse_relationship_concept: ConceptSummary | null;
+  exclusions: NlpExclusion[];
+}
+
+interface NlpSettingsInput {
+  source_domain_concept: number | null;
+  relationship_concept: number | null;
+  reverse_relationship_concept: number | null;
+  exclusions: { source_field: number; excluded_values: string[] }[];
 }
 
 interface ScanReportField {

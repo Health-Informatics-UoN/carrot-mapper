@@ -6,7 +6,12 @@ from typing import Any
 
 from libs.db import pg_hook
 from libs.enums import JobStageType, StageStatusType
-from libs.rules_export.formats import rules_to_csv, rules_to_json_v1, rules_to_json_v2
+from libs.rules_export.formats import (
+    DERIVED_TABLE_DOMAINS,
+    rules_to_csv,
+    rules_to_json_v1,
+    rules_to_json_v2,
+)
 from libs.rules_export.sssom import write_sssom_tsv
 from libs.utils import update_job_status
 
@@ -103,6 +108,106 @@ def build_rules_json(scan_report_name: str, scan_report_id: int) -> BytesIO:
         raise e
 
 
+def _fetch_table_level_mappings(
+    scan_report_id: int,
+) -> tuple[
+    list[dict[str, Any]],
+    list[dict[str, Any]],
+    dict[str, str],
+    list[dict[str, Any]],
+    dict[str, int],
+]:
+    """
+    A scan report's tables (role, type concept, person and date fields, NLP
+    link concepts), their table-level field mappings, each OMOP table's
+    *_type_concept_id field, the note_nlp tables' exclusions, and the domain
+    concept ids of the tables NLP records can be derived into, for the note /
+    note_nlp and type concept parts of the JSON v2 rules.
+    """
+    tables = _fetch_rows(
+        """
+        SELECT
+            sr_table.name AS source_table,
+            sr_table.table_role,
+            sr_table.type_concept_id,
+            person_field.name AS person_field,
+            date_field.name AS date_field,
+            nlp_link.source_domain_concept_id,
+            nlp_link.relationship_concept_id,
+            nlp_link.reverse_relationship_concept_id
+        FROM mapping_scanreporttable AS sr_table
+        LEFT JOIN mapping_scanreportfield AS person_field ON person_field.id = sr_table.person_id_id
+        LEFT JOIN mapping_scanreportfield AS date_field ON date_field.id = sr_table.date_event_id
+        LEFT JOIN mapping_nlplinksettings AS nlp_link ON nlp_link.scan_report_table_id = sr_table.id
+        WHERE sr_table.scan_report_id = %(scan_report_id)s
+        ORDER BY sr_table.id;
+        """,
+        scan_report_id,
+    )
+    field_mappings = _fetch_rows(
+        """
+        SELECT
+            sr_table.name AS source_table,
+            omop_field.field AS omop_field,
+            sr_field.name AS source_field,
+            mapping.constant_value
+        FROM mapping_scanreporttablefieldmapping AS mapping
+        JOIN mapping_scanreporttable AS sr_table ON sr_table.id = mapping.scan_report_table_id
+        JOIN mapping_omopfield AS omop_field ON omop_field.id = mapping.omop_field_id
+        LEFT JOIN mapping_scanreportfield AS sr_field ON sr_field.id = mapping.source_field_id
+        WHERE sr_table.scan_report_id = %(scan_report_id)s
+        ORDER BY mapping.id;
+        """,
+        scan_report_id,
+    )
+    type_fields = _fetch_rows(
+        """
+        SELECT omop_table.table AS dest_table, omop_field.field
+        FROM mapping_omopfield AS omop_field
+        JOIN mapping_omoptable AS omop_table ON omop_table.id = omop_field.table_id
+        WHERE RIGHT(omop_field.field, 16) = '_type_concept_id';
+        """,
+        scan_report_id,
+    )
+    nlp_exclusions = _fetch_rows(
+        """
+        SELECT
+            sr_table.name AS source_table,
+            sr_field.name AS source_field,
+            exclusion.excluded_values
+        FROM mapping_nlpderivedrecordexclusion AS exclusion
+        JOIN mapping_scanreporttable AS sr_table ON sr_table.id = exclusion.scan_report_table_id
+        JOIN mapping_scanreportfield AS sr_field ON sr_field.id = exclusion.source_field_id
+        WHERE sr_table.scan_report_id = %(scan_report_id)s
+        ORDER BY exclusion.id;
+        """,
+        scan_report_id,
+    )
+    domains = _fetch_rows(
+        """
+        SELECT domain_id, domain_concept_id
+        FROM omop.domain
+        WHERE domain_id IN ("""
+        + ", ".join(f"'{domain}'" for domain in DERIVED_TABLE_DOMAINS.values())
+        + """);
+        """,
+        scan_report_id,
+    )
+    concept_by_domain = {row["domain_id"]: row["domain_concept_id"] for row in domains}
+    domain_concepts = {
+        table: concept_by_domain[domain]
+        for table, domain in DERIVED_TABLE_DOMAINS.items()
+        if domain in concept_by_domain
+    }
+    return (
+        tables,
+        field_mappings,
+        {row["dest_table"]: row["field"] for row in type_fields},
+        nlp_exclusions,
+        domain_concepts,
+    )
+
+
 def build_rules_json_v2(scan_report_name: str, scan_report_id: int) -> BytesIO:
     """
     Builds the rules in JSON v2 format.
@@ -123,7 +228,20 @@ def build_rules_json_v2(scan_report_name: str, scan_report_id: int) -> BytesIO:
             "SELECT * FROM temp_rules_export_%(scan_report_id)s_json ORDER BY dest_table, source_table, source_field;",
             scan_report_id,
         )
-        return _to_bytes(rules_to_json_v2(rules, metadata))
+        tables, field_mappings, type_fields, nlp_exclusions, domain_concepts = (
+            _fetch_table_level_mappings(scan_report_id)
+        )
+        return _to_bytes(
+            rules_to_json_v2(
+                rules,
+                metadata,
+                tables,
+                field_mappings,
+                type_fields,
+                nlp_exclusions,
+                domain_concepts,
+            )
+        )
     except Exception as e:
         logging.error(f"Error building rules JSON v2: {e!s}")
         update_job_status(
