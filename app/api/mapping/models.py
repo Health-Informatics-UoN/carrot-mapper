@@ -22,6 +22,18 @@ class CreationType(models.TextChoices):
     Matched = "X", "Matched"
 
 
+class TableRole(models.TextChoices):
+    """
+    What a Scan Report Table's rows become in the OMOP CDM.
+
+    - STANDARD: records in the table each mapped concept's domain points to.
+    - DEATH: mapped concepts go to the death table (cause of death).
+    """
+
+    STANDARD = "standard", "Standard"
+    DEATH = "death", "Death"
+
+
 class VisibilityChoices(models.TextChoices):
     PUBLIC = "PUBLIC", "Public"
     RESTRICTED = "RESTRICTED", "Restricted"
@@ -277,7 +289,25 @@ class ScanReportTable(BaseModel):
 
     scan_report = models.ForeignKey(ScanReport, on_delete=models.CASCADE)
     name = models.CharField(max_length=256, db_index=True)
-    death_table = models.BooleanField(default=False, null=True)
+    table_role = models.CharField(
+        max_length=16,
+        choices=TableRole.choices,
+        default=TableRole.STANDARD,
+        # Also a database default: tables are created with raw SQL when a scan
+        # report is processed (Airflow), which doesn't set the role
+        db_default=TableRole.STANDARD,
+        help_text="What this table's rows become in the OMOP CDM",
+    )
+    # Written to the <table>_type_concept_id field of every record built from
+    # this table, e.g. 32817 (EHR).
+    type_concept = models.ForeignKey(
+        Concept,
+        on_delete=models.DO_NOTHING,
+        null=True,
+        blank=True,
+        related_name="+",
+        help_text="Type concept for every record built from this table",
+    )
 
     # Quick notes:
     # - "ScanReportField", instead of ScanReportField,
@@ -306,6 +336,11 @@ class ScanReportTable(BaseModel):
 
     def __str__(self):
         return str(self.id)
+
+    @property
+    def death_table(self) -> bool:
+        """Deprecated: whether the table has the death role. Use table_role."""
+        return self.table_role == TableRole.DEATH
 
 
 class MappingRecommendation(BaseModel):

@@ -17,6 +17,7 @@ from mapping.models import (
     ScanReportField,
     ScanReportTable,
     ScanReportValue,
+    TableRole,
     UploadStatus,
     VisibilityChoices,
 )
@@ -774,7 +775,40 @@ class ScanReportFieldListSerializerV2(DynamicFieldsMixin, serializers.ModelSeria
         fields = "__all__"
 
 
-class ScanReportTableListSerializerV2(DynamicFieldsMixin, serializers.ModelSerializer):
+class DeathTableAliasMixin(serializers.Serializer):
+    """
+    Keeps the deprecated `death_table` flag working for API clients written
+    before table roles. It reads as whether the table has the death role, and
+    setting it on its own sets the role: true gives the death role, false
+    turns a death table back into a standard one.
+    """
+
+    death_table = serializers.BooleanField(
+        required=False, help_text="Deprecated: use table_role."
+    )
+
+    def validate(self, data):
+        death_table = data.pop("death_table", None)
+        if death_table is not None:
+            instance = (
+                self.instance if isinstance(self.instance, ScanReportTable) else None
+            )
+            current = instance.table_role if instance else TableRole.STANDARD
+            role = data.get("table_role", current)
+            if "table_role" in data and death_table != (role == TableRole.DEATH):
+                raise serializers.ValidationError(
+                    {"death_table": "Doesn't match table_role; send table_role only."}
+                )
+            if death_table:
+                data["table_role"] = TableRole.DEATH
+            elif role == TableRole.DEATH:
+                data["table_role"] = TableRole.STANDARD
+        return super().validate(data)
+
+
+class ScanReportTableListSerializerV2(
+    DeathTableAliasMixin, DynamicFieldsMixin, serializers.ModelSerializer
+):
     date_event = ScanReportFieldListSerializerV2()
     person_id = ScanReportFieldListSerializerV2()
 
@@ -802,7 +836,9 @@ class ScanReportTableListSerializerV2(DynamicFieldsMixin, serializers.ModelSeria
         return super().validate(data)
 
 
-class ScanReportTableEditSerializer(DynamicFieldsMixin, serializers.ModelSerializer):
+class ScanReportTableEditSerializer(
+    DeathTableAliasMixin, DynamicFieldsMixin, serializers.ModelSerializer
+):
     class Meta:
         model = ScanReportTable
         fields = "__all__"
