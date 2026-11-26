@@ -3,7 +3,14 @@ import {
   getScanReportField,
   getScanReportPermissions,
   getScanReportTable,
+  getTableFieldMappings,
+  getTableNlpSettings,
 } from "@/api/scanreports";
+import { lookupConcept } from "@/api/concepts";
+import { TableFieldMappingsForm } from "@/components/scanreports/TableFieldMappingsForm";
+import { NoteTableExportStatus } from "@/components/scanreports/NoteTableExportStatus";
+import { getAllVocabularies } from "@/api/vocabularies";
+import { NlpSettingsForm } from "@/components/scanreports/NlpSettingsForm";
 import { objToQuery } from "@/lib/client-utils";
 import { AlertCircleIcon } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -64,14 +71,32 @@ export default async function UpdateTable(props: UpdateTableProps) {
     scan_report_table: 0,
   };
 
-  const [personId, dateEvent] = await Promise.all([
-    table.person_id?.id
-      ? getScanReportField(id, tableId, table.person_id.id)
-      : Promise.resolve(fallbackField),
-    table.date_event?.id
-      ? getScanReportField(id, tableId, table.date_event.id)
-      : Promise.resolve(fallbackField),
-  ]);
+  const isNoteTable =
+    table.table_role === "note" || table.table_role === "note_nlp";
+
+  const [personId, dateEvent, typeConcept, fieldMappings, nlpSettings] =
+    await Promise.all([
+      table.person_id?.id
+        ? getScanReportField(id, tableId, table.person_id.id)
+        : Promise.resolve(fallbackField),
+      table.date_event?.id
+        ? getScanReportField(id, tableId, table.date_event.id)
+        : Promise.resolve(fallbackField),
+      table.type_concept
+        ? lookupConcept(table.type_concept)
+        : Promise.resolve(null),
+      isNoteTable ? getTableFieldMappings(id, tableId) : Promise.resolve(null),
+      table.table_role === "note_nlp"
+        ? getTableNlpSettings(id, tableId)
+        : Promise.resolve(null),
+    ]);
+  // For note_nlp tables whose term codes come from a vocabulary
+  const vocabularies =
+    table.table_role === "note_nlp" ? await getAllVocabularies() : [];
+
+  const canUpdate =
+    permissions.permissions.includes("CanEdit") ||
+    permissions.permissions.includes("CanAdmin");
 
   return (
     <div>
@@ -102,8 +127,39 @@ export default async function UpdateTable(props: UpdateTableProps) {
           permissions={permissions.permissions}
           personId={personId}
           dateEvent={dateEvent}
+          typeConceptName={typeConcept?.concept_name ?? null}
         />
       </div>
+      {isNoteTable && fieldMappings && (
+        <div className="mt-8">
+          <NoteTableExportStatus
+            problems={fieldMappings.export_problems}
+            scanReportId={table.scan_report}
+            tableId={table.id}
+            className="max-w-2xl mb-5"
+          />
+          <TableFieldMappingsForm
+            scanReportId={table.scan_report}
+            tableId={table.id}
+            role={table.table_role}
+            fieldMappings={fieldMappings}
+            scanReportFields={scanReportsFields}
+            vocabularies={vocabularies}
+            canUpdate={canUpdate}
+          />
+        </div>
+      )}
+      {table.table_role === "note_nlp" && nlpSettings && (
+        <div className="mt-8">
+          <NlpSettingsForm
+            scanReportId={table.scan_report}
+            tableId={table.id}
+            settings={nlpSettings}
+            scanReportFields={scanReportsFields}
+            canUpdate={canUpdate}
+          />
+        </div>
+      )}
     </div>
   );
 }

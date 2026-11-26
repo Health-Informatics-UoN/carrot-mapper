@@ -133,8 +133,15 @@ def find_standard_concepts(**kwargs) -> None:
                 std_concept.concept_id = concept_relationship.concept_id_2
                 AND std_concept.standard_concept = 'S'
                 AND (
-                    %(skip_domains_check)s = true 
+                    %(skip_domains_check)s = true
                     OR std_concept.domain_id = ANY(%(allowed_domains)s)
+                    -- Values of a column filling one note / note_nlp field (e.g.
+                    -- note_class_concept_id) can map to concepts of any domain
+                    OR EXISTS (
+                        SELECT 1 FROM mapping_scanreporttablefieldmapping AS field_mapping
+                        WHERE field_mapping.source_field_id = %(sr_field_id)s
+                        AND field_mapping.map_values
+                    )
                 );
             """
             try:
@@ -211,7 +218,7 @@ def create_standard_concepts(**kwargs) -> None:
                 WHERE object_id = temp_std_concepts.sr_value_id
                 AND concept_id = temp_std_concepts.standard_concept_id
                 AND content_type_id = (
-                    SELECT id FROM django_content_type 
+                    SELECT id FROM django_content_type
                     WHERE app_label = 'mapping' AND model = 'scanreportvalue'
                 )
             );

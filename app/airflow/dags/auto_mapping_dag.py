@@ -60,7 +60,7 @@ mapping rules connecting source data to OMOP-compliant destination tables.
 """
 #  TODO: for now the creation of mapping rules will use the source_concept_id of temp_reuse_concepts table.
 # When we can distinguish between standard and non-standard concepts, we will use them accordingly in the create_mapping_rules function of reuse.
-# When reusing concepts for the death table, only consider other death tables. (See the death_table filter in find_m_concepts_query.)
+# When reusing concepts, only consider tables with the same role, e.g. death tables only reuse from other death tables. (See the table_role filter in find_m_concepts_query.)
 # NOTE: when the DB is huge, the performance of the DAG will be affected by refreshing the existing R concepts. --> consider to only refresh the R Mapping rules
 # TODO: should we add `value` column in MAPPINGRULE model? in order to filter the mapping rule based on the SR value?
 # TODO: add the source_concept_id to the UI
