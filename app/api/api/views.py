@@ -852,6 +852,9 @@ class ScanReportTableFieldMappingsV2(ScanReportPermissionMixin, GenericAPIView):
       {"omop_field": <name>, "constant_value": <value>}, or, for a concept field,
       {"omop_field": <name>, "source_field": <field id>, "map_values": true}
       to take its concepts from the concepts mapped to that field's values.
+      A note_nlp table's note_nlp_concept_id can instead take
+      {"omop_field": ..., "source_field": <field id>, "vocabulary_id": <id>}:
+      the column holds that vocabulary's codes, looked up by Carrot Transform.
       Every required field for the table's role must be included.
     """
 
@@ -874,6 +877,7 @@ class ScanReportTableFieldMappingsV2(ScanReportPermissionMixin, GenericAPIView):
                 "constant": spec.constant,
                 "concept": spec.concept,
                 "values": spec.values,
+                "vocabulary": spec.vocabulary,
             }
             for name, spec in allowed_fields(table.table_role).items()
         ]

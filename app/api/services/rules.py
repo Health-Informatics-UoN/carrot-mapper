@@ -16,6 +16,8 @@ from mapping.models import (
     TableRole,
 )
 
+from services.table_field_mappings import TERM_CONCEPT_FIELD
+
 # OMOP's standard concept_id for "No matching concept". Its domain (Metadata)
 # has no destination table, so it should never generate a MappingRule - it's
 # a review marker ("this field was looked at and deliberately left unmapped"),
@@ -331,6 +333,9 @@ def value_mapped_field(
     """
     The field mapping whose concepts come from this source field's values, if
     any (e.g. a note table's note_type column filling note_class_concept_id).
+
+    Not a note_nlp table's term column (note_nlp_concept_id): its concepts keep
+    giving note_nlp records and records in their domain's table.
     """
     return (
         ScanReportTableFieldMapping.objects.filter(
@@ -338,6 +343,7 @@ def value_mapped_field(
             map_values=True,
             scan_report_table__table_role__in=[TableRole.NOTE, TableRole.NOTE_NLP],
         )
+        .exclude(omop_field__field=TERM_CONCEPT_FIELD)
         .select_related("omop_field")
         .first()
     )

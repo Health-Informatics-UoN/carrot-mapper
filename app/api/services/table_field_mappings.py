@@ -21,6 +21,9 @@ class FieldSpec:
     required: bool = False
     # True if the field may take concepts mapped from a source column's values
     values: bool = False
+    # True if the field may take codes of an OMOP vocabulary from a source
+    # column, for Carrot Transform to look up
+    vocabulary: bool = False
 
     @property
     def concept(self) -> bool:
@@ -65,6 +68,12 @@ ROLE_FIELDS: dict[str, dict[str, FieldSpec]] = {
     },
     TableRole.NOTE_NLP: {
         "note_id": FieldSpec(constant=False, required=True),
+        # The term's concept: codes of a vocabulary (looked up by Transform),
+        # or concepts mapped to a column's values. Either way it also gives
+        # note_nlp_source_concept_id and the records derived from the term.
+        "note_nlp_concept_id": ConceptFieldSpec(
+            constant=False, vocabulary=True, required=True
+        ),
         "lexical_variant": FieldSpec(required=True),
         "snippet": FieldSpec(),
         "offset": FieldSpec(),
@@ -79,6 +88,11 @@ ROLE_FIELDS: dict[str, dict[str, FieldSpec]] = {
 # OMOP fields holding a note key: exported as a record_key on note tables and
 # as a reference to the note table on note_nlp tables.
 NOTE_KEY_FIELD = "note_id"
+
+# The note_nlp field holding each term's concept. Mapping its column's values
+# keeps the usual note_nlp behaviour: each concept gives a note_nlp record and
+# records in its domain's table, rather than filling this one field.
+TERM_CONCEPT_FIELD = "note_nlp_concept_id"
 
 
 def allowed_fields(role: str) -> dict[str, FieldSpec]:
@@ -96,8 +110,9 @@ def export_problems(table) -> list[dict[str, str]]:
     table's note / note_nlp fields) or "values" (concepts on a column's values).
 
     Mirrors the rules export: a note table needs its Person ID, Date Event and
-    note_id column; a note_nlp table's record is built from the concepts mapped
-    on it, so it needs at least one.
+    required fields. A note_nlp table's term concepts come from a vocabulary's
+    codes (looked up by Transform) or from concepts mapped to its term column's
+    values, so with the latter it needs at least one.
     """
     from mapping.models import MappingRule
 
@@ -118,8 +133,11 @@ def export_problems(table) -> list[dict[str, str]]:
                     "where": "table",
                 }
             )
-    mapped = set(table.field_mappings.values_list("omop_field__field", flat=True))
-    if not mapped:
+    mappings = {
+        mapping.omop_field.field: mapping
+        for mapping in table.field_mappings.select_related("omop_field")
+    }
+    if not mappings:
         problems.append(
             {
                 "message": f"The {fields_name} haven't been saved. Choose how each "
@@ -127,34 +145,43 @@ def export_problems(table) -> list[dict[str, str]]:
                 "where": "fields",
             }
         )
-    elif NOTE_KEY_FIELD not in mapped:
-        key = (
-            "the key of the note each term was found in"
-            if is_nlp
-            else "each note's key"
-        )
-        problems.append(
-            {
-                "message": f"{NOTE_KEY_FIELD} isn't set. In the {fields_name}, choose "
-                f"the column holding {key}.",
-                "where": "fields",
-            }
-        )
+        return problems
+    hints = {
+        NOTE_KEY_FIELD: "the column holding the key of the note each term was found in"
+        if is_nlp
+        else "the column holding each note's key",
+        TERM_CONCEPT_FIELD: "the column holding each term's code, and how its "
+        "concept is found",
+    }
+    for name, spec in allowed_fields(table.table_role).items():
+        if spec.required and name not in mappings:
+            what = hints.get(name, "how it's filled")
+            problems.append(
+                {
+                    "message": f"{name} isn't set. In the {fields_name}, choose "
+                    f"{what}, then save.",
+                    "where": "fields",
+                }
+            )
+    term = mappings.get(TERM_CONCEPT_FIELD)
     if (
         is_nlp
+        and term is not None
+        and term.map_values
         and not MappingRule.objects.filter(
             source_field__scan_report_table=table,
             omop_field__table__table="note_nlp",
-            omop_field__field="note_nlp_concept_id",
+            omop_field__field=TERM_CONCEPT_FIELD,
         ).exists()
     ):
         problems.append(
             {
-                "message": "No term concepts are mapped yet. This isn't one of "
-                f"the {fields_name}: open the column holding each term's code "
-                "(e.g. snomed_code) and map its values to concepts. Each term's "
-                "note_nlp record, and any condition or other record derived from "
-                "it, comes from the concept mapped to its code.",
+                "message": f"None of the values of {term.source_field.name} are "
+                "mapped to concepts yet. Each term's note_nlp record, and any "
+                "condition or other record derived from it, comes from the "
+                "concept mapped to its value. If the column holds codes of a "
+                'vocabulary such as SNOMED, choose "Codes from a vocabulary" '
+                f"for {TERM_CONCEPT_FIELD} instead.",
                 "where": "values",
             }
         )

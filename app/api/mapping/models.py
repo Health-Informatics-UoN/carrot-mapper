@@ -415,6 +415,11 @@ class ScanReportTableFieldMapping(BaseModel):
     `source_field` (`map_values`): those values are mapped to concepts like any
     other field's values, and the concepts fill this field only.
 
+    A note_nlp table's note_nlp_concept_id can instead name the vocabulary its
+    `source_field` holds codes of (`vocabulary_id`, e.g. SNOMED codes such as
+    22298006, not OMOP concept ids). Carrot Transform looks up each code's
+    concept, so no concepts are mapped in Mapper.
+
     The OMOP id fields linking notes are mapped to the source column holding the
     note's key: `note.note_id` names the key on a note table, and
     `note_nlp.note_id` the column on a note_nlp table that refers to it.
@@ -436,6 +441,9 @@ class ScanReportTableFieldMapping(BaseModel):
     # concepts (as ScanReportConcepts on its values, like any other field), and
     # each record gets the concept its value maps to.
     map_values = models.BooleanField(default=False, db_default=False)
+    # For a note_nlp table's note_nlp_concept_id: `source_field` holds codes of
+    # this OMOP vocabulary (its concept_code values), looked up by Transform.
+    vocabulary_id = models.CharField(max_length=20, null=True, blank=True)
 
     class Meta:
         app_label = "mapping"

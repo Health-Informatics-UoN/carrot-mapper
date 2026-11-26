@@ -165,7 +165,8 @@ def rules_to_json_v2(
     value_mapped = {
         (mapping["source_table"], mapping["omop_field"])
         for mapping in field_mappings
-        if mapping.get("map_values")
+        # A note_nlp table's term column keeps its usual rules
+        if mapping.get("map_values") and mapping["omop_field"] != TERM_CONCEPT_FIELD
     }
     value_rules = [
         rule
@@ -343,6 +344,8 @@ def rules_to_json_v2(
 NOTE_TABLE = "note"
 NOTE_KEY_FIELD = "note_id"
 NOTE_NLP_TABLE = "note_nlp"
+# The note_nlp field holding each term's concept
+TERM_CONCEPT_FIELD = "note_nlp_concept_id"
 # The note_nlp field holding each term's text, required like note_id
 NOTE_NLP_TERM_TEXT_FIELD = "lexical_variant"
 
@@ -438,10 +441,18 @@ def add_table_level_mappings(
         copies: dict[str, str] = {}
         constants: dict[str, int | str] = {}
         note_key = None
+        code_lookup = None
         for mapping in mappings_by_table.get(table["source_table"], []):
             omop_field = mapping["omop_field"]
             if mapping.get("map_values"):
-                continue  # from value_rules
+                continue  # from value_rules, or the term column's own rules
+            if omop_field == TERM_CONCEPT_FIELD:
+                if mapping.get("vocabulary_id") and mapping["source_field"]:
+                    code_lookup = {
+                        "source_field": _clean(mapping["source_field"]),
+                        "vocabulary_id": mapping["vocabulary_id"],
+                    }
+                continue
             if omop_field == NOTE_KEY_FIELD:
                 note_key = _clean(mapping["source_field"])
             elif mapping["source_field"] is not None:
@@ -476,7 +487,7 @@ def add_table_level_mappings(
                 )
         elif (
             role == "note_nlp"
-            and source_table in result.get(NOTE_NLP_TABLE, {})
+            and (code_lookup or source_table in result.get(NOTE_NLP_TABLE, {}))
             and not (
                 note_key
                 and NOTE_NLP_TERM_TEXT_FIELD in copies | constants
@@ -497,8 +508,26 @@ def add_table_level_mappings(
             for dest_table in [name for name, blocks in result.items() if not blocks]:
                 del result[dest_table]
             continue
-        elif role == "note_nlp" and source_table in result.get("note_nlp", {}):
+        elif role == "note_nlp" and (
+            code_lookup or source_table in result.get("note_nlp", {})
+        ):
+            if source_table not in result.get(NOTE_NLP_TABLE, {}):
+                # No concepts mapped in Mapper: the block only holds the lookup
+                result.setdefault(NOTE_NLP_TABLE, {})[source_table] = {
+                    "date_mapping": {
+                        "source_field": _clean(table["date_field"]),
+                        "dest_field": ["nlp_datetime"],
+                    },
+                    "concept_mappings": {},
+                }
             block = result["note_nlp"][source_table]
+            if code_lookup:
+                block["code_lookup"] = _code_lookup(
+                    code_lookup,
+                    table,
+                    exclusions_by_table.get(table["source_table"], {}),
+                    domain_concepts or {},
+                )
             if note_key:
                 block["references"] = {
                     NOTE_KEY_FIELD: {"table": NOTE_TABLE, "source_field": note_key}
@@ -523,6 +552,47 @@ def add_table_level_mappings(
                     blocks[source_table].setdefault("constant_mappings", {})[
                         type_field
                     ] = int(table["type_concept_id"])
+
+
+def _code_lookup(
+    lookup: dict[str, str],
+    table: Row,
+    exclusions: dict[str, list[str]],
+    domain_concepts: Mapping[str, int],
+) -> dict[str, Any]:
+    """
+    A note_nlp block's ``code_lookup``: the column holding each term's code and
+    its vocabulary, for Transform to find each code's concepts, and what it
+    needs to write the records derived from them (person, date, type concept,
+    exclusions and fact_relationship link), as Mapper has no rules for them.
+    """
+    derived: dict[str, Any] = {
+        "person_id_mapping": {
+            "source_field": _clean(table["person_field"]),
+            "dest_field": "person_id",
+        },
+        "date_mapping": {"source_field": _clean(table["date_field"])},
+    }
+    if table["type_concept_id"] is not None:
+        derived["type_concept_id"] = int(table["type_concept_id"])
+    if exclusions:
+        derived["exclude_values"] = exclusions
+    link_ids = [
+        table.get("source_domain_concept_id"),
+        table.get("relationship_concept_id"),
+        table.get("reverse_relationship_concept_id"),
+    ]
+    if all(link_ids):
+        derived["fact_relationship"] = {
+            "domain_concept_ids": {
+                dest_table: int(concept)
+                for dest_table, concept in domain_concepts.items()
+            },
+            "source_domain_concept_id": int(link_ids[0]),
+            "relationship_concept_id": int(link_ids[1]),
+            "reverse_relationship_concept_id": int(link_ids[2]),
+        }
+    return {**lookup, "derived_records": derived}
 
 
 def _add_derived_from(

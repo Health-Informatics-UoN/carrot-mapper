@@ -697,6 +697,8 @@ create_note_nlp_rules_query = """
 # record (a table field mapping with map_values, e.g. note_type ->
 # note_class_concept_id) give one rule, for that field, and are then removed from
 # the table's concepts so they don't also make records in their domain's table.
+# Not a note_nlp table's term column (note_nlp_concept_id): its concepts keep
+# giving note_nlp records and records in their domain's table.
 create_value_mapped_field_rules_query = """
     INSERT INTO mapping_mappingrule (
         created_at, updated_at, omop_field_id, source_field_id, concept_id, scan_report_id, approved
@@ -708,6 +710,9 @@ create_value_mapped_field_rules_query = """
     JOIN mapping_scanreporttablefieldmapping AS field_mapping
         ON field_mapping.source_field_id = temp_table.source_field_id
         AND field_mapping.map_values
+        AND field_mapping.omop_field_id NOT IN (
+            SELECT id FROM mapping_omopfield WHERE field = 'note_nlp_concept_id'
+        )
     JOIN mapping_scanreporttable AS sr_table
         ON sr_table.id = field_mapping.scan_report_table_id
         AND sr_table.table_role IN ('note', 'note_nlp')
@@ -726,5 +731,8 @@ create_value_mapped_field_rules_query = """
         ON sr_table.id = field_mapping.scan_report_table_id
         AND sr_table.table_role IN ('note', 'note_nlp')
     WHERE field_mapping.source_field_id = temp_table.source_field_id
-    AND field_mapping.map_values;
+    AND field_mapping.map_values
+    AND field_mapping.omop_field_id NOT IN (
+        SELECT id FROM mapping_omopfield WHERE field = 'note_nlp_concept_id'
+    );
 """

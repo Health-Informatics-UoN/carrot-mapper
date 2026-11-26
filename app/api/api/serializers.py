@@ -867,7 +867,9 @@ class ScanReportTableFieldMappingSerializer(serializers.Serializer):
     table for the table's role (note or note_nlp); exactly one of
     `source_field` (a field of this Scan Report Table) and `constant_value` is
     given. With `map_values`, a *_concept_id field takes the concepts mapped to
-    `source_field`'s values. Expects the ScanReportTable as context["table"].
+    `source_field`'s values. With `vocabulary_id` (note_nlp_concept_id only),
+    `source_field` holds that vocabulary's codes, looked up by Carrot Transform.
+    Expects the ScanReportTable as context["table"].
     """
 
     omop_field = serializers.CharField()
@@ -878,6 +880,9 @@ class ScanReportTableFieldMappingSerializer(serializers.Serializer):
         required=False, allow_null=True, max_length=255
     )
     map_values = serializers.BooleanField(required=False, default=False)
+    vocabulary_id = serializers.CharField(
+        required=False, allow_null=True, max_length=20
+    )
 
     def to_representation(self, instance: ScanReportTableFieldMapping):
         name = instance.omop_field.field
@@ -896,6 +901,7 @@ class ScanReportTableFieldMappingSerializer(serializers.Serializer):
             "constant_value": instance.constant_value,
             "concept_name": concept_name,
             "map_values": instance.map_values,
+            "vocabulary_id": instance.vocabulary_id,
         }
         if instance.map_values and instance.source_field_id:
             representation.update(value_mapping_progress(instance.source_field))
@@ -916,6 +922,33 @@ class ScanReportTableFieldMappingSerializer(serializers.Serializer):
 
         source_field = data.get("source_field")
         constant = data.get("constant_value")
+        vocabulary_id = data.get("vocabulary_id")
+        if vocabulary_id:
+            if not spec.vocabulary:
+                raise serializers.ValidationError(
+                    {"vocabulary_id": f"'{name}' can't take codes of a vocabulary."}
+                )
+            if source_field is None or constant is not None or data.get("map_values"):
+                raise serializers.ValidationError(
+                    f"'{name}': choose the column holding the vocabulary's codes."
+                )
+            if source_field.scan_report_table_id != table.id:
+                raise serializers.ValidationError(
+                    {
+                        "source_field": f"'{name}': the source field must belong to this table."
+                    }
+                )
+            if not Vocabulary.objects.filter(vocabulary_id=vocabulary_id).exists():
+                raise serializers.ValidationError(
+                    {
+                        "vocabulary_id": f"'{vocabulary_id}' isn't a vocabulary loaded in Mapper."
+                    }
+                )
+            data["omop_field"] = OmopField.objects.get(
+                table__table=ROLE_OMOP_TABLE[table.table_role], field=name
+            )
+            return data
+        data["vocabulary_id"] = None
         if data.get("map_values"):
             if not spec.values:
                 raise serializers.ValidationError(

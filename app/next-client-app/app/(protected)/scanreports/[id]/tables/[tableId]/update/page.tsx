@@ -9,6 +9,7 @@ import {
 import { lookupConcept } from "@/api/concepts";
 import { TableFieldMappingsForm } from "@/components/scanreports/TableFieldMappingsForm";
 import { NoteTableExportStatus } from "@/components/scanreports/NoteTableExportStatus";
+import { getAllVocabularies } from "@/api/vocabularies";
 import { NlpSettingsForm } from "@/components/scanreports/NlpSettingsForm";
 import { objToQuery } from "@/lib/client-utils";
 import { AlertCircleIcon } from "lucide-react";
@@ -89,6 +90,9 @@ export default async function UpdateTable(props: UpdateTableProps) {
         ? getTableNlpSettings(id, tableId)
         : Promise.resolve(null),
     ]);
+  // For note_nlp tables whose term codes come from a vocabulary
+  const vocabularies =
+    table.table_role === "note_nlp" ? await getAllVocabularies() : [];
 
   const canUpdate =
     permissions.permissions.includes("CanEdit") ||
@@ -140,6 +144,7 @@ export default async function UpdateTable(props: UpdateTableProps) {
             role={table.table_role}
             fieldMappings={fieldMappings}
             scanReportFields={scanReportsFields}
+            vocabularies={vocabularies}
             canUpdate={canUpdate}
           />
         </div>

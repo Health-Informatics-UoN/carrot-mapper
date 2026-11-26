@@ -18,6 +18,9 @@ const ROLE_LABELS: Record<NoteTableSummary["table_role"], string> = {
 
 // How one field of a note / note_nlp record is filled, in words
 function describe(mapping: TableFieldMapping): string {
+  if (mapping.vocabulary_id) {
+    return `${mapping.vocabulary_id} codes in ${mapping.source_field_name}, each looked up by Carrot Transform`;
+  }
   if (mapping.map_values) {
     return `concepts mapped to the values of ${mapping.source_field_name}`;
   }
